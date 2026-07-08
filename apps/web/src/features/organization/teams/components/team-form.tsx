@@ -8,12 +8,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 
-import { createDepartmentAction } from "../actions/create-department-action"
-import { updateDepartmentAction } from "../actions/update-department-action"
+import { createTeamAction } from "../actions/create-team-action"
+import { updateTeamAction } from "../actions/update-team-action"
 
-type DepartmentFormProps = {
+type TeamFormProps = {
   companyId: string
-  department?: {
+  team?: {
     id: string
     name: string
     description: string | null
@@ -21,26 +21,27 @@ type DepartmentFormProps = {
   onSuccess?: () => void
 }
 
-export function DepartmentForm({
+export function TeamForm({
   companyId,
-  department,
+  team,
   onSuccess,
-}: DepartmentFormProps) {
+}: TeamFormProps) {
   const [isPending, startTransition] = useTransition()
 
-  const isEditing = Boolean(department)
+  const isEditing = Boolean(team)
 
   function handleSubmit(formData: FormData) {
     const input = {
       name: String(formData.get("name") ?? ""),
       description: String(formData.get("description") ?? ""),
+      parentTeamId: null,
       leaderId: null,
     }
 
     startTransition(async () => {
-      const result = department
-        ? await updateDepartmentAction(companyId, department.id, input)
-        : await createDepartmentAction(companyId, input)
+      const result = team
+        ? await updateTeamAction(companyId, team.id, input)
+        : await createTeamAction(companyId, input)
 
       if (!result.success) {
         toast.error(result.message)
@@ -56,22 +57,24 @@ export function DepartmentForm({
     <form action={handleSubmit} className="space-y-4">
       <div>
         <Label htmlFor="name">Nome</Label>
+
         <Input
           id="name"
           name="name"
-          placeholder="Ex: Comercial"
-          defaultValue={department?.name ?? ""}
+          placeholder="Ex: Atendimento"
+          defaultValue={team?.name ?? ""}
           required
         />
       </div>
 
       <div>
         <Label htmlFor="description">Descrição</Label>
+
         <Textarea
           id="description"
           name="description"
-          placeholder="Descreva a responsabilidade deste departamento."
-          defaultValue={department?.description ?? ""}
+          placeholder="Descreva a responsabilidade deste time."
+          defaultValue={team?.description ?? ""}
         />
       </div>
 
@@ -81,7 +84,7 @@ export function DepartmentForm({
             ? "Salvando..."
             : isEditing
               ? "Salvar alterações"
-              : "Criar departamento"}
+              : "Criar time"}
         </Button>
       </div>
     </form>

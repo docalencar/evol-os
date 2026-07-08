@@ -1,24 +1,47 @@
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { redirect } from "next/navigation";
 
-export default function PositionsPage() {
+import { PageHeader } from "@/components/shared/page-header";
+import {
+  getPositions,
+  PositionCreateDialog,
+  PositionTable,
+} from "@/features/organization/positions";
+import { createClient } from "@/lib/supabase/supabase/server";
+
+export default async function PositionsPage() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { data: memberships } = await supabase
+    .from("company_members")
+    .select("company_id")
+    .eq("user_id", user.id)
+    .limit(1);
+
+  const companyId = memberships?.[0]?.company_id;
+
+  if (!companyId) {
+    redirect("/onboarding");
+  }
+
+  const positions = await getPositions(companyId);
+
   return (
     <div className="space-y-6">
-      <div className="flex justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Cargos</h2>
-          <p className="mt-1 text-slate-600">Defina os cargos utilizados na empresa.</p>
-        </div>
-        <Button>Novo cargo</Button>
-      </div>
+      <PageHeader
+        title="Cargos"
+        description="Organize os cargos da empresa."
+        actions={<PositionCreateDialog companyId={companyId} />}
+      />
 
-      <Input placeholder="Buscar cargo..." />
-
-      <Card>
-        <p className="font-semibold">Gerente de Operações</p>
-        <p className="text-sm text-slate-600">Responsável pela operação geral</p>
-      </Card>
+      <PositionTable positions={positions ?? []} />
     </div>
   );
 }

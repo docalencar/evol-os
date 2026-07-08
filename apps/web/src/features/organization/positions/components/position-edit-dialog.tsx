@@ -5,21 +5,21 @@ import { useState } from "react"
 import { EntityDialog } from "@/components/shared/entity-dialog"
 import { Button } from "@/components/ui/button"
 
-import { DepartmentForm } from "./department-form"
+import { PositionForm } from "./position-form"
 
-type DepartmentEditDialogProps = {
+type PositionEditDialogProps = {
   companyId: string
-  department: {
+  position: {
     id: string
     name: string
     description: string | null
   }
 }
 
-export function DepartmentEditDialog({
+export function PositionEditDialog({
   companyId,
-  department,
-}: DepartmentEditDialogProps) {
+  position,
+}: PositionEditDialogProps) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -31,12 +31,12 @@ export function DepartmentEditDialog({
           Editar
         </Button>
       }
-      title="Editar departamento"
-      description="Atualize as informações desta área da organização."
+      title="Editar cargo"
+      description="Atualize as informações deste cargo."
     >
-      <DepartmentForm
+      <PositionForm
         companyId={companyId}
-        department={department}
+        position={position}
         onSuccess={() => setOpen(false)}
       />
     </EntityDialog>

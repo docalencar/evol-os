@@ -1,10 +1,16 @@
-export type Team = {
-  id: string
+export type TeamId = string
+
+export interface Team {
+  id: TeamId
   companyId: string
+
   name: string
   description: string | null
+
+  parentTeamId: string | null
   leaderId: string | null
+
   createdAt: string
   updatedAt: string
-  deletedAt: string | null
+  archivedAt: string | null
 }

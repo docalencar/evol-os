@@ -6,22 +6,19 @@ import { toast } from "sonner"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import { Button } from "@/components/ui/button"
 
-import { archiveDepartmentAction } from "../actions/archive-department-action"
+import { archivePositionAction } from "../actions/archive-position-action"
 
 type Props = {
   companyId: string
-  departmentId: string
+  positionId: string
 }
 
-export function ArchiveDepartmentButton({
-  companyId,
-  departmentId,
-}: Props) {
+export function ArchivePositionButton({ companyId, positionId }: Props) {
   const [isPending, startTransition] = useTransition()
 
   function handleArchive() {
     startTransition(async () => {
-      const result = await archiveDepartmentAction(companyId, departmentId)
+      const result = await archivePositionAction(companyId, positionId)
 
       if (!result.success) {
         toast.error(result.message)
@@ -34,8 +31,8 @@ export function ArchiveDepartmentButton({
 
   return (
     <ConfirmDialog
-      title="Arquivar departamento?"
-      description="O departamento será arquivado e deixará de aparecer nas listagens padrão. Esta ação pode ser revertida futuramente."
+      title="Arquivar cargo?"
+      description="O cargo será arquivado e deixará de aparecer nas listagens padrão. Esta ação pode ser revertida futuramente."
       confirmLabel="Arquivar"
       loading={isPending}
       onConfirm={handleArchive}

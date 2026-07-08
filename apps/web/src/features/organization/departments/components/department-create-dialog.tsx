@@ -2,15 +2,8 @@
 
 import { useState } from "react"
 
+import { EntityDialog } from "@/components/shared/entity-dialog"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 
 import { DepartmentForm } from "./department-form"
 
@@ -24,25 +17,17 @@ export function DepartmentCreateDialog({
   const [open, setOpen] = useState(false)
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={<Button>Novo Departamento</Button>}
+    <EntityDialog
+      open={open}
+      onOpenChange={setOpen}
+      trigger={<Button>Novo Departamento</Button>}
+      title="Novo departamento"
+      description="Cadastre uma área da organização."
+    >
+      <DepartmentForm
+        companyId={companyId}
+        onSuccess={() => setOpen(false)}
       />
-
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Novo departamento</DialogTitle>
-
-          <DialogDescription>
-            Cadastre uma área da organização.
-          </DialogDescription>
-        </DialogHeader>
-
-        <DepartmentForm
-          companyId={companyId}
-          onSuccess={() => setOpen(false)}
-        />
-      </DialogContent>
-    </Dialog>
+    </EntityDialog>
   )
 }

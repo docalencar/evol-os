@@ -4,11 +4,12 @@ export const EMPLOYEE_STATUSES: EmployeeStatus[] = [
   "active",
   "inactive",
   "on_leave",
+  "terminated",
 ]
 
 export const EMPLOYEE_STATUS_LABELS: Record<EmployeeStatus, string> = {
   active: "Ativo",
   inactive: "Inativo",
   on_leave: "Afastado",
+  terminated: "Desligado",
 }
-  

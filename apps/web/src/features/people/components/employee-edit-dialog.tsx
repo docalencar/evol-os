@@ -8,14 +8,23 @@ import { Button } from "@/components/ui/button"
 import type { Employee } from "../types/employee"
 import { EmployeeForm } from "./employee-form"
 
+type EmployeeSelectOption = {
+  id: string
+  name: string
+}
+
 type EmployeeEditDialogProps = {
   companyId: string
   employee: Employee
+  teams: EmployeeSelectOption[]
+  positions: EmployeeSelectOption[]
 }
 
 export function EmployeeEditDialog({
   companyId,
   employee,
+  teams,
+  positions,
 }: EmployeeEditDialogProps) {
   const [open, setOpen] = useState(false)
 
@@ -34,6 +43,8 @@ export function EmployeeEditDialog({
       <EmployeeForm
         companyId={companyId}
         employee={employee}
+        teams={teams}
+        positions={positions}
         onSuccess={() => setOpen(false)}
       />
     </EntityDialog>

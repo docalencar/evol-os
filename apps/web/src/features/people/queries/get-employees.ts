@@ -6,8 +6,9 @@ export async function getEmployees(companyId: string) {
   const { data, error } = await employeeRepository.findAllByCompany(companyId)
 
   if (error) {
-    throw new Error("Erro ao buscar colaboradores.")
-  }
+  console.error("Erro Supabase getEmployees:", error)
+  throw new Error(error.message)
+}
 
   return data
 }

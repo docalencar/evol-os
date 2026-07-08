@@ -7,11 +7,22 @@ import { Button } from "@/components/ui/button"
 
 import { EmployeeForm } from "./employee-form"
 
-type EmployeeCreateDialogProps = {
-  companyId: string
+type EmployeeSelectOption = {
+  id: string
+  name: string
 }
 
-export function EmployeeCreateDialog({ companyId }: EmployeeCreateDialogProps) {
+type EmployeeCreateDialogProps = {
+  companyId: string
+  teams: EmployeeSelectOption[]
+  positions: EmployeeSelectOption[]
+}
+
+export function EmployeeCreateDialog({
+  companyId,
+  teams,
+  positions,
+}: EmployeeCreateDialogProps) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -22,7 +33,12 @@ export function EmployeeCreateDialog({ companyId }: EmployeeCreateDialogProps) {
       title="Novo colaborador"
       description="Cadastre uma pessoa da organização."
     >
-      <EmployeeForm companyId={companyId} onSuccess={() => setOpen(false)} />
+      <EmployeeForm
+        companyId={companyId}
+        teams={teams}
+        positions={positions}
+        onSuccess={() => setOpen(false)}
+      />
     </EntityDialog>
   )
 }

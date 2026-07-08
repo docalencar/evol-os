@@ -27,7 +27,11 @@ export async function createEmployeeRepository() {
     async findAllByCompany(companyId: string) {
       return supabase
         .from("people")
-        .select("*")
+        .select(`
+          *,
+          teams!people_team_id_fkey(name),
+          positions(name)
+        `)
         .eq("company_id", companyId)
         .neq("status", "terminated")
         .order("full_name", { ascending: true })
@@ -36,7 +40,11 @@ export async function createEmployeeRepository() {
     async findById(companyId: string, employeeId: string) {
       return supabase
         .from("people")
-        .select("*")
+        .select(`
+          *,
+          teams!people_team_id_fkey(name),
+          positions(name)
+        `)
         .eq("company_id", companyId)
         .eq("id", employeeId)
         .neq("status", "terminated")

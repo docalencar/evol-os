@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation"
 
 import { PageHeader } from "@/components/shared/page-header"
+import { getPositions } from "@/features/organization/positions"
+import { getTeams } from "@/features/organization/teams"
 import {
   EmployeeCreateDialog,
   EmployeeTable,
@@ -33,16 +35,28 @@ export default async function PeoplePage() {
   }
 
   const employees = await getEmployees(companyId)
+  const teams = await getTeams(companyId)
+  const positions = await getPositions(companyId)
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Pessoas"
         description="Organize colaboradores, cargos, departamentos e gestores."
-        actions={<EmployeeCreateDialog companyId={companyId} />}
+        actions={
+          <EmployeeCreateDialog
+            companyId={companyId}
+            teams={teams ?? []}
+            positions={positions ?? []}
+          />
+        }
       />
 
-      <EmployeeTable employees={employees ?? []} />
+      <EmployeeTable
+        employees={employees ?? []}
+        teams={teams ?? []}
+        positions={positions ?? []}
+      />
     </div>
   )
 }

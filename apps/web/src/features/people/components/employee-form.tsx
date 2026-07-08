@@ -11,15 +11,24 @@ import { createEmployeeAction } from "../actions/create-employee-action"
 import { updateEmployeeAction } from "../actions/update-employee-action"
 import type { Employee } from "../types/employee"
 
+type EmployeeSelectOption = {
+  id: string
+  name: string
+}
+
 type EmployeeFormProps = {
   companyId: string
   employee?: Employee
+  teams?: EmployeeSelectOption[]
+  positions?: EmployeeSelectOption[]
   onSuccess?: () => void
 }
 
 export function EmployeeForm({
   companyId,
   employee,
+  teams = [],
+  positions = [],
   onSuccess,
 }: EmployeeFormProps) {
   const [isPending, startTransition] = useTransition()
@@ -33,8 +42,8 @@ export function EmployeeForm({
       birthDate: String(formData.get("birthDate") ?? ""),
       hireDate: String(formData.get("hireDate") ?? ""),
       status: String(formData.get("status") ?? "active"),
-      teamId: "",
-      positionId: "",
+      teamId: String(formData.get("teamId") ?? ""),
+      positionId: String(formData.get("positionId") ?? ""),
       managerId: "",
     }
 
@@ -85,6 +94,40 @@ export function EmployeeForm({
           placeholder="(85) 99999-9999"
           defaultValue={employee?.phone ?? ""}
         />
+      </div>
+
+      <div>
+        <Label htmlFor="teamId">Time</Label>
+        <select
+          id="teamId"
+          name="teamId"
+          defaultValue={employee?.team_id ?? ""}
+          className="mt-1 flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
+        >
+          <option value="">Sem time</option>
+          {teams.map((team) => (
+            <option key={team.id} value={team.id}>
+              {team.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <Label htmlFor="positionId">Cargo</Label>
+        <select
+          id="positionId"
+          name="positionId"
+          defaultValue={employee?.position_id ?? ""}
+          className="mt-1 flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
+        >
+          <option value="">Sem cargo</option>
+          {positions.map((position) => (
+            <option key={position.id} value={position.id}>
+              {position.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div>

@@ -22,7 +22,6 @@ export async function createPositionRepository() {
         .from("positions")
         .select("*")
         .eq("company_id", companyId)
-        .is("deleted_at", null)
         .order("name", { ascending: true })
     },
 
@@ -32,7 +31,6 @@ export async function createPositionRepository() {
         .select("*")
         .eq("company_id", companyId)
         .eq("id", positionId)
-        .is("deleted_at", null)
         .single()
     },
 

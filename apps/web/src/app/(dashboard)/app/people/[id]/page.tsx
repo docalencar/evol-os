@@ -1,3 +1,4 @@
+import { EmployeeProfileStats } from "@/features/people/profile/components/employee-profile-stats"
 import {
   DashboardCard,
   DashboardSection,
@@ -77,6 +78,14 @@ export default async function EmployeeProfilePage({
           teamName={teamName}
         />
       </DashboardSection>
+      <DashboardSection title="Resumo">
+       <EmployeeProfileStats
+          hireDate={employee.hire_date}
+          teamName={teamName}
+          positionName={positionName}
+        />
+        </DashboardSection> 
+
 
       <DashboardSection title="Informações principais">
         <div className="grid gap-4 md:grid-cols-3">

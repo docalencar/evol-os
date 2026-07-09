@@ -18,6 +18,7 @@ type EmployeeEditDialogProps = {
   employee: Employee
   teams: EmployeeSelectOption[]
   positions: EmployeeSelectOption[]
+  managers: EmployeeSelectOption[]
 }
 
 export function EmployeeEditDialog({
@@ -25,6 +26,7 @@ export function EmployeeEditDialog({
   employee,
   teams,
   positions,
+  managers,
 }: EmployeeEditDialogProps) {
   const [open, setOpen] = useState(false)
 
@@ -45,6 +47,7 @@ export function EmployeeEditDialog({
         employee={employee}
         teams={teams}
         positions={positions}
+        managers={managers}
         onSuccess={() => setOpen(false)}
       />
     </EntityDialog>

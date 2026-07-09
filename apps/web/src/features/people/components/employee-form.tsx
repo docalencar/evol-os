@@ -21,6 +21,7 @@ type EmployeeFormProps = {
   employee?: Employee
   teams?: EmployeeSelectOption[]
   positions?: EmployeeSelectOption[]
+  managers?: EmployeeSelectOption[]
   onSuccess?: () => void
 }
 
@@ -29,10 +30,15 @@ export function EmployeeForm({
   employee,
   teams = [],
   positions = [],
+  managers = [],
   onSuccess,
 }: EmployeeFormProps) {
   const [isPending, startTransition] = useTransition()
   const isEditing = Boolean(employee)
+
+  const availableManagers = managers.filter(
+    (manager) => manager.id !== employee?.id
+  )
 
   function handleSubmit(formData: FormData) {
     const input = {
@@ -44,7 +50,7 @@ export function EmployeeForm({
       status: String(formData.get("status") ?? "active"),
       teamId: String(formData.get("teamId") ?? ""),
       positionId: String(formData.get("positionId") ?? ""),
-      managerId: "",
+      managerId: String(formData.get("managerId") ?? ""),
     }
 
     startTransition(async () => {
@@ -125,6 +131,23 @@ export function EmployeeForm({
           {positions.map((position) => (
             <option key={position.id} value={position.id}>
               {position.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <Label htmlFor="managerId">Gestor</Label>
+        <select
+          id="managerId"
+          name="managerId"
+          defaultValue={employee?.manager_id ?? ""}
+          className="mt-1 flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
+        >
+          <option value="">Sem gestor</option>
+          {availableManagers.map((manager) => (
+            <option key={manager.id} value={manager.id}>
+              {manager.name}
             </option>
           ))}
         </select>

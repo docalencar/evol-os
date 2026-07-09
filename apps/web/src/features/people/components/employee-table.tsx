@@ -11,21 +11,32 @@ type EmployeeSelectOption = {
   name: string
 }
 
+type Relation = { name: string } | { name: string }[] | null
+
 type EmployeeTableItem = Employee & {
-  teams?: { name: string } | null
-  positions?: { name: string } | null
+  teams?: Relation
+  positions?: Relation
+  manager_name?: string | null
+}
+
+function getRelationName(relation?: Relation) {
+  if (!relation) return "-"
+  if (Array.isArray(relation)) return relation[0]?.name || "-"
+  return relation.name || "-"
 }
 
 type EmployeeTableProps = {
   employees: EmployeeTableItem[]
   teams: EmployeeSelectOption[]
   positions: EmployeeSelectOption[]
+  managers: EmployeeSelectOption[]
 }
 
 export function EmployeeTable({
   employees,
   teams,
   positions,
+  managers,
 }: EmployeeTableProps) {
   return (
     <DataTable
@@ -46,12 +57,17 @@ export function EmployeeTable({
         {
           key: "position",
           header: "Cargo",
-          render: (employee) => employee.positions?.name || "Sem cargo",
+          render: (employee) => getRelationName(employee.positions),
         },
         {
           key: "team",
           header: "Time",
-          render: (employee) => employee.teams?.name || "Sem time",
+          render: (employee) => getRelationName(employee.teams),
+        },
+        {
+          key: "manager",
+          header: "Gestor",
+          render: (employee) => employee.manager_name || "-",
         },
         {
           key: "email",
@@ -77,6 +93,7 @@ export function EmployeeTable({
                 employee={employee}
                 teams={teams}
                 positions={positions}
+                managers={managers}
               />
 
               <ArchiveEmployeeButton

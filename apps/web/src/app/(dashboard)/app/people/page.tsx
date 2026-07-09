@@ -38,6 +38,22 @@ export default async function PeoplePage() {
   const teams = await getTeams(companyId)
   const positions = await getPositions(companyId)
 
+  const managerOptions = (employees ?? []).map((employee) => ({
+    id: employee.id,
+    name: employee.full_name,
+  }))
+
+  const managerNameById = new Map(
+    managerOptions.map((manager) => [manager.id, manager.name])
+  )
+
+  const employeesWithManagerName = (employees ?? []).map((employee) => ({
+    ...employee,
+    manager_name: employee.manager_id
+      ? managerNameById.get(employee.manager_id) ?? null
+      : null,
+  }))
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -48,14 +64,16 @@ export default async function PeoplePage() {
             companyId={companyId}
             teams={teams ?? []}
             positions={positions ?? []}
+            managers={managerOptions}
           />
         }
       />
 
       <EmployeeTable
-        employees={employees ?? []}
+        employees={employeesWithManagerName}
         teams={teams ?? []}
         positions={positions ?? []}
+        managers={managerOptions}
       />
     </div>
   )

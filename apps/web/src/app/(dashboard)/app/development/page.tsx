@@ -1,11 +1,23 @@
-import { EmptyState } from "@/components/empty-state/empty-state";
+import { PageHeader } from "@/components/shared/page-header"
+import {
+  DevelopmentPlanList,
+  getDevelopmentPlans,
+} from "@/features/development"
+import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
-export default function Page() {
+export default async function DevelopmentPage() {
+  const { companyId } = await getCurrentCompanyContext()
+
+  const plans = await getDevelopmentPlans(companyId)
+
   return (
-    <EmptyState
-      title="Desenvolvimento será construído em breve"
-      description="Nesta fase estamos priorizando Gestão de Pessoas, a base do MVP."
-      actionLabel="Voltar para início"
-    />
-  );
+    <div className="space-y-6">
+      <PageHeader
+        title="Desenvolvimento"
+        description="Crie e acompanhe planos de desenvolvimento individual orientados por competências."
+      />
+
+      <DevelopmentPlanList plans={plans ?? []} />
+    </div>
+  )
 }

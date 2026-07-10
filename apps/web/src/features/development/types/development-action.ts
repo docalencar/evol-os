@@ -20,8 +20,6 @@ export type DevelopmentAction = {
 
   completedAt: string | null
 
-  evidence: string | null
-
   createdAt: string
 
   updatedAt: string

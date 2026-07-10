@@ -12,22 +12,21 @@ import {
 import { getPositions } from "@/features/organization/positions"
 import { getTeams } from "@/features/organization/teams"
 import {
+  EMPLOYEE_STATUS_LABELS,
   getEmployeeById,
   getEmployees,
+  type EmployeeStatus,
 } from "@/features/people"
-import { EMPLOYEE_STATUS_LABELS } from "@/features/people/constants/employee-status"
 import { EmployeeProfileHeader } from "@/features/people/profile/components/employee-profile-header"
 import { EmployeeProfileLayout } from "@/features/people/profile/components/employee-profile-layout"
 import { EmployeeProfileSidebar } from "@/features/people/profile/components/employee-profile-sidebar"
 import { EmployeeProfileTimeline } from "@/features/people/profile/components/employee-profile-timeline"
-import type { EmployeeStatus } from "@/features/people/types/employee"
 import {
   CompetencyGapCard,
   createEmployeeInsights,
   getEmployeeCompetencyGaps,
   TalentSummaryCard,
 } from "@/features/talent"
-
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 type Relation = { name: string } | { name: string }[] | null

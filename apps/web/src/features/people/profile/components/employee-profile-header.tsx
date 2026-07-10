@@ -3,23 +3,26 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-
+import { EmployeeEditDialog } from "@/features/people/components/employee-edit-dialog"
 import { EMPLOYEE_STATUS_LABELS } from "@/features/people/constants/employee-status"
-import type { EmployeeStatus } from "@/features/people/types/employee"
+import type {
+  Employee,
+  EmployeeStatus,
+} from "@/features/people/types/employee"
+
+type EmployeeSelectOption = {
+  id: string
+  name: string
+}
 
 type EmployeeProfileHeaderProps = {
-  employee: {
-    id: string
-    full_name: string
-    email: string | null
-    phone: string | null
-    hire_date: string | null
-    status: EmployeeStatus
-  }
-
+  companyId: string
+  employee: Employee
   positionName: string
   teamName: string
-  managerName?: string | null
+  teams: EmployeeSelectOption[]
+  positions: EmployeeSelectOption[]
+  managers: EmployeeSelectOption[]
 }
 
 function getInitials(name: string) {
@@ -31,65 +34,59 @@ function getInitials(name: string) {
     .toUpperCase()
 }
 
-function formatDate(date?: string | null) {
-  if (!date) return "-"
-
-  return new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "long",
-  }).format(new Date(date))
-}
-
 export function EmployeeProfileHeader({
+  companyId,
   employee,
   positionName,
   teamName,
-  managerName,
+  teams,
+  positions,
+  managers,
 }: EmployeeProfileHeaderProps) {
   return (
     <Card>
       <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-center gap-5">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-blue-600 text-2xl font-bold text-white">
+        <div className="flex min-w-0 items-center gap-5">
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-blue-600 text-2xl font-bold text-white">
             {getInitials(employee.full_name)}
           </div>
 
-          <div>
+          <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-3xl font-bold text-slate-900">
+              <h1 className="break-words text-3xl font-bold text-slate-900">
                 {employee.full_name}
               </h1>
 
               <Badge>
-                {EMPLOYEE_STATUS_LABELS[employee.status]}
+                {
+                  EMPLOYEE_STATUS_LABELS[
+                    employee.status as EmployeeStatus
+                  ]
+                }
               </Badge>
             </div>
 
-            <p className="mt-2 text-slate-600">
+            <p className="mt-2 break-words text-slate-600">
               {positionName} • {teamName}
             </p>
-
-            <div className="mt-2 flex flex-wrap gap-6 text-sm text-slate-500">
-              <span>
-                <strong>Gestor:</strong> {managerName || "-"}
-              </span>
-
-              <span>
-                <strong>Admissão:</strong> {formatDate(employee.hire_date)}
-              </span>
-            </div>
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Link href="/app/people">
             <Button variant="secondary">
               Voltar
             </Button>
           </Link>
 
-          <Button>
-            Editar Perfil
-          </Button>
+          <EmployeeEditDialog
+            companyId={companyId}
+            employee={employee}
+            teams={teams}
+            positions={positions}
+            managers={managers}
+            trigger={<Button>Editar perfil</Button>}
+          />
         </div>
       </div>
     </Card>

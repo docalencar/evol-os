@@ -1,0 +1,33 @@
+import { z } from "zod"
+
+const basePositionCompetencySchema = z.object({
+  positionId: z.string().uuid("Cargo inválido."),
+  competencyId: z.string().uuid("Competência inválida."),
+  expectedLevel: z.coerce
+    .number()
+    .int("O nível esperado deve ser um número inteiro.")
+    .min(1, "O nível esperado deve ser no mínimo 1.")
+    .max(5, "O nível esperado deve ser no máximo 5."),
+  weight: z.coerce
+    .number()
+    .int("O peso deve ser um número inteiro.")
+    .min(1, "O peso deve ser no mínimo 1.")
+    .max(5, "O peso deve ser no máximo 5."),
+  required: z.boolean().default(true),
+  notes: z
+    .string()
+    .max(500, "As observações devem ter no máximo 500 caracteres.")
+    .optional(),
+})
+
+export const createPositionCompetencySchema = basePositionCompetencySchema
+
+export const updatePositionCompetencySchema = basePositionCompetencySchema
+
+export type CreatePositionCompetencyInput = z.infer<
+  typeof createPositionCompetencySchema
+>
+
+export type UpdatePositionCompetencyInput = z.infer<
+  typeof updatePositionCompetencySchema
+>

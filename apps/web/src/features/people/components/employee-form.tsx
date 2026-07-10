@@ -25,6 +25,25 @@ type EmployeeFormProps = {
   onSuccess?: () => void
 }
 
+const DISC_PROFILES = [
+  { value: "D", label: "D — Dominância" },
+  { value: "I", label: "I — Influência" },
+  { value: "S", label: "S — Estabilidade" },
+  { value: "C", label: "C — Conformidade" },
+  { value: "ID", label: "ID — Influência / Dominância" },
+  { value: "IS", label: "IS — Influência / Estabilidade" },
+  { value: "IC", label: "IC — Influência / Conformidade" },
+  { value: "DI", label: "DI — Dominância / Influência" },
+  { value: "DS", label: "DS — Dominância / Estabilidade" },
+  { value: "DC", label: "DC — Dominância / Conformidade" },
+  { value: "SI", label: "SI — Estabilidade / Influência" },
+  { value: "SD", label: "SD — Estabilidade / Dominância" },
+  { value: "SC", label: "SC — Estabilidade / Conformidade" },
+  { value: "CI", label: "CI — Conformidade / Influência" },
+  { value: "CD", label: "CD — Conformidade / Dominância" },
+  { value: "CS", label: "CS — Conformidade / Estabilidade" },
+] as const
+
 export function EmployeeForm({
   companyId,
   employee,
@@ -51,6 +70,7 @@ export function EmployeeForm({
       teamId: String(formData.get("teamId") ?? ""),
       positionId: String(formData.get("positionId") ?? ""),
       managerId: String(formData.get("managerId") ?? ""),
+      discProfile: String(formData.get("discProfile") ?? ""),
     }
 
     startTransition(async () => {
@@ -72,6 +92,7 @@ export function EmployeeForm({
     <form action={handleSubmit} className="space-y-4">
       <div>
         <Label htmlFor="fullName">Nome completo</Label>
+
         <Input
           id="fullName"
           name="fullName"
@@ -83,6 +104,7 @@ export function EmployeeForm({
 
       <div>
         <Label htmlFor="email">E-mail</Label>
+
         <Input
           id="email"
           name="email"
@@ -94,6 +116,7 @@ export function EmployeeForm({
 
       <div>
         <Label htmlFor="phone">Telefone</Label>
+
         <Input
           id="phone"
           name="phone"
@@ -104,6 +127,7 @@ export function EmployeeForm({
 
       <div>
         <Label htmlFor="teamId">Time</Label>
+
         <select
           id="teamId"
           name="teamId"
@@ -111,6 +135,7 @@ export function EmployeeForm({
           className="mt-1 flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
         >
           <option value="">Sem time</option>
+
           {teams.map((team) => (
             <option key={team.id} value={team.id}>
               {team.name}
@@ -121,6 +146,7 @@ export function EmployeeForm({
 
       <div>
         <Label htmlFor="positionId">Cargo</Label>
+
         <select
           id="positionId"
           name="positionId"
@@ -128,6 +154,7 @@ export function EmployeeForm({
           className="mt-1 flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
         >
           <option value="">Sem cargo</option>
+
           {positions.map((position) => (
             <option key={position.id} value={position.id}>
               {position.name}
@@ -138,6 +165,7 @@ export function EmployeeForm({
 
       <div>
         <Label htmlFor="managerId">Gestor</Label>
+
         <select
           id="managerId"
           name="managerId"
@@ -145,6 +173,7 @@ export function EmployeeForm({
           className="mt-1 flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
         >
           <option value="">Sem gestor</option>
+
           {availableManagers.map((manager) => (
             <option key={manager.id} value={manager.id}>
               {manager.name}
@@ -154,7 +183,27 @@ export function EmployeeForm({
       </div>
 
       <div>
+        <Label htmlFor="discProfile">Perfil DISC</Label>
+
+        <select
+          id="discProfile"
+          name="discProfile"
+          defaultValue={employee?.disc_profile ?? ""}
+          className="mt-1 flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
+        >
+          <option value="">Não informado</option>
+
+          {DISC_PROFILES.map((profile) => (
+            <option key={profile.value} value={profile.value}>
+              {profile.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
         <Label htmlFor="hireDate">Data de admissão</Label>
+
         <Input
           id="hireDate"
           name="hireDate"
@@ -165,6 +214,7 @@ export function EmployeeForm({
 
       <div>
         <Label htmlFor="birthDate">Data de nascimento</Label>
+
         <Input
           id="birthDate"
           name="birthDate"
@@ -173,7 +223,11 @@ export function EmployeeForm({
         />
       </div>
 
-      <input type="hidden" name="status" value={employee?.status ?? "active"} />
+      <input
+        type="hidden"
+        name="status"
+        value={employee?.status ?? "active"}
+      />
 
       <div className="flex justify-end gap-2">
         <Button type="submit" disabled={isPending}>

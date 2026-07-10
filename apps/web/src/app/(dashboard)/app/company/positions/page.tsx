@@ -1,37 +1,19 @@
-import { redirect } from "next/navigation";
-
-import { PageHeader } from "@/components/shared/page-header";
+import { PageHeader } from "@/components/shared/page-header"
+import { getPositionCompetencies } from "@/features/competencies/position-competencies"
 import {
   getPositions,
   PositionCreateDialog,
   PositionTable,
-} from "@/features/organization/positions";
-import { createClient } from "@/lib/supabase/supabase/server";
+} from "@/features/organization/positions"
+import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 export default async function PositionsPage() {
-  const supabase = await createClient();
+  const { companyId } = await getCurrentCompanyContext()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
-  const { data: memberships } = await supabase
-    .from("company_members")
-    .select("company_id")
-    .eq("user_id", user.id)
-    .limit(1);
-
-  const companyId = memberships?.[0]?.company_id;
-
-  if (!companyId) {
-    redirect("/onboarding");
-  }
-
-  const positions = await getPositions(companyId);
+  const [positions, positionCompetencies] = await Promise.all([
+    getPositions(companyId),
+    getPositionCompetencies(companyId),
+  ])
 
   return (
     <div className="space-y-6">
@@ -41,7 +23,10 @@ export default async function PositionsPage() {
         actions={<PositionCreateDialog companyId={companyId} />}
       />
 
-      <PositionTable positions={positions ?? []} />
+      <PositionTable
+        positions={positions ?? []}
+        positionCompetencies={positionCompetencies ?? []}
+      />
     </div>
-  );
+  )
 }

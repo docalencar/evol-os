@@ -1,5 +1,8 @@
-import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
+
 import { DataTable } from "@/components/shared/data-table"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 
 import { EMPLOYEE_STATUS_LABELS } from "../constants/employee-status"
 import type { Employee, EmployeeStatus } from "../types/employee"
@@ -87,7 +90,17 @@ export function EmployeeTable({
           key: "actions",
           header: "Ações",
           render: (employee) => (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                render={
+                  <Link href={`/app/people/${employee.id}`} />
+                }
+              >
+                Ver perfil
+              </Button>
+
               <EmployeeEditDialog
                 companyId={employee.company_id}
                 employee={employee}

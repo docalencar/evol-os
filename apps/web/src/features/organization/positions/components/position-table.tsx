@@ -9,12 +9,20 @@ type PositionTableItem = {
   name: string
   description: string | null
 }
+type PositionCompetencyTableItem = {
+  id: string
+  position_id: string
+}
 
 type PositionTableProps = {
   positions: PositionTableItem[]
+  positionCompetencies?: PositionCompetencyTableItem[]
 }
 
-export function PositionTable({ positions }: PositionTableProps) {
+export function PositionTable({
+  positions,
+  positionCompetencies = [],
+}: PositionTableProps) {
   return (
     <DataTable
       title="Cargos"

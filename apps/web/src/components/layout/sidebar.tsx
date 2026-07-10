@@ -1,9 +1,21 @@
 import Link from "next/link";
-import { BarChart3, Building2, ClipboardList, Home, MessageSquare, Settings, Target, Users } from "lucide-react";
-
+import {
+  BarChart3,
+  BookOpen,
+  Building2,
+  ClipboardList,
+  Home,
+  MessageSquare,
+  Settings,
+  Target,
+  Users,
+} from "lucide-react";
 const items = [
   { href: "/app", label: "Início", icon: Home },
   { href: "/app/people", label: "Pessoas", icon: Users },
+  {href: "/app/competencies",
+  label: "Competências",
+  icon: BookOpen,},
   { href: "/app/assessments", label: "Avaliações", icon: ClipboardList },
   { href: "/app/feedbacks", label: "Feedbacks", icon: MessageSquare },
   { href: "/app/development", label: "Desenvolvimento", icon: Target },

@@ -1,5 +1,6 @@
 "use client"
 
+import type { ReactElement } from "react"
 import { useState } from "react"
 
 import { EntityDialog } from "@/components/shared/entity-dialog"
@@ -19,6 +20,7 @@ type EmployeeEditDialogProps = {
   teams: EmployeeSelectOption[]
   positions: EmployeeSelectOption[]
   managers: EmployeeSelectOption[]
+  trigger?: ReactElement
 }
 
 export function EmployeeEditDialog({
@@ -27,6 +29,7 @@ export function EmployeeEditDialog({
   teams,
   positions,
   managers,
+  trigger,
 }: EmployeeEditDialogProps) {
   const [open, setOpen] = useState(false)
 
@@ -35,9 +38,11 @@ export function EmployeeEditDialog({
       open={open}
       onOpenChange={setOpen}
       trigger={
-        <Button variant="secondary" size="sm">
-          Editar
-        </Button>
+        trigger ?? (
+          <Button variant="secondary" size="sm">
+            Editar
+          </Button>
+        )
       }
       title="Editar colaborador"
       description="Atualize as informações desta pessoa."

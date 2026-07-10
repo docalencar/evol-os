@@ -5,7 +5,9 @@ import type {
   UpdateEmployeeInput,
 } from "../schemas/employee-schema"
 
-function normalizeEmployeeInput(input: CreateEmployeeInput | UpdateEmployeeInput) {
+function normalizeEmployeeInput(
+  input: CreateEmployeeInput | UpdateEmployeeInput
+) {
   return {
     full_name: input.fullName,
     email: input.email || null,
@@ -16,6 +18,7 @@ function normalizeEmployeeInput(input: CreateEmployeeInput | UpdateEmployeeInput
     team_id: input.teamId || null,
     position_id: input.positionId || null,
     manager_id: input.managerId || null,
+    disc_profile: input.discProfile || null,
     updated_at: new Date().toISOString(),
   }
 }

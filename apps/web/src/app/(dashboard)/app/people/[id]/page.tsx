@@ -1,66 +1,99 @@
-import { EmployeeProfileStats } from "@/features/people/profile/components/employee-profile-stats"
+import { redirect } from "next/navigation"
+
 import {
   DashboardCard,
   DashboardSection,
   InfoCard,
-  KeyValueList,
 } from "@/components/dashboard"
-import { redirect } from "next/navigation"
-
-import { getEmployeeById } from "@/features/people"
+import {
+  EmployeeCompetenciesCard,
+  getEmployeeCompetenciesByEmployee,
+} from "@/features/competencies/employee-competencies"
+import { getPositions } from "@/features/organization/positions"
+import { getTeams } from "@/features/organization/teams"
+import {
+  getEmployeeById,
+  getEmployees,
+} from "@/features/people"
 import { EMPLOYEE_STATUS_LABELS } from "@/features/people/constants/employee-status"
 import { EmployeeProfileHeader } from "@/features/people/profile/components/employee-profile-header"
+import { EmployeeProfileLayout } from "@/features/people/profile/components/employee-profile-layout"
+import { EmployeeProfileSidebar } from "@/features/people/profile/components/employee-profile-sidebar"
+import { EmployeeProfileTimeline } from "@/features/people/profile/components/employee-profile-timeline"
 import type { EmployeeStatus } from "@/features/people/types/employee"
-import { createClient } from "@/lib/supabase/supabase/server"
+import {
+  CompetencyGapCard,
+  getEmployeeCompetencyGaps,
+  TalentSummaryCard,
+} from "@/features/talent"
+import { createEmployeeInsights } from "@/features/talent-engine"
+import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 type Relation = { name: string } | { name: string }[] | null
 
 function getRelationName(relation?: Relation) {
-  if (!relation) return "-"
-  if (Array.isArray(relation)) return relation[0]?.name || "-"
+  if (!relation) {
+    return "-"
+  }
+
+  if (Array.isArray(relation)) {
+    return relation[0]?.name || "-"
+  }
+
   return relation.name || "-"
 }
 
-function formatDate(date?: string | null) {
-  if (!date) return "-"
+function formatPhone(phone?: string | null) {
+  if (!phone) {
+    return "-"
+  }
 
-  return new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "short",
-  }).format(new Date(date))
+  const digits = phone.replace(/\D/g, "")
+
+  if (digits.length === 11) {
+    return digits.replace(
+      /^(\d{2})(\d{5})(\d{4})$/,
+      "($1) $2-$3"
+    )
+  }
+
+  if (digits.length === 10) {
+    return digits.replace(
+      /^(\d{2})(\d{4})(\d{4})$/,
+      "($1) $2-$3"
+    )
+  }
+
+  return phone
 }
 
 type EmployeeProfilePageProps = {
-  params: Promise<{ id: string }>
+  params: Promise<{
+    id: string
+  }>
 }
 
 export default async function EmployeeProfilePage({
   params,
 }: EmployeeProfilePageProps) {
   const { id } = await params
-  const supabase = await createClient()
+  const { companyId } = await getCurrentCompanyContext()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect("/login")
-  }
-
-  const { data: memberships } = await supabase
-    .from("company_members")
-    .select("company_id")
-    .eq("user_id", user.id)
-    .eq("status", "active")
-    .limit(1)
-
-  const companyId = memberships?.[0]?.company_id
-
-  if (!companyId) {
-    redirect("/onboarding")
-  }
-
-  const employee = await getEmployeeById(companyId, id)
+  const [
+    employee,
+    employeeCompetencies,
+    competencyGaps,
+    teams,
+    positions,
+    employees,
+  ] = await Promise.all([
+    getEmployeeById(companyId, id),
+    getEmployeeCompetenciesByEmployee(companyId, id),
+    getEmployeeCompetencyGaps(companyId, id),
+    getTeams(companyId),
+    getPositions(companyId),
+    getEmployees(companyId),
+  ])
 
   if (!employee) {
     redirect("/app/people")
@@ -69,66 +102,107 @@ export default async function EmployeeProfilePage({
   const positionName = getRelationName(employee.positions)
   const teamName = getRelationName(employee.teams)
 
+  const statusLabel =
+    EMPLOYEE_STATUS_LABELS[employee.status as EmployeeStatus]
+
+  const teamOptions = (teams ?? []).map((team) => ({
+    id: team.id,
+    name: team.name,
+  }))
+
+  const positionOptions = (positions ?? []).map((position) => ({
+    id: position.id,
+    name: position.name,
+  }))
+
+  const managerOptions = (employees ?? [])
+    .filter((manager) => manager.id !== employee.id)
+    .map((manager) => ({
+      id: manager.id,
+      name: manager.full_name,
+    }))
+
+  const currentManager = managerOptions.find(
+    (manager) => manager.id === employee.manager_id
+  )
+
+  const managerName = currentManager?.name ?? "-"
+  const insights = createEmployeeInsights(competencyGaps)
+
   return (
-    <div className="space-y-8">
-      <DashboardSection title="Perfil do colaborador">
+    <EmployeeProfileLayout
+      sidebar={
+        <EmployeeProfileSidebar
+          positionName={positionName}
+          teamName={teamName}
+          managerName={managerName}
+          status={statusLabel}
+          hireDate={employee.hire_date ?? ""}
+        />
+      }
+      header={
         <EmployeeProfileHeader
+          companyId={companyId}
           employee={employee}
           positionName={positionName}
           teamName={teamName}
+          teams={teamOptions}
+          positions={positionOptions}
+          managers={managerOptions}
+        />
+      }
+    >
+      <DashboardSection title="Resumo de talentos">
+        <TalentSummaryCard
+          insights={insights}
+          positionId={employee.position_id}
         />
       </DashboardSection>
-      <DashboardSection title="Resumo">
-       <EmployeeProfileStats
-          hireDate={employee.hire_date}
-          teamName={teamName}
-          positionName={positionName}
-        />
-        </DashboardSection> 
-
 
       <DashboardSection title="Informações principais">
-        <div className="grid gap-4 md:grid-cols-3">
-          <InfoCard label="E-mail" value={employee.email || "-"} />
-          <InfoCard label="Telefone" value={employee.phone || "-"} />
-          <InfoCard label="DISC" value={employee.disc_profile || "-"} />
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <InfoCard
+            label="E-mail"
+            value={
+              <span className="break-all">
+                {employee.email || "-"}
+              </span>
+            }
+          />
+
+          <InfoCard
+            label="Telefone"
+            value={formatPhone(employee.phone)}
+          />
+
+          <InfoCard
+            label="DISC"
+            value={employee.disc_profile || "-"}
+          />
         </div>
       </DashboardSection>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <DashboardSection title="Dados organizacionais">
-          <DashboardCard>
-            <KeyValueList
-              items={[
-                { label: "Cargo", value: positionName },
-                { label: "Time", value: teamName },
-                {
-                  label: "Data de admissão",
-                  value: formatDate(employee.hire_date),
-                },
-                {
-                  label: "Status",
-                  value:
-                    EMPLOYEE_STATUS_LABELS[
-                      employee.status as EmployeeStatus
-                    ],
-                },
-              ]}
-            />
-          </DashboardCard>
-        </DashboardSection>
+      <DashboardSection title="Gap de competências">
+        <CompetencyGapCard gaps={competencyGaps} />
+      </DashboardSection>
 
-        <DashboardSection title="Próximos módulos">
-          <DashboardCard>
-            <div className="space-y-3 text-sm text-slate-600">
-              <p>⏳ Competências serão adicionadas em breve.</p>
-              <p>⏳ Avaliações serão adicionadas em breve.</p>
-              <p>⏳ Feedbacks serão adicionados em breve.</p>
-              <p>⏳ PDI será adicionado em breve.</p>
-            </div>
-          </DashboardCard>
-        </DashboardSection>
-      </div>
-    </div>
+      <DashboardSection title="Competências registradas">
+        <EmployeeCompetenciesCard
+          competencies={employeeCompetencies ?? []}
+        />
+      </DashboardSection>
+
+      <EmployeeProfileTimeline hireDate={employee.hire_date} />
+
+      <DashboardSection title="Próximos módulos">
+        <DashboardCard>
+          <div className="space-y-3 text-sm text-slate-600">
+            <p>⏳ Avaliações serão adicionadas em breve.</p>
+            <p>⏳ Feedbacks serão adicionados em breve.</p>
+            <p>⏳ PDI será adicionado em breve.</p>
+          </div>
+        </DashboardCard>
+      </DashboardSection>
+    </EmployeeProfileLayout>
   )
 }

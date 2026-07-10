@@ -1,5 +1,7 @@
 "use client"
 
+import type { ReactElement } from "react"
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,7 +20,7 @@ type ConfirmDialogProps = {
   confirmLabel?: string
   cancelLabel?: string
   loading?: boolean
-  children: React.ReactElement
+  children: ReactElement
   onConfirm: () => void
 }
 
@@ -35,14 +37,18 @@ export function ConfirmDialog({
     <AlertDialog>
       <AlertDialogTrigger render={children} />
 
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
+      <AlertDialogContent className="w-[calc(100%-2rem)] max-w-lg p-6">
+        <AlertDialogHeader className="space-y-3 text-left">
+          <AlertDialogTitle className="text-lg font-semibold leading-6">
+            {title}
+          </AlertDialogTitle>
 
-          <AlertDialogDescription>{description}</AlertDialogDescription>
+          <AlertDialogDescription className="whitespace-normal break-words text-sm leading-6">
+            {description}
+          </AlertDialogDescription>
         </AlertDialogHeader>
 
-        <AlertDialogFooter>
+        <AlertDialogFooter className="mt-6 gap-2">
           <AlertDialogCancel disabled={loading}>
             {cancelLabel}
           </AlertDialogCancel>

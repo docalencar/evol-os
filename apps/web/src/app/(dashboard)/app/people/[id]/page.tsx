@@ -23,10 +23,11 @@ import { EmployeeProfileTimeline } from "@/features/people/profile/components/em
 import type { EmployeeStatus } from "@/features/people/types/employee"
 import {
   CompetencyGapCard,
+  createEmployeeInsights,
   getEmployeeCompetencyGaps,
   TalentSummaryCard,
 } from "@/features/talent"
-import { createEmployeeInsights } from "@/features/talent-engine"
+
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 type Relation = { name: string } | { name: string }[] | null

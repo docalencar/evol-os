@@ -3,7 +3,7 @@ import Link from "next/link"
 import { DashboardCard } from "@/components/dashboard"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import type { EmployeeInsights } from "@/features/talent-engine"
+import type { EmployeeInsights } from "../types/employee-insights"
 
 type TalentSummaryCardProps = {
   insights: EmployeeInsights

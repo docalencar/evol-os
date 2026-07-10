@@ -1,4 +1,4 @@
-import type { CompetencyGap } from "@/features/talent"
+import type { CompetencyGap } from "../types/competency-gap"
 
 export function calculateRisk(
   gaps: CompetencyGap[]

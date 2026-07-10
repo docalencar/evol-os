@@ -1,9 +1,6 @@
-import {
-  calculateTalentCard,
-  type CompetencyGap,
-} from "@/features/talent"
-
+import type { CompetencyGap } from "../types/competency-gap"
 import type { EmployeeInsights } from "../types/employee-insights"
+import { calculateTalentCard } from "./calculate-talent-card"
 import { calculateRisk } from "./calculate-risk"
 import { getBiggestGap } from "./get-biggest-gap"
 
@@ -14,11 +11,8 @@ export function createEmployeeInsights(
 
   return {
     talentCard,
-
     biggestGap: getBiggestGap(gaps),
-
     risk: calculateRisk(gaps),
-
     promotionReady: talentCard.promotionReady,
   }
 }

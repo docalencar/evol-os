@@ -3,12 +3,13 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { EmployeeEditDialog } from "@/features/people/components/employee-edit-dialog"
-import { EMPLOYEE_STATUS_LABELS } from "@/features/people/constants/employee-status"
+
+import { EmployeeEditDialog } from "../../components/employee-edit-dialog"
+import { EMPLOYEE_STATUS_LABELS } from "../../constants/employee-status"
 import type {
   Employee,
   EmployeeStatus,
-} from "@/features/people/types/employee"
+} from "../../types/employee"
 
 type EmployeeSelectOption = {
   id: string

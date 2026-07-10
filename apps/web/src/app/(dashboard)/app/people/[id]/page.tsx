@@ -17,10 +17,12 @@ import {
   getEmployees,
   type EmployeeStatus,
 } from "@/features/people"
-import { EmployeeProfileHeader } from "@/features/people/profile/components/employee-profile-header"
-import { EmployeeProfileLayout } from "@/features/people/profile/components/employee-profile-layout"
-import { EmployeeProfileSidebar } from "@/features/people/profile/components/employee-profile-sidebar"
-import { EmployeeProfileTimeline } from "@/features/people/profile/components/employee-profile-timeline"
+import {
+  EmployeeProfileHeader,
+  EmployeeProfileLayout,
+  EmployeeProfileSidebar,
+  EmployeeProfileTimeline,
+} from "@/features/people/profile"
 import {
   CompetencyGapCard,
   createEmployeeInsights,

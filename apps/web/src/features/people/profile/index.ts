@@ -1,0 +1,5 @@
+export { EmployeeProfileHeader } from "./components/employee-profile-header"
+export { EmployeeProfileLayout } from "./components/employee-profile-layout"
+export { EmployeeProfileSidebar } from "./components/employee-profile-sidebar"
+export { EmployeeProfileStats } from "./components/employee-profile-stats"
+export { EmployeeProfileTimeline } from "./components/employee-profile-timeline"

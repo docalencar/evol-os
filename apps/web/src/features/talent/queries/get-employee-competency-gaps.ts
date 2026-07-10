@@ -1,5 +1,5 @@
 import { getEmployeeCompetenciesByEmployee } from "@/features/competencies/employee-competencies"
-import { createPositionCompetencyRepository } from "@/features/competencies/position-competencies"
+import { getPositionCompetenciesByPosition } from "@/features/competencies/position-competencies"
 import { getEmployeeById } from "@/features/people"
 
 import { calculateCompetencyGap } from "../services/calculate-competency-gap"
@@ -31,23 +31,16 @@ export async function getEmployeeCompetencyGaps(
     return []
   }
 
-  const positionCompetencyRepository =
-    await createPositionCompetencyRepository()
-
   const [
-    { data: positionCompetencies, error: positionCompetenciesError },
+    positionCompetencies,
     employeeCompetencies,
   ] = await Promise.all([
-    positionCompetencyRepository.findByPosition(
+    getPositionCompetenciesByPosition(
       companyId,
       employee.position_id
     ),
     getEmployeeCompetenciesByEmployee(companyId, employeeId),
   ])
-
-  if (positionCompetenciesError) {
-    throw positionCompetenciesError
-  }
 
   const currentLevelByCompetency = new Map(
     (employeeCompetencies ?? []).map((employeeCompetency) => [

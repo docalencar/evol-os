@@ -1,4 +1,4 @@
-import { LogoutButton } from "@/features/auth/components/logout-button";
+import { LogoutButton } from "@/features/auth"
 
 export function Header() {
   return (

@@ -13,8 +13,6 @@ alter table public.assessment_questions enable row level security;
 alter table public.assessments enable row level security;
 alter table public.assessment_answers enable row level security;
 alter table public.feedbacks enable row level security;
-alter table public.development_plans enable row level security;
-alter table public.development_actions enable row level security;
 alter table public.events enable row level security;
 
 create or replace function public.is_company_member(target_company_id uuid)
@@ -219,42 +217,7 @@ using (
   or manager_id = public.current_person_id(company_id)
 );
 
--- Development plans
-create policy "members can read related development plans"
-on public.development_plans for select
-using (
-  public.has_company_role(company_id, array['owner','admin','hr'])
-  or employee_id = public.current_person_id(company_id)
-);
 
-create policy "admins hr and managers manage development plans"
-on public.development_plans for all
-using (
-  public.has_company_role(company_id, array['owner','admin','hr','manager'])
-);
-
-create policy "members can read development actions"
-on public.development_actions for select
-using (
-  exists (
-    select 1 from public.development_plans dp
-    where dp.id = plan_id
-      and (
-        public.has_company_role(dp.company_id, array['owner','admin','hr'])
-        or dp.employee_id = public.current_person_id(dp.company_id)
-      )
-  )
-);
-
-create policy "admins hr and managers manage development actions"
-on public.development_actions for all
-using (
-  exists (
-    select 1 from public.development_plans dp
-    where dp.id = plan_id
-      and public.has_company_role(dp.company_id, array['owner','admin','hr','manager'])
-  )
-);
 
 -- Events
 create policy "members can read events"

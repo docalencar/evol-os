@@ -1,4 +1,4 @@
-# ADR 0002 — Development Templates
+# ADR 0003 — Development Templates
 
 ## Status
 

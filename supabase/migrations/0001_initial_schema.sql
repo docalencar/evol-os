@@ -125,25 +125,6 @@ create table if not exists public.feedbacks (
   created_at timestamptz not null default now()
 );
 
-create table if not exists public.development_plans (
-  id uuid primary key default gen_random_uuid(),
-  company_id uuid not null references public.companies(id) on delete cascade,
-  employee_id uuid not null references public.people(id) on delete cascade,
-  feedback_id uuid references public.feedbacks(id) on delete set null,
-  status text not null default 'active' check (status in ('active', 'completed', 'cancelled')),
-  created_at timestamptz not null default now()
-);
-
-create table if not exists public.development_actions (
-  id uuid primary key default gen_random_uuid(),
-  plan_id uuid not null references public.development_plans(id) on delete cascade,
-  title text not null,
-  description text,
-  due_date date,
-  completed_at timestamptz,
-  created_at timestamptz not null default now()
-);
-
 create table if not exists public.events (
   id uuid primary key default gen_random_uuid(),
   company_id uuid not null references public.companies(id) on delete cascade,

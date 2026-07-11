@@ -40,12 +40,47 @@ where id in (
   '00000000-0000-0000-0000-000000000304'
 );
 
-insert into public.competencies (id, company_id, name, description, category, active)
+insert into public.competencies (
+  id,
+  company_id,
+  name,
+  description,
+  category,
+  active
+)
 values
-('00000000-0000-0000-0000-000000000401', null, 'Comunicação', 'Capacidade de transmitir ideias com clareza e escutar ativamente.', 'Comportamental', true),
-('00000000-0000-0000-0000-000000000402', null, 'Organização', 'Capacidade de planejar, priorizar e cumprir combinados.', 'Comportamental', true),
-('00000000-0000-0000-0000-000000000403', null, 'Atendimento ao Cliente', 'Capacidade de atender clientes com atenção, empatia e resolução.', 'Técnica', true),
-('00000000-0000-0000-0000-000000000404', null, 'Trabalho em Equipe', 'Capacidade de colaborar e contribuir com o time.', 'Comportamental', true)
+(
+  '00000000-0000-0000-0000-000000000401',
+  '00000000-0000-0000-0000-000000000001',
+  'Comunicação',
+  'Capacidade de transmitir ideias com clareza e escutar ativamente.',
+  'behavioral',
+  true
+),
+(
+  '00000000-0000-0000-0000-000000000402',
+  '00000000-0000-0000-0000-000000000001',
+  'Organização',
+  'Capacidade de planejar, priorizar e cumprir combinados.',
+  'behavioral',
+  true
+),
+(
+  '00000000-0000-0000-0000-000000000403',
+  '00000000-0000-0000-0000-000000000001',
+  'Atendimento ao Cliente',
+  'Capacidade de atender clientes com atenção, empatia e resolução.',
+  'technical',
+  true
+),
+(
+  '00000000-0000-0000-0000-000000000404',
+  '00000000-0000-0000-0000-000000000001',
+  'Trabalho em Equipe',
+  'Capacidade de colaborar e contribuir com o time.',
+  'behavioral',
+  true
+)
 on conflict do nothing;
 
 insert into public.assessment_templates (id, company_id, name, type, active)

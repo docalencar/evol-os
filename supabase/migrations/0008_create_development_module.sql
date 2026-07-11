@@ -85,8 +85,8 @@ create table if not exists public.development_goals (
 
   updated_at timestamptz not null default now(),
 
-  constraint development_goals_target_level_check
-    check (target_level >= current_level)
+  constraint development_goals_target_not_below_current_check
+  check (target_level >= current_level)
 );
 
 create table if not exists public.development_actions (

@@ -1,3 +1,47 @@
+-- =====================================================
+-- Remove legacy Development model
+-- =====================================================
+
+do $$
+begin
+  if to_regclass('public.development_actions') is not null then
+    execute '
+      drop policy if exists
+        "members can read development actions"
+      on public.development_actions
+    ';
+
+    execute '
+      drop policy if exists
+        "admins hr and managers manage development actions"
+      on public.development_actions
+    ';
+  end if;
+
+  if to_regclass('public.development_plans') is not null then
+    execute '
+      drop policy if exists
+        "members can read related development plans"
+      on public.development_plans
+    ';
+
+    execute '
+      drop policy if exists
+        "admins hr and managers manage development plans"
+      on public.development_plans
+    ';
+  end if;
+end
+$$;
+
+drop table if exists public.development_actions cascade;
+drop table if exists public.development_goals cascade;
+drop table if exists public.development_plans cascade;
+
+-- =====================================================
+-- Current Development model
+-- =====================================================
+
 create table if not exists public.development_plans (
   id uuid primary key default gen_random_uuid(),
 

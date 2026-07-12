@@ -19,10 +19,15 @@ import type {
 import {
   AddTemplateActionDialog,
   AddTemplateCompetencyDialog,
+  ApplyDevelopmentTemplateDialog,
   getDevelopmentTemplateActionsByGoalIds,
   getDevelopmentTemplateById,
   getDevelopmentTemplateGoals,
 } from "@/features/development/templates"
+import {
+  getEmployees,
+  type Employee,
+} from "@/features/people"
 
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
@@ -48,9 +53,10 @@ type DevelopmentTemplateGoalView = {
     | null
 }
 
-type GoalWithActions = DevelopmentTemplateGoalView & {
-  actions: DevelopmentTemplateAction[]
-}
+type GoalWithActions =
+  DevelopmentTemplateGoalView & {
+    actions: DevelopmentTemplateAction[]
+  }
 
 function getCompetencyName(
   goal: DevelopmentTemplateGoalView
@@ -88,52 +94,63 @@ export default async function DevelopmentTemplatePage({
     notFound()
   }
 
-  const [goals, competencies] = await Promise.all([
+  const [
+    goals,
+    competencies,
+    employeesData,
+  ] = await Promise.all([
     getDevelopmentTemplateGoals(id),
     getCompetencies(companyId),
+    getEmployees(companyId),
   ])
+
+  const employees =
+    (employeesData ?? []) as Employee[]
 
   const templateGoals =
     goals as DevelopmentTemplateGoalView[]
 
   const goalIds = templateGoals.map(
-  (goal) => goal.id
-)
-
-const allActions =
-  await getDevelopmentTemplateActionsByGoalIds(
-    goalIds
+    (goal) => goal.id
   )
 
-const actionsByGoal = new Map<
-  string,
-  DevelopmentTemplateAction[]
->()
+  const allActions =
+    await getDevelopmentTemplateActionsByGoalIds(
+      goalIds
+    )
 
-for (const action of allActions) {
-  const current =
-    actionsByGoal.get(action.templateGoalId) ?? []
+  const actionsByGoal = new Map<
+    string,
+    DevelopmentTemplateAction[]
+  >()
 
-  current.push(action)
+  for (const action of allActions) {
+    const current =
+      actionsByGoal.get(
+        action.templateGoalId
+      ) ?? []
 
-  actionsByGoal.set(
-    action.templateGoalId,
-    current
-  )
-}
+    current.push(action)
 
-const goalsWithActions: GoalWithActions[] =
-  templateGoals.map((goal) => ({
-    ...goal,
-    actions:
-      actionsByGoal.get(goal.id) ?? [],
-  }))
+    actionsByGoal.set(
+      action.templateGoalId,
+      current
+    )
+  }
 
-  const totalActions = goalsWithActions.reduce(
-    (total, goal) =>
-      total + goal.actions.length,
-    0
-  )
+  const goalsWithActions: GoalWithActions[] =
+    templateGoals.map((goal) => ({
+      ...goal,
+      actions:
+        actionsByGoal.get(goal.id) ?? [],
+    }))
+
+  const totalActions =
+    goalsWithActions.reduce(
+      (total, goal) =>
+        total + goal.actions.length,
+      0
+    )
 
   return (
     <div className="space-y-6">
@@ -151,6 +168,12 @@ const goalsWithActions: GoalWithActions[] =
         description={
           template.description ??
           "Template de desenvolvimento."
+        }
+        actions={
+          <ApplyDevelopmentTemplateDialog
+            templateId={id}
+            employees={employees}
+          />
         }
       />
 
@@ -296,7 +319,9 @@ const goalsWithActions: GoalWithActions[] =
 
                               {action.description ? (
                                 <p className="mt-1 text-sm text-slate-500">
-                                  {action.description}
+                                  {
+                                    action.description
+                                  }
                                 </p>
                               ) : null}
                             </div>

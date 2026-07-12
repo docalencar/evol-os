@@ -3,9 +3,7 @@ export type DevelopmentTemplateGoal = {
 
   templateId: string
 
-  competencyId: string | null
-
-  title: string
+  competencyId: string
 
   description: string | null
 
@@ -17,4 +15,3 @@ export type DevelopmentTemplateGoal = {
 
   updatedAt: string
 }
-

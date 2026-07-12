@@ -2,23 +2,35 @@
 
 import { revalidatePath } from "next/cache"
 
-import {
-  deactivateDevelopmentTemplate,
-} from "../services/deactivate-development-template"
+import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
-type DeactivateDevelopmentTemplateActionParams = {
-  companyId: string
+import { deactivateDevelopmentTemplate } from "../services/deactivate-development-template"
+
+export async function deactivateDevelopmentTemplateAction(
   templateId: string
-}
+) {
+  const { companyId } =
+    await getCurrentCompanyContext()
 
-export async function deactivateDevelopmentTemplateAction({
-  companyId,
-  templateId,
-}: DeactivateDevelopmentTemplateActionParams) {
-  await deactivateDevelopmentTemplate({
-    companyId,
-    templateId,
-  })
+  try {
+    await deactivateDevelopmentTemplate({
+      companyId,
+      templateId,
+    })
+  } catch {
+    return {
+      success: false,
+      message:
+        "Não foi possível desativar o template de desenvolvimento.",
+    }
+  }
 
   revalidatePath("/app/development")
+  revalidatePath("/app/development/templates")
+
+  return {
+    success: true,
+    message:
+      "Template de desenvolvimento desativado com sucesso.",
+  }
 }

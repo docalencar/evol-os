@@ -10,8 +10,7 @@ function normalizeCreateInput(
 ) {
   return {
     template_id: input.templateId,
-    competency_id: input.competencyId || null,
-    title: input.title,
+    competency_id: input.competencyId,
     description: input.description || null,
     suggested_target_level:
       input.suggestedTargetLevel ?? null,
@@ -28,12 +27,7 @@ function normalizeUpdateInput(
   }
 
   if (input.competencyId !== undefined) {
-    normalized.competency_id =
-      input.competencyId || null
-  }
-
-  if (input.title !== undefined) {
-    normalized.title = input.title
+    normalized.competency_id = input.competencyId
   }
 
   if (input.description !== undefined) {
@@ -62,7 +56,9 @@ export async function createDevelopmentTemplateGoalRepository() {
         .from("development_template_goals")
         .select(`
           *,
-          competencies(name)
+          competencies (
+            name
+          )
         `)
         .eq("template_id", templateId)
         .order("order_index", {
@@ -75,7 +71,9 @@ export async function createDevelopmentTemplateGoalRepository() {
         .from("development_template_goals")
         .select(`
           *,
-          competencies(name)
+          competencies (
+            name
+          )
         `)
         .eq("id", id)
         .single()
@@ -111,4 +109,3 @@ export async function createDevelopmentTemplateGoalRepository() {
     },
   }
 }
-

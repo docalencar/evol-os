@@ -13,21 +13,51 @@ export async function getCurrentCompanyContext() {
     redirect("/login")
   }
 
-  const { data: memberships } = await supabase
+  const {
+    data: membership,
+    error: membershipError,
+  } = await supabase
     .from("company_members")
     .select("company_id")
     .eq("user_id", user.id)
     .limit(1)
+    .maybeSingle()
 
-  const companyId = memberships?.[0]?.company_id
+  if (membershipError) {
+    throw new Error(
+      "Não foi possível identificar a empresa do usuário."
+    )
+  }
+
+  const companyId = membership?.company_id
 
   if (!companyId) {
+    redirect("/onboarding")
+  }
+
+  const {
+    data: company,
+    error: companyError,
+  } = await supabase
+    .from("companies")
+    .select("id, name")
+    .eq("id", companyId)
+    .maybeSingle()
+
+  if (companyError) {
+    throw new Error(
+      "Não foi possível carregar os dados da empresa."
+    )
+  }
+
+  if (!company) {
     redirect("/onboarding")
   }
 
   return {
     supabase,
     user,
-    companyId,
+    companyId: company.id,
+    companyName: company.name,
   }
 }

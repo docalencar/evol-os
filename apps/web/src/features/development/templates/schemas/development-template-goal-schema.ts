@@ -5,14 +5,7 @@ export const createDevelopmentTemplateGoalSchema = z.object({
 
   competencyId: z
     .string()
-    .uuid()
-    .optional()
-    .or(z.literal("")),
-
-  title: z
-    .string()
-    .trim()
-    .min(2, "Informe o título do objetivo."),
+    .uuid("Selecione uma competência."),
 
   description: z
     .string()
@@ -23,8 +16,8 @@ export const createDevelopmentTemplateGoalSchema = z.object({
   suggestedTargetLevel: z
     .number()
     .int()
-    .min(1)
-    .max(5)
+    .min(1, "O nível mínimo é 1.")
+    .max(5, "O nível máximo é 5.")
     .optional(),
 
   orderIndex: z

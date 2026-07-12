@@ -1,5 +1,9 @@
 import { PageHeader } from "@/components/shared/page-header"
-import { getDevelopmentTemplates } from "@/features/development/templates"
+import {
+  CreateDevelopmentTemplateDialog,
+  DevelopmentTemplateTable,
+  getDevelopmentTemplates,
+} from "@/features/development/templates"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 export default async function DevelopmentTemplatesPage() {
@@ -10,13 +14,14 @@ export default async function DevelopmentTemplatesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Templates de desenvolvimento"
-        description="Crie e reutilize modelos para acelerar a construção de planos de desenvolvimento."
+        title="Templates de Desenvolvimento"
+        description="Crie modelos reutilizáveis para acelerar a criação de planos de desenvolvimento."
+        actions={<CreateDevelopmentTemplateDialog />}
       />
 
-      <pre className="overflow-x-auto rounded-lg border bg-slate-50 p-4 text-xs text-slate-700">
-        {JSON.stringify(templates, null, 2)}
-      </pre>
+      <DevelopmentTemplateTable
+        templates={templates}
+      />
     </div>
   )
 }

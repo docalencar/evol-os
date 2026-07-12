@@ -3,16 +3,22 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
-import { applyDevelopmentTemplate } from "../application/apply-development-template"
+import {
+  applyDevelopmentTemplate,
+} from "../application/apply-development-template"
 
 const applyDevelopmentTemplateSchema = z.object({
-  employeeId: z.string().uuid(),
+  employeeId: z.string().uuid(
+    "Selecione um colaborador."
+  ),
 
-  templateId: z.string().uuid(),
+  templateId: z.string().uuid(
+    "Template inválido."
+  ),
 
   ownerId: z
     .string()
-    .uuid()
+    .uuid("Responsável inválido.")
     .optional()
     .or(z.literal("")),
 
@@ -22,14 +28,37 @@ const applyDevelopmentTemplateSchema = z.object({
     "high",
   ]),
 
-  startDate: z.string().optional(),
+  startDate: z
+    .string()
+    .optional(),
 
-  dueDate: z.string().optional(),
+  dueDate: z
+    .string()
+    .optional(),
 })
 
 type ApplyDevelopmentTemplateInput = z.infer<
   typeof applyDevelopmentTemplateSchema
 >
+
+function getErrorMessage(
+  error: unknown
+) {
+  if (error instanceof Error) {
+    return error.message
+  }
+
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof error.message === "string"
+  ) {
+    return error.message
+  }
+
+  return "Não foi possível criar o plano de desenvolvimento."
+}
 
 export async function applyDevelopmentTemplateAction(
   values: ApplyDevelopmentTemplateInput
@@ -49,30 +78,46 @@ export async function applyDevelopmentTemplateAction(
   try {
     const result =
       await applyDevelopmentTemplate({
-        employeeId: parsed.data.employeeId,
-        templateId: parsed.data.templateId,
+        employeeId:
+          parsed.data.employeeId,
+        templateId:
+          parsed.data.templateId,
         ownerId:
-          parsed.data.ownerId || undefined,
-        priority: parsed.data.priority,
-        startDate: parsed.data.startDate,
-        dueDate: parsed.data.dueDate,
+          parsed.data.ownerId ||
+          undefined,
+        priority:
+          parsed.data.priority,
+        startDate:
+          parsed.data.startDate ||
+          undefined,
+        dueDate:
+          parsed.data.dueDate ||
+          undefined,
       })
 
-    revalidatePath("/app/development")
+    revalidatePath(
+      "/app/development"
+    )
+
+    revalidatePath(
+      `/app/development/plans/${result.planId}`
+    )
 
     return {
       success: true,
       message:
-        "Plano criado com sucesso.",
+        "Plano de desenvolvimento criado com sucesso.",
       planId: result.planId,
     }
   } catch (error) {
+    console.error(
+      "Erro ao aplicar template de desenvolvimento:",
+      error
+    )
+
     return {
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Não foi possível aplicar o template.",
+      message: getErrorMessage(error),
     }
   }
 }

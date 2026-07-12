@@ -1,6 +1,8 @@
 import { createServerDatabase } from "@/lib/database/server-database"
 
-import type { DevelopmentGoal } from "../types/development-goal"
+import type {
+  DevelopmentGoal,
+} from "../types/development-goal"
 
 type CreateDevelopmentGoalInput = {
   companyId: string
@@ -50,7 +52,66 @@ export async function createDevelopmentGoalRepository() {
   const supabase = await createServerDatabase()
 
   return {
-    async create(input: CreateDevelopmentGoalInput) {
+    async findByPlan(
+      companyId: string,
+      planId: string
+    ) {
+      const { data, error } = await supabase
+        .from("development_goals")
+        .select("*")
+        .eq("company_id", companyId)
+        .eq("plan_id", planId)
+        .order("created_at", {
+          ascending: true,
+        })
+
+      return {
+        data: data
+          ? data.map((row) =>
+              mapDevelopmentGoal(
+                row as DevelopmentGoalRow
+              )
+            )
+          : null,
+        error,
+      }
+    },
+
+    async findByPlanIds(
+      companyId: string,
+      planIds: string[]
+    ) {
+      if (planIds.length === 0) {
+        return {
+          data: [] as DevelopmentGoal[],
+          error: null,
+        }
+      }
+
+      const { data, error } = await supabase
+        .from("development_goals")
+        .select("*")
+        .eq("company_id", companyId)
+        .in("plan_id", planIds)
+        .order("created_at", {
+          ascending: true,
+        })
+
+      return {
+        data: data
+          ? data.map((row) =>
+              mapDevelopmentGoal(
+                row as DevelopmentGoalRow
+              )
+            )
+          : null,
+        error,
+      }
+    },
+
+    async create(
+      input: CreateDevelopmentGoalInput
+    ) {
       const { data, error } = await supabase
         .from("development_goals")
         .insert({
@@ -58,12 +119,14 @@ export async function createDevelopmentGoalRepository() {
           plan_id: input.planId,
           competency_id: input.competencyId,
           title: input.title,
-          description: input.description || null,
+          description:
+            input.description || null,
           current_level: input.currentLevel,
           expected_level: input.expectedLevel,
           target_level: input.targetLevel,
           status: "not_started",
-          updated_at: new Date().toISOString(),
+          updated_at:
+            new Date().toISOString(),
         })
         .select("*")
         .single()

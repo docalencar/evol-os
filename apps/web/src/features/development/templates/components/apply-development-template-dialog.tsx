@@ -13,14 +13,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
 import {
+  applyDevelopmentTemplateAction,
+} from "@/features/development/actions/apply-development-template-action"
+
+import {
   DEVELOPMENT_PLAN_PRIORITIES,
   DEVELOPMENT_PLAN_PRIORITY_LABELS,
   type DevelopmentPlanPriority,
 } from "@/features/development/constants/development-plan"
-
-import {
-  applyDevelopmentTemplateAction,
-} from "@/features/development/actions/apply-development-template-action"
 
 import type {
   Employee,
@@ -29,6 +29,22 @@ import type {
 type ApplyDevelopmentTemplateDialogProps = {
   templateId: string
   employees: Employee[]
+}
+
+function getTodayDateInputValue() {
+  const today = new Date()
+
+  const year = today.getFullYear()
+
+  const month = String(
+    today.getMonth() + 1
+  ).padStart(2, "0")
+
+  const day = String(
+    today.getDate()
+  ).padStart(2, "0")
+
+  return `${year}-${month}-${day}`
 }
 
 export function ApplyDevelopmentTemplateDialog({
@@ -49,7 +65,7 @@ export function ApplyDevelopmentTemplateDialog({
     )
 
   const [startDate, setStartDate] =
-    useState("")
+    useState(getTodayDateInputValue)
 
   const [dueDate, setDueDate] =
     useState("")
@@ -70,7 +86,9 @@ export function ApplyDevelopmentTemplateDialog({
     setEmployeeId("")
     setOwnerId("")
     setPriority("medium")
-    setStartDate("")
+    setStartDate(
+      getTodayDateInputValue()
+    )
     setDueDate("")
   }
 
@@ -81,8 +99,8 @@ export function ApplyDevelopmentTemplateDialog({
           Aplicar ao colaborador
         </Button>
       }
-      title="Aplicar template ao colaborador"
-      description="Crie um plano de desenvolvimento a partir deste template."
+      title="Plano de Desenvolvimento Individual"
+      description="Defina o colaborador, o responsável e o período do novo plano de desenvolvimento."
     >
       {({ close }) => (
         <form
@@ -97,26 +115,31 @@ export function ApplyDevelopmentTemplateDialog({
                   employeeId,
                   ownerId,
                   priority,
-                  startDate:
-                    startDate || undefined,
+                  startDate,
                   dueDate:
                     dueDate || undefined,
                 })
 
-              if (!result.success) {
-                toast.error(result.message)
+              if (
+                !result.success ||
+                !result.planId
+              ) {
+                toast.error(
+                  result.message
+                )
                 return
               }
 
-              toast.success(result.message)
+              toast.success(
+                result.message
+              )
 
               resetForm()
               close()
 
               router.push(
-                "/app/development"
+                `/app/development/plans/${result.planId}`
               )
-              router.refresh()
             })
           }}
         >
@@ -242,6 +265,7 @@ export function ApplyDevelopmentTemplateDialog({
                 }
                 className="mt-1"
                 disabled={isPending}
+                required
               />
             </div>
 
@@ -255,7 +279,7 @@ export function ApplyDevelopmentTemplateDialog({
                 name="dueDate"
                 type="date"
                 value={dueDate}
-                min={startDate || undefined}
+                min={startDate}
                 onChange={(event) =>
                   setDueDate(
                     event.target.value
@@ -291,7 +315,8 @@ export function ApplyDevelopmentTemplateDialog({
               type="submit"
               disabled={
                 isPending ||
-                !employeeId
+                !employeeId ||
+                !startDate
               }
             >
               {isPending

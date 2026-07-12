@@ -10,6 +10,10 @@ export type DevelopmentPlan = {
 
   employeeId: string
 
+  ownerId: string | null
+
+  templateId: string | null
+
   title: string
 
   description: string | null

@@ -1,23 +1,37 @@
 import { PageHeader } from "@/components/shared/page-header"
+
 import {
-  DevelopmentPlanList,
-  getDevelopmentPlans,
+  DevelopmentPlanTable,
+  getDevelopmentPlanListItems,
 } from "@/features/development"
-import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
+
+import {
+  getCurrentCompanyContext,
+} from "@/lib/supabase/supabase/current-company"
 
 export default async function DevelopmentPage() {
-  const { companyId } = await getCurrentCompanyContext()
+  const { companyId } =
+    await getCurrentCompanyContext()
 
-  const plans = await getDevelopmentPlans(companyId)
+  const {
+    plans,
+    owners,
+  } =
+    await getDevelopmentPlanListItems(
+      companyId
+    )
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Desenvolvimento"
-        description="Crie e acompanhe planos de desenvolvimento individual orientados por competências."
+        title="Planos de Desenvolvimento Individual"
+        description="Acompanhe todos os PDIs da empresa."
       />
 
-      <DevelopmentPlanList plans={plans ?? []} />
+      <DevelopmentPlanTable
+        plans={plans}
+        owners={owners}
+      />
     </div>
   )
 }

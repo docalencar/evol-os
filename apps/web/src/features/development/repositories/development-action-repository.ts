@@ -3,6 +3,7 @@ import { createServerDatabase } from "@/lib/database/server-database"
 import type {
   DevelopmentAction,
 } from "../types/development-action"
+
 import type {
   DevelopmentActionType,
 } from "../constants/development-action"
@@ -51,18 +52,55 @@ export async function createDevelopmentActionRepository() {
   const supabase = await createServerDatabase()
 
   return {
-    async create(input: CreateDevelopmentActionInput) {
+    async findByGoalIds(
+      companyId: string,
+      goalIds: string[]
+    ) {
+      if (goalIds.length === 0) {
+        return {
+          data: [] as DevelopmentAction[],
+          error: null,
+        }
+      }
+
+      const { data, error } = await supabase
+        .from("development_actions")
+        .select("*")
+        .eq("company_id", companyId)
+        .in("goal_id", goalIds)
+        .order("created_at", {
+          ascending: true,
+        })
+
+      return {
+        data: data
+          ? data.map((row) =>
+              mapDevelopmentAction(
+                row as DevelopmentActionRow
+              )
+            )
+          : null,
+        error,
+      }
+    },
+
+    async create(
+      input: CreateDevelopmentActionInput
+    ) {
       const { data, error } = await supabase
         .from("development_actions")
         .insert({
           company_id: input.companyId,
           goal_id: input.goalId,
           title: input.title,
-          description: input.description || null,
+          description:
+            input.description || null,
           type: input.type,
           status: "pending",
-          due_date: input.dueDate ?? null,
-          updated_at: new Date().toISOString(),
+          due_date:
+            input.dueDate ?? null,
+          updated_at:
+            new Date().toISOString(),
         })
         .select("*")
         .single()

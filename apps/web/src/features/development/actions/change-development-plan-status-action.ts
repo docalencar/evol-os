@@ -4,6 +4,11 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
 import {
+  failureResult,
+  successResult,
+} from "@/lib/actions"
+
+import {
   getCurrentCompanyContext,
 } from "@/lib/supabase/supabase/current-company"
 
@@ -34,11 +39,9 @@ export async function changeDevelopmentPlanStatusAction(
     schema.safeParse(values)
 
   if (!parsed.success) {
-    return {
-      success: false,
-      message:
-        "Status inválido.",
-    }
+    return failureResult(
+      "Status inválido."
+    )
   }
 
   try {
@@ -51,24 +54,22 @@ export async function changeDevelopmentPlanStatusAction(
       parsed.data.status
     )
 
-    revalidatePath("/app/development")
+    revalidatePath(
+      "/app/development"
+    )
 
     revalidatePath(
       `/app/development/plans/${planId}`
     )
 
-    return {
-      success: true,
-      message:
-        "Status atualizado com sucesso.",
-    }
+    return successResult(
+      "Status atualizado com sucesso."
+    )
   } catch (error) {
-    return {
-      success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Erro ao atualizar o plano.",
-    }
+    return failureResult(
+      error instanceof Error
+        ? error.message
+        : "Erro ao atualizar o plano."
+    )
   }
 }

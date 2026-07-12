@@ -1,8 +1,13 @@
 import { PageHeader } from "@/components/shared/page-header"
 
 import {
+  CompanyCompetencyGapCard,
+  DevelopmentDashboardKpiCards,
+  DevelopmentMonthlyEvolutionCard,
+  DevelopmentPlanDistributionCard,
   DevelopmentPlanTable,
-  getDevelopmentPlanListItems,
+  DevelopmentPrioritiesCard,
+  getDevelopmentExecutiveDashboard,
 } from "@/features/development"
 
 import {
@@ -13,11 +18,8 @@ export default async function DevelopmentPage() {
   const { companyId } =
     await getCurrentCompanyContext()
 
-  const {
-    plans,
-    owners,
-  } =
-    await getDevelopmentPlanListItems(
+  const dashboard =
+    await getDevelopmentExecutiveDashboard(
       companyId
     )
 
@@ -28,9 +30,47 @@ export default async function DevelopmentPage() {
         description="Acompanhe todos os PDIs da empresa."
       />
 
+      <DevelopmentDashboardKpiCards
+        kpis={dashboard.kpis}
+      />
+
+      <div className="grid gap-6 xl:grid-cols-2">
+        <CompanyCompetencyGapCard
+          competencies={
+            dashboard.competencyGaps
+          }
+        />
+
+        <DevelopmentPrioritiesCard
+          priorities={
+            dashboard.developmentPriorities
+          }
+        />
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-2">
+        <DevelopmentPlanDistributionCard
+          distribution={
+            dashboard.planDistribution
+          }
+        />
+
+        <DevelopmentMonthlyEvolutionCard
+          evolution={
+            dashboard.monthlyEvolution
+          }
+        />
+      </div>
+
+      <DevelopmentMonthlyEvolutionCard
+        evolution={
+          dashboard.monthlyEvolution
+        }
+      />
+
       <DevelopmentPlanTable
-        plans={plans}
-        owners={owners}
+        plans={dashboard.planList.plans}
+        owners={dashboard.planList.owners}
       />
     </div>
   )

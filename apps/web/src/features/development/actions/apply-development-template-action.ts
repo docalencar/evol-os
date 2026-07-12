@@ -4,42 +4,59 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
 import {
+  failureResult,
+  successResult,
+} from "@/lib/actions"
+
+import {
   applyDevelopmentTemplate,
 } from "../application/apply-development-template"
 
-const applyDevelopmentTemplateSchema = z.object({
-  employeeId: z.string().uuid(
-    "Selecione um colaborador."
-  ),
+const applyDevelopmentTemplateSchema =
+  z.object({
+    employeeId: z
+      .string()
+      .uuid(
+        "Selecione um colaborador."
+      ),
 
-  templateId: z.string().uuid(
-    "Template inválido."
-  ),
+    templateId: z
+      .string()
+      .uuid(
+        "Template inválido."
+      ),
 
-  ownerId: z
-    .string()
-    .uuid("Responsável inválido.")
-    .optional()
-    .or(z.literal("")),
+    ownerId: z
+      .string()
+      .uuid(
+        "Responsável inválido."
+      )
+      .optional()
+      .or(z.literal("")),
 
-  priority: z.enum([
-    "low",
-    "medium",
-    "high",
-  ]),
+    priority: z.enum([
+      "low",
+      "medium",
+      "high",
+    ]),
 
-  startDate: z
-    .string()
-    .optional(),
+    startDate: z
+      .string()
+      .optional(),
 
-  dueDate: z
-    .string()
-    .optional(),
-})
+    dueDate: z
+      .string()
+      .optional(),
+  })
 
-type ApplyDevelopmentTemplateInput = z.infer<
-  typeof applyDevelopmentTemplateSchema
->
+type ApplyDevelopmentTemplateInput =
+  z.infer<
+    typeof applyDevelopmentTemplateSchema
+  >
+
+type ApplyDevelopmentTemplateResult = {
+  planId: string
+}
 
 function getErrorMessage(
   error: unknown
@@ -64,15 +81,15 @@ export async function applyDevelopmentTemplateAction(
   values: ApplyDevelopmentTemplateInput
 ) {
   const parsed =
-    applyDevelopmentTemplateSchema.safeParse(values)
+    applyDevelopmentTemplateSchema.safeParse(
+      values
+    )
 
   if (!parsed.success) {
-    return {
-      success: false,
-      message:
-        parsed.error.issues[0]?.message ??
-        "Dados inválidos.",
-    }
+    return failureResult(
+      parsed.error.issues[0]?.message ??
+        "Dados inválidos."
+    )
   }
 
   try {
@@ -80,16 +97,21 @@ export async function applyDevelopmentTemplateAction(
       await applyDevelopmentTemplate({
         employeeId:
           parsed.data.employeeId,
+
         templateId:
           parsed.data.templateId,
+
         ownerId:
           parsed.data.ownerId ||
           undefined,
+
         priority:
           parsed.data.priority,
+
         startDate:
           parsed.data.startDate ||
           undefined,
+
         dueDate:
           parsed.data.dueDate ||
           undefined,
@@ -103,21 +125,20 @@ export async function applyDevelopmentTemplateAction(
       `/app/development/plans/${result.planId}`
     )
 
-    return {
-      success: true,
-      message:
-        "Plano de desenvolvimento criado com sucesso.",
-      planId: result.planId,
-    }
+    return successResult<ApplyDevelopmentTemplateResult>(
+      "Plano de desenvolvimento criado com sucesso.",
+      {
+        planId: result.planId,
+      }
+    )
   } catch (error) {
     console.error(
       "Erro ao aplicar template de desenvolvimento:",
       error
     )
 
-    return {
-      success: false,
-      message: getErrorMessage(error),
-    }
+    return failureResult(
+      getErrorMessage(error)
+    )
   }
 }

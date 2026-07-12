@@ -17,3 +17,16 @@ export { getEmployeeCompetencyGaps } from "./queries/get-employee-competency-gap
 
 export { CompetencyGapCard } from "./components/competency-gap-card"
 export { TalentSummaryCard } from "./components/talent-summary-card"
+export type {
+  CompanyCompetencyGap,
+} from "./types/company-competency-gap"
+export {
+  getCompanyCompetencyGaps,
+} from "./services/get-company-competency-gaps"
+export type {
+  DevelopmentPriority,
+  DevelopmentPriorityRisk,
+} from "./types/development-priority"
+export {
+  getDevelopmentPriorities,
+} from "./services/get-development-priorities"

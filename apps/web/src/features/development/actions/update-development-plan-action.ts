@@ -3,6 +3,11 @@
 import { revalidatePath } from "next/cache"
 
 import {
+  failureResult,
+  successResult,
+} from "@/lib/actions"
+
+import {
   getCurrentCompanyContext,
 } from "@/lib/supabase/supabase/current-company"
 
@@ -25,12 +30,10 @@ export async function updateDevelopmentPlanAction(
     )
 
   if (!parsed.success) {
-    return {
-      success: false,
-      message:
-        parsed.error.issues[0]?.message ??
-        "Dados inválidos.",
-    }
+    return failureResult(
+      parsed.error.issues[0]?.message ??
+        "Dados inválidos."
+    )
   }
 
   try {
@@ -49,18 +52,14 @@ export async function updateDevelopmentPlanAction(
       `/app/development/plans/${planId}`
     )
 
-    return {
-      success: true,
-      message:
-        "Plano atualizado com sucesso.",
-    }
+    return successResult(
+      "Plano atualizado com sucesso."
+    )
   } catch (error) {
-    return {
-      success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Não foi possível atualizar o plano.",
-    }
+    return failureResult(
+      error instanceof Error
+        ? error.message
+        : "Não foi possível atualizar o plano."
+    )
   }
 }

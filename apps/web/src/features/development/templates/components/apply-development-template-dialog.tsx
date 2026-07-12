@@ -120,9 +120,9 @@ export function ApplyDevelopmentTemplateDialog({
                     dueDate || undefined,
                 })
 
-              if (
+               if (
                 !result.success ||
-                !result.planId
+                !result.data?.planId
               ) {
                 toast.error(
                   result.message
@@ -138,7 +138,7 @@ export function ApplyDevelopmentTemplateDialog({
               close()
 
               router.push(
-                `/app/development/plans/${result.planId}`
+                 `/app/development/plans/${result.data.planId}`
               )
             })
           }}

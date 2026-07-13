@@ -5,12 +5,10 @@ import { useState } from "react"
 import { EntityDialog } from "@/components/shared/entity-dialog"
 import { Button } from "@/components/ui/button"
 
-import { PositionForm } from "./position-form"
-
-type DepartmentOption = {
-  id: string
-  name: string
-}
+import {
+  PositionForm,
+  type DepartmentOption,
+} from "./position-form"
 
 type PositionCreateDialogProps = {
   companyId: string

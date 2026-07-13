@@ -5,28 +5,16 @@ import { useState } from "react"
 import { EntityDialog } from "@/components/shared/entity-dialog"
 import { Button } from "@/components/ui/button"
 
-import type {
-  PositionHierarchicalLevel,
-  PositionStatus,
-} from "../types/position"
-import { PositionForm } from "./position-form"
-
-type DepartmentOption = {
-  id: string
-  name: string
-}
+import {
+  PositionForm,
+  type DepartmentOption,
+  type PositionFormPosition,
+} from "./position-form"
 
 type PositionEditDialogProps = {
   companyId: string
   departments: DepartmentOption[]
-  position: {
-    id: string
-    name: string
-    description: string | null
-    department_id: string | null
-    hierarchical_level: PositionHierarchicalLevel
-    status: PositionStatus
-  }
+  position: PositionFormPosition
 }
 
 export function PositionEditDialog({

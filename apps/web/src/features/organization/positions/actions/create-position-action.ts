@@ -32,6 +32,10 @@ export async function createPositionAction(
     departmentId: parsedInput.data.departmentId ?? null,
     hierarchicalLevel: parsedInput.data.hierarchicalLevel,
     status: parsedInput.data.status,
+    weeklyWorkloadHours: parsedInput.data.weeklyWorkloadHours,
+    workModel: parsedInput.data.workModel,
+    employmentType: parsedInput.data.employmentType,
+    travelRequirement: parsedInput.data.travelRequirement,
   })
 
   if (error) {

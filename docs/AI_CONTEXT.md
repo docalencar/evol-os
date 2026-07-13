@@ -64,3 +64,39 @@ Fora do MVP:
 - OKRs
 - Pesquisa de clima
 - LMS completo
+
+
+## Position Form Architecture
+
+- O `PositionForm` passou a seguir o padrão de componentes em diretório (`components/position-form/`).
+- O `index.tsx` é o ponto de entrada do formulário.
+- Formulários grandes devem ser divididos em seções por responsabilidade.
+- Tipos compartilhados permanecem em `types.ts`.
+- Opções de selects permanecem em `position-form-options.ts`.
+- O componente principal atua apenas como orquestrador da submissão e composição das seções.
+
+
+## Engineering Decisions (Jul/2026)
+
+### Position Form Architecture
+
+- PositionForm passou a seguir o padrão de componentes em diretório (`components/position-form/`).
+- O `index.tsx` atua como ponto de entrada.
+- Formulários grandes devem ser divididos em seções.
+- Tipos compartilhados permanecem em `types.ts`.
+- Opções de domínio permanecem em `position-form-options.ts`.
+- O componente principal apenas orquestra submissão e composição das seções.
+
+### Development Workflow
+
+O fluxo oficial do Evol OS passa a ser:
+
+1. Modelagem do domínio
+2. Arquitetura (quando necessário)
+3. Persistência
+4. Interface
+5. Build verde
+6. Testes funcionais
+7. Documentação
+8. Commit
+9. Push

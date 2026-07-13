@@ -3,8 +3,11 @@ import Link from "next/link"
 import { DataTable } from "@/components/shared/data-table"
 
 import type {
+  PositionEmploymentType,
   PositionHierarchicalLevel,
   PositionStatus,
+  PositionTravelRequirement,
+  PositionWorkModel,
 } from "../types/position"
 import { ArchivePositionButton } from "./archive-position-button"
 import { PositionEditDialog } from "./position-edit-dialog"
@@ -22,6 +25,10 @@ type PositionTableItem = {
   department_id: string | null
   hierarchical_level: PositionHierarchicalLevel
   status: PositionStatus
+  weekly_workload_hours: number
+  work_model: PositionWorkModel
+  employment_type: PositionEmploymentType
+  travel_requirement: PositionTravelRequirement
 }
 
 type PositionCompetencyTableItem = {

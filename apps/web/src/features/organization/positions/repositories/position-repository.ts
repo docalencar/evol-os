@@ -1,8 +1,11 @@
 import { createServerDatabase } from "@/lib/database/server-database"
 
 import type {
+  PositionEmploymentType,
   PositionHierarchicalLevel,
   PositionStatus,
+  PositionTravelRequirement,
+  PositionWorkModel,
 } from "../types/position"
 
 type CreatePositionData = {
@@ -12,6 +15,10 @@ type CreatePositionData = {
   departmentId?: string | null
   hierarchicalLevel: PositionHierarchicalLevel
   status: PositionStatus
+  weeklyWorkloadHours: number
+  workModel: PositionWorkModel
+  employmentType: PositionEmploymentType
+  travelRequirement: PositionTravelRequirement
 }
 
 type UpdatePositionData = {
@@ -22,6 +29,10 @@ type UpdatePositionData = {
   departmentId?: string | null
   hierarchicalLevel: PositionHierarchicalLevel
   status: PositionStatus
+  weeklyWorkloadHours: number
+  workModel: PositionWorkModel
+  employmentType: PositionEmploymentType
+  travelRequirement: PositionTravelRequirement
 }
 
 export async function createPositionRepository() {
@@ -55,6 +66,10 @@ export async function createPositionRepository() {
         department_id: data.departmentId ?? null,
         hierarchical_level: data.hierarchicalLevel,
         status: data.status,
+        weekly_workload_hours: data.weeklyWorkloadHours,
+        work_model: data.workModel,
+        employment_type: data.employmentType,
+        travel_requirement: data.travelRequirement,
       })
     },
 
@@ -67,6 +82,10 @@ export async function createPositionRepository() {
           department_id: data.departmentId ?? null,
           hierarchical_level: data.hierarchicalLevel,
           status: data.status,
+          weekly_workload_hours: data.weeklyWorkloadHours,
+          work_model: data.workModel,
+          employment_type: data.employmentType,
+          travel_requirement: data.travelRequirement,
           updated_at: new Date().toISOString(),
         })
         .eq("company_id", data.companyId)

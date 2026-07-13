@@ -1,8 +1,11 @@
 import { z } from "zod"
 
 import {
+  POSITION_EMPLOYMENT_TYPES,
   POSITION_HIERARCHICAL_LEVELS,
   POSITION_STATUSES,
+  POSITION_TRAVEL_REQUIREMENTS,
+  POSITION_WORK_MODELS,
 } from "../types/position"
 
 export const createPositionSchema = z.object({
@@ -28,6 +31,18 @@ export const createPositionSchema = z.object({
   hierarchicalLevel: z.enum(POSITION_HIERARCHICAL_LEVELS),
 
   status: z.enum(POSITION_STATUSES),
+
+  weeklyWorkloadHours: z.coerce
+    .number()
+    .int("A carga horária semanal deve ser um número inteiro.")
+    .min(1, "A carga horária semanal deve ser de pelo menos 1 hora.")
+    .max(168, "A carga horária semanal deve ser de no máximo 168 horas."),
+
+  workModel: z.enum(POSITION_WORK_MODELS),
+
+  employmentType: z.enum(POSITION_EMPLOYMENT_TYPES),
+
+  travelRequirement: z.enum(POSITION_TRAVEL_REQUIREMENTS),
 })
 
 export type CreatePositionInput = z.infer<typeof createPositionSchema>

@@ -1,60 +1,171 @@
-# NEXT_STEPS.md
+# NEXT_STEPS
 
-## Próximo passo imediato
+Este documento representa as próximas entregas planejadas para o Evol OS.
 
-Abrir este projeto no Cursor.
-
-```bash
-cd apps/web
-cp .env.example .env.local
-npm install
-npm run dev
-```
-
-## Depois
-
-1. Criar projeto Supabase.
-2. Copiar URL e anon key para `.env.local`.
-3. Executar migrations:
-   - `supabase/migrations/0001_initial_schema.sql`
-   - `supabase/migrations/0002_rls_policies.sql`
-4. Executar `supabase/seed.sql`.
-5. Conectar telas aos services reais.
-6. Implementar autenticação real.
-7. Subir para GitHub.
-8. Fazer deploy na Vercel.
-
-## Ordem de desenvolvimento
-
-1. Auth real
-2. Company onboarding
-3. CRUD real de pessoas
-4. CRUD real de departamentos
-5. CRUD real de cargos
-6. Importação por planilha
-7. Organograma
 ---
 
-# ✅ PR-078 — Estrutura profissional do Cargo (Concluída)
+# Status atual
 
-## Entregas
+## Infraestrutura
 
-- Adicionado `department_id` ao cargo.
-- Adicionado `hierarchical_level`.
-- Adicionado `status`.
-- Migration `0018_add_position_structure.sql`.
-- CRUD de cargos atualizado.
-- Página do cargo atualizada.
-- Build validado.
-- Testes funcionais aprovados.
+- [x] Next.js 15
+- [x] Supabase
+- [x] RLS
+- [x] Autenticação
+- [x] Company Context
+- [x] Dashboard
+- [x] Sidebar
+- [x] Layout Base
 
-## Próxima entrega
+---
 
-**PR-079 — Jornada e Regime de Trabalho**
+## Organização
 
-Planejado:
+- [x] CRUD de Departamentos
+- [x] CRUD de Times
+- [x] CRUD de Cargos
+- [x] Estrutura profissional do Cargo (PR-078)
 
-- carga horária;
-- modalidade de trabalho;
-- regime contratual;
-- disponibilidade para viagens (quando aplicável).
+---
+
+## Pessoas
+
+- [x] Cadastro
+- [x] Perfil
+- [x] Insights
+- [x] Competências do colaborador
+
+---
+
+## Competências
+
+- [x] CRUD
+- [x] Competências por Cargo
+- [x] Competências por Colaborador
+
+---
+
+## Desenvolvimento
+
+- [x] Plano de Desenvolvimento (PDI)
+- [x] Templates
+- [x] Dashboard Executivo
+- [x] AI Foundation (Mock)
+
+---
+
+# Em andamento
+
+## PR-079A — Refatoração do PositionForm
+
+- [x] Nova organização por diretórios
+- [x] Componentes por responsabilidade
+- [x] Tipos compartilhados
+- [x] Opções centralizadas
+- [x] Build verde
+
+---
+
+## PR-079B — Jornada e Regime de Trabalho
+
+- [ ] Departamento responsável
+- [ ] Jornada semanal
+- [ ] Modalidade de trabalho
+- [ ] Regime contratual
+- [ ] Exigência de viagens
+- [ ] Atualizar Position Details
+- [ ] Atualizar Position Overview Card
+- [ ] Build
+- [ ] Testes funcionais
+
+---
+
+# Próximas PRs
+
+## PR-080 — Engineering Foundation
+
+- [ ] ENGINEERING_GUIDE
+- [ ] EVOL_ENGINEERING_PRINCIPLES
+- [ ] Playbooks
+- [ ] Checklists
+- [ ] Workflow oficial
+- [ ] Atualização do AI_CONTEXT
+
+---
+
+## Organização
+
+- [ ] Faixa salarial
+- [ ] Responsabilidades do cargo
+- [ ] Perfil ideal do cargo
+- [ ] Career Path
+- [ ] Organograma avançado
+
+---
+
+## Performance
+
+- [ ] Avaliações
+- [ ] Feedback
+- [ ] One-on-One
+- [ ] OKRs
+- [ ] Analytics
+
+---
+
+## Talent Intelligence
+
+- [ ] Nine Box
+- [ ] Sucessão
+- [ ] Talent Review
+- [ ] Recomendações por IA
+
+---
+
+## Enterprise
+
+- [ ] Auditoria
+- [ ] API Pública
+- [ ] Integrações
+- [ ] White Label
+- [ ] Marketplace
+
+---
+
+# Engenharia
+
+Todas as novas implementações deverão seguir o fluxo oficial:
+
+Modelagem
+
+↓
+
+Arquitetura
+
+↓
+
+Persistência
+
+↓
+
+Interface
+
+↓
+
+Build verde
+
+↓
+
+Teste funcional
+
+↓
+
+Documentação
+
+↓
+
+Commit
+
+↓
+
+Push

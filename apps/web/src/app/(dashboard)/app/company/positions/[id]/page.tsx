@@ -69,6 +69,11 @@ export default async function PositionDetailsPage({
     name: department.name,
   }))
 
+  const positionDepartment =
+    departmentOptions.find(
+      (department) => department.id === position.department_id
+    ) ?? null
+
   const employees = (employeesData ?? []) as Employee[]
 
   const positionRequirements = (
@@ -107,9 +112,16 @@ export default async function PositionDetailsPage({
 
       <DashboardSection
         title="Visão geral"
-        description="Resumo do cargo e dos vínculos atuais."
+        description="Informações estruturais do cargo e resumo dos vínculos atuais."
       >
         <PositionOverviewCard
+          departmentName={positionDepartment?.name ?? null}
+          hierarchicalLevel={position.hierarchical_level}
+          status={position.status}
+          weeklyWorkloadHours={position.weekly_workload_hours}
+          workModel={position.work_model}
+          employmentType={position.employment_type}
+          travelRequirement={position.travel_requirement}
           competencyCount={competencyCount}
           employeeCount={positionEmployees.length}
           activeEmployees={activeEmployees}
@@ -131,7 +143,9 @@ export default async function PositionDetailsPage({
           <PositionRequirementCreateDialog positionId={position.id} />
         }
       >
-        <PositionRequirementsTable requirements={positionRequirements} />
+        <PositionRequirementsTable
+          requirements={positionRequirements}
+        />
       </DashboardSection>
 
       <PositionEmployeesCard employees={positionEmployees} />

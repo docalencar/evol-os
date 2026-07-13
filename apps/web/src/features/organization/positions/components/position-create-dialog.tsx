@@ -7,11 +7,20 @@ import { Button } from "@/components/ui/button"
 
 import { PositionForm } from "./position-form"
 
-type PositionCreateDialogProps = {
-  companyId: string
+type DepartmentOption = {
+  id: string
+  name: string
 }
 
-export function PositionCreateDialog({ companyId }: PositionCreateDialogProps) {
+type PositionCreateDialogProps = {
+  companyId: string
+  departments: DepartmentOption[]
+}
+
+export function PositionCreateDialog({
+  companyId,
+  departments,
+}: PositionCreateDialogProps) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -22,8 +31,11 @@ export function PositionCreateDialog({ companyId }: PositionCreateDialogProps) {
       title="Novo cargo"
       description="Cadastre um cargo da organização."
     >
-      <PositionForm companyId={companyId} onSuccess={() => setOpen(false)} />
+      <PositionForm
+        companyId={companyId}
+        departments={departments}
+        onSuccess={() => setOpen(false)}
+      />
     </EntityDialog>
   )
 }
-

@@ -31,6 +31,9 @@ export async function updatePositionAction(
     positionId,
     name: parsedInput.data.name,
     description: parsedInput.data.description || null,
+    departmentId: parsedInput.data.departmentId ?? null,
+    hierarchicalLevel: parsedInput.data.hierarchicalLevel,
+    status: parsedInput.data.status,
   })
 
   if (error) {
@@ -41,6 +44,7 @@ export async function updatePositionAction(
   }
 
   revalidatePath("/app/company/positions")
+  revalidatePath(`/app/company/positions/${positionId}`)
 
   return {
     success: true,

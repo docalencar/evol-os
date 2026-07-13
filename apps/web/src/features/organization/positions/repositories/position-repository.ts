@@ -1,9 +1,17 @@
 import { createServerDatabase } from "@/lib/database/server-database"
 
+import type {
+  PositionHierarchicalLevel,
+  PositionStatus,
+} from "../types/position"
+
 type CreatePositionData = {
   companyId: string
   name: string
   description?: string | null
+  departmentId?: string | null
+  hierarchicalLevel: PositionHierarchicalLevel
+  status: PositionStatus
 }
 
 type UpdatePositionData = {
@@ -11,6 +19,9 @@ type UpdatePositionData = {
   positionId: string
   name: string
   description?: string | null
+  departmentId?: string | null
+  hierarchicalLevel: PositionHierarchicalLevel
+  status: PositionStatus
 }
 
 export async function createPositionRepository() {
@@ -18,29 +29,32 @@ export async function createPositionRepository() {
 
   return {
     async findAllByCompany(companyId: string) {
-  return supabase
-    .from("positions")
-    .select("*")
-    .eq("company_id", companyId)
-    .is("deleted_at", null)
-    .order("name", { ascending: true })
-},
+      return supabase
+        .from("positions")
+        .select("*")
+        .eq("company_id", companyId)
+        .is("deleted_at", null)
+        .order("name", { ascending: true })
+    },
 
     async findById(companyId: string, positionId: string) {
-  return supabase
-    .from("positions")
-    .select("*")
-    .eq("company_id", companyId)
-    .eq("id", positionId)
-    .is("deleted_at", null)
-    .single()
-},
+      return supabase
+        .from("positions")
+        .select("*")
+        .eq("company_id", companyId)
+        .eq("id", positionId)
+        .is("deleted_at", null)
+        .single()
+    },
 
     async create(data: CreatePositionData) {
       return supabase.from("positions").insert({
         company_id: data.companyId,
         name: data.name,
         description: data.description ?? null,
+        department_id: data.departmentId ?? null,
+        hierarchical_level: data.hierarchicalLevel,
+        status: data.status,
       })
     },
 
@@ -50,6 +64,9 @@ export async function createPositionRepository() {
         .update({
           name: data.name,
           description: data.description ?? null,
+          department_id: data.departmentId ?? null,
+          hierarchical_level: data.hierarchicalLevel,
+          status: data.status,
           updated_at: new Date().toISOString(),
         })
         .eq("company_id", data.companyId)

@@ -33,3 +33,28 @@ npm run dev
 5. CRUD real de cargos
 6. Importação por planilha
 7. Organograma
+---
+
+# ✅ PR-078 — Estrutura profissional do Cargo (Concluída)
+
+## Entregas
+
+- Adicionado `department_id` ao cargo.
+- Adicionado `hierarchical_level`.
+- Adicionado `status`.
+- Migration `0018_add_position_structure.sql`.
+- CRUD de cargos atualizado.
+- Página do cargo atualizada.
+- Build validado.
+- Testes funcionais aprovados.
+
+## Próxima entrega
+
+**PR-079 — Jornada e Regime de Trabalho**
+
+Planejado:
+
+- carga horária;
+- modalidade de trabalho;
+- regime contratual;
+- disponibilidade para viagens (quando aplicável).

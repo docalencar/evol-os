@@ -80,3 +80,20 @@ Caso seja necessário anexar certificados, imagens, links ou documentos, será c
 ### Negativas
 
 - Modelo inicial mais complexo.
+---
+
+# Decisão Arquitetural — Estrutura Profissional do Cargo
+
+O Cargo passa a representar uma entidade organizacional completa e não apenas um cadastro simples.
+
+Foram adicionados:
+
+- Departamento responsável (`department_id`);
+- Nível hierárquico (`hierarchical_level`);
+- Status próprio (`status`).
+
+## Decisões
+
+- O status do Cargo permanece independente do status do Colaborador.
+- O relacionamento com Departamento utiliza `ON DELETE SET NULL`, preservando o histórico dos cargos durante reorganizações da empresa.
+- Os domínios são validados tanto no banco (CHECK constraints) quanto na aplicação (TypeScript + Zod).

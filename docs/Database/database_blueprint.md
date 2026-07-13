@@ -32,3 +32,22 @@
 - hr
 - manager
 - employee
+
+## positions
+
+- id
+- company_id
+- name
+- description
+
+### Estrutura Organizacional
+
+- department_id → departments.id
+- hierarchical_level
+- status
+
+### Auditoria
+
+- created_at
+- updated_at
+- deleted_at

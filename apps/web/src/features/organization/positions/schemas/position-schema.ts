@@ -1,4 +1,9 @@
- import { z } from "zod"
+import { z } from "zod"
+
+import {
+  POSITION_HIERARCHICAL_LEVELS,
+  POSITION_STATUSES,
+} from "../types/position"
 
 export const createPositionSchema = z.object({
   name: z
@@ -13,6 +18,16 @@ export const createPositionSchema = z.object({
     .max(255, "A descrição deve ter no máximo 255 caracteres.")
     .nullable()
     .optional(),
+
+  departmentId: z
+    .string()
+    .uuid("Departamento inválido.")
+    .nullable()
+    .optional(),
+
+  hierarchicalLevel: z.enum(POSITION_HIERARCHICAL_LEVELS),
+
+  status: z.enum(POSITION_STATUSES),
 })
 
 export type CreatePositionInput = z.infer<typeof createPositionSchema>

@@ -29,6 +29,9 @@ export async function createPositionAction(
     companyId,
     name: parsedInput.data.name,
     description: parsedInput.data.description || null,
+    departmentId: parsedInput.data.departmentId ?? null,
+    hierarchicalLevel: parsedInput.data.hierarchicalLevel,
+    status: parsedInput.data.status,
   })
 
   if (error) {

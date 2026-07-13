@@ -15,6 +15,7 @@ import {
   EMPLOYEE_STATUS_LABELS,
   getEmployeeById,
   getEmployees,
+  type Employee,
   type EmployeeStatus,
 } from "@/features/people"
 import {
@@ -32,6 +33,10 @@ import {
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 type Relation = { name: string } | { name: string }[] | null
+type NamedEntity = {
+  id: string
+  name: string
+}
 
 function getRelationName(relation?: Relation) {
   if (!relation) {
@@ -107,22 +112,37 @@ export default async function EmployeeProfilePage({
   const statusLabel =
     EMPLOYEE_STATUS_LABELS[employee.status as EmployeeStatus]
 
-  const teamOptions = (teams ?? []).map((team) => ({
+  const teamList =
+  (teams ?? []) as NamedEntity[]
+
+const positionList =
+  (positions ?? []) as NamedEntity[]
+
+const employeeList =
+  (employees ?? []) as Employee[]
+
+const teamOptions = teamList.map(
+  (team) => ({
     id: team.id,
     name: team.name,
-  }))
+  })
+)
 
-  const positionOptions = (positions ?? []).map((position) => ({
+const positionOptions =
+  positionList.map((position) => ({
     id: position.id,
     name: position.name,
   }))
 
-  const managerOptions = (employees ?? [])
-    .filter((manager) => manager.id !== employee.id)
-    .map((manager) => ({
-      id: manager.id,
-      name: manager.full_name,
-    }))
+const managerOptions = employeeList
+  .filter(
+    (manager) =>
+      manager.id !== employee.id
+  )
+  .map((manager) => ({
+    id: manager.id,
+    name: manager.full_name,
+  }))
 
   const currentManager = managerOptions.find(
     (manager) => manager.id === employee.manager_id

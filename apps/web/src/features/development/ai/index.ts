@@ -21,3 +21,6 @@ export {
 export {
   generateMockDevelopmentPlanAiSuggestion,
 } from "./services/generate-mock-development-plan-ai-suggestion"
+export {
+  developmentPlanAiInputSchema,
+} from "./schemas/development-plan-ai-input-schema"

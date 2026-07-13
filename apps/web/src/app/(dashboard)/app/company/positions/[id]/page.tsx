@@ -5,8 +5,6 @@ import {
 import { z } from "zod"
 
 import {
-  DashboardCard,
-  DashboardEmptyState,
   DashboardSection,
 } from "@/components/dashboard"
 
@@ -21,6 +19,13 @@ import {
 import {
   getPositionCompetenciesByPosition,
 } from "@/features/competencies/position-competencies"
+
+import {
+  PositionRequirementCreateDialog,
+  PositionRequirementsTable,
+  getPositionRequirementsByPosition,
+  type PositionRequirement,
+} from "@/features/organization/position-requirements"
 
 import {
   getPositionById,
@@ -69,6 +74,7 @@ export default async function PositionDetailsPage({
     position,
     positionCompetencies,
     competencies,
+    positionRequirementsData,
     employeesData,
   ] = await Promise.all([
     getPositionById(
@@ -85,6 +91,11 @@ export default async function PositionDetailsPage({
       companyId
     ),
 
+    getPositionRequirementsByPosition(
+      companyId,
+      positionId
+    ),
+
     getEmployees(
       companyId
     ),
@@ -98,6 +109,11 @@ export default async function PositionDetailsPage({
 
   const employees =
     (employeesData ?? []) as Employee[]
+
+  const positionRequirements =
+    (
+      positionRequirementsData ?? []
+    ) as PositionRequirement[]
 
   const positionEmployees =
     employees.filter(
@@ -168,21 +184,25 @@ export default async function PositionDetailsPage({
         }
       />
 
+      <DashboardSection
+        title="Requisitos técnicos"
+        description="Defina formação, experiência, certificações, idiomas e conhecimentos necessários para este cargo."
+        actions={
+          <PositionRequirementCreateDialog
+            positionId={position.id}
+          />
+        }
+      >
+        <PositionRequirementsTable
+          requirements={
+            positionRequirements
+          }
+        />
+      </DashboardSection>
+
       <PositionEmployeesCard
         employees={positionEmployees}
       />
-
-      <DashboardSection
-        title="Requisitos técnicos"
-        description="Formação, certificações, experiência e demais requisitos do cargo."
-      >
-        <DashboardCard>
-          <DashboardEmptyState
-            title="Disponível em breve"
-            description="Os requisitos técnicos serão implementados em uma etapa futura e permanecerão separados das competências."
-          />
-        </DashboardCard>
-      </DashboardSection>
     </div>
   )
 }

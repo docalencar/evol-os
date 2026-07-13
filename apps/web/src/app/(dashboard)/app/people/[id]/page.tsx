@@ -5,12 +5,29 @@ import {
   DashboardSection,
   InfoCard,
 } from "@/components/dashboard"
+
+import {
+  getCompetencies,
+} from "@/features/competencies"
+
 import {
   EmployeeCompetenciesCard,
   getEmployeeCompetenciesByEmployee,
 } from "@/features/competencies/employee-competencies"
-import { getPositions } from "@/features/organization/positions"
-import { getTeams } from "@/features/organization/teams"
+
+import {
+  DevelopmentPlanAiSuggestionDialog,
+  getDevelopmentPlanAiContext,
+} from "@/features/development"
+
+import {
+  getPositions,
+} from "@/features/organization/positions"
+
+import {
+  getTeams,
+} from "@/features/organization/teams"
+
 import {
   EMPLOYEE_STATUS_LABELS,
   getEmployeeById,
@@ -18,27 +35,42 @@ import {
   type Employee,
   type EmployeeStatus,
 } from "@/features/people"
+
 import {
   EmployeeProfileHeader,
   EmployeeProfileLayout,
   EmployeeProfileSidebar,
   EmployeeProfileTimeline,
 } from "@/features/people/profile"
+
 import {
   CompetencyGapCard,
   createEmployeeInsights,
   getEmployeeCompetencyGaps,
   TalentSummaryCard,
 } from "@/features/talent"
-import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
-type Relation = { name: string } | { name: string }[] | null
+import {
+  getCurrentCompanyContext,
+} from "@/lib/supabase/supabase/current-company"
+
+type Relation =
+  | {
+      name: string
+    }
+  | {
+      name: string
+    }[]
+  | null
+
 type NamedEntity = {
   id: string
   name: string
 }
 
-function getRelationName(relation?: Relation) {
+function getRelationName(
+  relation?: Relation
+) {
   if (!relation) {
     return "-"
   }
@@ -50,12 +82,15 @@ function getRelationName(relation?: Relation) {
   return relation.name || "-"
 }
 
-function formatPhone(phone?: string | null) {
+function formatPhone(
+  phone?: string | null
+) {
   if (!phone) {
     return "-"
   }
 
-  const digits = phone.replace(/\D/g, "")
+  const digits =
+    phone.replace(/\D/g, "")
 
   if (digits.length === 11) {
     return digits.replace(
@@ -84,72 +119,133 @@ export default async function EmployeeProfilePage({
   params,
 }: EmployeeProfilePageProps) {
   const { id } = await params
-  const { companyId } = await getCurrentCompanyContext()
+
+  const { companyId } =
+    await getCurrentCompanyContext()
 
   const [
     employee,
     employeeCompetencies,
     competencyGaps,
+    competencies,
     teams,
     positions,
     employees,
   ] = await Promise.all([
-    getEmployeeById(companyId, id),
-    getEmployeeCompetenciesByEmployee(companyId, id),
-    getEmployeeCompetencyGaps(companyId, id),
-    getTeams(companyId),
-    getPositions(companyId),
-    getEmployees(companyId),
+    getEmployeeById(
+      companyId,
+      id
+    ),
+
+    getEmployeeCompetenciesByEmployee(
+      companyId,
+      id
+    ),
+
+    getEmployeeCompetencyGaps(
+      companyId,
+      id
+    ),
+
+    getCompetencies(
+      companyId
+    ),
+
+    getTeams(
+      companyId
+    ),
+
+    getPositions(
+      companyId
+    ),
+
+    getEmployees(
+      companyId
+    ),
   ])
 
   if (!employee) {
     redirect("/app/people")
   }
 
-  const positionName = getRelationName(employee.positions)
-  const teamName = getRelationName(employee.teams)
+  const positionName =
+    getRelationName(
+      employee.positions
+    )
+
+  const teamName =
+    getRelationName(
+      employee.teams
+    )
 
   const statusLabel =
-    EMPLOYEE_STATUS_LABELS[employee.status as EmployeeStatus]
+    EMPLOYEE_STATUS_LABELS[
+      employee.status as EmployeeStatus
+    ]
 
   const teamList =
-  (teams ?? []) as NamedEntity[]
+    (teams ?? []) as NamedEntity[]
 
-const positionList =
-  (positions ?? []) as NamedEntity[]
+  const positionList =
+    (positions ?? []) as NamedEntity[]
 
-const employeeList =
-  (employees ?? []) as Employee[]
+  const employeeList =
+    (employees ?? []) as Employee[]
 
-const teamOptions = teamList.map(
-  (team) => ({
-    id: team.id,
-    name: team.name,
-  })
-)
+  const teamOptions =
+    teamList.map((team) => ({
+      id: team.id,
+      name: team.name,
+    }))
 
-const positionOptions =
-  positionList.map((position) => ({
-    id: position.id,
-    name: position.name,
-  }))
+  const positionOptions =
+    positionList.map(
+      (position) => ({
+        id: position.id,
+        name: position.name,
+      })
+    )
 
-const managerOptions = employeeList
-  .filter(
-    (manager) =>
-      manager.id !== employee.id
-  )
-  .map((manager) => ({
-    id: manager.id,
-    name: manager.full_name,
-  }))
+  const managerOptions =
+    employeeList
+      .filter(
+        (manager) =>
+          manager.id !== employee.id
+      )
+      .map((manager) => ({
+        id: manager.id,
+        name: manager.full_name,
+      }))
 
-  const currentManager = managerOptions.find(
-    (manager) => manager.id === employee.manager_id
-  )
+  const currentManager =
+    managerOptions.find(
+      (manager) =>
+        manager.id ===
+        employee.manager_id
+    )
 
-  const managerName = currentManager?.name ?? "-"
-  const insights = createEmployeeInsights(competencyGaps)
+  const managerName =
+    currentManager?.name ?? "-"
+
+  const insights =
+    createEmployeeInsights(
+      competencyGaps
+    )
+
+  const developmentPlanAiContext =
+    getDevelopmentPlanAiContext({
+      employeeName:
+        employee.full_name,
+
+      positionName,
+
+      competencyGaps,
+    })
+
+  const canGenerateAiSuggestion =
+    positionName !== "-" &&
+    developmentPlanAiContext
+      .competencyGaps.length > 0
 
   return (
     <EmployeeProfileLayout
@@ -159,7 +255,9 @@ const managerOptions = employeeList
           teamName={teamName}
           managerName={managerName}
           status={statusLabel}
-          hireDate={employee.hire_date ?? ""}
+          hireDate={
+            employee.hire_date ?? ""
+          }
         />
       }
       header={
@@ -177,7 +275,9 @@ const managerOptions = employeeList
       <DashboardSection title="Resumo de talentos">
         <TalentSummaryCard
           insights={insights}
-          positionId={employee.position_id}
+          positionId={
+            employee.position_id
+          }
         />
       </DashboardSection>
 
@@ -194,34 +294,67 @@ const managerOptions = employeeList
 
           <InfoCard
             label="Telefone"
-            value={formatPhone(employee.phone)}
+            value={formatPhone(
+              employee.phone
+            )}
           />
 
           <InfoCard
             label="DISC"
-            value={employee.disc_profile || "-"}
+            value={
+              employee.disc_profile ||
+              "-"
+            }
           />
         </div>
       </DashboardSection>
 
-      <DashboardSection title="Gap de competências">
-        <CompetencyGapCard gaps={competencyGaps} />
+      <DashboardSection
+        title="Gap de competências"
+        actions={
+          canGenerateAiSuggestion ? (
+            <DevelopmentPlanAiSuggestionDialog
+              input={
+                developmentPlanAiContext
+              }
+            />
+          ) : undefined
+        }
+      >
+        <CompetencyGapCard
+          gaps={competencyGaps}
+        />
       </DashboardSection>
 
       <DashboardSection title="Competências registradas">
         <EmployeeCompetenciesCard
-          competencies={employeeCompetencies ?? []}
+          companyId={companyId}
+          employeeId={employee.id}
+          competencies={competencies}
+          employeeCompetencies={
+            employeeCompetencies ?? []
+          }
         />
       </DashboardSection>
 
-      <EmployeeProfileTimeline hireDate={employee.hire_date} />
+      <EmployeeProfileTimeline
+        hireDate={
+          employee.hire_date
+        }
+      />
 
       <DashboardSection title="Próximos módulos">
         <DashboardCard>
           <div className="space-y-3 text-sm text-slate-600">
-            <p>⏳ Avaliações serão adicionadas em breve.</p>
-            <p>⏳ Feedbacks serão adicionados em breve.</p>
-            <p>⏳ PDI será adicionado em breve.</p>
+            <p>
+              ⏳ Avaliações serão
+              adicionadas em breve.
+            </p>
+
+            <p>
+              ⏳ Feedbacks serão
+              adicionados em breve.
+            </p>
           </div>
         </DashboardCard>
       </DashboardSection>

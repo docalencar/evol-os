@@ -21,3 +21,9 @@ export { getPositionCompetencyById } from "./queries/get-position-competency-by-
 export { createPositionCompetencyAction } from "./actions/create-position-competency-action"
 export { updatePositionCompetencyAction } from "./actions/update-position-competency-action"
 export { archivePositionCompetencyAction } from "./actions/archive-position-competency-action"
+export {
+  PositionCompetencyForm,
+} from "./components/position-competency-form"
+export {
+  PositionCompetencyCreateDialog,
+} from "./components/position-competency-create-dialog"

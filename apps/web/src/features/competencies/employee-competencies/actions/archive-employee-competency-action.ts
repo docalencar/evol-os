@@ -1,31 +1,55 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
+import {
+  revalidatePath,
+} from "next/cache"
 
-import { createEmployeeCompetencyRepository } from "../repositories/employee-competency-repository"
+import {
+  failureResult,
+  successResult,
+} from "@/lib/actions"
+
+import {
+  createEmployeeCompetencyRepository,
+} from "../repositories/employee-competency-repository"
 
 export async function archiveEmployeeCompetencyAction(
   companyId: string,
+  employeeId: string,
   employeeCompetencyId: string
 ) {
-  const repository = await createEmployeeCompetencyRepository()
+  try {
+    const repository =
+      await createEmployeeCompetencyRepository()
 
-  const { error } = await repository.archive(
-    companyId,
-    employeeCompetencyId
-  )
+    const { error } =
+      await repository.archive(
+        companyId,
+        employeeCompetencyId
+      )
 
-  if (error) {
-    return {
-      success: false,
-      message: "Não foi possível arquivar a competência do colaborador.",
+    if (error) {
+      return failureResult(
+        "Não foi possível arquivar a competência do colaborador."
+      )
     }
-  }
 
-  revalidatePath("/app/people")
+    revalidatePath(
+      `/app/people/${employeeId}`
+    )
 
-  return {
-    success: true,
-    message: "Competência do colaborador arquivada com sucesso.",
+    revalidatePath(
+      "/app/people"
+    )
+
+    return successResult(
+      "Competência do colaborador arquivada com sucesso."
+    )
+  } catch (error) {
+    return failureResult(
+      error instanceof Error
+        ? error.message
+        : "Não foi possível arquivar a competência do colaborador."
+    )
   }
 }

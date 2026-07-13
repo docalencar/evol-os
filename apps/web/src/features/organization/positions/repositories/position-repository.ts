@@ -18,21 +18,23 @@ export async function createPositionRepository() {
 
   return {
     async findAllByCompany(companyId: string) {
-      return supabase
-        .from("positions")
-        .select("*")
-        .eq("company_id", companyId)
-        .order("name", { ascending: true })
-    },
+  return supabase
+    .from("positions")
+    .select("*")
+    .eq("company_id", companyId)
+    .is("deleted_at", null)
+    .order("name", { ascending: true })
+},
 
     async findById(companyId: string, positionId: string) {
-      return supabase
-        .from("positions")
-        .select("*")
-        .eq("company_id", companyId)
-        .eq("id", positionId)
-        .single()
-    },
+  return supabase
+    .from("positions")
+    .select("*")
+    .eq("company_id", companyId)
+    .eq("id", positionId)
+    .is("deleted_at", null)
+    .single()
+},
 
     async create(data: CreatePositionData) {
       return supabase.from("positions").insert({

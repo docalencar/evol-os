@@ -24,8 +24,11 @@ export function getDevelopmentPlanAiContext({
 
     positionName,
 
-    competencyGaps: competencyGaps.map(
-      (gap) => ({
+    competencyGaps: competencyGaps
+      .filter(
+        (gap) => gap.gap < 0
+      )
+      .map((gap) => ({
         competency:
           gap.competencyName,
 
@@ -37,7 +40,6 @@ export function getDevelopmentPlanAiContext({
 
         required:
           gap.required,
-      })
-    ),
+      })),
   }
 }

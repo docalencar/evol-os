@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { DataTable } from "@/components/shared/data-table"
 import { Badge } from "@/components/ui/badge"
 
@@ -9,11 +10,13 @@ import type {
   AssessmentCycle,
   AssessmentCycleStatus,
 } from "../../types/assessment-cycle"
+import type { AssessmentTemplate } from "../../types/assessment-template"
 import { ArchiveAssessmentCycleButton } from "./archive-assessment-cycle-button"
 import { AssessmentCycleEditDialog } from "./assessment-cycle-edit-dialog"
 
 type AssessmentCycleTableProps = {
   cycles: AssessmentCycle[]
+  templates: AssessmentTemplate[]
 }
 
 function formatDate(value: string) {
@@ -50,6 +53,7 @@ function getStatusClassName(status: AssessmentCycleStatus) {
 
 export function AssessmentCycleTable({
   cycles,
+  templates,
 }: AssessmentCycleTableProps) {
   return (
     <DataTable
@@ -63,9 +67,12 @@ export function AssessmentCycleTable({
           header: "Ciclo",
           render: (cycle) => (
             <div>
-              <p className="font-medium text-slate-900">
+              <Link
+                href={`/app/assessments/cycles/${cycle.id}`}
+                className="font-medium text-slate-900 transition hover:text-primary hover:underline"
+              >
                 {cycle.name}
-              </p>
+              </Link>
 
               <p className="text-sm text-muted-foreground">
                 {ASSESSMENT_CYCLE_TYPE_LABELS[
@@ -100,6 +107,7 @@ export function AssessmentCycleTable({
               <AssessmentCycleEditDialog
                 companyId={cycle.company_id}
                 cycle={cycle}
+                templates={templates}
               />
 
               <ArchiveAssessmentCycleButton

@@ -38,6 +38,37 @@ export async function createAssessmentResponseRepository() {
         .order("created_at", { ascending: false })
     },
 
+    generateSelfAssessments(
+      companyId: string,
+      assessmentCycleId: string,
+      assessmentTemplateId: string,
+      employeeIds: string[]
+    ) {
+      const now = new Date().toISOString()
+
+      return supabase
+        .from("assessment_responses")
+        .upsert(
+          employeeIds.map((employeeId) => ({
+            company_id: companyId,
+            assessment_cycle_id: assessmentCycleId,
+            assessment_template_id: assessmentTemplateId,
+            employee_id: employeeId,
+            evaluator_id: employeeId,
+            status: "draft",
+            started_at: null,
+            submitted_at: null,
+            completed_at: null,
+            updated_at: now,
+          })),
+          {
+            onConflict:
+              "assessment_cycle_id,assessment_template_id,employee_id,evaluator_id",
+            ignoreDuplicates: true,
+          }
+        )
+    },
+
     create(data: CreateAssessmentResponseData) {
       const now = new Date().toISOString()
 

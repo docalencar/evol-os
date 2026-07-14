@@ -33,6 +33,7 @@ begin
     select 1
     from pg_constraint
     where conname = 'assessment_responses_status_check'
+      and conrelid = 'public.assessment_responses'::regclass
   ) then
     alter table public.assessment_responses
       add constraint assessment_responses_status_check
@@ -70,6 +71,30 @@ alter table public.assessment_responses
 
 alter table public.assessment_answers
   enable row level security;
+
+drop policy if exists
+  "members can read assessment responses"
+  on public.assessment_responses;
+
+drop policy if exists
+  "admins and hr create assessment responses"
+  on public.assessment_responses;
+
+drop policy if exists
+  "members update assessment responses"
+  on public.assessment_responses;
+
+drop policy if exists
+  "members can read assessment answers"
+  on public.assessment_answers;
+
+drop policy if exists
+  "members create assessment answers"
+  on public.assessment_answers;
+
+drop policy if exists
+  "members update assessment answers"
+  on public.assessment_answers;
 
 create policy "members can read assessment responses"
 on public.assessment_responses

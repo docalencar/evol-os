@@ -29,6 +29,10 @@ export const assessmentCycleSchema = z
 
     assessmentType: z.enum(ASSESSMENT_CYCLE_TYPES),
 
+    assessmentTemplateId: z
+      .string()
+      .uuid("Selecione um template de avaliação válido."),
+
     status: z.enum(ASSESSMENT_CYCLE_STATUSES),
 
     startDate: z

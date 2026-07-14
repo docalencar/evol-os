@@ -36,7 +36,10 @@ export default async function AssessmentsPage() {
               companyId={companyId}
             />
 
-            <AssessmentCycleCreateDialog companyId={companyId} />
+            <AssessmentCycleCreateDialog
+              companyId={companyId}
+              templates={templates}
+            />
           </div>
         }
       />
@@ -47,7 +50,10 @@ export default async function AssessmentsPage() {
       >
         <div className="space-y-6">
           <AssessmentCycleOverviewCard cycles={cycles} />
-          <AssessmentCycleTable cycles={cycles} />
+          <AssessmentCycleTable
+            cycles={cycles}
+            templates={templates}
+          />
         </div>
       </DashboardSection>
 

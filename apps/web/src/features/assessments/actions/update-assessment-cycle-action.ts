@@ -19,6 +19,8 @@ export async function updateAssessmentCycleAction(
     name: formData.get("name"),
     description: formData.get("description"),
     assessmentType: formData.get("assessmentType"),
+    assessmentTemplateId:
+      formData.get("assessmentTemplateId"),
     status: formData.get("status"),
     startDate: formData.get("startDate"),
     endDate: formData.get("endDate"),

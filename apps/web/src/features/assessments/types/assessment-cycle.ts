@@ -31,6 +31,8 @@ export type AssessmentCycle = {
   assessment_type: AssessmentCycleType
   status: AssessmentCycleStatus
 
+  assessment_template_id: string | null
+
   start_date: string
   end_date: string
   close_date: string | null

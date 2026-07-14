@@ -14,9 +14,11 @@ import {
   assessmentCycleTypeOptions,
 } from "../../constants/assessment-cycle-options"
 import type { AssessmentCycle } from "../../types/assessment-cycle"
+import type { AssessmentTemplate } from "../../types/assessment-template"
 
 type AssessmentCycleFormProps = {
   companyId: string
+  templates: AssessmentTemplate[]
   cycle?: AssessmentCycle
   onSuccess?: () => void
 }
@@ -29,6 +31,7 @@ const textareaClassName =
 
 export function AssessmentCycleForm({
   companyId,
+  templates,
   cycle,
   onSuccess,
 }: AssessmentCycleFormProps) {
@@ -81,6 +84,51 @@ export function AssessmentCycleForm({
           placeholder="Descreva o objetivo deste ciclo."
           maxLength={500}
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="assessmentTemplateId">
+          Template da avaliação
+        </Label>
+
+        <select
+          id="assessmentTemplateId"
+          name="assessmentTemplateId"
+          className={selectClassName}
+          defaultValue={
+            cycle?.assessment_template_id ?? ""
+          }
+          required
+        >
+          <option value="" disabled>
+            Selecione um template
+          </option>
+
+          {templates
+            .filter(
+              (template) =>
+                template.active &&
+                template.status === "active"
+            )
+            .map((template) => (
+              <option
+                key={template.id}
+                value={template.id}
+              >
+                {template.name}
+              </option>
+            ))}
+        </select>
+
+        {templates.filter(
+          (template) =>
+            template.active &&
+            template.status === "active"
+        ).length === 0 ? (
+          <p className="text-sm text-amber-600">
+            Crie e ative um template antes de cadastrar o ciclo.
+          </p>
+        ) : null}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">

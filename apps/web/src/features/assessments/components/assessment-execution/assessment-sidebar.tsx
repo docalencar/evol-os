@@ -6,16 +6,24 @@ import type { AssessmentAnswer } from "../../types/assessment-answer"
 import type { AssessmentQuestion } from "../../types/assessment-question"
 import type { AssessmentSection } from "../../types/assessment-section"
 
+import { AssessmentSmartInsightsCard } from "./assessment-smart-insights-card"
+
 type Props = {
   sections: AssessmentSection[]
   questionsBySection: Map<string, AssessmentQuestion[]>
   answers: AssessmentAnswer[]
+  insights: {
+    completedSections: number
+    pendingSections: number
+    averageScore: number | null
+  }
 }
 
 export function AssessmentSidebar({
   sections,
   questionsBySection,
   answers,
+  insights,
 }: Props) {
   const [activeSection, setActiveSection] = useState<string>()
 
@@ -114,6 +122,13 @@ export function AssessmentSidebar({
             )
           })}
         </nav>
+
+        <div className="mt-6">
+          <AssessmentSmartInsightsCard
+            insights={insights}
+          />
+        </div>
+
       </div>
     </aside>
   )

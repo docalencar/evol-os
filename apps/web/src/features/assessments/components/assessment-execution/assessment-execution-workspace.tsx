@@ -62,6 +62,7 @@ export function AssessmentExecutionWorkspace({
           sections={sections}
           questionsBySection={questionsBySection}
           answers={answers}
+          insights={viewModel.insights}
         />
 
         <main className="min-w-0 flex-1 space-y-8">

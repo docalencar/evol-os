@@ -45,11 +45,6 @@ export function AssessmentSectionTable({
       emptyMessage="Nenhuma seção cadastrada neste template."
       columns={[
         {
-          key: "order",
-          header: "Ordem",
-          render: (section) => section.display_order,
-        },
-        {
           key: "name",
           header: "Seção",
           render: (section) => (

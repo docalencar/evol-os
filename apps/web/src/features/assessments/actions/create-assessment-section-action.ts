@@ -2,22 +2,29 @@
 
 import { revalidatePath } from "next/cache"
 
+import { createAssessmentSectionRepository } from "../repositories/assessment-section-repository"
 import {
   assessmentSectionSchema,
   type AssessmentSectionInput,
 } from "../schemas/assessment-section-schema"
-import { createAssessmentSectionRepository } from "../repositories/assessment-section-repository"
+
+type AssessmentSectionActionState = {
+  success: boolean
+  message: string
+}
 
 export async function createAssessmentSectionAction(
   companyId: string,
   input: AssessmentSectionInput
-) {
+): Promise<AssessmentSectionActionState> {
   const parsed = assessmentSectionSchema.safeParse(input)
 
   if (!parsed.success) {
     return {
       success: false,
-      message: parsed.error.issues[0]?.message ?? "Dados inválidos.",
+      message:
+        parsed.error.issues[0]?.message ??
+        "Dados inválidos para criar a seção.",
     }
   }
 
@@ -37,13 +44,18 @@ export async function createAssessmentSectionAction(
   })
 
   if (error) {
+    console.error("Assessment Section Create Error:", error)
+
     return {
       success: false,
-      message: "Não foi possível criar a seção.",
+      message: error.message,
     }
   }
 
   revalidatePath("/app/assessments")
+  revalidatePath(
+    `/app/assessments/templates/${parsed.data.assessmentTemplateId}`
+  )
 
   return {
     success: true,

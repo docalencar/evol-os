@@ -2,31 +2,38 @@
 
 import { revalidatePath } from "next/cache"
 
+import { createAssessmentSectionRepository } from "../repositories/assessment-section-repository"
 import {
   assessmentSectionSchema,
   type AssessmentSectionInput,
 } from "../schemas/assessment-section-schema"
-import { createAssessmentSectionRepository } from "../repositories/assessment-section-repository"
+
+type AssessmentSectionActionState = {
+  success: boolean
+  message: string
+}
 
 export async function updateAssessmentSectionAction(
   companyId: string,
   assessmentSectionId: string,
   input: AssessmentSectionInput
-) {
+): Promise<AssessmentSectionActionState> {
   const parsed = assessmentSectionSchema.safeParse(input)
 
   if (!parsed.success) {
     return {
       success: false,
-      message: parsed.error.issues[0]?.message ?? "Dados inválidos.",
+      message:
+        parsed.error.issues[0]?.message ??
+        "Dados inválidos para atualizar a seção.",
     }
   }
 
   const repository = await createAssessmentSectionRepository()
 
   const { error } = await repository.update({
-    assessmentSectionId,
     companyId,
+    assessmentSectionId,
     assessmentTemplateId: parsed.data.assessmentTemplateId,
     code: parsed.data.code,
     name: parsed.data.name,
@@ -39,13 +46,18 @@ export async function updateAssessmentSectionAction(
   })
 
   if (error) {
+    console.error("Assessment Section Update Error:", error)
+
     return {
       success: false,
-      message: "Não foi possível atualizar a seção.",
+      message: error.message,
     }
   }
 
   revalidatePath("/app/assessments")
+  revalidatePath(
+    `/app/assessments/templates/${parsed.data.assessmentTemplateId}`
+  )
 
   return {
     success: true,

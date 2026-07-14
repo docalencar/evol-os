@@ -48,9 +48,8 @@ export function AssessmentSectionForm({
         icon: String(formData.get("icon") ?? ""),
         color: String(formData.get("color") ?? ""),
         weight: Number(formData.get("weight") ?? 1),
-        displayOrder: Number(
-          formData.get("displayOrder") ?? defaultDisplayOrder
-        ),
+        displayOrder:
+  section?.display_order ?? defaultDisplayOrder,
         active: formData.get("active") === "on",
       }
 
@@ -169,21 +168,7 @@ export function AssessmentSectionForm({
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="displayOrder">Ordem de exibição</Label>
-
-          <Input
-            id="displayOrder"
-            name="displayOrder"
-            type="number"
-            min={0}
-            step={1}
-            defaultValue={
-              section?.display_order ?? defaultDisplayOrder
-            }
-            required
-          />
-        </div>
+        
       </div>
 
       <label className="flex items-center gap-3 rounded-md border p-4 text-sm">

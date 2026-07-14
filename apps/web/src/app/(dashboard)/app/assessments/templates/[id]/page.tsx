@@ -8,12 +8,15 @@ import { PageHeader } from "@/components/shared/page-header"
 import {
   ASSESSMENT_TEMPLATE_STATUS_LABELS,
   ASSESSMENT_TEMPLATE_TYPE_LABELS,
+  AssessmentQuestionCreateDialog,
+  AssessmentQuestionTable,
   AssessmentSectionCreateDialog,
   AssessmentSectionOverviewCard,
-  AssessmentSectionTable,
   AssessmentTemplateEditDialog,
+  getAssessmentQuestions,
   getAssessmentSections,
   getAssessmentTemplateById,
+  type AssessmentQuestion,
   type AssessmentSection,
   type AssessmentTemplate,
 } from "@/features/assessments"
@@ -39,17 +42,37 @@ export default async function AssessmentTemplateDetailsPage({
   const assessmentTemplateId = templateIdResult.data
   const { companyId } = await getCurrentCompanyContext()
 
-  const [template, sectionsData] = await Promise.all([
+  const [templateData, sectionsData] = await Promise.all([
     getAssessmentTemplateById(companyId, assessmentTemplateId),
     getAssessmentSections(companyId, assessmentTemplateId),
   ])
 
-  if (!template) {
+  if (!templateData) {
     redirect("/app/assessments")
   }
 
-  const assessmentTemplate = template as AssessmentTemplate
+  const assessmentTemplate =
+    templateData as AssessmentTemplate
+
   const sections = (sectionsData ?? []) as AssessmentSection[]
+
+  const questionsBySectionEntries = await Promise.all(
+    sections.map(async (section) => {
+      const questionsData = await getAssessmentQuestions(
+        companyId,
+        section.id
+      )
+
+      return [
+        section.id,
+        (questionsData ?? []) as AssessmentQuestion[],
+      ] as const
+    })
+  )
+
+  const questionsBySection = new Map(
+    questionsBySectionEntries
+  )
 
   return (
     <div className="space-y-8">
@@ -69,10 +92,19 @@ export default async function AssessmentTemplateDetailsPage({
           "Template sem descrição cadastrada."
         }
         actions={
-          <AssessmentTemplateEditDialog
-            companyId={companyId}
-            template={assessmentTemplate}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href={`/app/assessments/templates/${assessmentTemplate.id}/preview`}
+              className="inline-flex h-9 items-center justify-center rounded-md bg-secondary px-3 text-sm font-medium text-secondary-foreground transition-colors hover:bg-secondary/80"
+            >
+              Visualizar avaliação
+            </Link>
+
+            <AssessmentTemplateEditDialog
+              companyId={companyId}
+              template={assessmentTemplate}
+            />
+          </div>
         }
       />
 
@@ -84,20 +116,65 @@ export default async function AssessmentTemplateDetailsPage({
       </DashboardSection>
 
       <DashboardSection
-        title="Seções"
-        description="Organize as perguntas do template em blocos de avaliação."
+        title="Seções e perguntas"
+        description="Organize o conteúdo deste template em seções e perguntas."
         actions={
           <AssessmentSectionCreateDialog
             companyId={companyId}
             assessmentTemplateId={assessmentTemplate.id}
-            defaultDisplayOrder={sections.length}
+            defaultDisplayOrder={sections.length + 1}
           />
         }
       >
-        <AssessmentSectionTable
-          companyId={companyId}
-          sections={sections}
-        />
+        {sections.length === 0 ? (
+          <div className="rounded-lg border border-dashed p-8 text-center">
+            <p className="font-medium">
+              Nenhuma seção cadastrada.
+            </p>
+
+            <p className="mt-1 text-sm text-muted-foreground">
+              Crie a primeira seção para começar a estruturar o
+              template.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {sections.map((section) => {
+              const questions =
+                questionsBySection.get(section.id) ?? []
+
+              return (
+                <div
+                  key={section.id}
+                  className="rounded-lg border p-6"
+                >
+                  <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <h3 className="text-lg font-semibold">
+                        {section.name}
+                      </h3>
+
+                      <p className="text-sm text-muted-foreground">
+                        {section.description ?? "Sem descrição"}
+                      </p>
+                    </div>
+
+                    <AssessmentQuestionCreateDialog
+                      companyId={companyId}
+                      assessmentSectionId={section.id}
+                      defaultDisplayOrder={questions.length + 1}
+                    />
+                  </div>
+
+                  <AssessmentQuestionTable
+                    companyId={companyId}
+                    questions={questions}
+                  />
+                </div>
+              )
+            })}
+          </div>
+        )}
       </DashboardSection>
     </div>
   )

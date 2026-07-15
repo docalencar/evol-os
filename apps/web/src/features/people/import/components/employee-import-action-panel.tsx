@@ -2,12 +2,24 @@
 
 import Link from "next/link"
 import {
+  useMemo,
   useState,
   useTransition,
 } from "react"
 
+import {
+  OrganizationSyncReview,
+  OrganizationSyncWorkspaceSummary,
+  presentOrganizationSyncReview,
+  presentOrganizationSyncWorkspace,
+  type OrganizationSyncPlan,
+} from "@/features/organization/sync"
 import { Button } from "@/components/ui/button"
 
+import {
+  createEmployeeImportSyncPlanAction,
+  type EmployeeImportSyncPlanResult,
+} from "../actions/create-employee-import-sync-plan-action"
 import {
   importEmployeesAction,
 } from "../actions/import-employees-action"
@@ -39,15 +51,61 @@ export function EmployeeImportActionPanel({
 }: EmployeeImportActionPanelProps) {
   const [isPending, startTransition] = useTransition()
 
+  const [planResult, setPlanResult] =
+    useState<EmployeeImportSyncPlanResult | null>(null)
+
   const [result, setResult] =
     useState<EmployeeImportActionResult | null>(null)
+
+  const rows = useMemo(
+    () => createActionRows(validation),
+    [validation]
+  )
+
+  const plan = useMemo<OrganizationSyncPlan | null>(
+    () =>
+      planResult?.success
+        ? {
+            ...planResult.plan,
+            generatedAt: new Date(
+              planResult.plan.generatedAt
+            ),
+          }
+        : null,
+    [planResult]
+  )
+
+  const workspace = useMemo(
+    () =>
+      plan
+        ? presentOrganizationSyncWorkspace(plan)
+        : null,
+    [plan]
+  )
+
+  const review = useMemo(
+    () =>
+      plan
+        ? presentOrganizationSyncReview(plan)
+        : null,
+    [plan]
+  )
 
   const importableRows =
     validation.validRows + validation.warningRows
 
-  function handleImport() {
-    const rows = createActionRows(validation)
+  function handleAnalyze() {
+    startTransition(async () => {
+      const actionResult =
+        await createEmployeeImportSyncPlanAction(
+          rows
+        )
 
+      setPlanResult(actionResult)
+    })
+  }
+
+  function handleImport() {
     startTransition(async () => {
       const actionResult =
         await importEmployeesAction(rows)
@@ -61,7 +119,7 @@ export function EmployeeImportActionPanel({
       <section className="space-y-5 rounded-2xl border border-slate-200 bg-slate-950 p-6 text-white sm:p-8">
         <div>
           <p className="text-sm font-medium text-slate-300">
-            Importação concluída
+            Sincronização concluída
           </p>
 
           <h2 className="mt-2 text-2xl font-semibold">
@@ -74,7 +132,6 @@ export function EmployeeImportActionPanel({
             <p className="text-2xl font-bold">
               {result.importedRows}
             </p>
-
             <p className="mt-1 text-sm text-slate-300">
               Importados
             </p>
@@ -84,7 +141,6 @@ export function EmployeeImportActionPanel({
             <p className="text-2xl font-bold">
               {result.createdDepartments}
             </p>
-
             <p className="mt-1 text-sm text-slate-300">
               Departamentos
             </p>
@@ -94,7 +150,6 @@ export function EmployeeImportActionPanel({
             <p className="text-2xl font-bold">
               {result.createdPositions}
             </p>
-
             <p className="mt-1 text-sm text-slate-300">
               Cargos criados
             </p>
@@ -104,7 +159,6 @@ export function EmployeeImportActionPanel({
             <p className="text-2xl font-bold">
               {result.skippedRows}
             </p>
-
             <p className="mt-1 text-sm text-slate-300">
               Ignorados
             </p>
@@ -114,7 +168,6 @@ export function EmployeeImportActionPanel({
             <p className="text-2xl font-bold">
               {result.failedRows}
             </p>
-
             <p className="mt-1 text-sm text-slate-300">
               Com erro
             </p>
@@ -124,7 +177,7 @@ export function EmployeeImportActionPanel({
         {result.errors.length > 0 ? (
           <div className="max-h-64 space-y-2 overflow-y-auto rounded-xl bg-white/10 p-4">
             <p className="text-sm font-semibold">
-              Avisos da importação
+              Avisos da sincronização
             </p>
 
             {result.errors.map((error, index) => (
@@ -149,12 +202,76 @@ export function EmployeeImportActionPanel({
             Ver colaboradores
           </Link>
 
-          <Link
-            href="/app"
+          <button
+            type="button"
+            onClick={() => {
+              setResult(null)
+              setPlanResult(null)
+            }}
             className="inline-flex min-h-10 items-center justify-center rounded-md border border-white/20 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10"
           >
-            Continuar ativação
-          </Link>
+            Sincronizar outra planilha
+          </button>
+        </div>
+      </section>
+    )
+  }
+
+  if (plan && workspace && review) {
+    return (
+      <section className="space-y-6">
+        <OrganizationSyncWorkspaceSummary
+          workspace={workspace}
+        />
+
+        <OrganizationSyncReview
+          review={review}
+        />
+
+        <div className="rounded-2xl border border-slate-200 bg-slate-950 p-6 text-white sm:p-8">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-300">
+                Confirmação humana
+              </p>
+
+              <h2 className="mt-2 text-xl font-semibold">
+                Aplique somente depois de revisar o plano.
+              </h2>
+
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+                Nesta primeira integração, o plano identifica novos
+                colaboradores, departamentos e cargos. Atualizações de
+                pessoas existentes serão adicionadas nas próximas PRs.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setPlanResult(null)}
+                disabled={isPending}
+              >
+                Voltar
+              </Button>
+
+              <Button
+                type="button"
+                onClick={handleImport}
+                disabled={
+                  isPending ||
+                  !validation.canImport ||
+                  importableRows === 0 ||
+                  !workspace.canApply
+                }
+              >
+                {isPending
+                  ? "Aplicando..."
+                  : "Aplicar sincronização"}
+              </Button>
+            </div>
+          </div>
         </div>
       </section>
     )
@@ -165,25 +282,31 @@ export function EmployeeImportActionPanel({
       <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm font-medium text-slate-300">
-            Pronto para importar
+            Pronto para analisar
           </p>
 
           <h2 className="mt-2 text-xl font-semibold">
             {importableRows} colaborador
             {importableRows === 1 ? "" : "es"} será
-            {importableRows === 1 ? "" : "ão"} salvo
-            {importableRows === 1 ? "" : "s"}.
+            {importableRows === 1 ? "" : "ão"} comparado
+            {importableRows === 1 ? "" : "s"} com a organização atual.
           </h2>
 
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-            Departamentos e cargos informados serão reutilizados ou criados.
-            Os colaboradores serão associados aos cargos correspondentes.
+            Nenhuma informação será salva nesta etapa. O Evol OS criará
+            um plano para revisão antes da confirmação.
           </p>
+
+          {planResult && !planResult.success ? (
+            <p className="mt-3 text-sm text-red-200">
+              {planResult.message}
+            </p>
+          ) : null}
         </div>
 
         <Button
           type="button"
-          onClick={handleImport}
+          onClick={handleAnalyze}
           disabled={
             isPending ||
             !validation.canImport ||
@@ -191,8 +314,8 @@ export function EmployeeImportActionPanel({
           }
         >
           {isPending
-            ? "Importando..."
-            : "Importar estrutura"}
+            ? "Analisando..."
+            : "Analisar mudanças"}
         </Button>
       </div>
     </section>

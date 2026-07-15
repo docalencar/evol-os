@@ -81,3 +81,11 @@ export type {
   EmployeeImportActionResult,
   EmployeeImportActionRow,
 } from "./types/employee-import-action"
+
+export {
+  createEmployeeImportSyncPlanAction,
+} from "./actions/create-employee-import-sync-plan-action"
+
+export type {
+  EmployeeImportSyncPlanResult,
+} from "./actions/create-employee-import-sync-plan-action"

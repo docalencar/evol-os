@@ -1,4 +1,8 @@
 export {
+  parseEmployeeImportXlsx,
+} from "./parsers/parse-employee-import-xlsx"
+
+export {
   importEmployeesAction,
 } from "./actions/import-employees-action"
 
@@ -27,6 +31,10 @@ export {
 } from "./services/map-employee-import-headers"
 
 export {
+  parseEmployeeImportFile,
+} from "./services/parse-employee-import-file"
+
+export {
   parseEmployeeImportCsv,
 } from "./services/parse-employee-import-csv"
 
@@ -53,6 +61,7 @@ export type {
 
 export type {
   EmployeeImportCsvDelimiter,
+  EmployeeImportFileFormat,
   EmployeeImportParseResult,
   EmployeeImportPreview,
   EmployeeImportPreviewRow,

@@ -6,18 +6,22 @@ type EmployeeImportPreviewTableProps = {
   preview: EmployeeImportPreview
 }
 
-function getDelimiterLabel(
-  delimiter: EmployeeImportPreview["delimiter"]
+function getSourceLabel(
+  preview: EmployeeImportPreview
 ) {
-  switch (delimiter) {
+  if (preview.format === "xlsx") {
+    return "Excel"
+  }
+
+  switch (preview.delimiter) {
     case ";":
-      return "Ponto e vírgula"
+      return "CSV · Ponto e vírgula"
 
     case "\t":
-      return "Tabulação"
+      return "CSV · Tabulação"
 
     default:
-      return "Vírgula"
+      return "CSV · Vírgula"
   }
 }
 
@@ -44,9 +48,9 @@ export function EmployeeImportPreviewTable({
         </div>
 
         <div className="rounded-lg bg-slate-100 px-3 py-2 text-xs text-slate-600">
-          Separador:{" "}
+          Formato:{" "}
           <span className="font-semibold text-slate-900">
-            {getDelimiterLabel(preview.delimiter)}
+            {getSourceLabel(preview)}
           </span>
         </div>
       </div>

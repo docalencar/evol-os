@@ -206,6 +206,7 @@ export async function parseEmployeeImportCsv(
       success: true,
       preview: {
         fileName: file.name,
+        format: "csv",
         delimiter,
         headers,
         rows,

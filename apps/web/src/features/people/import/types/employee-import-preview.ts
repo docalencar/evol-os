@@ -3,6 +3,10 @@ export type EmployeeImportCsvDelimiter =
   | ";"
   | "\t"
 
+export type EmployeeImportFileFormat =
+  | "csv"
+  | "xlsx"
+
 export type EmployeeImportPreviewRow = {
   rowNumber: number
   values: string[]
@@ -10,7 +14,8 @@ export type EmployeeImportPreviewRow = {
 
 export type EmployeeImportPreview = {
   fileName: string
-  delimiter: EmployeeImportCsvDelimiter
+  format: EmployeeImportFileFormat
+  delimiter: EmployeeImportCsvDelimiter | null
   headers: string[]
   rows: EmployeeImportPreviewRow[]
   totalRows: number

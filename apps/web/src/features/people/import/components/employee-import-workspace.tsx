@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button"
 
 import { mapEmployeeImportHeaders } from "../services/map-employee-import-headers"
-import { parseEmployeeImportCsv } from "../services/parse-employee-import-csv"
+import { parseEmployeeImportFile } from "../services/parse-employee-import-file"
 import { validateEmployeeImportRows } from "../services/validate-employee-import-rows"
 import {
   EMPLOYEE_IMPORT_ACCEPTED_EXTENSIONS,
@@ -196,16 +196,9 @@ export function EmployeeImportWorkspace() {
     setMapping(null)
     setValidation(null)
 
-    if (selectedFile.extension === "xlsx") {
-      setErrorMessage(
-        "A leitura de XLSX será adicionada em uma etapa posterior. Nesta versão, use um arquivo CSV."
-      )
-      return
-    }
-
     setIsProcessing(true)
 
-    const result = await parseEmployeeImportCsv(
+    const result = await parseEmployeeImportFile(
       selectedFile.file
     )
 

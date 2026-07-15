@@ -1,10 +1,23 @@
-import { CustomerActivationHome } from "@/features/customer-activation"
-import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
+import {
+  CustomerActivationHome,
+  presentCustomerActivation,
+} from "@/features/customer-activation"
+import {
+  getCurrentCompanyContext,
+} from "@/lib/supabase/supabase/current-company"
 
 export default async function DashboardHomePage() {
-  const { companyName } = await getCurrentCompanyContext()
+  const {
+    companyId,
+    companyName,
+  } = await getCurrentCompanyContext()
+
+  const activation = await presentCustomerActivation({
+    companyId,
+    companyName,
+  })
 
   return (
-    <CustomerActivationHome companyName={companyName} />
+    <CustomerActivationHome activation={activation} />
   )
 }

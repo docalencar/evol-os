@@ -1,0 +1,133 @@
+import type {
+  OrganizationSyncItem,
+} from "../../types/organization-sync-item"
+import type {
+  OrganizationSyncPlan,
+} from "../../types/organization-sync-plan"
+
+export type OrganizationSyncApplyOperation =
+  | "create"
+  | "update"
+  | "move"
+  | "archive"
+  | "restore"
+
+export type OrganizationSyncApplyHandler = (
+  item: OrganizationSyncItem
+) => Promise<void>
+
+export type OrganizationSyncApplyHandlers = Record<
+  OrganizationSyncApplyOperation,
+  OrganizationSyncApplyHandler
+>
+
+export type OrganizationSyncApplyError = {
+  itemId: string
+  entity: OrganizationSyncItem["entity"]
+  operation: OrganizationSyncItem["operation"]
+  message: string
+}
+
+export type OrganizationSyncApplyResult = {
+  success: boolean
+  totalItems: number
+  appliedItems: number
+  skippedItems: number
+  failedItems: number
+  errors: OrganizationSyncApplyError[]
+}
+
+const ENTITY_EXECUTION_ORDER: Record<
+  OrganizationSyncItem["entity"],
+  number
+> = {
+  department: 1,
+  team: 2,
+  position: 3,
+  employee: 4,
+}
+
+const ACTIONABLE_OPERATIONS =
+  new Set<OrganizationSyncApplyOperation>([
+    "create",
+    "update",
+    "move",
+    "archive",
+    "restore",
+  ])
+
+function isActionableOperation(
+  operation: OrganizationSyncItem["operation"]
+): operation is OrganizationSyncApplyOperation {
+  return ACTIONABLE_OPERATIONS.has(
+    operation as OrganizationSyncApplyOperation
+  )
+}
+
+function sortItemsForApplication(
+  items: OrganizationSyncItem[]
+) {
+  return [...items].sort((firstItem, secondItem) => {
+    const entityOrder =
+      ENTITY_EXECUTION_ORDER[firstItem.entity] -
+      ENTITY_EXECUTION_ORDER[secondItem.entity]
+
+    if (entityOrder !== 0) {
+      return entityOrder
+    }
+
+    return firstItem.title.localeCompare(
+      secondItem.title,
+      "pt-BR",
+      {
+        numeric: true,
+        sensitivity: "base",
+      }
+    )
+  })
+}
+
+export async function applyOrganizationSyncPlan(
+  plan: OrganizationSyncPlan,
+  handlers: OrganizationSyncApplyHandlers
+): Promise<OrganizationSyncApplyResult> {
+  const orderedItems = sortItemsForApplication(
+    plan.items
+  )
+
+  let appliedItems = 0
+  let skippedItems = 0
+
+  const errors: OrganizationSyncApplyError[] = []
+
+  for (const item of orderedItems) {
+    if (!isActionableOperation(item.operation)) {
+      skippedItems += 1
+      continue
+    }
+
+    try {
+      await handlers[item.operation](item)
+      appliedItems += 1
+    } catch (error) {
+      errors.push({
+        itemId: item.id,
+        entity: item.entity,
+        operation: item.operation,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Não foi possível aplicar o item do plano.",
+      })
+    }
+  }
+
+  return {
+    success: errors.length === 0,
+    totalItems: orderedItems.length,
+    appliedItems,
+    skippedItems,
+    failedItems: errors.length,
+    errors,
+  }
+}

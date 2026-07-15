@@ -89,3 +89,13 @@ export {
 export type {
   EmployeeImportSyncPlanResult,
 } from "./actions/create-employee-import-sync-plan-action"
+
+export {
+  applyOrganizationSyncPlanAction,
+} from "./actions/apply-organization-sync-plan-action"
+
+export type {
+  ApplyOrganizationSyncPlanActionResult,
+  SerializedOrganizationSyncPlan,
+} from "./actions/apply-organization-sync-plan-action"
+

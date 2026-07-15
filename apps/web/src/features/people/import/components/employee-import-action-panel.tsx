@@ -21,10 +21,10 @@ import {
   type EmployeeImportSyncPlanResult,
 } from "../actions/create-employee-import-sync-plan-action"
 import {
-  importEmployeesAction,
-} from "../actions/import-employees-action"
+  applyOrganizationSyncPlanAction,
+  type ApplyOrganizationSyncPlanActionResult,
+} from "../actions/apply-organization-sync-plan-action"
 import type {
-  EmployeeImportActionResult,
   EmployeeImportActionRow,
 } from "../types/employee-import-action"
 import type {
@@ -55,7 +55,7 @@ export function EmployeeImportActionPanel({
     useState<EmployeeImportSyncPlanResult | null>(null)
 
   const [result, setResult] =
-    useState<EmployeeImportActionResult | null>(null)
+    useState<ApplyOrganizationSyncPlanActionResult | null>(null)
 
   const rows = useMemo(
     () => createActionRows(validation),
@@ -106,9 +106,15 @@ export function EmployeeImportActionPanel({
   }
 
   function handleImport() {
+    if (!planResult?.success) {
+      return
+    }
+
     startTransition(async () => {
       const actionResult =
-        await importEmployeesAction(rows)
+        await applyOrganizationSyncPlanAction(
+          planResult.plan
+        )
 
       setResult(actionResult)
     })
@@ -127,37 +133,28 @@ export function EmployeeImportActionPanel({
           </h2>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-xl bg-white/10 p-4">
             <p className="text-2xl font-bold">
-              {result.importedRows}
+              {result.totalItems}
             </p>
             <p className="mt-1 text-sm text-slate-300">
-              Importados
+              Itens no plano
             </p>
           </div>
 
           <div className="rounded-xl bg-white/10 p-4">
             <p className="text-2xl font-bold">
-              {result.createdDepartments}
+              {result.appliedItems}
             </p>
             <p className="mt-1 text-sm text-slate-300">
-              Departamentos
+              Aplicados
             </p>
           </div>
 
           <div className="rounded-xl bg-white/10 p-4">
             <p className="text-2xl font-bold">
-              {result.createdPositions}
-            </p>
-            <p className="mt-1 text-sm text-slate-300">
-              Cargos criados
-            </p>
-          </div>
-
-          <div className="rounded-xl bg-white/10 p-4">
-            <p className="text-2xl font-bold">
-              {result.skippedRows}
+              {result.skippedItems}
             </p>
             <p className="mt-1 text-sm text-slate-300">
               Ignorados
@@ -166,7 +163,7 @@ export function EmployeeImportActionPanel({
 
           <div className="rounded-xl bg-white/10 p-4">
             <p className="text-2xl font-bold">
-              {result.failedRows}
+              {result.failedItems}
             </p>
             <p className="mt-1 text-sm text-slate-300">
               Com erro
@@ -182,12 +179,10 @@ export function EmployeeImportActionPanel({
 
             {result.errors.map((error, index) => (
               <p
-                key={`${error.rowNumber}-${index}`}
+                key={`${error.itemId}-${index}`}
                 className="text-sm leading-6 text-slate-300"
               >
-                {error.rowNumber > 0
-                  ? `Linha ${error.rowNumber}: `
-                  : ""}
+                {error.entity} · {error.operation}:{" "}
                 {error.message}
               </p>
             ))}

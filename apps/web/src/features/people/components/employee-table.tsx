@@ -216,6 +216,9 @@ export function EmployeeTable({
   const [pageSize, setPageSize] =
     useState(INITIAL_PAGE_SIZE)
 
+  const [selectedEmployeeIds, setSelectedEmployeeIds] =
+    useState<Set<string>>(() => new Set())
+
   const filteredEmployees = useMemo(
     () =>
       employees.filter((employee) =>
@@ -264,6 +267,25 @@ export function EmployeeTable({
     ]
   )
 
+  const pageEmployeeIds = paginatedEmployees.map(
+    (employee) => employee.id
+  )
+
+  const selectedCount = selectedEmployeeIds.size
+
+  const selectedOnCurrentPageCount =
+    pageEmployeeIds.filter((employeeId) =>
+      selectedEmployeeIds.has(employeeId)
+    ).length
+
+  const allCurrentPageSelected =
+    pageEmployeeIds.length > 0 &&
+    selectedOnCurrentPageCount === pageEmployeeIds.length
+
+  const someCurrentPageSelected =
+    selectedOnCurrentPageCount > 0 &&
+    !allCurrentPageSelected
+
   const firstItem =
     sortedEmployees.length === 0
       ? 0
@@ -283,8 +305,60 @@ export function EmployeeTable({
     sortDirection,
   ])
 
+  useEffect(() => {
+    const availableEmployeeIds = new Set(
+      employees.map((employee) => employee.id)
+    )
+
+    setSelectedEmployeeIds((currentSelection) => {
+      const nextSelection = new Set(
+        [...currentSelection].filter((employeeId) =>
+          availableEmployeeIds.has(employeeId)
+        )
+      )
+
+      return nextSelection
+    })
+  }, [employees])
+
   function clearFilters() {
     setFilters(INITIAL_FILTERS)
+  }
+
+  function clearSelection() {
+    setSelectedEmployeeIds(new Set())
+  }
+
+  function toggleEmployeeSelection(employeeId: string) {
+    setSelectedEmployeeIds((currentSelection) => {
+      const nextSelection = new Set(currentSelection)
+
+      if (nextSelection.has(employeeId)) {
+        nextSelection.delete(employeeId)
+      } else {
+        nextSelection.add(employeeId)
+      }
+
+      return nextSelection
+    })
+  }
+
+  function toggleCurrentPageSelection() {
+    setSelectedEmployeeIds((currentSelection) => {
+      const nextSelection = new Set(currentSelection)
+
+      if (allCurrentPageSelected) {
+        for (const employeeId of pageEmployeeIds) {
+          nextSelection.delete(employeeId)
+        }
+      } else {
+        for (const employeeId of pageEmployeeIds) {
+          nextSelection.add(employeeId)
+        }
+      }
+
+      return nextSelection
+    })
   }
 
   return (
@@ -304,6 +378,31 @@ export function EmployeeTable({
         onClear={clearFilters}
       />
 
+      {selectedCount > 0 ? (
+        <section className="flex flex-col gap-3 rounded-xl border border-slate-900 bg-slate-950 p-4 text-white shadow-sm sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-semibold">
+              {selectedCount} colaborador
+              {selectedCount === 1 ? "" : "es"} selecionado
+              {selectedCount === 1 ? "" : "s"}
+            </p>
+
+            <p className="mt-1 text-sm text-slate-300">
+              A seleção será usada nas próximas ações em lote.
+            </p>
+          </div>
+
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={clearSelection}
+          >
+            Limpar seleção
+          </Button>
+        </section>
+      ) : null}
+
       <DataTable
         title="Colaboradores"
         data={paginatedEmployees}
@@ -314,6 +413,35 @@ export function EmployeeTable({
             : "Nenhum colaborador corresponde aos filtros."
         }
         columns={[
+          {
+            key: "selection",
+            header: (
+              <input
+                type="checkbox"
+                aria-label="Selecionar todos os colaboradores desta página"
+                checked={allCurrentPageSelected}
+                ref={(element) => {
+                  if (element) {
+                    element.indeterminate =
+                      someCurrentPageSelected
+                  }
+                }}
+                onChange={toggleCurrentPageSelection}
+                className="h-4 w-4 rounded border-slate-300"
+              />
+            ),
+            render: (employee) => (
+              <input
+                type="checkbox"
+                aria-label={`Selecionar ${employee.full_name}`}
+                checked={selectedEmployeeIds.has(employee.id)}
+                onChange={() =>
+                  toggleEmployeeSelection(employee.id)
+                }
+                className="h-4 w-4 rounded border-slate-300"
+              />
+            ),
+          },
           {
             key: "full_name",
             header: "Nome",

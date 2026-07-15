@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card"
 
 type DataTableColumn<T> = {
   key: string
-  header: string
+  header: ReactNode
   render: (item: T) => ReactNode
 }
 

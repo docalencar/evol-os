@@ -28,7 +28,10 @@ export async function createDepartmentRepository() {
         .order("name", { ascending: true })
     },
 
-    async findById(companyId: string, departmentId: string) {
+    async findById(
+      companyId: string,
+      departmentId: string
+    ) {
       return supabase
         .from("departments")
         .select("*")
@@ -39,12 +42,16 @@ export async function createDepartmentRepository() {
     },
 
     async create(data: CreateDepartmentData) {
-      return supabase.from("departments").insert({
-        company_id: data.companyId,
-        name: data.name,
-        description: data.description ?? null,
-        manager_id: data.leaderId ?? null,
-      })
+      return supabase
+        .from("departments")
+        .insert({
+          company_id: data.companyId,
+          name: data.name,
+          description: data.description ?? null,
+          manager_id: data.leaderId ?? null,
+        })
+        .select("id, name")
+        .single()
     },
 
     async update(data: UpdateDepartmentData) {
@@ -61,7 +68,10 @@ export async function createDepartmentRepository() {
         .is("deleted_at", null)
     },
 
-    async archive(companyId: string, departmentId: string) {
+    async archive(
+      companyId: string,
+      departmentId: string
+    ) {
       return supabase
         .from("departments")
         .update({

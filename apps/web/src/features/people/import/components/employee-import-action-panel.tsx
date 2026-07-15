@@ -69,7 +69,7 @@ export function EmployeeImportActionPanel({
           </h2>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-xl bg-white/10 p-4">
             <p className="text-2xl font-bold">
               {result.importedRows}
@@ -77,6 +77,16 @@ export function EmployeeImportActionPanel({
 
             <p className="mt-1 text-sm text-slate-300">
               Importados
+            </p>
+          </div>
+
+          <div className="rounded-xl bg-white/10 p-4">
+            <p className="text-2xl font-bold">
+              {result.createdDepartments}
+            </p>
+
+            <p className="mt-1 text-sm text-slate-300">
+              Departamentos criados
             </p>
           </div>
 
@@ -104,7 +114,7 @@ export function EmployeeImportActionPanel({
         {result.errors.length > 0 ? (
           <div className="max-h-64 space-y-2 overflow-y-auto rounded-xl bg-white/10 p-4">
             <p className="text-sm font-semibold">
-              Registros não importados
+              Avisos da importação
             </p>
 
             {result.errors.map((error, index) => (
@@ -112,7 +122,10 @@ export function EmployeeImportActionPanel({
                 key={`${error.rowNumber}-${index}`}
                 className="text-sm leading-6 text-slate-300"
               >
-                Linha {error.rowNumber}: {error.message}
+                {error.rowNumber > 0
+                  ? `Linha ${error.rowNumber}: `
+                  : ""}
+                {error.message}
               </p>
             ))}
           </div>
@@ -130,7 +143,7 @@ export function EmployeeImportActionPanel({
             href="/app"
             className="inline-flex min-h-10 items-center justify-center rounded-md border border-white/20 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10"
           >
-            Voltar para a ativação
+            Continuar ativação
           </Link>
         </div>
       </section>
@@ -153,8 +166,8 @@ export function EmployeeImportActionPanel({
           </h2>
 
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-            Linhas inválidas serão ignoradas. Departamentos e cargos serão
-            organizados nas próximas etapas da ativação.
+            Linhas inválidas serão ignoradas. Os departamentos informados
+            serão reutilizados ou criados automaticamente.
           </p>
         </div>
 

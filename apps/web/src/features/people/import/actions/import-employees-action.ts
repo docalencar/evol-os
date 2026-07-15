@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
 import {
+  createDepartmentRepository,
+  getDepartments,
+} from "@/features/organization/departments"
+import {
   createEmployeeRepository,
   createEmployeeSchema,
   getEmployees,
@@ -25,6 +29,7 @@ const importEmployeeRowSchema = z.object({
     phone: z.string().optional(),
     birthDate: z.string().optional(),
     hireDate: z.string().optional(),
+    department: z.string().optional(),
     status: z.string().optional(),
     discProfile: z.string().optional(),
   }),
@@ -34,6 +39,15 @@ const importEmployeesSchema = z
   .array(importEmployeeRowSchema)
   .min(1, "Nenhum colaborador foi enviado para importação.")
   .max(5000, "Importe no máximo 5.000 colaboradores por vez.")
+
+function normalizeComparableValue(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase()
+}
 
 function normalizeDate(value: string | undefined) {
   const normalizedValue = value?.trim() ?? ""
@@ -136,6 +150,86 @@ function createEmployeeInput(row: EmployeeImportActionRow) {
   }
 }
 
+async function createMissingDepartments(
+  companyId: string,
+  rows: EmployeeImportActionRow[]
+) {
+  const existingDepartments = await getDepartments(companyId)
+
+  const knownDepartmentNames = new Set(
+    (existingDepartments ?? []).map((department) =>
+      normalizeComparableValue(department.name)
+    )
+  )
+
+  const requestedDepartments = new Map<string, string>()
+
+  for (const row of rows) {
+    const departmentName =
+      row.values.department?.trim() ?? ""
+
+    if (!departmentName) {
+      continue
+    }
+
+    const normalizedName =
+      normalizeComparableValue(departmentName)
+
+    if (
+      !knownDepartmentNames.has(normalizedName) &&
+      !requestedDepartments.has(normalizedName)
+    ) {
+      requestedDepartments.set(
+        normalizedName,
+        departmentName
+      )
+    }
+  }
+
+  if (requestedDepartments.size === 0) {
+    return {
+      createdDepartments: 0,
+      errors: [] as EmployeeImportActionResult["errors"],
+    }
+  }
+
+  const departmentRepository =
+    await createDepartmentRepository()
+
+  let createdDepartments = 0
+  const errors: EmployeeImportActionResult["errors"] = []
+
+  for (const [
+    normalizedName,
+    departmentName,
+  ] of requestedDepartments) {
+    const { error } = await departmentRepository.create({
+      companyId,
+      name: departmentName,
+      description: null,
+      leaderId: null,
+    })
+
+    if (error) {
+      errors.push({
+        rowNumber: 0,
+        message:
+          `Não foi possível criar o departamento "${departmentName}": ${error.message}`,
+      })
+
+      continue
+    }
+
+    knownDepartmentNames.add(normalizedName)
+    createdDepartments += 1
+  }
+
+  return {
+    createdDepartments,
+    errors,
+  }
+}
+
 export async function importEmployeesAction(
   input: unknown
 ): Promise<EmployeeImportActionResult> {
@@ -150,11 +244,19 @@ export async function importEmployeesAction(
       importedRows: 0,
       skippedRows: 0,
       failedRows: 0,
+      createdDepartments: 0,
       errors: [],
     }
   }
 
   const { companyId } = await getCurrentCompanyContext()
+
+  const departmentResult =
+    await createMissingDepartments(
+      companyId,
+      parsedRows.data
+    )
+
   const existingEmployees = await getEmployees(companyId)
 
   const registeredEmails = new Set(
@@ -174,7 +276,9 @@ export async function importEmployeesAction(
   let importedRows = 0
   let skippedRows = 0
 
-  const errors: EmployeeImportActionResult["errors"] = []
+  const errors: EmployeeImportActionResult["errors"] = [
+    ...departmentResult.errors,
+  ]
 
   for (const row of parsedRows.data) {
     const employeeInput = createEmployeeInput(row)
@@ -237,10 +341,14 @@ export async function importEmployeesAction(
     }
   }
 
-  const failedRows = errors.length - skippedRows
+  const failedRows = errors.filter(
+    (error) => error.rowNumber > 0
+  ).length - skippedRows
+
   const totalRows = parsedRows.data.length
 
   revalidatePath("/app")
+  revalidatePath("/app/company")
   revalidatePath("/app/people")
   revalidatePath("/app/people/import")
 
@@ -257,7 +365,9 @@ export async function importEmployeesAction(
     totalRows,
     importedRows,
     skippedRows,
-    failedRows,
+    failedRows: Math.max(0, failedRows),
+    createdDepartments:
+      departmentResult.createdDepartments,
     errors,
   }
 }

@@ -1,4 +1,12 @@
 export {
+  importEmployeesAction,
+} from "./actions/import-employees-action"
+
+export {
+  EmployeeImportActionPanel,
+} from "./components/employee-import-action-panel"
+
+export {
   EmployeeImportWorkspace,
 } from "./components/employee-import-workspace"
 
@@ -58,3 +66,9 @@ export type {
   EmployeeImportValidatedRow,
   EmployeeImportValidationResult,
 } from "./types/employee-import-validation"
+
+export type {
+  EmployeeImportActionError,
+  EmployeeImportActionResult,
+  EmployeeImportActionRow,
+} from "./types/employee-import-action"

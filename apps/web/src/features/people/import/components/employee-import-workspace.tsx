@@ -31,6 +31,9 @@ import {
   EmployeeImportMappingSummary,
 } from "./employee-import-mapping-summary"
 import {
+  EmployeeImportActionPanel,
+} from "./employee-import-action-panel"
+import {
   EmployeeImportPreviewTable,
 } from "./employee-import-preview-table"
 import {
@@ -409,6 +412,13 @@ export function EmployeeImportWorkspace() {
           validation={validation}
         />
       ) : null}
+
+      {validation ? (
+        <EmployeeImportActionPanel
+          validation={validation}
+        />
+      ) : null}
+
 
       {preview ? (
         <EmployeeImportPreviewTable preview={preview} />

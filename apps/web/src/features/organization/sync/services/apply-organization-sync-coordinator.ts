@@ -18,8 +18,13 @@ import {
 } from "../engine/apply"
 import type {
   OrganizationSyncApplyHandlers,
-  OrganizationSyncApplyResult,
 } from "../engine/apply"
+import {
+  createOrganizationExecutionReport,
+} from "../engine/report"
+import type {
+  OrganizationExecutionReport,
+} from "../types/organization-execution-report"
 import type {
   OrganizationSyncItem,
 } from "../types/organization-sync-item"
@@ -115,9 +120,19 @@ function createApplyHandlers(
 export async function applyOrganizationSyncCoordinator({
   companyId,
   plan,
-}: ApplyOrganizationSyncCoordinatorInput): Promise<OrganizationSyncApplyResult> {
-  return applyOrganizationSyncPlan(
+}: ApplyOrganizationSyncCoordinatorInput): Promise<OrganizationExecutionReport> {
+  const startedAt = new Date()
+
+  const result = await applyOrganizationSyncPlan(
     plan,
     createApplyHandlers(companyId)
   )
+
+  const finishedAt = new Date()
+
+  return createOrganizationExecutionReport({
+    startedAt,
+    finishedAt,
+    result,
+  })
 }

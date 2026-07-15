@@ -31,3 +31,4 @@ export type {
   OrganizationSyncReviewViewModel,
 } from "./view-models/organization-sync-review-view-model"
 export * from "./engine/apply"
+export * from "./engine/report"

@@ -64,7 +64,7 @@ export async function applyOrganizationSyncPlanAction(
   revalidatePath("/app/company/positions")
 
   return {
-    success: result.success,
+    success: result.failedItems === 0,
     message:
       result.failedItems === 0
         ? `${result.appliedItems} item${
@@ -77,7 +77,10 @@ export async function applyOrganizationSyncPlanAction(
           } aplicado${
             result.appliedItems === 1 ? "" : "s"
           } e ${result.failedItems} com erro.`,
-    totalItems: result.totalItems,
+    totalItems:
+      result.appliedItems +
+      result.skippedItems +
+      result.failedItems,
     appliedItems: result.appliedItems,
     skippedItems: result.skippedItems,
     failedItems: result.failedItems,

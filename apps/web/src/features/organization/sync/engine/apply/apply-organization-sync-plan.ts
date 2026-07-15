@@ -1,4 +1,7 @@
 import type {
+  OrganizationExecutionError,
+} from "../../types/organization-execution-report"
+import type {
   OrganizationSyncItem,
 } from "../../types/organization-sync-item"
 import type {
@@ -21,11 +24,20 @@ export type OrganizationSyncApplyHandlers = Record<
   OrganizationSyncApplyHandler
 >
 
-export type OrganizationSyncApplyError = {
+export type OrganizationSyncApplyError =
+  OrganizationExecutionError
+
+export type OrganizationSyncApplyItemStatus =
+  | "applied"
+  | "skipped"
+  | "failed"
+
+export type OrganizationSyncApplyItemResult = {
   itemId: string
   entity: OrganizationSyncItem["entity"]
   operation: OrganizationSyncItem["operation"]
-  message: string
+  status: OrganizationSyncApplyItemStatus
+  message: string | null
 }
 
 export type OrganizationSyncApplyResult = {
@@ -34,6 +46,7 @@ export type OrganizationSyncApplyResult = {
   appliedItems: number
   skippedItems: number
   failedItems: number
+  items: OrganizationSyncApplyItemResult[]
   errors: OrganizationSyncApplyError[]
 }
 
@@ -87,6 +100,16 @@ function sortItemsForApplication(
   })
 }
 
+function getSkippedItemMessage(
+  item: OrganizationSyncItem
+) {
+  if (item.operation === "conflict") {
+    return "Item não aplicado porque possui um conflito que exige revisão."
+  }
+
+  return "Item sem alterações aplicáveis."
+}
+
 export async function applyOrganizationSyncPlan(
   plan: OrganizationSyncPlan,
   handlers: OrganizationSyncApplyHandlers
@@ -98,26 +121,54 @@ export async function applyOrganizationSyncPlan(
   let appliedItems = 0
   let skippedItems = 0
 
+  const items: OrganizationSyncApplyItemResult[] = []
   const errors: OrganizationSyncApplyError[] = []
 
   for (const item of orderedItems) {
     if (!isActionableOperation(item.operation)) {
       skippedItems += 1
+
+      items.push({
+        itemId: item.id,
+        entity: item.entity,
+        operation: item.operation,
+        status: "skipped",
+        message: getSkippedItemMessage(item),
+      })
+
       continue
     }
 
     try {
       await handlers[item.operation](item)
       appliedItems += 1
+
+      items.push({
+        itemId: item.id,
+        entity: item.entity,
+        operation: item.operation,
+        status: "applied",
+        message: null,
+      })
     } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível aplicar o item do plano."
+
       errors.push({
         itemId: item.id,
         entity: item.entity,
         operation: item.operation,
-        message:
-          error instanceof Error
-            ? error.message
-            : "Não foi possível aplicar o item do plano.",
+        message,
+      })
+
+      items.push({
+        itemId: item.id,
+        entity: item.entity,
+        operation: item.operation,
+        status: "failed",
+        message,
       })
     }
   }
@@ -128,6 +179,7 @@ export async function applyOrganizationSyncPlan(
     appliedItems,
     skippedItems,
     failedItems: errors.length,
+    items,
     errors,
   }
 }

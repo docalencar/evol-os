@@ -121,3 +121,16 @@ export type {
   PeopleWorkspaceSummaryViewModel,
 } from "./workspace/view-models/people-workspace-summary-view-model"
 
+export {
+  bulkUpdateEmployeesAction,
+} from "./actions/bulk-update-employees-action"
+
+export type {
+  BulkEmployeeChange,
+  BulkUpdateEmployeesResult,
+} from "./actions/bulk-update-employees-action"
+
+export {
+  EmployeeBulkActionsBar,
+} from "./components/employee-bulk-actions-bar"
+

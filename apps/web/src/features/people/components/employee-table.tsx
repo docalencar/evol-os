@@ -19,6 +19,9 @@ import type {
   EmployeeStatus,
 } from "../types/employee"
 import { ArchiveEmployeeButton } from "./archive-employee-button"
+import {
+  EmployeeBulkActionsBar,
+} from "./employee-bulk-actions-bar"
 import { EmployeeEditDialog } from "./employee-edit-dialog"
 import {
   EmployeeWorkspacePagination,
@@ -273,6 +276,14 @@ export function EmployeeTable({
 
   const selectedCount = selectedEmployeeIds.size
 
+  const selectedEmployees = useMemo(
+    () =>
+      employees.filter((employee) =>
+        selectedEmployeeIds.has(employee.id)
+      ),
+    [employees, selectedEmployeeIds]
+  )
+
   const selectedOnCurrentPageCount =
     pageEmployeeIds.filter((employeeId) =>
       selectedEmployeeIds.has(employeeId)
@@ -379,28 +390,13 @@ export function EmployeeTable({
       />
 
       {selectedCount > 0 ? (
-        <section className="flex flex-col gap-3 rounded-xl border border-slate-900 bg-slate-950 p-4 text-white shadow-sm sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="font-semibold">
-              {selectedCount} colaborador
-              {selectedCount === 1 ? "" : "es"} selecionado
-              {selectedCount === 1 ? "" : "s"}
-            </p>
-
-            <p className="mt-1 text-sm text-slate-300">
-              A seleção será usada nas próximas ações em lote.
-            </p>
-          </div>
-
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={clearSelection}
-          >
-            Limpar seleção
-          </Button>
-        </section>
+        <EmployeeBulkActionsBar
+          selectedEmployees={selectedEmployees}
+          positions={positions}
+          teams={teams}
+          managers={managers}
+          onClearSelection={clearSelection}
+        />
       ) : null}
 
       <DataTable

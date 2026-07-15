@@ -9,12 +9,19 @@ import {
 
 import { Button } from "@/components/ui/button"
 
+import { parseEmployeeImportCsv } from "../services/parse-employee-import-csv"
 import {
   EMPLOYEE_IMPORT_ACCEPTED_EXTENSIONS,
   type EmployeeImportAcceptedExtension,
   type EmployeeImportFileValidationResult,
   type EmployeeImportSelectedFile,
 } from "../types/employee-import-file"
+import type {
+  EmployeeImportPreview,
+} from "../types/employee-import-preview"
+import {
+  EmployeeImportPreviewTable,
+} from "./employee-import-preview-table"
 
 const MAX_FILE_SIZE_IN_BYTES = 10 * 1024 * 1024
 
@@ -96,11 +103,16 @@ export function EmployeeImportWorkspace() {
   const [selectedFile, setSelectedFile] =
     useState<EmployeeImportSelectedFile | null>(null)
 
+  const [preview, setPreview] =
+    useState<EmployeeImportPreview | null>(null)
+
   const [errorMessage, setErrorMessage] = useState("")
   const [isDragging, setIsDragging] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
 
   function selectFile(file: File | undefined) {
     setErrorMessage("")
+    setPreview(null)
 
     if (!file) {
       return
@@ -143,11 +155,43 @@ export function EmployeeImportWorkspace() {
 
   function removeSelectedFile() {
     setSelectedFile(null)
+    setPreview(null)
     setErrorMessage("")
   }
 
+  async function processSelectedFile() {
+    if (!selectedFile) {
+      return
+    }
+
+    setErrorMessage("")
+    setPreview(null)
+
+    if (selectedFile.extension === "xlsx") {
+      setErrorMessage(
+        "A leitura de XLSX será adicionada na próxima etapa. Nesta versão, use um arquivo CSV."
+      )
+      return
+    }
+
+    setIsProcessing(true)
+
+    const result = await parseEmployeeImportCsv(
+      selectedFile.file
+    )
+
+    setIsProcessing(false)
+
+    if (!result.success) {
+      setErrorMessage(result.message)
+      return
+    }
+
+    setPreview(result.preview)
+  }
+
   return (
-    <main className="mx-auto w-full max-w-5xl space-y-8">
+    <main className="mx-auto w-full max-w-6xl space-y-8">
       <header className="space-y-3">
         <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
           Customer Activation
@@ -159,9 +203,8 @@ export function EmployeeImportWorkspace() {
           </h1>
 
           <p className="max-w-3xl text-base leading-7 text-slate-600">
-            Envie uma planilha com os dados essenciais. Antes de importar,
-            o Evol OS mostrará uma prévia e indicará informações que precisam
-            de revisão.
+            Envie uma planilha com os dados essenciais. O Evol OS mostrará uma
+            prévia antes de qualquer informação ser salva.
           </p>
         </div>
       </header>
@@ -262,95 +305,67 @@ export function EmployeeImportWorkspace() {
             </p>
 
             <h2 className="mt-2 font-semibold text-slate-950">
-              1. Selecionar planilha
+              2. Ler os dados
             </h2>
 
             <p className="mt-2 text-sm leading-6 text-slate-600">
-              Nesta etapa validamos apenas o formato e o tamanho do arquivo.
+              O CSV será processado no navegador. Nenhum dado será salvo nesta
+              etapa.
             </p>
           </section>
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-              Próximas etapas
+              Formato recomendado
             </p>
 
-            <ol className="mt-4 space-y-4">
-              <li className="flex gap-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
-                  2
-                </span>
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              Use a primeira linha para os nomes das colunas e as linhas
+              seguintes para os colaboradores.
+            </p>
 
-                <div>
-                  <p className="text-sm font-medium text-slate-900">
-                    Ler os dados
-                  </p>
-
-                  <p className="mt-1 text-xs leading-5 text-slate-500">
-                    Identificar colunas e transformar as linhas.
-                  </p>
-                </div>
-              </li>
-
-              <li className="flex gap-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
-                  3
-                </span>
-
-                <div>
-                  <p className="text-sm font-medium text-slate-900">
-                    Revisar a prévia
-                  </p>
-
-                  <p className="mt-1 text-xs leading-5 text-slate-500">
-                    Corrigir dados inválidos antes da importação.
-                  </p>
-                </div>
-              </li>
-
-              <li className="flex gap-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
-                  4
-                </span>
-
-                <div>
-                  <p className="text-sm font-medium text-slate-900">
-                    Importar colaboradores
-                  </p>
-
-                  <p className="mt-1 text-xs leading-5 text-slate-500">
-                    Salvar somente registros válidos e confirmados.
-                  </p>
-                </div>
-              </li>
-            </ol>
+            <div className="mt-4 rounded-lg bg-slate-50 p-3 font-mono text-xs leading-5 text-slate-600">
+              Nome;Email;Cargo
+              <br />
+              Maria;maria@empresa.com;Analista
+            </div>
           </section>
         </aside>
       </section>
 
-      {selectedFile ? (
+      {selectedFile && !preview ? (
         <section className="rounded-2xl border border-slate-200 bg-slate-950 p-6 text-white">
-          <p className="text-sm font-medium text-slate-300">
-            Arquivo pronto para leitura
-          </p>
-
-          <div className="mt-2 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h2 className="text-xl font-semibold">
-                O formato foi validado com sucesso.
+              <p className="text-sm font-medium text-slate-300">
+                Arquivo pronto para leitura
+              </p>
+
+              <h2 className="mt-2 text-xl font-semibold">
+                Verifique os dados antes de importar.
               </h2>
 
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-                Na próxima PR, o Evol OS irá ler o CSV e preparar os dados
-                para a primeira prévia da importação.
+                O Evol OS identificará o separador, os cabeçalhos e as
+                primeiras linhas da planilha.
               </p>
             </div>
 
-            <Button type="button" disabled>
-              Processar planilha
+            <Button
+              type="button"
+              onClick={processSelectedFile}
+              disabled={isProcessing}
+            >
+              {isProcessing
+                ? "Processando..."
+                : "Processar planilha"}
             </Button>
           </div>
         </section>
+      ) : null}
+
+      {preview ? (
+        <EmployeeImportPreviewTable preview={preview} />
       ) : null}
     </main>
   )

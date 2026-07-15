@@ -59,18 +59,22 @@ export async function createPositionRepository() {
     },
 
     async create(data: CreatePositionData) {
-      return supabase.from("positions").insert({
-        company_id: data.companyId,
-        name: data.name,
-        description: data.description ?? null,
-        department_id: data.departmentId ?? null,
-        hierarchical_level: data.hierarchicalLevel,
-        status: data.status,
-        weekly_workload_hours: data.weeklyWorkloadHours,
-        work_model: data.workModel,
-        employment_type: data.employmentType,
-        travel_requirement: data.travelRequirement,
-      })
+      return supabase
+        .from("positions")
+        .insert({
+          company_id: data.companyId,
+          name: data.name,
+          description: data.description ?? null,
+          department_id: data.departmentId ?? null,
+          hierarchical_level: data.hierarchicalLevel,
+          status: data.status,
+          weekly_workload_hours: data.weeklyWorkloadHours,
+          work_model: data.workModel,
+          employment_type: data.employmentType,
+          travel_requirement: data.travelRequirement,
+        })
+        .select("id, name")
+        .single()
     },
 
     async update(data: UpdatePositionData) {

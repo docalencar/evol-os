@@ -41,13 +41,17 @@ export async function createTeamRepository() {
     },
 
     async create(data: CreateTeamData) {
-      return supabase.from("teams").insert({
-        company_id: data.companyId,
-        name: data.name,
-        description: data.description ?? null,
-        parent_team_id: data.parentTeamId ?? null,
-        manager_id: data.leaderId ?? null,
-      })
+      return supabase
+        .from("teams")
+        .insert({
+          company_id: data.companyId,
+          name: data.name,
+          description: data.description ?? null,
+          parent_team_id: data.parentTeamId ?? null,
+          manager_id: data.leaderId ?? null,
+        })
+        .select("id, name")
+        .single()
     },
 
     async update(data: UpdateTeamData) {

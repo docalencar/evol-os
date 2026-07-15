@@ -17,6 +17,7 @@ export type ApplyTeamSyncItemInput = {
 export type ApplyTeamSyncItemResult = {
   success: boolean
   message: string
+  teamId?: string
 }
 
 export async function applyTeamSyncItem({
@@ -66,7 +67,7 @@ export async function applyTeamSyncItem({
   const repository =
     await createTeamRepository()
 
-  const { error } = await repository.create({
+  const { data, error } = await repository.create({
     companyId,
     name: parsedInput.data.name,
     description:
@@ -88,6 +89,7 @@ export async function applyTeamSyncItem({
   return {
     success: true,
     message:
-      `Time "${parsedInput.data.name}" criado com sucesso.`,
+      `Time "${data.name}" criado com sucesso.`,
+    teamId: data.id,
   }
 }

@@ -29,3 +29,12 @@ export {
   PositionEmployeesCard,
 } from "./components/position-employees-card"
 
+export {
+  applyPositionSyncItem,
+} from "./services/apply-position-sync-item"
+
+export type {
+  ApplyPositionSyncItemInput,
+  ApplyPositionSyncItemResult,
+} from "./services/apply-position-sync-item"
+

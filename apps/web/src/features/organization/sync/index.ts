@@ -16,3 +16,17 @@ export type {
   OrganizationSyncMetricViewModel,
   OrganizationSyncWorkspaceViewModel,
 } from "./view-models/organization-sync-workspace-view-model"
+
+export {
+  OrganizationSyncReview,
+} from "./components/organization-sync-review"
+
+export {
+  presentOrganizationSyncReview,
+} from "./presenters/present-organization-sync-review"
+
+export type {
+  OrganizationSyncReviewGroupViewModel,
+  OrganizationSyncReviewItemViewModel,
+  OrganizationSyncReviewViewModel,
+} from "./view-models/organization-sync-review-view-model"

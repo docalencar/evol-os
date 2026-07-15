@@ -55,10 +55,14 @@ export async function createEmployeeRepository() {
     },
 
     async create(companyId: string, input: CreateEmployeeInput) {
-      return supabase.from("people").insert({
-        company_id: companyId,
-        ...normalizeEmployeeInput(input),
-      })
+      return supabase
+        .from("people")
+        .insert({
+          company_id: companyId,
+          ...normalizeEmployeeInput(input),
+        })
+        .select("id, full_name")
+        .single()
     },
 
     async update(

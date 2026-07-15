@@ -134,3 +134,12 @@ export {
   EmployeeBulkActionsBar,
 } from "./components/employee-bulk-actions-bar"
 
+export {
+  applyEmployeeSyncItem,
+} from "./services/apply-employee-sync-item"
+
+export type {
+  ApplyEmployeeSyncItemInput,
+  ApplyEmployeeSyncItemResult,
+} from "./services/apply-employee-sync-item"
+

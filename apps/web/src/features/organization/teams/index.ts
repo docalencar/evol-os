@@ -20,3 +20,13 @@ export { TeamCreateDialog } from "./components/team-create-dialog"
 export { TeamEditDialog } from "./components/team-edit-dialog"
 export { ArchiveTeamButton } from "./components/archive-team-button"
 export { TeamTable } from "./components/team-table"
+
+export {
+  applyTeamSyncItem,
+} from "./services/apply-team-sync-item"
+
+export type {
+  ApplyTeamSyncItemInput,
+  ApplyTeamSyncItemResult,
+} from "./services/apply-team-sync-item"
+

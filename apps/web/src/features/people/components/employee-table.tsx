@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import {
+  useEffect,
   useMemo,
   useState,
 } from "react"
@@ -19,6 +20,9 @@ import type {
 } from "../types/employee"
 import { ArchiveEmployeeButton } from "./archive-employee-button"
 import { EmployeeEditDialog } from "./employee-edit-dialog"
+import {
+  EmployeeWorkspacePagination,
+} from "./employee-workspace-pagination"
 import {
   EmployeeWorkspaceToolbar,
   type EmployeeWorkspaceFilters,
@@ -47,6 +51,8 @@ const INITIAL_FILTERS: EmployeeWorkspaceFilters = {
   managerId: "",
   status: "",
 }
+
+const INITIAL_PAGE_SIZE = 25
 
 function getRelationName(relation?: Relation) {
   if (!relation) {
@@ -139,6 +145,10 @@ export function EmployeeTable({
       INITIAL_FILTERS
     )
 
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] =
+    useState(INITIAL_PAGE_SIZE)
+
   const filteredEmployees = useMemo(
     () =>
       employees.filter((employee) =>
@@ -147,8 +157,52 @@ export function EmployeeTable({
     [employees, filters]
   )
 
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredEmployees.length / pageSize)
+  )
+
+  const safeCurrentPage = Math.min(
+    currentPage,
+    totalPages
+  )
+
+  const firstItemIndex =
+    (safeCurrentPage - 1) * pageSize
+
+  const paginatedEmployees = useMemo(
+    () =>
+      filteredEmployees.slice(
+        firstItemIndex,
+        firstItemIndex + pageSize
+      ),
+    [
+      filteredEmployees,
+      firstItemIndex,
+      pageSize,
+    ]
+  )
+
+  const firstItem =
+    filteredEmployees.length === 0
+      ? 0
+      : firstItemIndex + 1
+
+  const lastItem = Math.min(
+    firstItemIndex + pageSize,
+    filteredEmployees.length
+  )
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filters, pageSize])
+
   function clearFilters() {
     setFilters(INITIAL_FILTERS)
+  }
+
+  function handlePageSizeChange(nextPageSize: number) {
+    setPageSize(nextPageSize)
   }
 
   return (
@@ -166,7 +220,7 @@ export function EmployeeTable({
 
       <DataTable
         title="Colaboradores"
-        data={filteredEmployees}
+        data={paginatedEmployees}
         rowKey={(employee) => employee.id}
         emptyMessage={
           employees.length === 0
@@ -253,6 +307,17 @@ export function EmployeeTable({
             ),
           },
         ]}
+      />
+
+      <EmployeeWorkspacePagination
+        currentPage={safeCurrentPage}
+        totalPages={totalPages}
+        pageSize={pageSize}
+        totalItems={filteredEmployees.length}
+        firstItem={firstItem}
+        lastItem={lastItem}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={handlePageSizeChange}
       />
     </div>
   )

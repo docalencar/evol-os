@@ -1,1 +1,5 @@
 export * from "./compare-engine"
+export * from "./compare-departments"
+export * from "./compare-teams"
+export * from "./compare-positions"
+export * from "./compare-employees"

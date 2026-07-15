@@ -8,6 +8,10 @@ import {
   getDepartments,
 } from "@/features/organization/departments"
 import {
+  createPositionRepository,
+  getPositions,
+} from "@/features/organization/positions"
+import {
   createEmployeeRepository,
   createEmployeeSchema,
   getEmployees,
@@ -23,6 +27,7 @@ import type {
 
 const importEmployeeRowSchema = z.object({
   rowNumber: z.number().int().positive(),
+
   values: z.object({
     fullName: z.string().optional(),
     email: z.string().optional(),
@@ -30,6 +35,7 @@ const importEmployeeRowSchema = z.object({
     birthDate: z.string().optional(),
     hireDate: z.string().optional(),
     department: z.string().optional(),
+    position: z.string().optional(),
     status: z.string().optional(),
     discProfile: z.string().optional(),
   }),
@@ -103,7 +109,8 @@ function normalizeStatus(value: string | undefined) {
 }
 
 function normalizeDiscProfile(value: string | undefined) {
-  const normalizedValue = value?.trim().toUpperCase() ?? ""
+  const normalizedValue =
+    value?.trim().toUpperCase() ?? ""
 
   const validProfiles = new Set([
     "D",
@@ -133,7 +140,20 @@ function normalizeEmail(value: string | undefined) {
   return value?.trim().toLowerCase() ?? ""
 }
 
-function createEmployeeInput(row: EmployeeImportActionRow) {
+function createPositionKey(
+  positionName: string,
+  departmentName: string
+) {
+  return [
+    normalizeComparableValue(positionName),
+    normalizeComparableValue(departmentName),
+  ].join("::")
+}
+
+function createEmployeeInput(
+  row: EmployeeImportActionRow,
+  positionId: string
+) {
   return {
     fullName: row.values.fullName?.trim() ?? "",
     email: normalizeEmail(row.values.email),
@@ -142,7 +162,7 @@ function createEmployeeInput(row: EmployeeImportActionRow) {
     hireDate: normalizeDate(row.values.hireDate),
     status: normalizeStatus(row.values.status),
     teamId: "",
-    positionId: "",
+    positionId,
     managerId: "",
     discProfile: normalizeDiscProfile(
       row.values.discProfile
@@ -154,9 +174,10 @@ async function createMissingDepartments(
   companyId: string,
   rows: EmployeeImportActionRow[]
 ) {
-  const existingDepartments = await getDepartments(companyId)
+  const existingDepartments =
+    await getDepartments(companyId)
 
-  const knownDepartmentNames = new Set(
+  const knownNames = new Set(
     (existingDepartments ?? []).map((department) =>
       normalizeComparableValue(department.name)
     )
@@ -176,7 +197,7 @@ async function createMissingDepartments(
       normalizeComparableValue(departmentName)
 
     if (
-      !knownDepartmentNames.has(normalizedName) &&
+      !knownNames.has(normalizedName) &&
       !requestedDepartments.has(normalizedName)
     ) {
       requestedDepartments.set(
@@ -186,24 +207,18 @@ async function createMissingDepartments(
     }
   }
 
-  if (requestedDepartments.size === 0) {
-    return {
-      createdDepartments: 0,
-      errors: [] as EmployeeImportActionResult["errors"],
-    }
-  }
-
-  const departmentRepository =
+  const repository =
     await createDepartmentRepository()
 
   let createdDepartments = 0
+
   const errors: EmployeeImportActionResult["errors"] = []
 
   for (const [
     normalizedName,
     departmentName,
   ] of requestedDepartments) {
-    const { error } = await departmentRepository.create({
+    const { error } = await repository.create({
       companyId,
       name: departmentName,
       description: null,
@@ -220,12 +235,151 @@ async function createMissingDepartments(
       continue
     }
 
-    knownDepartmentNames.add(normalizedName)
+    knownNames.add(normalizedName)
     createdDepartments += 1
   }
 
   return {
     createdDepartments,
+    errors,
+  }
+}
+
+async function preparePositions(
+  companyId: string,
+  rows: EmployeeImportActionRow[]
+) {
+  const departments = await getDepartments(companyId)
+
+  const departmentIdByName = new Map(
+    (departments ?? []).map((department) => [
+      normalizeComparableValue(department.name),
+      department.id,
+    ])
+  )
+
+  const existingPositions = await getPositions(companyId)
+
+  const knownPositionKeys = new Set(
+    existingPositions.map((position) => {
+      const departmentName =
+        (departments ?? []).find(
+          (department) =>
+            department.id === position.department_id
+        )?.name ?? ""
+
+      return createPositionKey(
+        position.name,
+        departmentName
+      )
+    })
+  )
+
+  const requestedPositions = new Map<
+    string,
+    {
+      name: string
+      departmentName: string
+      departmentId: string | null
+    }
+  >()
+
+  for (const row of rows) {
+    const positionName =
+      row.values.position?.trim() ?? ""
+
+    if (!positionName) {
+      continue
+    }
+
+    const departmentName =
+      row.values.department?.trim() ?? ""
+
+    const positionKey = createPositionKey(
+      positionName,
+      departmentName
+    )
+
+    if (
+      knownPositionKeys.has(positionKey) ||
+      requestedPositions.has(positionKey)
+    ) {
+      continue
+    }
+
+    const departmentId = departmentName
+      ? departmentIdByName.get(
+          normalizeComparableValue(departmentName)
+        ) ?? null
+      : null
+
+    requestedPositions.set(positionKey, {
+      name: positionName,
+      departmentName,
+      departmentId,
+    })
+  }
+
+  const repository = await createPositionRepository()
+
+  let createdPositions = 0
+
+  const errors: EmployeeImportActionResult["errors"] = []
+
+  for (const [
+    positionKey,
+    position,
+  ] of requestedPositions) {
+    const { error } = await repository.create({
+      companyId,
+      name: position.name,
+      description: null,
+      departmentId: position.departmentId,
+      hierarchicalLevel: "analyst",
+      status: "active",
+      weeklyWorkloadHours: 44,
+      workModel: "on_site",
+      employmentType: "clt",
+      travelRequirement: "none",
+    })
+
+    if (error) {
+      errors.push({
+        rowNumber: 0,
+        message:
+          `Não foi possível criar o cargo "${position.name}": ${error.message}`,
+      })
+
+      continue
+    }
+
+    knownPositionKeys.add(positionKey)
+    createdPositions += 1
+  }
+
+  const refreshedPositions = await getPositions(companyId)
+
+  const positionIdByKey = new Map<string, string>()
+
+  for (const position of refreshedPositions) {
+    const departmentName =
+      (departments ?? []).find(
+        (department) =>
+          department.id === position.department_id
+      )?.name ?? ""
+
+    positionIdByKey.set(
+      createPositionKey(
+        position.name,
+        departmentName
+      ),
+      position.id
+    )
+  }
+
+  return {
+    createdPositions,
+    positionIdByKey,
     errors,
   }
 }
@@ -245,11 +399,13 @@ export async function importEmployeesAction(
       skippedRows: 0,
       failedRows: 0,
       createdDepartments: 0,
+      createdPositions: 0,
       errors: [],
     }
   }
 
-  const { companyId } = await getCurrentCompanyContext()
+  const { companyId } =
+    await getCurrentCompanyContext()
 
   const departmentResult =
     await createMissingDepartments(
@@ -257,7 +413,13 @@ export async function importEmployeesAction(
       parsedRows.data
     )
 
-  const existingEmployees = await getEmployees(companyId)
+  const positionResult = await preparePositions(
+    companyId,
+    parsedRows.data
+  )
+
+  const existingEmployees =
+    await getEmployees(companyId)
 
   const registeredEmails = new Set(
     (existingEmployees ?? [])
@@ -270,18 +432,52 @@ export async function importEmployeesAction(
   )
 
   const processedEmails = new Set<string>()
+
   const employeeRepository =
     await createEmployeeRepository()
 
   let importedRows = 0
   let skippedRows = 0
+  let failedRows = 0
 
   const errors: EmployeeImportActionResult["errors"] = [
     ...departmentResult.errors,
+    ...positionResult.errors,
   ]
 
   for (const row of parsedRows.data) {
-    const employeeInput = createEmployeeInput(row)
+    const positionName =
+      row.values.position?.trim() ?? ""
+
+    const departmentName =
+      row.values.department?.trim() ?? ""
+
+    const positionId = positionName
+      ? positionResult.positionIdByKey.get(
+          createPositionKey(
+            positionName,
+            departmentName
+          )
+        ) ?? ""
+      : ""
+
+    if (positionName && !positionId) {
+      skippedRows += 1
+
+      errors.push({
+        rowNumber: row.rowNumber,
+        message:
+          `O cargo "${positionName}" não pôde ser localizado após a preparação da estrutura.`,
+      })
+
+      continue
+    }
+
+    const employeeInput = createEmployeeInput(
+      row,
+      positionId
+    )
+
     const parsedEmployee =
       createEmployeeSchema.safeParse(employeeInput)
 
@@ -326,6 +522,8 @@ export async function importEmployeesAction(
     )
 
     if (error) {
+      failedRows += 1
+
       errors.push({
         rowNumber: row.rowNumber,
         message: error.message,
@@ -341,14 +539,11 @@ export async function importEmployeesAction(
     }
   }
 
-  const failedRows = errors.filter(
-    (error) => error.rowNumber > 0
-  ).length - skippedRows
-
   const totalRows = parsedRows.data.length
 
   revalidatePath("/app")
   revalidatePath("/app/company")
+  revalidatePath("/app/company/positions")
   revalidatePath("/app/people")
   revalidatePath("/app/people/import")
 
@@ -365,9 +560,11 @@ export async function importEmployeesAction(
     totalRows,
     importedRows,
     skippedRows,
-    failedRows: Math.max(0, failedRows),
+    failedRows,
     createdDepartments:
       departmentResult.createdDepartments,
+    createdPositions:
+      positionResult.createdPositions,
     errors,
   }
 }

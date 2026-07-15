@@ -69,7 +69,7 @@ export function EmployeeImportActionPanel({
           </h2>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <div className="rounded-xl bg-white/10 p-4">
             <p className="text-2xl font-bold">
               {result.importedRows}
@@ -86,7 +86,17 @@ export function EmployeeImportActionPanel({
             </p>
 
             <p className="mt-1 text-sm text-slate-300">
-              Departamentos criados
+              Departamentos
+            </p>
+          </div>
+
+          <div className="rounded-xl bg-white/10 p-4">
+            <p className="text-2xl font-bold">
+              {result.createdPositions}
+            </p>
+
+            <p className="mt-1 text-sm text-slate-300">
+              Cargos criados
             </p>
           </div>
 
@@ -166,8 +176,8 @@ export function EmployeeImportActionPanel({
           </h2>
 
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-            Linhas inválidas serão ignoradas. Os departamentos informados
-            serão reutilizados ou criados automaticamente.
+            Departamentos e cargos informados serão reutilizados ou criados.
+            Os colaboradores serão associados aos cargos correspondentes.
           </p>
         </div>
 
@@ -182,7 +192,7 @@ export function EmployeeImportActionPanel({
         >
           {isPending
             ? "Importando..."
-            : "Importar colaboradores"}
+            : "Importar estrutura"}
         </Button>
       </div>
     </section>

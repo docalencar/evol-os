@@ -20,5 +20,6 @@ export type EmployeeImportActionResult = {
   skippedRows: number
   failedRows: number
   createdDepartments: number
+  createdPositions: number
   errors: EmployeeImportActionError[]
 }

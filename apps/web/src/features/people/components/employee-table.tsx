@@ -1,17 +1,28 @@
 "use client"
 
 import Link from "next/link"
-import { useMemo, useState } from "react"
+import {
+  useMemo,
+  useState,
+} from "react"
 
 import { DataTable } from "@/components/shared/data-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 
-import { EMPLOYEE_STATUS_LABELS } from "../constants/employee-status"
-import type { Employee, EmployeeStatus } from "../types/employee"
+import {
+  EMPLOYEE_STATUS_LABELS,
+} from "../constants/employee-status"
+import type {
+  Employee,
+  EmployeeStatus,
+} from "../types/employee"
 import { ArchiveEmployeeButton } from "./archive-employee-button"
 import { EmployeeEditDialog } from "./employee-edit-dialog"
+import {
+  EmployeeWorkspaceToolbar,
+  type EmployeeWorkspaceFilters,
+} from "./employee-workspace-toolbar"
 
 type EmployeeSelectOption = {
   id: string
@@ -29,6 +40,14 @@ type EmployeeTableItem = Employee & {
   manager_name?: string | null
 }
 
+const INITIAL_FILTERS: EmployeeWorkspaceFilters = {
+  search: "",
+  positionId: "",
+  teamId: "",
+  managerId: "",
+  status: "",
+}
+
 function getRelationName(relation?: Relation) {
   if (!relation) {
     return "-"
@@ -41,7 +60,9 @@ function getRelationName(relation?: Relation) {
   return relation.name || "-"
 }
 
-function normalizeSearchValue(value: string | null | undefined) {
+function normalizeSearchValue(
+  value: string | null | undefined
+) {
   return (value ?? "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -49,7 +70,7 @@ function normalizeSearchValue(value: string | null | undefined) {
     .toLowerCase()
 }
 
-function matchesEmployeeSearch(
+function matchesSearch(
   employee: EmployeeTableItem,
   normalizedSearch: string
 ) {
@@ -66,7 +87,37 @@ function matchesEmployeeSearch(
   ]
 
   return searchableValues.some((value) =>
-    normalizeSearchValue(value).includes(normalizedSearch)
+    normalizeSearchValue(value).includes(
+      normalizedSearch
+    )
+  )
+}
+
+function matchesFilters(
+  employee: EmployeeTableItem,
+  filters: EmployeeWorkspaceFilters
+) {
+  const normalizedSearch =
+    normalizeSearchValue(filters.search)
+
+  return (
+    matchesSearch(employee, normalizedSearch) &&
+    (
+      !filters.positionId ||
+      employee.position_id === filters.positionId
+    ) &&
+    (
+      !filters.teamId ||
+      employee.team_id === filters.teamId
+    ) &&
+    (
+      !filters.managerId ||
+      employee.manager_id === filters.managerId
+    ) &&
+    (
+      !filters.status ||
+      employee.status === filters.status
+    )
   )
 }
 
@@ -83,59 +134,44 @@ export function EmployeeTable({
   positions,
   managers,
 }: EmployeeTableProps) {
-  const [search, setSearch] = useState("")
-
-  const filteredEmployees = useMemo(() => {
-    const normalizedSearch = normalizeSearchValue(search)
-
-    return employees.filter((employee) =>
-      matchesEmployeeSearch(employee, normalizedSearch)
+  const [filters, setFilters] =
+    useState<EmployeeWorkspaceFilters>(
+      INITIAL_FILTERS
     )
-  }, [employees, search])
 
-  const resultLabel =
-    filteredEmployees.length === 1
-      ? "1 colaborador encontrado"
-      : `${filteredEmployees.length} colaboradores encontrados`
+  const filteredEmployees = useMemo(
+    () =>
+      employees.filter((employee) =>
+        matchesFilters(employee, filters)
+      ),
+    [employees, filters]
+  )
+
+  function clearFilters() {
+    setFilters(INITIAL_FILTERS)
+  }
 
   return (
     <div className="space-y-4">
-      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="w-full sm:max-w-md">
-            <label
-              htmlFor="employee-search"
-              className="sr-only"
-            >
-              Buscar colaboradores
-            </label>
-
-            <Input
-              id="employee-search"
-              type="search"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Buscar por nome, e-mail, cargo, time ou gestor..."
-            />
-          </div>
-
-          <p
-            className="shrink-0 text-sm text-slate-500"
-            aria-live="polite"
-          >
-            {resultLabel}
-          </p>
-        </div>
-      </section>
+      <EmployeeWorkspaceToolbar
+        filters={filters}
+        positions={positions}
+        teams={teams}
+        managers={managers}
+        resultCount={filteredEmployees.length}
+        totalCount={employees.length}
+        onFiltersChange={setFilters}
+        onClear={clearFilters}
+      />
 
       <DataTable
         title="Colaboradores"
         data={filteredEmployees}
         rowKey={(employee) => employee.id}
         emptyMessage={
-          search.trim()
-            ? "Nenhum colaborador corresponde à busca."
-            : "Nenhum colaborador cadastrado."
+          employees.length === 0
+            ? "Nenhum colaborador cadastrado."
+            : "Nenhum colaborador corresponde aos filtros."
         }
         columns={[
           {

@@ -97,3 +97,12 @@ export {
 export {
   getEmployeeIntelligenceList,
 } from "./intelligence/queries/get-employee-intelligence-list"
+
+export {
+  EmployeeWorkspaceToolbar,
+} from "./components/employee-workspace-toolbar"
+
+export type {
+  EmployeeWorkspaceFilterOption,
+  EmployeeWorkspaceFilters,
+} from "./components/employee-workspace-toolbar"

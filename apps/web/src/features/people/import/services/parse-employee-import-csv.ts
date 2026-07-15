@@ -115,11 +115,7 @@ function parseCsvRows(
 
       currentRow.push(currentValue.trim())
 
-      const hasContent = currentRow.some(
-        (value) => value.length > 0
-      )
-
-      if (hasContent) {
+      if (currentRow.some((value) => value.length > 0)) {
         rows.push(currentRow)
       }
 
@@ -139,11 +135,7 @@ function parseCsvRows(
 
   currentRow.push(currentValue.trim())
 
-  const hasFinalContent = currentRow.some(
-    (value) => value.length > 0
-  )
-
-  if (hasFinalContent) {
+  if (currentRow.some((value) => value.length > 0)) {
     rows.push(currentRow)
   }
 
@@ -163,9 +155,7 @@ function normalizeRowValues(
   totalColumns: number
 ) {
   return Array.from(
-    {
-      length: totalColumns,
-    },
+    { length: totalColumns },
     (_, index) => values[index]?.trim() ?? ""
   )
 }
@@ -205,18 +195,12 @@ export async function parseEmployeeImportCsv(
       }
     }
 
-    const dataRows = parsedRows.slice(1)
-
-    const previewRows: EmployeeImportPreviewRow[] =
-      dataRows
-        .slice(0, PREVIEW_LIMIT)
-        .map((values, index) => ({
-          rowNumber: index + 2,
-          values: normalizeRowValues(
-            values,
-            headers.length
-          ),
-        }))
+    const rows: EmployeeImportPreviewRow[] = parsedRows
+      .slice(1)
+      .map((values, index) => ({
+        rowNumber: index + 2,
+        values: normalizeRowValues(values, headers.length),
+      }))
 
     return {
       success: true,
@@ -224,8 +208,8 @@ export async function parseEmployeeImportCsv(
         fileName: file.name,
         delimiter,
         headers,
-        rows: previewRows,
-        totalRows: dataRows.length,
+        rows,
+        totalRows: rows.length,
         previewLimit: PREVIEW_LIMIT,
       },
     }

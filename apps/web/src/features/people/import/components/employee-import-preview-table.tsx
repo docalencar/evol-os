@@ -71,7 +71,9 @@ export function EmployeeImportPreviewTable({
           </thead>
 
           <tbody className="divide-y divide-slate-100">
-            {preview.rows.map((row) => (
+            {preview.rows
+              .slice(0, preview.previewLimit)
+              .map((row) => (
               <tr key={row.rowNumber}>
                 <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-500">
                   {row.rowNumber}
@@ -91,7 +93,7 @@ export function EmployeeImportPreviewTable({
                   </td>
                 ))}
               </tr>
-            ))}
+              ))}
           </tbody>
         </table>
       </div>

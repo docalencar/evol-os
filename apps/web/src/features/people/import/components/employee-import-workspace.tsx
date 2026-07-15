@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 
 import { mapEmployeeImportHeaders } from "../services/map-employee-import-headers"
 import { parseEmployeeImportCsv } from "../services/parse-employee-import-csv"
+import { validateEmployeeImportRows } from "../services/validate-employee-import-rows"
 import {
   EMPLOYEE_IMPORT_ACCEPTED_EXTENSIONS,
   type EmployeeImportAcceptedExtension,
@@ -23,12 +24,18 @@ import type {
 import type {
   EmployeeImportPreview,
 } from "../types/employee-import-preview"
+import type {
+  EmployeeImportValidationResult,
+} from "../types/employee-import-validation"
 import {
   EmployeeImportMappingSummary,
 } from "./employee-import-mapping-summary"
 import {
   EmployeeImportPreviewTable,
 } from "./employee-import-preview-table"
+import {
+  EmployeeImportValidationSummary,
+} from "./employee-import-validation-summary"
 
 const MAX_FILE_SIZE_IN_BYTES = 10 * 1024 * 1024
 
@@ -116,6 +123,9 @@ export function EmployeeImportWorkspace() {
   const [mapping, setMapping] =
     useState<EmployeeImportMappingResult | null>(null)
 
+  const [validation, setValidation] =
+    useState<EmployeeImportValidationResult | null>(null)
+
   const [errorMessage, setErrorMessage] = useState("")
   const [isDragging, setIsDragging] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
@@ -124,6 +134,7 @@ export function EmployeeImportWorkspace() {
     setErrorMessage("")
     setPreview(null)
     setMapping(null)
+    setValidation(null)
 
     if (!file) {
       return
@@ -168,6 +179,7 @@ export function EmployeeImportWorkspace() {
     setSelectedFile(null)
     setPreview(null)
     setMapping(null)
+    setValidation(null)
     setErrorMessage("")
   }
 
@@ -179,6 +191,7 @@ export function EmployeeImportWorkspace() {
     setErrorMessage("")
     setPreview(null)
     setMapping(null)
+    setValidation(null)
 
     if (selectedFile.extension === "xlsx") {
       setErrorMessage(
@@ -204,8 +217,14 @@ export function EmployeeImportWorkspace() {
       result.preview.headers
     )
 
+    const validationResult = validateEmployeeImportRows(
+      result.preview,
+      mappingResult
+    )
+
     setPreview(result.preview)
     setMapping(mappingResult)
+    setValidation(validationResult)
   }
 
   return (
@@ -383,6 +402,12 @@ export function EmployeeImportWorkspace() {
 
       {mapping ? (
         <EmployeeImportMappingSummary mapping={mapping} />
+      ) : null}
+
+      {validation ? (
+        <EmployeeImportValidationSummary
+          validation={validation}
+        />
       ) : null}
 
       {preview ? (

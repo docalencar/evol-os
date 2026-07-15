@@ -3,8 +3,16 @@ export {
 } from "./components/employee-import-workspace"
 
 export {
+  EmployeeImportMappingSummary,
+} from "./components/employee-import-mapping-summary"
+
+export {
   EmployeeImportPreviewTable,
 } from "./components/employee-import-preview-table"
+
+export {
+  mapEmployeeImportHeaders,
+} from "./services/map-employee-import-headers"
 
 export {
   parseEmployeeImportCsv,
@@ -19,6 +27,13 @@ export type {
   EmployeeImportFileValidationResult,
   EmployeeImportSelectedFile,
 } from "./types/employee-import-file"
+
+export type {
+  EmployeeImportField,
+  EmployeeImportHeaderMapping,
+  EmployeeImportHeaderMappingStatus,
+  EmployeeImportMappingResult,
+} from "./types/employee-import-mapping"
 
 export type {
   EmployeeImportCsvDelimiter,

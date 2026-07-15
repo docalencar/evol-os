@@ -9,6 +9,7 @@ import {
 
 import { Button } from "@/components/ui/button"
 
+import { mapEmployeeImportHeaders } from "../services/map-employee-import-headers"
 import { parseEmployeeImportCsv } from "../services/parse-employee-import-csv"
 import {
   EMPLOYEE_IMPORT_ACCEPTED_EXTENSIONS,
@@ -17,8 +18,14 @@ import {
   type EmployeeImportSelectedFile,
 } from "../types/employee-import-file"
 import type {
+  EmployeeImportMappingResult,
+} from "../types/employee-import-mapping"
+import type {
   EmployeeImportPreview,
 } from "../types/employee-import-preview"
+import {
+  EmployeeImportMappingSummary,
+} from "./employee-import-mapping-summary"
 import {
   EmployeeImportPreviewTable,
 } from "./employee-import-preview-table"
@@ -106,6 +113,9 @@ export function EmployeeImportWorkspace() {
   const [preview, setPreview] =
     useState<EmployeeImportPreview | null>(null)
 
+  const [mapping, setMapping] =
+    useState<EmployeeImportMappingResult | null>(null)
+
   const [errorMessage, setErrorMessage] = useState("")
   const [isDragging, setIsDragging] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
@@ -113,6 +123,7 @@ export function EmployeeImportWorkspace() {
   function selectFile(file: File | undefined) {
     setErrorMessage("")
     setPreview(null)
+    setMapping(null)
 
     if (!file) {
       return
@@ -156,6 +167,7 @@ export function EmployeeImportWorkspace() {
   function removeSelectedFile() {
     setSelectedFile(null)
     setPreview(null)
+    setMapping(null)
     setErrorMessage("")
   }
 
@@ -166,10 +178,11 @@ export function EmployeeImportWorkspace() {
 
     setErrorMessage("")
     setPreview(null)
+    setMapping(null)
 
     if (selectedFile.extension === "xlsx") {
       setErrorMessage(
-        "A leitura de XLSX será adicionada na próxima etapa. Nesta versão, use um arquivo CSV."
+        "A leitura de XLSX será adicionada em uma etapa posterior. Nesta versão, use um arquivo CSV."
       )
       return
     }
@@ -187,7 +200,12 @@ export function EmployeeImportWorkspace() {
       return
     }
 
+    const mappingResult = mapEmployeeImportHeaders(
+      result.preview.headers
+    )
+
     setPreview(result.preview)
+    setMapping(mappingResult)
   }
 
   return (
@@ -203,8 +221,8 @@ export function EmployeeImportWorkspace() {
           </h1>
 
           <p className="max-w-3xl text-base leading-7 text-slate-600">
-            Envie uma planilha com os dados essenciais. O Evol OS mostrará uma
-            prévia antes de qualquer informação ser salva.
+            Envie uma planilha com os dados essenciais. O Evol OS identifica
+            automaticamente as colunas antes de qualquer informação ser salva.
           </p>
         </div>
       </header>
@@ -305,29 +323,28 @@ export function EmployeeImportWorkspace() {
             </p>
 
             <h2 className="mt-2 font-semibold text-slate-950">
-              2. Ler os dados
+              3. Interpretar colunas
             </h2>
 
             <p className="mt-2 text-sm leading-6 text-slate-600">
-              O CSV será processado no navegador. Nenhum dado será salvo nesta
-              etapa.
+              O Evol OS procura automaticamente nome, e-mail, telefone,
+              departamento, cargo e demais dados conhecidos.
             </p>
           </section>
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-              Formato recomendado
+              Cabeçalhos reconhecidos
             </p>
 
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              Use a primeira linha para os nomes das colunas e as linhas
-              seguintes para os colaboradores.
-            </p>
-
-            <div className="mt-4 rounded-lg bg-slate-50 p-3 font-mono text-xs leading-5 text-slate-600">
-              Nome;Email;Cargo
-              <br />
-              Maria;maria@empresa.com;Analista
+            <div className="mt-3 space-y-2 text-sm text-slate-600">
+              <p>Nome ou Nome completo</p>
+              <p>Email ou E-mail</p>
+              <p>Telefone ou Celular</p>
+              <p>Departamento ou Setor</p>
+              <p>Cargo ou Função</p>
+              <p>Gestor ou Líder</p>
+              <p>Data de admissão</p>
             </div>
           </section>
         </aside>
@@ -338,16 +355,16 @@ export function EmployeeImportWorkspace() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-sm font-medium text-slate-300">
-                Arquivo pronto para leitura
+                Arquivo pronto para interpretação
               </p>
 
               <h2 className="mt-2 text-xl font-semibold">
-                Verifique os dados antes de importar.
+                Deixe o Evol OS entender sua planilha.
               </h2>
 
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-                O Evol OS identificará o separador, os cabeçalhos e as
-                primeiras linhas da planilha.
+                O arquivo será lido, os cabeçalhos serão reconhecidos e uma
+                prévia será apresentada para revisão.
               </p>
             </div>
 
@@ -362,6 +379,10 @@ export function EmployeeImportWorkspace() {
             </Button>
           </div>
         </section>
+      ) : null}
+
+      {mapping ? (
+        <EmployeeImportMappingSummary mapping={mapping} />
       ) : null}
 
       {preview ? (

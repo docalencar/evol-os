@@ -7,7 +7,9 @@ import { getTeams } from "@/features/organization/teams"
 import {
   EmployeeCreateDialog,
   EmployeeTable,
+  PeopleWorkspaceSummary,
   getEmployees,
+  presentPeopleWorkspaceSummary,
 } from "@/features/people"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
@@ -41,6 +43,10 @@ export default async function PeoplePage() {
     })
   )
 
+  const summary = presentPeopleWorkspaceSummary(
+    employees ?? []
+  )
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -66,6 +72,8 @@ export default async function PeoplePage() {
           </div>
         }
       />
+
+      <PeopleWorkspaceSummary summary={summary} />
 
       <EmployeeTable
         employees={employeesWithManagerName}

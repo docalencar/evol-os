@@ -106,3 +106,16 @@ export type {
   EmployeeWorkspaceFilterOption,
   EmployeeWorkspaceFilters,
 } from "./components/employee-workspace-toolbar"
+
+export {
+  PeopleWorkspaceSummary,
+} from "./workspace/components/people-workspace-summary"
+
+export {
+  presentPeopleWorkspaceSummary,
+} from "./workspace/presenters/people-workspace-summary-presenter"
+
+export type {
+  PeopleWorkspaceSummaryViewModel,
+} from "./workspace/view-models/people-workspace-summary-view-model"
+

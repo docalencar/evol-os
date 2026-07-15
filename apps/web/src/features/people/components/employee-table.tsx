@@ -26,6 +26,8 @@ import {
 import {
   EmployeeWorkspaceToolbar,
   type EmployeeWorkspaceFilters,
+  type EmployeeWorkspaceSortBy,
+  type EmployeeWorkspaceSortDirection,
 } from "./employee-workspace-toolbar"
 
 type EmployeeSelectOption = {
@@ -103,11 +105,11 @@ function matchesFilters(
   employee: EmployeeTableItem,
   filters: EmployeeWorkspaceFilters
 ) {
-  const normalizedSearch =
-    normalizeSearchValue(filters.search)
-
   return (
-    matchesSearch(employee, normalizedSearch) &&
+    matchesSearch(
+      employee,
+      normalizeSearchValue(filters.search)
+    ) &&
     (
       !filters.positionId ||
       employee.position_id === filters.positionId
@@ -124,6 +126,64 @@ function matchesFilters(
       !filters.status ||
       employee.status === filters.status
     )
+  )
+}
+
+function getSortValue(
+  employee: EmployeeTableItem,
+  sortBy: EmployeeWorkspaceSortBy
+) {
+  switch (sortBy) {
+    case "position":
+      return getRelationName(employee.positions)
+
+    case "team":
+      return getRelationName(employee.teams)
+
+    case "manager":
+      return employee.manager_name ?? ""
+
+    case "status":
+      return (
+        EMPLOYEE_STATUS_LABELS[
+          employee.status as EmployeeStatus
+        ] ?? employee.status
+      )
+
+    case "fullName":
+    default:
+      return employee.full_name
+  }
+}
+
+function sortEmployees(
+  employees: EmployeeTableItem[],
+  sortBy: EmployeeWorkspaceSortBy,
+  sortDirection: EmployeeWorkspaceSortDirection
+) {
+  const direction = sortDirection === "asc" ? 1 : -1
+
+  return [...employees].sort(
+    (firstEmployee, secondEmployee) => {
+      const firstValue = normalizeSearchValue(
+        getSortValue(firstEmployee, sortBy)
+      )
+
+      const secondValue = normalizeSearchValue(
+        getSortValue(secondEmployee, sortBy)
+      )
+
+      return (
+        firstValue.localeCompare(
+          secondValue,
+          "pt-BR",
+          {
+            numeric: true,
+            sensitivity: "base",
+          }
+        ) * direction
+      )
+    }
   )
 }
 
@@ -145,7 +205,14 @@ export function EmployeeTable({
       INITIAL_FILTERS
     )
 
+  const [sortBy, setSortBy] =
+    useState<EmployeeWorkspaceSortBy>("fullName")
+
+  const [sortDirection, setSortDirection] =
+    useState<EmployeeWorkspaceSortDirection>("asc")
+
   const [currentPage, setCurrentPage] = useState(1)
+
   const [pageSize, setPageSize] =
     useState(INITIAL_PAGE_SIZE)
 
@@ -157,9 +224,23 @@ export function EmployeeTable({
     [employees, filters]
   )
 
+  const sortedEmployees = useMemo(
+    () =>
+      sortEmployees(
+        filteredEmployees,
+        sortBy,
+        sortDirection
+      ),
+    [
+      filteredEmployees,
+      sortBy,
+      sortDirection,
+    ]
+  )
+
   const totalPages = Math.max(
     1,
-    Math.ceil(filteredEmployees.length / pageSize)
+    Math.ceil(sortedEmployees.length / pageSize)
   )
 
   const safeCurrentPage = Math.min(
@@ -172,37 +253,38 @@ export function EmployeeTable({
 
   const paginatedEmployees = useMemo(
     () =>
-      filteredEmployees.slice(
+      sortedEmployees.slice(
         firstItemIndex,
         firstItemIndex + pageSize
       ),
     [
-      filteredEmployees,
+      sortedEmployees,
       firstItemIndex,
       pageSize,
     ]
   )
 
   const firstItem =
-    filteredEmployees.length === 0
+    sortedEmployees.length === 0
       ? 0
       : firstItemIndex + 1
 
   const lastItem = Math.min(
     firstItemIndex + pageSize,
-    filteredEmployees.length
+    sortedEmployees.length
   )
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [filters, pageSize])
+  }, [
+    filters,
+    pageSize,
+    sortBy,
+    sortDirection,
+  ])
 
   function clearFilters() {
     setFilters(INITIAL_FILTERS)
-  }
-
-  function handlePageSizeChange(nextPageSize: number) {
-    setPageSize(nextPageSize)
   }
 
   return (
@@ -214,7 +296,11 @@ export function EmployeeTable({
         managers={managers}
         resultCount={filteredEmployees.length}
         totalCount={employees.length}
+        sortBy={sortBy}
+        sortDirection={sortDirection}
         onFiltersChange={setFilters}
+        onSortByChange={setSortBy}
+        onSortDirectionChange={setSortDirection}
         onClear={clearFilters}
       />
 
@@ -313,11 +399,11 @@ export function EmployeeTable({
         currentPage={safeCurrentPage}
         totalPages={totalPages}
         pageSize={pageSize}
-        totalItems={filteredEmployees.length}
+        totalItems={sortedEmployees.length}
         firstItem={firstItem}
         lastItem={lastItem}
         onPageChange={setCurrentPage}
-        onPageSizeChange={handlePageSizeChange}
+        onPageSizeChange={setPageSize}
       />
     </div>
   )

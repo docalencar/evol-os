@@ -22,6 +22,17 @@ export type EmployeeWorkspaceFilters = {
   status: string
 }
 
+export type EmployeeWorkspaceSortBy =
+  | "fullName"
+  | "position"
+  | "team"
+  | "manager"
+  | "status"
+
+export type EmployeeWorkspaceSortDirection =
+  | "asc"
+  | "desc"
+
 type EmployeeWorkspaceToolbarProps = {
   filters: EmployeeWorkspaceFilters
   positions: EmployeeWorkspaceFilterOption[]
@@ -29,8 +40,16 @@ type EmployeeWorkspaceToolbarProps = {
   managers: EmployeeWorkspaceFilterOption[]
   resultCount: number
   totalCount: number
+  sortBy: EmployeeWorkspaceSortBy
+  sortDirection: EmployeeWorkspaceSortDirection
   onFiltersChange: (
     filters: EmployeeWorkspaceFilters
+  ) => void
+  onSortByChange: (
+    sortBy: EmployeeWorkspaceSortBy
+  ) => void
+  onSortDirectionChange: (
+    direction: EmployeeWorkspaceSortDirection
   ) => void
   onClear: () => void
 }
@@ -49,7 +68,11 @@ export function EmployeeWorkspaceToolbar({
   managers,
   resultCount,
   totalCount,
+  sortBy,
+  sortDirection,
   onFiltersChange,
+  onSortByChange,
+  onSortDirectionChange,
   onClear,
 }: EmployeeWorkspaceToolbarProps) {
   const hasActiveFilters = Object.values(filters).some(
@@ -89,135 +112,99 @@ export function EmployeeWorkspaceToolbar({
         </div>
 
         <div className="grid flex-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <div>
-            <label
-              htmlFor="employee-position-filter"
-              className="sr-only"
-            >
-              Filtrar por cargo
-            </label>
+          <select
+            aria-label="Filtrar por cargo"
+            value={filters.positionId}
+            onChange={(event) =>
+              updateFilter(
+                "positionId",
+                event.target.value
+              )
+            }
+            className={selectClassName}
+          >
+            <option value="">Todos os cargos</option>
 
-            <select
-              id="employee-position-filter"
-              value={filters.positionId}
-              onChange={(event) =>
-                updateFilter(
-                  "positionId",
-                  event.target.value
-                )
-              }
-              className={selectClassName}
-            >
-              <option value="">Todos os cargos</option>
+            {positions.map((position) => (
+              <option
+                key={position.id}
+                value={position.id}
+              >
+                {position.name}
+              </option>
+            ))}
+          </select>
 
-              {positions.map((position) => (
-                <option
-                  key={position.id}
-                  value={position.id}
-                >
-                  {position.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <select
+            aria-label="Filtrar por time"
+            value={filters.teamId}
+            onChange={(event) =>
+              updateFilter("teamId", event.target.value)
+            }
+            className={selectClassName}
+          >
+            <option value="">Todos os times</option>
 
-          <div>
-            <label
-              htmlFor="employee-team-filter"
-              className="sr-only"
-            >
-              Filtrar por time
-            </label>
+            {teams.map((team) => (
+              <option
+                key={team.id}
+                value={team.id}
+              >
+                {team.name}
+              </option>
+            ))}
+          </select>
 
-            <select
-              id="employee-team-filter"
-              value={filters.teamId}
-              onChange={(event) =>
-                updateFilter("teamId", event.target.value)
-              }
-              className={selectClassName}
-            >
-              <option value="">Todos os times</option>
+          <select
+            aria-label="Filtrar por gestor"
+            value={filters.managerId}
+            onChange={(event) =>
+              updateFilter(
+                "managerId",
+                event.target.value
+              )
+            }
+            className={selectClassName}
+          >
+            <option value="">Todos os gestores</option>
 
-              {teams.map((team) => (
-                <option
-                  key={team.id}
-                  value={team.id}
-                >
-                  {team.name}
-                </option>
-              ))}
-            </select>
-          </div>
+            {managers.map((manager) => (
+              <option
+                key={manager.id}
+                value={manager.id}
+              >
+                {manager.name}
+              </option>
+            ))}
+          </select>
 
-          <div>
-            <label
-              htmlFor="employee-manager-filter"
-              className="sr-only"
-            >
-              Filtrar por gestor
-            </label>
+          <select
+            aria-label="Filtrar por status"
+            value={filters.status}
+            onChange={(event) =>
+              updateFilter("status", event.target.value)
+            }
+            className={selectClassName}
+          >
+            <option value="">Todos os status</option>
 
-            <select
-              id="employee-manager-filter"
-              value={filters.managerId}
-              onChange={(event) =>
-                updateFilter(
-                  "managerId",
-                  event.target.value
-                )
-              }
-              className={selectClassName}
-            >
-              <option value="">Todos os gestores</option>
-
-              {managers.map((manager) => (
-                <option
-                  key={manager.id}
-                  value={manager.id}
-                >
-                  {manager.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label
-              htmlFor="employee-status-filter"
-              className="sr-only"
-            >
-              Filtrar por status
-            </label>
-
-            <select
-              id="employee-status-filter"
-              value={filters.status}
-              onChange={(event) =>
-                updateFilter("status", event.target.value)
-              }
-              className={selectClassName}
-            >
-              <option value="">Todos os status</option>
-
-              {EMPLOYEE_STATUSES.map((status) => (
-                <option
-                  key={status}
-                  value={status}
-                >
-                  {
-                    EMPLOYEE_STATUS_LABELS[
-                      status as EmployeeStatus
-                    ]
-                  }
-                </option>
-              ))}
-            </select>
-          </div>
+            {EMPLOYEE_STATUSES.map((status) => (
+              <option
+                key={status}
+                value={status}
+              >
+                {
+                  EMPLOYEE_STATUS_LABELS[
+                    status as EmployeeStatus
+                  ]
+                }
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 border-t border-slate-100 pt-4 lg:flex-row lg:items-center lg:justify-between">
         <p
           className="text-sm text-slate-500"
           aria-live="polite"
@@ -229,16 +216,72 @@ export function EmployeeWorkspaceToolbar({
             : `${resultCount} de ${totalCount} colaboradores`}
         </p>
 
-        {hasActiveFilters ? (
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={onClear}
-          >
-            Limpar filtros
-          </Button>
-        ) : null}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <select
+              aria-label="Ordenar colaboradores por"
+              value={sortBy}
+              onChange={(event) =>
+                onSortByChange(
+                  event.target
+                    .value as EmployeeWorkspaceSortBy
+                )
+              }
+              className={selectClassName}
+            >
+              <option value="fullName">
+                Ordenar por nome
+              </option>
+
+              <option value="position">
+                Ordenar por cargo
+              </option>
+
+              <option value="team">
+                Ordenar por time
+              </option>
+
+              <option value="manager">
+                Ordenar por gestor
+              </option>
+
+              <option value="status">
+                Ordenar por status
+              </option>
+            </select>
+
+            <select
+              aria-label="Direção da ordenação"
+              value={sortDirection}
+              onChange={(event) =>
+                onSortDirectionChange(
+                  event.target
+                    .value as EmployeeWorkspaceSortDirection
+                )
+              }
+              className={selectClassName}
+            >
+              <option value="asc">
+                Crescente
+              </option>
+
+              <option value="desc">
+                Decrescente
+              </option>
+            </select>
+          </div>
+
+          {hasActiveFilters ? (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={onClear}
+            >
+              Limpar filtros
+            </Button>
+          ) : null}
+        </div>
       </div>
     </section>
   )

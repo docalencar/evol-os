@@ -105,6 +105,8 @@ export {
 export type {
   EmployeeWorkspaceFilterOption,
   EmployeeWorkspaceFilters,
+  EmployeeWorkspaceSortBy,
+  EmployeeWorkspaceSortDirection,
 } from "./components/employee-workspace-toolbar"
 
 export {

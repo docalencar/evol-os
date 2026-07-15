@@ -1,4 +1,7 @@
+import Link from "next/link"
+
 import { PageHeader } from "@/components/shared/page-header"
+import { Button } from "@/components/ui/button"
 import { getPositions } from "@/features/organization/positions"
 import { getTeams } from "@/features/organization/teams"
 import {
@@ -23,15 +26,20 @@ export default async function PeoplePage() {
   }))
 
   const managerNameById = new Map(
-    managerOptions.map((manager) => [manager.id, manager.name])
+    managerOptions.map((manager) => [
+      manager.id,
+      manager.name,
+    ])
   )
 
-  const employeesWithManagerName = (employees ?? []).map((employee) => ({
-    ...employee,
-    manager_name: employee.manager_id
-      ? managerNameById.get(employee.manager_id) ?? null
-      : null,
-  }))
+  const employeesWithManagerName = (employees ?? []).map(
+    (employee) => ({
+      ...employee,
+      manager_name: employee.manager_id
+        ? managerNameById.get(employee.manager_id) ?? null
+        : null,
+    })
+  )
 
   return (
     <div className="space-y-6">
@@ -39,12 +47,23 @@ export default async function PeoplePage() {
         title="Pessoas"
         description="Organize colaboradores, cargos, departamentos e gestores."
         actions={
-          <EmployeeCreateDialog
-            companyId={companyId}
-            teams={teams ?? []}
-            positions={positions ?? []}
-            managers={managerOptions}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="secondary"
+              render={
+                <Link href="/app/people/import" />
+              }
+            >
+              Sincronizar planilha
+            </Button>
+
+            <EmployeeCreateDialog
+              companyId={companyId}
+              teams={teams ?? []}
+              positions={positions ?? []}
+              managers={managerOptions}
+            />
+          </div>
         }
       />
 

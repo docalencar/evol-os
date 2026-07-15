@@ -1,3 +1,5 @@
+import Link from "next/link"
+
 import type {
   CustomerActivationViewModel,
 } from "../view-models/customer-activation-view-model"
@@ -30,6 +32,50 @@ export function CustomerActivationHome({
         totalSteps={activation.totalSteps}
       />
 
+      <section className="grid gap-4 sm:grid-cols-3">
+        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-sm font-medium text-slate-500">
+            Colaboradores
+          </p>
+
+          <p className="mt-2 text-3xl font-bold text-slate-950">
+            {activation.metrics.employees}
+          </p>
+
+          <p className="mt-2 text-sm text-slate-600">
+            Pessoas ativas na estrutura inicial.
+          </p>
+        </article>
+
+        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-sm font-medium text-slate-500">
+            Departamentos
+          </p>
+
+          <p className="mt-2 text-3xl font-bold text-slate-950">
+            {activation.metrics.departments}
+          </p>
+
+          <p className="mt-2 text-sm text-slate-600">
+            Áreas cadastradas para organizar a empresa.
+          </p>
+        </article>
+
+        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-sm font-medium text-slate-500">
+            Cargos
+          </p>
+
+          <p className="mt-2 text-3xl font-bold text-slate-950">
+            {activation.metrics.positions}
+          </p>
+
+          <p className="mt-2 text-sm text-slate-600">
+            Funções disponíveis para estruturar as pessoas.
+          </p>
+        </article>
+      </section>
+
       <section className="space-y-4">
         <div className="space-y-1">
           <h2 className="text-xl font-semibold text-slate-950">
@@ -37,8 +83,8 @@ export function CustomerActivationHome({
           </h2>
 
           <p className="text-sm text-slate-600">
-            O Evol OS destaca automaticamente a ação mais importante para você
-            continuar.
+            O Evol OS acompanha os dados reais da empresa e indica a ação mais
+            importante para continuar.
           </p>
         </div>
 
@@ -63,23 +109,54 @@ export function CustomerActivationHome({
         </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-            O que será liberado
-          </p>
+      {activation.isComplete ? (
+        <section className="rounded-2xl bg-slate-950 p-6 text-white shadow-sm sm:p-8">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+            <div className="space-y-3">
+              <p className="text-sm font-semibold uppercase tracking-[0.14em] text-emerald-300">
+                Ativação concluída
+              </p>
 
-          <h2 className="text-lg font-semibold text-slate-950">
-            Uma visão completa da sua organização
-          </h2>
+              <h2 className="text-2xl font-bold tracking-tight">
+                A estrutura inicial da {activation.companyName} está pronta.
+              </h2>
 
-          <p className="max-w-3xl text-sm leading-6 text-slate-600">
-            Ao concluir a configuração inicial, o Evol OS poderá transformar
-            os dados de pessoas, departamentos e cargos em prioridades,
-            indicadores e recomendações para o RH e as lideranças.
-          </p>
-        </div>
-      </section>
+              <p className="max-w-3xl text-sm leading-6 text-slate-300">
+                Colaboradores, departamentos e cargos já podem alimentar as
+                experiências de organização, desenvolvimento, liderança e
+                inteligência do Evol OS.
+              </p>
+            </div>
+
+            {activation.nextAction ? (
+              <Link
+                href={activation.nextAction.href}
+                className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-md bg-white px-5 py-2 text-sm font-semibold text-slate-950 transition-colors hover:bg-slate-100"
+              >
+                {activation.nextAction.label}
+              </Link>
+            ) : null}
+          </div>
+        </section>
+      ) : (
+        <section className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+              O que será liberado
+            </p>
+
+            <h2 className="text-lg font-semibold text-slate-950">
+              Uma visão completa da sua organização
+            </h2>
+
+            <p className="max-w-3xl text-sm leading-6 text-slate-600">
+              Ao concluir a configuração inicial, o Evol OS poderá transformar
+              os dados de pessoas, departamentos e cargos em prioridades,
+              indicadores e recomendações para o RH e as lideranças.
+            </p>
+          </div>
+        </section>
+      )}
     </WorkspaceLayout>
   )
 }

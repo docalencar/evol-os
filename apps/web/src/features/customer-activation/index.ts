@@ -7,6 +7,7 @@ export {
 } from "./presenters/customer-activation-presenter"
 
 export type {
+  CustomerActivationMetricsViewModel,
   CustomerActivationNextActionViewModel,
   CustomerActivationStepStatus,
   CustomerActivationStepViewModel,

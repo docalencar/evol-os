@@ -27,9 +27,13 @@ export async function presentCustomerActivation({
     getPositions(companyId),
   ])
 
-  const hasEmployees = (employees?.length ?? 0) > 0
-  const hasDepartments = (departments?.length ?? 0) > 0
-  const hasPositions = positions.length > 0
+  const employeeCount = employees?.length ?? 0
+  const departmentCount = departments?.length ?? 0
+  const positionCount = positions.length
+
+  const hasEmployees = employeeCount > 0
+  const hasDepartments = departmentCount > 0
+  const hasPositions = positionCount > 0
 
   const steps: CustomerActivationStepViewModel[] = [
     {
@@ -41,22 +45,37 @@ export async function presentCustomerActivation({
     {
       id: "employees",
       title: "Adicionar colaboradores",
-      description:
-        "Inclua as pessoas que farão parte da estrutura da empresa.",
+      description: hasEmployees
+        ? `${employeeCount} colaborador${
+            employeeCount === 1 ? "" : "es"
+          } cadastrado${
+            employeeCount === 1 ? "" : "s"
+          }.`
+        : "Inclua as pessoas que farão parte da estrutura da empresa.",
       status: hasEmployees ? "completed" : "pending",
     },
     {
       id: "departments",
       title: "Revisar departamentos",
-      description:
-        "Organize as principais áreas da empresa.",
+      description: hasDepartments
+        ? `${departmentCount} departamento${
+            departmentCount === 1 ? "" : "s"
+          } cadastrado${
+            departmentCount === 1 ? "" : "s"
+          }.`
+        : "Organize as principais áreas da empresa.",
       status: hasDepartments ? "completed" : "pending",
     },
     {
       id: "positions",
       title: "Revisar cargos",
-      description:
-        "Defina os cargos utilizados na estrutura organizacional.",
+      description: hasPositions
+        ? `${positionCount} cargo${
+            positionCount === 1 ? "" : "s"
+          } cadastrado${
+            positionCount === 1 ? "" : "s"
+          }.`
+        : "Defina os cargos utilizados na estrutura organizacional.",
       status: hasPositions ? "completed" : "pending",
     },
   ]
@@ -88,6 +107,11 @@ export async function presentCustomerActivation({
       label: "Revisar cargos",
       href: "/app/company/positions",
     }
+  } else {
+    nextAction = {
+      label: "Explorar a organização",
+      href: "/app/organization",
+    }
   }
 
   return {
@@ -98,5 +122,10 @@ export async function presentCustomerActivation({
     isComplete: completedSteps === totalSteps,
     steps,
     nextAction,
+    metrics: {
+      employees: employeeCount,
+      departments: departmentCount,
+      positions: positionCount,
+    },
   }
 }

@@ -14,6 +14,12 @@ export type CustomerActivationNextActionViewModel = {
   href: string
 } | null
 
+export type CustomerActivationMetricsViewModel = {
+  employees: number
+  departments: number
+  positions: number
+}
+
 export type CustomerActivationViewModel = {
   companyName: string
   progress: number
@@ -22,4 +28,5 @@ export type CustomerActivationViewModel = {
   isComplete: boolean
   steps: CustomerActivationStepViewModel[]
   nextAction: CustomerActivationNextActionViewModel
+  metrics: CustomerActivationMetricsViewModel
 }

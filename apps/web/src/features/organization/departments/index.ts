@@ -20,3 +20,13 @@ export { DepartmentCreateDialog } from "./components/department-create-dialog"
 export { DepartmentEditDialog } from "./components/department-edit-dialog"
 export { ArchiveDepartmentButton } from "./components/archive-department-button"
 export { DepartmentTable } from "./components/department-table"
+
+export {
+  applyDepartmentSyncItem,
+} from "./services/apply-department-sync-item"
+
+export type {
+  ApplyDepartmentSyncItemInput,
+  ApplyDepartmentSyncItemResult,
+} from "./services/apply-department-sync-item"
+

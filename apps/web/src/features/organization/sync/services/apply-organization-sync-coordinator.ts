@@ -1,3 +1,5 @@
+import "server-only"
+
 import {
   applyDepartmentSyncItem,
 } from "@/features/organization/departments"

@@ -7,7 +7,7 @@ import type {
 } from "@/features/organization/sync"
 import {
   applyOrganizationSyncCoordinator,
-} from "@/features/organization/sync/services"
+} from "@/features/organization/sync/server"
 import {
   getCurrentCompanyContext,
 } from "@/lib/supabase/supabase/current-company"

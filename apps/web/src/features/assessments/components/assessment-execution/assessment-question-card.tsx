@@ -11,6 +11,7 @@ type AssessmentQuestionCardProps = {
   assessmentResponseId: string
   question: AssessmentQuestion
   answer?: AssessmentAnswer
+  readOnly?: boolean
 }
 
 export function AssessmentQuestionCard({
@@ -18,6 +19,7 @@ export function AssessmentQuestionCard({
   assessmentResponseId,
   question,
   answer,
+  readOnly = false,
 }: AssessmentQuestionCardProps) {
   const [selectedScore, setSelectedScore] = useState<number | null>(
     answer?.score ?? null
@@ -32,7 +34,7 @@ export function AssessmentQuestionCard({
   }, [answer])
 
   useEffect(() => {
-    if (selectedScore === null) {
+    if (selectedScore === null || readOnly) {
       return
     }
 
@@ -59,6 +61,7 @@ export function AssessmentQuestionCard({
     assessmentResponseId,
     question.id,
     selectedScore,
+    readOnly,
   ])
 
   return (
@@ -125,11 +128,14 @@ export function AssessmentQuestionCard({
               key={value}
               type="button"
               onClick={() => setSelectedScore(value)}
+              disabled={readOnly}
               className={[
                 "flex h-10 w-10 items-center justify-center rounded-full border text-sm font-medium transition-all",
                 selected
                   ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                  : "hover:border-primary hover:bg-primary/10",
+                  : readOnly
+                    ? "cursor-not-allowed opacity-60"
+                    : "hover:border-primary hover:bg-primary/10",
               ].join(" ")}
             >
               {value}

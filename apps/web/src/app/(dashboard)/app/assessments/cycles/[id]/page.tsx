@@ -6,10 +6,14 @@ import { PageHeader } from "@/components/shared/page-header"
 
 import {
   AddParticipantsDialog,
+  AssessmentCycleProgressOverview,
   GenerateCycleAssessmentsButton,
   getAssessmentCycleById,
   getAssessmentCycleParticipants,
+  getAssessmentResponsesByCycle,
+  presentAssessmentCycleDashboard,
   type AssessmentCycle,
+  type AssessmentResponseStatus,
 } from "@/features/assessments"
 
 import {
@@ -24,6 +28,20 @@ import {
 
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
+type CycleAssessmentResponse = {
+  id: string
+  status: AssessmentResponseStatus
+  employee: {
+    id: string
+    full_name: string
+    email: string | null
+  } | null
+  evaluator: {
+    id: string
+    full_name: string
+  } | null
+}
+
 type Props = {
   params: Promise<{
     id: string
@@ -33,6 +51,51 @@ type Props = {
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString("pt-BR")
 }
+
+function getResponseStatusLabel(
+  status: AssessmentResponseStatus
+) {
+  switch (status) {
+    case "draft":
+      return "Não iniciada"
+
+    case "in_progress":
+      return "Em andamento"
+
+    case "submitted":
+      return "Enviada"
+
+    case "completed":
+      return "Concluída"
+
+    case "cancelled":
+      return "Cancelada"
+
+    default:
+      return status
+  }
+}
+
+function getResponseStatusClassName(
+  status: AssessmentResponseStatus
+) {
+  switch (status) {
+    case "completed":
+    case "submitted":
+      return "bg-emerald-50 text-emerald-700"
+
+    case "in_progress":
+      return "bg-blue-50 text-blue-700"
+
+    case "cancelled":
+      return "bg-red-50 text-red-700"
+
+    case "draft":
+    default:
+      return "bg-amber-50 text-amber-700"
+  }
+}
+
 
 export default async function AssessmentCyclePage({
   params,
@@ -57,10 +120,25 @@ export default async function AssessmentCyclePage({
   const employees =
     (await getEmployees(companyId)) as Employee[]
 
-  const participants =
-    await getAssessmentCycleParticipants(
-      companyId,
-      cycle.id
+  const [participants, responsesData] =
+    await Promise.all([
+      getAssessmentCycleParticipants(
+        companyId,
+        cycle.id
+      ),
+      getAssessmentResponsesByCycle(
+        companyId,
+        cycle.id
+      ),
+    ])
+
+  const responses =
+    responsesData as CycleAssessmentResponse[]
+
+  const dashboard =
+    presentAssessmentCycleDashboard(
+      participants,
+      responses
     )
 
   return (
@@ -142,7 +220,7 @@ export default async function AssessmentCyclePage({
 
           <div className="rounded-lg border p-4">
             <p className="text-sm text-muted-foreground">
-              Encerramento
+              Data final
             </p>
 
             <p className="mt-2 font-semibold">
@@ -156,56 +234,17 @@ export default async function AssessmentCyclePage({
 
       <DashboardSection
         title="Indicadores"
-        description="Resumo do ciclo."
+        description="Acompanhe o progresso real deste ciclo."
       >
-        <div className="grid gap-4 md:grid-cols-4">
-
-          <div className="rounded-lg border p-4">
-            <p className="text-sm text-muted-foreground">
-              Participantes
-            </p>
-
-            <p className="mt-2 text-3xl font-bold">
-              {participants.length}
-            </p>
-          </div>
-
-          <div className="rounded-lg border p-4">
-            <p className="text-sm text-muted-foreground">
-              Avaliações
-            </p>
-
-            <p className="mt-2 text-3xl font-bold">
-              0
-            </p>
-          </div>
-
-          <div className="rounded-lg border p-4">
-            <p className="text-sm text-muted-foreground">
-              Concluídas
-            </p>
-
-            <p className="mt-2 text-3xl font-bold text-emerald-600">
-              0
-            </p>
-          </div>
-
-          <div className="rounded-lg border p-4">
-            <p className="text-sm text-muted-foreground">
-              Pendentes
-            </p>
-
-            <p className="mt-2 text-3xl font-bold text-amber-600">
-              0
-            </p>
-          </div>
-
-        </div>
+        <AssessmentCycleProgressOverview
+          participants={dashboard.participantsCount}
+          progress={dashboard.progress}
+        />
       </DashboardSection>
 
       <DashboardSection
         title="Participantes"
-        description="Os participantes serão adicionados nas próximas PRs."
+        description="Colaboradores incluídos neste ciclo de avaliação."
       >
         {participants.length === 0 ? (
           <div className="rounded-lg border border-dashed p-10 text-center text-muted-foreground">
@@ -237,11 +276,90 @@ export default async function AssessmentCyclePage({
 
       <DashboardSection
         title="Avaliações"
-        description="As avaliações geradas aparecerão aqui."
+        description="Acompanhe as avaliações geradas para este ciclo."
       >
-        <div className="rounded-lg border border-dashed p-10 text-center text-muted-foreground">
-          Nenhuma avaliação gerada.
-        </div>
+        {responses.length === 0 ? (
+          <div className="rounded-lg border border-dashed p-10 text-center text-muted-foreground">
+            Nenhuma avaliação gerada.
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-lg border">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="border-b bg-muted/40">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-sm font-medium">
+                      Colaborador
+                    </th>
+
+                    <th className="px-4 py-3 text-left text-sm font-medium">
+                      Avaliador
+                    </th>
+
+                    <th className="px-4 py-3 text-left text-sm font-medium">
+                      Status
+                    </th>
+
+                    <th className="px-4 py-3 text-right text-sm font-medium">
+                      Ação
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {responses.map((response) => (
+                    <tr
+                      key={response.id}
+                      className="border-b last:border-b-0"
+                    >
+                      <td className="px-4 py-3">
+                        <p className="font-medium">
+                          {response.employee?.full_name ??
+                            "Colaborador não encontrado"}
+                        </p>
+
+                        <p className="text-sm text-muted-foreground">
+                          {response.employee?.email ??
+                            "Sem e-mail cadastrado"}
+                        </p>
+                      </td>
+
+                      <td className="px-4 py-3 text-sm">
+                        {response.evaluator?.full_name ?? "-"}
+                      </td>
+
+                      <td className="px-4 py-3">
+                        <span
+                          className={[
+                            "inline-flex rounded-full px-2.5 py-1 text-xs font-medium",
+                            getResponseStatusClassName(
+                              response.status
+                            ),
+                          ].join(" ")}
+                        >
+                          {getResponseStatusLabel(
+                            response.status
+                          )}
+                        </span>
+                      </td>
+
+                      <td className="px-4 py-3 text-right">
+                        <Link
+                          href={`/app/assessments/responses/${response.id}`}
+                          className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                        >
+                          {response.status === "draft"
+                            ? "Responder"
+                            : "Abrir"}
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </DashboardSection>
 
     </div>

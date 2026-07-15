@@ -3,10 +3,12 @@
 import { revalidatePath } from "next/cache"
 
 import { createAssessmentAnswerRepository } from "../repositories/assessment-answer-repository"
+import { createAssessmentResponseRepository } from "../repositories/assessment-response-repository"
 import {
   saveAssessmentAnswerSchema,
   type SaveAssessmentAnswerInput,
 } from "../schemas/assessment-answer-schema"
+import type { AssessmentResponse } from "../types/assessment-response"
 
 type SaveAssessmentAnswerActionState = {
   success: boolean
@@ -28,29 +30,93 @@ export async function saveAssessmentAnswerAction(
     }
   }
 
-  const repository =
+  const responseRepository =
+    await createAssessmentResponseRepository()
+
+  const {
+    data: responseData,
+    error: responseError,
+  } = await responseRepository.findById(
+    companyId,
+    parsed.data.assessmentResponseId
+  )
+
+  if (responseError || !responseData) {
+    return {
+      success: false,
+      message: "Avaliação não encontrada.",
+    }
+  }
+
+  const response =
+    responseData as AssessmentResponse
+
+  if (
+    response.status === "submitted" ||
+    response.status === "completed" ||
+    response.status === "cancelled"
+  ) {
+    return {
+      success: false,
+      message:
+        "Esta avaliação não pode mais ser editada.",
+    }
+  }
+
+  const answerRepository =
     await createAssessmentAnswerRepository()
 
-  const { error } = await repository.save({
-    companyId,
-    ...parsed.data,
-  })
+  const { error: answerError } =
+    await answerRepository.save({
+      companyId,
+      ...parsed.data,
+    })
 
-  if (error) {
-    console.error("Assessment Answer Save Error:", error)
+  if (answerError) {
+    console.error(
+      "Assessment Answer Save Error:",
+      answerError
+    )
 
     return {
       success: false,
-      message: error.message,
+      message:
+        "Não foi possível salvar a resposta.",
+    }
+  }
+
+  if (response.status === "draft") {
+    const { error: statusError } =
+      await responseRepository.updateStatus(
+        companyId,
+        response.id,
+        "in_progress"
+      )
+
+    if (statusError) {
+      console.error(
+        "Assessment Response Status Error:",
+        statusError
+      )
+
+      return {
+        success: false,
+        message:
+          "A resposta foi salva, mas não foi possível iniciar a avaliação.",
+      }
     }
   }
 
   revalidatePath(
-    `/app/assessments/responses/${parsed.data.assessmentResponseId}`
+    `/app/assessments/responses/${response.id}`
+  )
+
+  revalidatePath(
+    `/app/assessments/cycles/${response.assessment_cycle_id}`
   )
 
   return {
     success: true,
-    message: "Resposta salva.",
+    message: "Resposta salva automaticamente.",
   }
 }

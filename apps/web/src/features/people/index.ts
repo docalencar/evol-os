@@ -42,3 +42,58 @@ export { EmployeeCreateDialog } from "./components/employee-create-dialog"
 export { EmployeeEditDialog } from "./components/employee-edit-dialog"
 export { ArchiveEmployeeButton } from "./components/archive-employee-button"
 export { EmployeeTable } from "./components/employee-table"
+
+
+export type {
+  EmployeeIntelligence,
+  EmployeeProfileSummary,
+  EmployeeAssessmentSummary,
+  EmployeeDevelopmentSummary,
+  EmployeeCompetencySummary,
+  EmployeeTimelineSummary,
+  EmployeeInsightSummary,
+} from "./intelligence/types/employee-intelligence"
+
+export {
+  presentEmployeeIntelligence,
+} from "./intelligence/presenters/employee-intelligence-presenter"
+
+
+export {
+  createEmployeeIntelligence,
+} from "./intelligence/queries/create-employee-intelligence"
+
+
+export type {
+  EmployeeNextAction,
+  EmployeeNextActionType,
+} from "./intelligence/types/employee-next-action"
+
+export {
+  createEmployeeNextActions,
+} from "./intelligence/services/create-employee-next-actions"
+
+
+export {
+  EmployeeNextActionsCard,
+} from "./intelligence/components/employee-next-actions-card"
+
+
+export {
+  EmployeeAssessmentsSummaryCard,
+} from "./intelligence/components/employee-assessments-summary-card"
+
+
+export {
+  EmployeeCompetenciesSummaryCard,
+} from "./intelligence/components/employee-competencies-summary-card"
+
+
+export {
+  EmployeeDevelopmentSummaryCard,
+} from "./intelligence/components/employee-development-summary-card"
+
+
+export {
+  getEmployeeIntelligenceList,
+} from "./intelligence/queries/get-employee-intelligence-list"

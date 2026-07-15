@@ -1,24 +1,18 @@
-import Link from "next/link"
-import { redirect } from "next/navigation"
-
-import { z } from "zod"
+import { notFound } from "next/navigation"
 
 import {
   AssessmentExecutionWorkspace,
   getAssessmentAnswers,
-  getAssessmentQuestions,
-  getAssessmentResponseById,
-  getAssessmentSections,
+  getAssessmentResponseWorkspace,
   getAssessmentTemplateById,
   type AssessmentAnswer,
   type AssessmentQuestion,
-  type AssessmentResponse,
   type AssessmentSection,
   type AssessmentTemplate,
 } from "@/features/assessments"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
-type AssessmentResponsePageProps = {
+type Props = {
   params: Promise<{
     id: string
   }>
@@ -26,82 +20,73 @@ type AssessmentResponsePageProps = {
 
 export default async function AssessmentResponsePage({
   params,
-}: AssessmentResponsePageProps) {
+}: Props) {
+  const { companyId } =
+    await getCurrentCompanyContext()
+
   const { id } = await params
 
-  const responseIdResult = z.string().uuid().safeParse(id)
-
-  if (!responseIdResult.success) {
-    redirect("/app/assessments")
-  }
-
-  const { companyId } = await getCurrentCompanyContext()
-
-  const responseData = await getAssessmentResponseById(
-    companyId,
-    responseIdResult.data
-  )
-
-  if (!responseData) {
-    redirect("/app/assessments")
-  }
-
-  const response = responseData as AssessmentResponse
-
-  const [templateData, sectionsData, answersData] =
-    await Promise.all([
-      getAssessmentTemplateById(
+  try {
+    const workspace =
+      await getAssessmentResponseWorkspace(
         companyId,
-        response.assessment_template_id
-      ),
-      getAssessmentSections(
-        companyId,
-        response.assessment_template_id
-      ),
-      getAssessmentAnswers(companyId, response.id),
-    ])
-
-  if (!templateData) {
-    redirect("/app/assessments")
-  }
-
-  const template = templateData as AssessmentTemplate
-  const sections = (sectionsData ?? []) as AssessmentSection[]
-  const answers = (answersData ?? []) as AssessmentAnswer[]
-
-  const questionEntries = await Promise.all(
-    sections.map(async (section) => {
-      const questionsData = await getAssessmentQuestions(
-        companyId,
-        section.id
+        id
       )
 
-      return [
+    const [templateData, answersData] =
+      await Promise.all([
+        getAssessmentTemplateById(
+          companyId,
+          workspace.response.assessment_template_id
+        ),
+        getAssessmentAnswers(
+          companyId,
+          workspace.response.id
+        ),
+      ])
+
+    if (!templateData) {
+      notFound()
+    }
+
+    const template =
+      templateData as AssessmentTemplate
+
+    const sections =
+      workspace.sections as AssessmentSection[]
+
+    const questions =
+      workspace.questions as AssessmentQuestion[]
+
+    const answers =
+      (answersData ?? []) as AssessmentAnswer[]
+
+    const questionsBySection = new Map<
+      string,
+      AssessmentQuestion[]
+    >(
+      sections.map((section) => [
         section.id,
-        (questionsData ?? []) as AssessmentQuestion[],
-      ] as const
-    })
-  )
+        questions.filter(
+          (question) =>
+            question.assessment_section_id ===
+            section.id
+        ),
+      ])
+    )
 
-  const questionsBySection = new Map(questionEntries)
-
-  return (
-    <div className="mx-auto max-w-5xl space-y-8">
-      <Link
-        href="/app/assessments"
-        className="text-sm underline"
-      >
-        ← Voltar
-      </Link>
-
+    return (
       <AssessmentExecutionWorkspace
         companyId={companyId}
-        assessmentResponseId={response.id}
+        assessmentResponseId={workspace.response.id}
+        responseStatus={workspace.response.status}
         template={template}
         sections={sections}
         questionsBySection={questionsBySection}
         answers={answers}
       />
-    </div>
-  )
+    )
+  } catch {
+    notFound()
+  }
 }

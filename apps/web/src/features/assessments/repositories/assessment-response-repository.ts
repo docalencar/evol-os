@@ -38,6 +38,29 @@ export async function createAssessmentResponseRepository() {
         .order("created_at", { ascending: false })
     },
 
+    findByCycle(
+      companyId: string,
+      assessmentCycleId: string
+    ) {
+      return supabase
+        .from("assessment_responses")
+        .select(`
+          *,
+          employee:people!assessment_responses_employee_id_fkey(
+            id,
+            full_name,
+            email
+          ),
+          evaluator:people!assessment_responses_evaluator_id_fkey(
+            id,
+            full_name
+          )
+        `)
+        .eq("company_id", companyId)
+        .eq("assessment_cycle_id", assessmentCycleId)
+        .order("created_at", { ascending: true })
+    },
+
     generateSelfAssessments(
       companyId: string,
       assessmentCycleId: string,

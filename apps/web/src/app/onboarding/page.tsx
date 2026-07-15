@@ -1,72 +1,57 @@
-import Link from "next/link";
-import { redirect } from "next/navigation";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { createClient } from "@/lib/supabase/supabase/server";
+import { redirect } from "next/navigation"
 
-export default async function AppHomePage() {
-  const supabase = await createClient();
+import { CompanyOnboardingForm } from "@/features/auth"
+import { createClient } from "@/lib/supabase/supabase/server"
+
+export default async function OnboardingPage() {
+  const supabase = await createClient()
 
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect("/login");
+    redirect("/login")
   }
 
-  const { data: memberships, error } = await supabase
+  const {
+    data: membership,
+    error: membershipError,
+  } = await supabase
     .from("company_members")
-    .select("company_id, role")
+    .select("company_id")
     .eq("user_id", user.id)
-    .eq("status", "active");
+    .eq("status", "active")
+    .limit(1)
+    .maybeSingle()
 
-  if (error) {
-    throw new Error(error.message);
+  if (membershipError) {
+    throw new Error(
+      "Não foi possível verificar o onboarding."
+    )
   }
 
-  if (!memberships || memberships.length === 0) {
-    redirect("/onboarding");
+  if (membership) {
+    redirect("/app")
   }
 
   return (
-    <div className="space-y-6">
-      <section>
-        <h2 className="text-2xl font-bold text-slate-900">
-          O que precisa de atenção hoje?
-        </h2>
-
-        <p className="mt-1 text-slate-600">
-          Comece pelas ações que mais ajudam sua equipe a evoluir.
+    <main className="flex min-h-screen items-center justify-center bg-evol-surface px-4 py-10">
+      <section className="w-full max-w-lg rounded-card bg-white p-8 shadow-sm">
+        <p className="text-sm font-medium text-evol-blue">
+          Primeiro acesso
         </p>
+
+        <h1 className="mt-2 text-3xl font-bold text-slate-900">
+          Configure sua empresa
+        </h1>
+
+        <p className="mt-3 text-sm leading-6 text-slate-600">
+          Crie o espaço da sua organização para começar a cadastrar pessoas, cargos e departamentos.
+        </p>
+
+        <CompanyOnboardingForm />
       </section>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <p className="text-sm text-slate-500">Pessoas cadastradas</p>
-          <p className="mt-2 text-3xl font-bold">0</p>
-          <p className="mt-2 text-sm text-slate-600">
-            Adicione sua primeira pessoa para começar.
-          </p>
-        </Card>
-
-        <Card>
-          <p className="text-sm text-slate-500">Gestores definidos</p>
-          <p className="mt-2 text-3xl font-bold">0</p>
-          <p className="mt-2 text-sm text-slate-600">
-            O organograma será gerado automaticamente.
-          </p>
-        </Card>
-
-        <Card>
-          <p className="text-sm text-slate-500">Próximo passo</p>
-          <p className="mt-2 text-lg font-semibold">Organizar pessoas</p>
-
-          <Link href="/app/people/new">
-            <Button className="mt-4">Adicionar pessoa</Button>
-          </Link>
-        </Card>
-      </div>
-    </div>
-  );
+    </main>
+  )
 }

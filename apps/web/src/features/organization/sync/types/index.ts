@@ -7,3 +7,5 @@ export * from "./organization-sync-plan"
 export * from "./organization-sync-severity"
 export * from "./organization-sync-summary"
 export * from "./organization-dry-run-report"
+
+export * from "./organization-mutation-receipt"

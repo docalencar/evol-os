@@ -3,11 +3,13 @@ import {
 } from "next/navigation"
 
 import {
-  getOrganizationSyncExecutionDetails,
-} from "@/features/organization/sync/server"
-import {
+  OrganizationRollbackPreview,
   OrganizationSyncExecutionDetails,
 } from "@/features/organization/sync"
+import {
+  getOrganizationRollbackPreview,
+  getOrganizationSyncExecutionDetails,
+} from "@/features/organization/sync/server"
 import {
   getCurrentCompanyContext,
 } from "@/lib/supabase/supabase/current-company"
@@ -26,20 +28,32 @@ export default async function OrganizationSyncExecutionDetailsPage({
   const { companyId } =
     await getCurrentCompanyContext()
 
-  const execution =
-    await getOrganizationSyncExecutionDetails(
+  const [
+    execution,
+    rollback,
+  ] = await Promise.all([
+    getOrganizationSyncExecutionDetails(
       companyId,
       id
-    )
+    ),
+    getOrganizationRollbackPreview(
+      companyId,
+      id
+    ),
+  ])
 
-  if (!execution) {
+  if (!execution || !rollback) {
     notFound()
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <OrganizationSyncExecutionDetails
         execution={execution}
+      />
+
+      <OrganizationRollbackPreview
+        rollback={rollback}
       />
     </div>
   )

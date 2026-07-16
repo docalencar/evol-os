@@ -96,3 +96,19 @@ export type {
   OrganizationSyncExecutionStatus,
   OrganizationSyncExecutionSummaryItemViewModel,
 } from "./view-models/organization-sync-execution-details-view-model"
+
+export {
+  OrganizationRollbackPreview,
+} from "./components/organization-rollback-preview"
+
+export {
+  presentOrganizationRollbackPreview,
+} from "./presenters/present-organization-rollback-preview"
+
+export type {
+  OrganizationRollbackPreviewItemViewModel,
+  OrganizationRollbackPreviewMetricViewModel,
+  OrganizationRollbackPreviewStatus,
+  OrganizationRollbackPreviewTone,
+  OrganizationRollbackPreviewViewModel,
+} from "./view-models/organization-rollback-preview-view-model"

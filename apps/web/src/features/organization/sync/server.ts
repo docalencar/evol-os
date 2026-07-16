@@ -43,3 +43,7 @@ export {
 export {
   OrganizationSyncExecutionDetailsHome,
 } from "./components/organization-sync-execution-details-home"
+
+export {
+  getOrganizationRollbackPreview,
+} from "./queries/get-organization-rollback-preview"

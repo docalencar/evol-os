@@ -61,6 +61,9 @@ export async function updateAssessmentCycleAction(
   }
 
   revalidatePath("/app/assessments")
+  revalidatePath(
+    `/app/assessments/cycles/${assessmentCycleId}`
+  )
 
   return {
     success: true,

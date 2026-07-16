@@ -1,8 +1,12 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
+import {
+  revalidatePath,
+} from "next/cache"
 
-import { createAssessmentQuestionRepository } from "../repositories/assessment-question-repository"
+import {
+  createAssessmentQuestionRepository,
+} from "../repositories/assessment-question-repository"
 import {
   assessmentQuestionSchema,
   type AssessmentQuestionInput,
@@ -13,14 +17,15 @@ export async function updateAssessmentQuestionAction(
   assessmentQuestionId: string,
   input: AssessmentQuestionInput
 ) {
-  const parsed = assessmentQuestionSchema.safeParse(input)
+  const parsed =
+    assessmentQuestionSchema.safeParse(input)
 
   if (!parsed.success) {
     return {
       success: false,
       message:
         parsed.error.issues[0]?.message ??
-        "Dados inválidos.",
+        "Dados inválidos para atualizar a pergunta.",
     }
   }
 
@@ -36,27 +41,35 @@ export async function updateAssessmentQuestionAction(
       code: parsed.data.code,
       question: parsed.data.question,
       helpText: parsed.data.helpText,
-      questionType: parsed.data.questionType,
+      questionType:
+        parsed.data.questionType,
       scaleMin: parsed.data.scaleMin,
       scaleMax: parsed.data.scaleMax,
       weight: parsed.data.weight,
       displayOrder:
         parsed.data.displayOrder,
-      required:
-        parsed.data.required,
+      required: parsed.data.required,
       active: parsed.data.active,
     })
 
   if (error) {
-    console.error(error)
+    console.error(
+      "Assessment Question Update Error:",
+      error
+    )
 
     return {
       success: false,
-      message: error.message,
+      message:
+        "Não foi possível atualizar a pergunta. Tente novamente.",
     }
   }
 
   revalidatePath("/app/assessments")
+  revalidatePath(
+    "/app/assessments/templates",
+    "layout"
+  )
 
   return {
     success: true,

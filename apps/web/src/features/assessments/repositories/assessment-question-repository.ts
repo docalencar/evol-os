@@ -37,7 +37,7 @@ export async function createAssessmentQuestionRepository() {
         .eq("assessment_section_id", assessmentSectionId)
         .is("deleted_at", null)
         .order("display_order", { ascending: true })
-        .order("created_at", { ascending: true })
+        .order("id", { ascending: true })
     },
 
     findById(

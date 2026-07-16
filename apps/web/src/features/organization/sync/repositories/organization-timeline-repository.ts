@@ -50,6 +50,31 @@ export async function createOrganizationTimelineRepository() {
         })
     },
 
+    async findById(
+      companyId: string,
+      executionId: string
+    ) {
+      return supabase
+        .from("organization_sync_timeline")
+        .select(`
+          id,
+          started_at,
+          finished_at,
+          duration_ms,
+          applied_items,
+          skipped_items,
+          failed_items,
+          entity_summary,
+          operation_summary,
+          warnings,
+          errors,
+          created_at
+        `)
+        .eq("company_id", companyId)
+        .eq("id", executionId)
+        .maybeSingle()
+    },
+
     async create(
       input: ValidatedOrganizationTimelineInput
     ) {

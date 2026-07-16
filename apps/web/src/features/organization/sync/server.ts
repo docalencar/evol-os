@@ -35,3 +35,11 @@ export {
 export {
   OrganizationSyncHistoryHome,
 } from "./components/organization-sync-history-home"
+
+export {
+  getOrganizationSyncExecutionDetails,
+} from "./queries/get-organization-sync-execution-details"
+
+export {
+  OrganizationSyncExecutionDetailsHome,
+} from "./components/organization-sync-execution-details-home"

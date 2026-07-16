@@ -26,6 +26,9 @@ import type {
   OrganizationExecutionReport,
 } from "../types/organization-execution-report"
 import type {
+  OrganizationMutationReceipt,
+} from "../types/organization-mutation-receipt"
+import type {
   OrganizationSyncItem,
 } from "../types/organization-sync-item"
 import type {
@@ -37,61 +40,113 @@ export type ApplyOrganizationSyncCoordinatorInput = {
   plan: OrganizationSyncPlan
 }
 
+function createMutationReceipt(
+  item: OrganizationSyncItem,
+  entityId: string
+): OrganizationMutationReceipt {
+  return {
+    itemId: item.id,
+    entity: item.entity,
+    operation: item.operation,
+    entityId,
+  }
+}
+
 async function applyItemByEntity(
   companyId: string,
   item: OrganizationSyncItem
-) {
+): Promise<OrganizationMutationReceipt> {
   switch (item.entity) {
     case "department": {
-      const result = await applyDepartmentSyncItem({
-        companyId,
-        item,
-      })
+      const result =
+        await applyDepartmentSyncItem({
+          companyId,
+          item,
+        })
 
       if (!result.success) {
         throw new Error(result.message)
       }
 
-      return
+      if (!result.departmentId) {
+        throw new Error(
+          "O departamento foi aplicado sem retornar um identificador."
+        )
+      }
+
+      return createMutationReceipt(
+        item,
+        result.departmentId
+      )
     }
 
     case "team": {
-      const result = await applyTeamSyncItem({
-        companyId,
-        item,
-      })
+      const result =
+        await applyTeamSyncItem({
+          companyId,
+          item,
+        })
 
       if (!result.success) {
         throw new Error(result.message)
       }
 
-      return
+      if (!result.teamId) {
+        throw new Error(
+          "O time foi aplicado sem retornar um identificador."
+        )
+      }
+
+      return createMutationReceipt(
+        item,
+        result.teamId
+      )
     }
 
     case "position": {
-      const result = await applyPositionSyncItem({
-        companyId,
-        item,
-      })
+      const result =
+        await applyPositionSyncItem({
+          companyId,
+          item,
+        })
 
       if (!result.success) {
         throw new Error(result.message)
       }
 
-      return
+      if (!result.positionId) {
+        throw new Error(
+          "O cargo foi aplicado sem retornar um identificador."
+        )
+      }
+
+      return createMutationReceipt(
+        item,
+        result.positionId
+      )
     }
 
     case "employee": {
-      const result = await applyEmployeeSyncItem({
-        companyId,
-        item,
-      })
+      const result =
+        await applyEmployeeSyncItem({
+          companyId,
+          item,
+        })
 
       if (!result.success) {
         throw new Error(result.message)
       }
 
-      return
+      if (!result.employeeId) {
+        throw new Error(
+          "O colaborador foi aplicado sem retornar um identificador."
+        )
+      }
+
+      return createMutationReceipt(
+        item,
+        result.employeeId
+      )
     }
   }
 }
@@ -123,10 +178,11 @@ export async function applyOrganizationSyncCoordinator({
 }: ApplyOrganizationSyncCoordinatorInput): Promise<OrganizationExecutionReport> {
   const startedAt = new Date()
 
-  const result = await applyOrganizationSyncPlan(
-    plan,
-    createApplyHandlers(companyId)
-  )
+  const result =
+    await applyOrganizationSyncPlan(
+      plan,
+      createApplyHandlers(companyId)
+    )
 
   const finishedAt = new Date()
 

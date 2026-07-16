@@ -2,6 +2,9 @@ import type {
   OrganizationExecutionError,
 } from "../../types/organization-execution-report"
 import type {
+  OrganizationMutationReceipt,
+} from "../../types/organization-mutation-receipt"
+import type {
   OrganizationSyncItem,
 } from "../../types/organization-sync-item"
 import type {
@@ -17,7 +20,7 @@ export type OrganizationSyncApplyOperation =
 
 export type OrganizationSyncApplyHandler = (
   item: OrganizationSyncItem
-) => Promise<void>
+) => Promise<OrganizationMutationReceipt>
 
 export type OrganizationSyncApplyHandlers = Record<
   OrganizationSyncApplyOperation,
@@ -48,6 +51,7 @@ export type OrganizationSyncApplyResult = {
   failedItems: number
   items: OrganizationSyncApplyItemResult[]
   errors: OrganizationSyncApplyError[]
+  receipts: OrganizationMutationReceipt[]
 }
 
 const ENTITY_EXECUTION_ORDER: Record<
@@ -123,6 +127,7 @@ export async function applyOrganizationSyncPlan(
 
   const items: OrganizationSyncApplyItemResult[] = []
   const errors: OrganizationSyncApplyError[] = []
+  const receipts: OrganizationMutationReceipt[] = []
 
   for (const item of orderedItems) {
     if (!isActionableOperation(item.operation)) {
@@ -140,7 +145,10 @@ export async function applyOrganizationSyncPlan(
     }
 
     try {
-      await handlers[item.operation](item)
+      const receipt =
+        await handlers[item.operation](item)
+
+      receipts.push(receipt)
       appliedItems += 1
 
       items.push({
@@ -181,5 +189,6 @@ export async function applyOrganizationSyncPlan(
     failedItems: errors.length,
     items,
     errors,
+    receipts,
   }
 }

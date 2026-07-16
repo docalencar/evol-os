@@ -10,6 +10,7 @@ type CreateAssessmentCycleData = {
   name: string
   description?: string | null
   assessmentType: AssessmentCycleType
+  assessmentTemplateId: string
   status: AssessmentCycleStatus
   startDate: string
   endDate: string
@@ -53,22 +54,29 @@ export async function createAssessmentCycleRepository() {
     },
 
     async create(data: CreateAssessmentCycleData) {
-      return supabase.from("assessment_cycles").insert({
-        company_id: data.companyId,
-        name: data.name,
-        description: data.description ?? null,
-        assessment_type: data.assessmentType,
-        status: data.status,
-        start_date: data.startDate,
-        end_date: data.endDate,
-        close_date: data.closeDate ?? null,
-        allow_self_assessment: data.allowSelfAssessment,
-        allow_manager_assessment: data.allowManagerAssessment,
-        allow_peer_assessment: data.allowPeerAssessment,
-        allow_direct_report_assessment:
-          data.allowDirectReportAssessment,
-        anonymous: data.anonymous,
-      })
+      return supabase
+        .from("assessment_cycles")
+        .insert({
+          company_id: data.companyId,
+          name: data.name,
+          description: data.description ?? null,
+          assessment_type: data.assessmentType,
+          assessment_template_id:
+            data.assessmentTemplateId,
+          status: data.status,
+          start_date: data.startDate,
+          end_date: data.endDate,
+          close_date: data.closeDate ?? null,
+          allow_self_assessment:
+            data.allowSelfAssessment,
+          allow_manager_assessment:
+            data.allowManagerAssessment,
+          allow_peer_assessment:
+            data.allowPeerAssessment,
+          allow_direct_report_assessment:
+            data.allowDirectReportAssessment,
+          anonymous: data.anonymous,
+        })
     },
 
     async update(data: UpdateAssessmentCycleData) {
@@ -78,13 +86,18 @@ export async function createAssessmentCycleRepository() {
           name: data.name,
           description: data.description ?? null,
           assessment_type: data.assessmentType,
+          assessment_template_id:
+            data.assessmentTemplateId,
           status: data.status,
           start_date: data.startDate,
           end_date: data.endDate,
           close_date: data.closeDate ?? null,
-          allow_self_assessment: data.allowSelfAssessment,
-          allow_manager_assessment: data.allowManagerAssessment,
-          allow_peer_assessment: data.allowPeerAssessment,
+          allow_self_assessment:
+            data.allowSelfAssessment,
+          allow_manager_assessment:
+            data.allowManagerAssessment,
+          allow_peer_assessment:
+            data.allowPeerAssessment,
           allow_direct_report_assessment:
             data.allowDirectReportAssessment,
           anonymous: data.anonymous,

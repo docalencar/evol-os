@@ -58,3 +58,21 @@ export {
   OrganizationSyncDryRun,
 } from "./components/organization-sync-dry-run"
 export * from "./engine/rollback"
+
+export {
+  OrganizationSyncHistoryTable,
+} from "./components/organization-sync-history-table"
+
+export {
+  presentOrganizationSyncHistory,
+} from "./presenters/present-organization-sync-history"
+
+export type {
+  OrganizationSyncTimelineRecord,
+} from "./presenters/present-organization-sync-history"
+
+export type {
+  OrganizationSyncHistoryItemViewModel,
+  OrganizationSyncHistoryStatus,
+  OrganizationSyncHistoryViewModel,
+} from "./view-models/organization-sync-history-view-model"

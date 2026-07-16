@@ -29,6 +29,27 @@ export async function createOrganizationTimelineRepository() {
   const supabase = await createServerDatabase()
 
   return {
+    async listByCompany(
+      companyId: string
+    ) {
+      return supabase
+        .from("organization_sync_timeline")
+        .select(`
+          id,
+          started_at,
+          finished_at,
+          duration_ms,
+          applied_items,
+          skipped_items,
+          failed_items,
+          created_at
+        `)
+        .eq("company_id", companyId)
+        .order("created_at", {
+          ascending: false,
+        })
+    },
+
     async create(
       input: ValidatedOrganizationTimelineInput
     ) {

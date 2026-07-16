@@ -27,3 +27,11 @@ export {
 export type {
   SerializedOrganizationDryRunPlan,
 } from "./actions/create-organization-dry-run-action"
+
+export {
+  getOrganizationSyncHistory,
+} from "./queries/get-organization-sync-history"
+
+export {
+  OrganizationSyncHistoryHome,
+} from "./components/organization-sync-history-home"

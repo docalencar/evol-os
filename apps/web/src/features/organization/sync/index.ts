@@ -41,3 +41,15 @@ export type {
   ApplyOrganizationSyncPlanActionResult,
 } from "./view-models/apply-organization-sync-action-result"
 export * from "./engine/dry-run"
+
+export {
+  presentOrganizationDryRun,
+} from "./presenters/present-organization-dry-run"
+
+export type {
+  OrganizationDryRunDecisionTone,
+  OrganizationDryRunMetricViewModel,
+  OrganizationDryRunNoticeViewModel,
+  OrganizationDryRunSummaryViewModel,
+  OrganizationDryRunViewModel,
+} from "./view-models/organization-dry-run-view-model"

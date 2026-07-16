@@ -1,4 +1,7 @@
 import type { OrganizationEntity } from "./organization-entity"
+import type {
+  OrganizationMutationReceipt,
+} from "./organization-mutation-receipt"
 import type { OrganizationSyncOperation } from "./organization-sync-operation"
 
 export type OrganizationExecutionItemSummary = {
@@ -42,4 +45,5 @@ export type OrganizationExecutionReport = {
   operationSummary: OrganizationExecutionOperationSummary
   warnings: OrganizationExecutionWarning[]
   errors: OrganizationExecutionError[]
+  receipts: OrganizationMutationReceipt[]
 }

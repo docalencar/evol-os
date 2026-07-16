@@ -114,5 +114,6 @@ export function createOrganizationExecutionReport({
     operationSummary,
     warnings: createWarnings(result),
     errors: result.errors,
+    receipts: result.receipts,
   }
 }

@@ -2,11 +2,16 @@
 
 import { revalidatePath } from "next/cache"
 
+import {
+  presentApplyOrganizationSyncResult,
+} from "@/features/organization/sync"
 import type {
+  ApplyOrganizationSyncPlanActionResult,
   OrganizationSyncPlan,
 } from "@/features/organization/sync"
 import {
   applyOrganizationSyncCoordinator,
+  persistOrganizationTimeline,
 } from "@/features/organization/sync/server"
 import {
   getCurrentCompanyContext,
@@ -19,19 +24,8 @@ export type SerializedOrganizationSyncPlan = Omit<
   generatedAt: string
 }
 
-export type ApplyOrganizationSyncPlanActionResult = {
-  success: boolean
-  message: string
-  totalItems: number
-  appliedItems: number
-  skippedItems: number
-  failedItems: number
-  errors: Array<{
-    itemId: string
-    entity: string
-    operation: string
-    message: string
-  }>
+export type {
+  ApplyOrganizationSyncPlanActionResult,
 }
 
 function deserializePlan(
@@ -46,16 +40,22 @@ function deserializePlan(
 export async function applyOrganizationSyncPlanAction(
   input: SerializedOrganizationSyncPlan
 ): Promise<ApplyOrganizationSyncPlanActionResult> {
-  const { companyId } =
+  const { companyId, user } =
     await getCurrentCompanyContext()
 
   const plan = deserializePlan(input)
 
-  const result =
+  const executionReport =
     await applyOrganizationSyncCoordinator({
       companyId,
       plan,
     })
+
+  await persistOrganizationTimeline({
+    companyId,
+    createdBy: user.id,
+    report: executionReport,
+  })
 
   revalidatePath("/app")
   revalidatePath("/app/people")
@@ -63,27 +63,7 @@ export async function applyOrganizationSyncPlanAction(
   revalidatePath("/app/company/teams")
   revalidatePath("/app/company/positions")
 
-  return {
-    success: result.failedItems === 0,
-    message:
-      result.failedItems === 0
-        ? `${result.appliedItems} item${
-            result.appliedItems === 1 ? "" : "ns"
-          } aplicado${
-            result.appliedItems === 1 ? "" : "s"
-          } com sucesso.`
-        : `${result.appliedItems} item${
-            result.appliedItems === 1 ? "" : "ns"
-          } aplicado${
-            result.appliedItems === 1 ? "" : "s"
-          } e ${result.failedItems} com erro.`,
-    totalItems:
-      result.appliedItems +
-      result.skippedItems +
-      result.failedItems,
-    appliedItems: result.appliedItems,
-    skippedItems: result.skippedItems,
-    failedItems: result.failedItems,
-    errors: result.errors,
-  }
+  return presentApplyOrganizationSyncResult(
+    executionReport
+  )
 }

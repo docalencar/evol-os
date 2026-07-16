@@ -32,3 +32,11 @@ export type {
 } from "./view-models/organization-sync-review-view-model"
 export * from "./engine/apply"
 export * from "./engine/report"
+
+export {
+  presentApplyOrganizationSyncResult,
+} from "./presenters/present-apply-organization-sync-result"
+
+export type {
+  ApplyOrganizationSyncPlanActionResult,
+} from "./view-models/apply-organization-sync-action-result"

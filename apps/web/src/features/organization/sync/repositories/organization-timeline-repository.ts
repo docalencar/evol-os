@@ -68,6 +68,7 @@ export async function createOrganizationTimelineRepository() {
           operation_summary,
           warnings,
           errors,
+          receipts,
           created_at
         `)
         .eq("company_id", companyId)
@@ -114,6 +115,9 @@ export async function createOrganizationTimelineRepository() {
 
           errors:
             report.errors,
+
+          receipts:
+            report.receipts,
 
           created_by:
             input.createdBy,

@@ -32,6 +32,15 @@ const organizationExecutionMessageSchema =
     message: z.string().min(1),
   })
 
+
+const organizationMutationReceiptSchema =
+  z.object({
+    itemId: z.string().min(1),
+    entity: organizationEntitySchema,
+    operation: organizationSyncOperationSchema,
+    entityId: z.string().min(1),
+  })
+
 export const persistOrganizationTimelineSchema =
   z.object({
     companyId: z.string().uuid(),
@@ -81,6 +90,10 @@ export const persistOrganizationTimelineSchema =
 
       errors: z.array(
         organizationExecutionMessageSchema
+      ),
+
+      receipts: z.array(
+        organizationMutationReceiptSchema
       ),
     }).refine(
       (report) =>

@@ -10,9 +10,6 @@ import {
 import {
   OrganizationSyncReview,
   OrganizationSyncWorkspaceSummary,
-  presentOrganizationSyncReview,
-  presentOrganizationSyncWorkspace,
-  type OrganizationSyncPlan,
 } from "@/features/organization/sync"
 import { Button } from "@/components/ui/button"
 
@@ -39,7 +36,9 @@ function createActionRows(
   validation: EmployeeImportValidationResult
 ): EmployeeImportActionRow[] {
   return validation.rows
-    .filter((row) => row.status !== "invalid")
+    .filter(
+      (row) => row.status !== "invalid"
+    )
     .map((row) => ({
       rowNumber: row.rowNumber,
       values: row.values,
@@ -49,50 +48,27 @@ function createActionRows(
 export function EmployeeImportActionPanel({
   validation,
 }: EmployeeImportActionPanelProps) {
-  const [isPending, startTransition] = useTransition()
+  const [isPending, startTransition] =
+    useTransition()
 
   const [planResult, setPlanResult] =
-    useState<EmployeeImportSyncPlanResult | null>(null)
+    useState<EmployeeImportSyncPlanResult | null>(
+      null
+    )
 
   const [result, setResult] =
-    useState<ApplyOrganizationSyncPlanActionResult | null>(null)
+    useState<ApplyOrganizationSyncPlanActionResult | null>(
+      null
+    )
 
   const rows = useMemo(
     () => createActionRows(validation),
     [validation]
   )
 
-  const plan = useMemo<OrganizationSyncPlan | null>(
-    () =>
-      planResult?.success
-        ? {
-            ...planResult.plan,
-            generatedAt: new Date(
-              planResult.plan.generatedAt
-            ),
-          }
-        : null,
-    [planResult]
-  )
-
-  const workspace = useMemo(
-    () =>
-      plan
-        ? presentOrganizationSyncWorkspace(plan)
-        : null,
-    [plan]
-  )
-
-  const review = useMemo(
-    () =>
-      plan
-        ? presentOrganizationSyncReview(plan)
-        : null,
-    [plan]
-  )
-
   const importableRows =
-    validation.validRows + validation.warningRows
+    validation.validRows +
+    validation.warningRows
 
   function handleAnalyze() {
     startTransition(async () => {
@@ -138,6 +114,7 @@ export function EmployeeImportActionPanel({
             <p className="text-2xl font-bold">
               {result.totalItems}
             </p>
+
             <p className="mt-1 text-sm text-slate-300">
               Itens no plano
             </p>
@@ -147,6 +124,7 @@ export function EmployeeImportActionPanel({
             <p className="text-2xl font-bold">
               {result.appliedItems}
             </p>
+
             <p className="mt-1 text-sm text-slate-300">
               Aplicados
             </p>
@@ -156,6 +134,7 @@ export function EmployeeImportActionPanel({
             <p className="text-2xl font-bold">
               {result.skippedItems}
             </p>
+
             <p className="mt-1 text-sm text-slate-300">
               Ignorados
             </p>
@@ -165,6 +144,7 @@ export function EmployeeImportActionPanel({
             <p className="text-2xl font-bold">
               {result.failedItems}
             </p>
+
             <p className="mt-1 text-sm text-slate-300">
               Com erro
             </p>
@@ -177,15 +157,18 @@ export function EmployeeImportActionPanel({
               Avisos da sincronização
             </p>
 
-            {result.errors.map((error, index) => (
-              <p
-                key={`${error.itemId}-${index}`}
-                className="text-sm leading-6 text-slate-300"
-              >
-                {error.entity} · {error.operation}:{" "}
-                {error.message}
-              </p>
-            ))}
+            {result.errors.map(
+              (error, index) => (
+                <p
+                  key={`${error.itemId}-${index}`}
+                  className="text-sm leading-6 text-slate-300"
+                >
+                  {error.entity} ·{" "}
+                  {error.operation}:{" "}
+                  {error.message}
+                </p>
+              )
+            )}
           </div>
         ) : null}
 
@@ -212,15 +195,17 @@ export function EmployeeImportActionPanel({
     )
   }
 
-  if (plan && workspace && review) {
+  if (planResult?.success) {
     return (
       <section className="space-y-6">
         <OrganizationSyncWorkspaceSummary
-          workspace={workspace}
+          workspace={
+            planResult.workspace
+          }
         />
 
         <OrganizationSyncReview
-          review={review}
+          review={planResult.review}
         />
 
         <div className="rounded-2xl border border-slate-200 bg-slate-950 p-6 text-white sm:p-8">
@@ -231,13 +216,17 @@ export function EmployeeImportActionPanel({
               </p>
 
               <h2 className="mt-2 text-xl font-semibold">
-                Aplique somente depois de revisar o plano.
+                Aplique somente depois de
+                revisar o plano.
               </h2>
 
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-                Nesta primeira integração, o plano identifica novos
-                colaboradores, departamentos e cargos. Atualizações de
-                pessoas existentes serão adicionadas nas próximas PRs.
+                Nesta primeira integração, o
+                plano identifica novos
+                colaboradores, departamentos e
+                cargos. Atualizações de pessoas
+                existentes serão adicionadas nas
+                próximas PRs.
               </p>
             </div>
 
@@ -245,7 +234,9 @@ export function EmployeeImportActionPanel({
               <Button
                 type="button"
                 variant="secondary"
-                onClick={() => setPlanResult(null)}
+                onClick={() =>
+                  setPlanResult(null)
+                }
                 disabled={isPending}
               >
                 Voltar
@@ -258,7 +249,9 @@ export function EmployeeImportActionPanel({
                   isPending ||
                   !validation.canImport ||
                   importableRows === 0 ||
-                  !workspace.canApply
+                  !planResult.workspace.canApply ||
+                  planResult.dryRun.decision
+                    .status === "blocked"
                 }
               >
                 {isPending
@@ -282,17 +275,22 @@ export function EmployeeImportActionPanel({
 
           <h2 className="mt-2 text-xl font-semibold">
             {importableRows} colaborador
-            {importableRows === 1 ? "" : "es"} será
-            {importableRows === 1 ? "" : "ão"} comparado
-            {importableRows === 1 ? "" : "s"} com a organização atual.
+            {importableRows === 1 ? "" : "es"}{" "}
+            será
+            {importableRows === 1 ? "" : "ão"}{" "}
+            comparado
+            {importableRows === 1 ? "" : "s"}{" "}
+            com a organização atual.
           </h2>
 
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-            Nenhuma informação será salva nesta etapa. O Evol OS criará
-            um plano para revisão antes da confirmação.
+            Nenhuma informação será salva nesta
+            etapa. O Evol OS criará um plano para
+            revisão antes da confirmação.
           </p>
 
-          {planResult && !planResult.success ? (
+          {planResult &&
+          !planResult.success ? (
             <p className="mt-3 text-sm text-red-200">
               {planResult.message}
             </p>

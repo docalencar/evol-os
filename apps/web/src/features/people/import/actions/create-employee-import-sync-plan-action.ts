@@ -1,11 +1,18 @@
 "use server"
 
 import {
+  createOrganizationDryRunReport,
   createOrganizationSyncPlan,
+  presentOrganizationDryRun,
+  presentOrganizationSyncReview,
+  presentOrganizationSyncWorkspace,
   type DepartmentSnapshot,
   type EmployeeSnapshot,
+  type OrganizationDryRunViewModel,
   type OrganizationSnapshot,
   type OrganizationSyncPlan,
+  type OrganizationSyncReviewViewModel,
+  type OrganizationSyncWorkspaceViewModel,
   type PositionSnapshot,
   type TeamSnapshot,
 } from "@/features/organization/sync"
@@ -29,7 +36,7 @@ import type {
   EmployeeImportActionRow,
 } from "../types/employee-import-action"
 
-type SerializedOrganizationSyncPlan = Omit<
+export type SerializedOrganizationSyncPlan = Omit<
   OrganizationSyncPlan,
   "generatedAt"
 > & {
@@ -41,6 +48,9 @@ export type EmployeeImportSyncPlanResult =
       success: true
       message: string
       plan: SerializedOrganizationSyncPlan
+      workspace: OrganizationSyncWorkspaceViewModel
+      review: OrganizationSyncReviewViewModel
+      dryRun: OrganizationDryRunViewModel
     }
   | {
       success: false
@@ -48,7 +58,9 @@ export type EmployeeImportSyncPlanResult =
       plan: null
     }
 
-function normalize(value: string | null | undefined) {
+function normalize(
+  value: string | null | undefined
+) {
   return (value ?? "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -117,53 +129,70 @@ function createCurrentSnapshot(
   )
 
   return {
-    departments: departments.map<DepartmentSnapshot>(
-      (department) => ({
-        name: department.name,
-      })
-    ),
+    departments:
+      departments.map<DepartmentSnapshot>(
+        (department) => ({
+          name: department.name,
+        })
+      ),
 
-    teams: teams.map<TeamSnapshot>((team) => ({
-      name: team.name,
-      department: team.department_id
-        ? departmentNameById.get(team.department_id)
-        : undefined,
-    })),
-
-    positions: positions.map<PositionSnapshot>(
-      (position) => ({
-        name: position.name,
-        department: position.department_id
-          ? departmentNameById.get(position.department_id)
+    teams: teams.map<TeamSnapshot>(
+      (team) => ({
+        name: team.name,
+        department: team.department_id
+          ? departmentNameById.get(
+              team.department_id
+            )
           : undefined,
       })
     ),
 
-    employees: employees.map<EmployeeSnapshot>(
-      (employee) => {
-        const position = employee.position_id
-          ? positionById.get(employee.position_id)
-          : undefined
-
-        return {
-          evolId: employee.id,
-          fullName: employee.full_name,
-          email: employee.email ?? undefined,
-          department: position?.department_id
+    positions:
+      positions.map<PositionSnapshot>(
+        (position) => ({
+          name: position.name,
+          department: position.department_id
             ? departmentNameById.get(
                 position.department_id
               )
             : undefined,
-          team: employee.team_id
-            ? teamNameById.get(employee.team_id)
-            : undefined,
-          position: position?.name,
-          manager: employee.manager_id
-            ? employeeNameById.get(employee.manager_id)
-            : undefined,
+        })
+      ),
+
+    employees:
+      employees.map<EmployeeSnapshot>(
+        (employee) => {
+          const position = employee.position_id
+            ? positionById.get(
+                employee.position_id
+              )
+            : undefined
+
+          return {
+            evolId: employee.id,
+            fullName: employee.full_name,
+            email:
+              employee.email ?? undefined,
+            department:
+              position?.department_id
+                ? departmentNameById.get(
+                    position.department_id
+                  )
+                : undefined,
+            team: employee.team_id
+              ? teamNameById.get(
+                  employee.team_id
+                )
+              : undefined,
+            position: position?.name,
+            manager: employee.manager_id
+              ? employeeNameById.get(
+                  employee.manager_id
+                )
+              : undefined,
+          }
         }
-      }
-    ),
+      ),
   }
 }
 
@@ -171,9 +200,17 @@ function createDesiredSnapshot(
   current: OrganizationSnapshot,
   rows: EmployeeImportActionRow[]
 ): OrganizationSnapshot {
-  const departments = [...current.departments]
-  const positions = [...current.positions]
-  const employees = [...current.employees]
+  const departments = [
+    ...current.departments,
+  ]
+
+  const positions = [
+    ...current.positions,
+  ]
+
+  const employees = [
+    ...current.employees,
+  ]
 
   const departmentNames = new Set(
     departments.map((department) =>
@@ -208,13 +245,17 @@ function createDesiredSnapshot(
 
     if (
       department &&
-      !departmentNames.has(normalize(department))
+      !departmentNames.has(
+        normalize(department)
+      )
     ) {
       departments.push({
         name: department,
       })
 
-      departmentNames.add(normalize(department))
+      departmentNames.add(
+        normalize(department)
+      )
     }
 
     if (position) {
@@ -226,7 +267,8 @@ function createDesiredSnapshot(
       if (!positionKeys.has(key)) {
         positions.push({
           name: position,
-          department: department || undefined,
+          department:
+            department || undefined,
         })
 
         positionKeys.add(key)
@@ -235,17 +277,24 @@ function createDesiredSnapshot(
 
     if (
       fullName &&
-      !employeeNames.has(normalize(fullName))
+      !employeeNames.has(
+        normalize(fullName)
+      )
     ) {
       employees.push({
         fullName,
         email:
-          row.values.email?.trim() || undefined,
-        department: department || undefined,
-        position: position || undefined,
+          row.values.email?.trim() ||
+          undefined,
+        department:
+          department || undefined,
+        position:
+          position || undefined,
       })
 
-      employeeNames.add(normalize(fullName))
+      employeeNames.add(
+        normalize(fullName)
+      )
     }
   }
 
@@ -301,13 +350,29 @@ export async function createEmployeeImportSyncPlanAction(
     desired
   )
 
+  const dryRunReport =
+    createOrganizationDryRunReport(plan)
+
   return {
     success: true,
     message:
-      "Plano de sincronização criado. Revise as mudanças antes de aplicar.",
+      "Análise concluída. Revise as mudanças antes de aplicar.",
     plan: {
       ...plan,
-      generatedAt: plan.generatedAt.toISOString(),
+      generatedAt:
+        plan.generatedAt.toISOString(),
     },
+    workspace:
+      presentOrganizationSyncWorkspace(
+        plan
+      ),
+    review:
+      presentOrganizationSyncReview(
+        plan
+      ),
+    dryRun:
+      presentOrganizationDryRun(
+        dryRunReport
+      ),
   }
 }

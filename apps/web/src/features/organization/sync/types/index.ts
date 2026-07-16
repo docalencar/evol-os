@@ -9,3 +9,4 @@ export * from "./organization-sync-summary"
 export * from "./organization-dry-run-report"
 
 export * from "./organization-mutation-receipt"
+export * from "./organization-rollback-plan"

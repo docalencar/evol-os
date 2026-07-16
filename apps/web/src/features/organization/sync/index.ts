@@ -57,3 +57,4 @@ export type {
 export {
   OrganizationSyncDryRun,
 } from "./components/organization-sync-dry-run"
+export * from "./engine/rollback"

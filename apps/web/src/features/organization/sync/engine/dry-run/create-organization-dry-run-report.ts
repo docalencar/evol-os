@@ -1,5 +1,6 @@
 import type {
   OrganizationDryRunBlocker,
+  OrganizationDryRunDecision,
   OrganizationDryRunEntitySummary,
   OrganizationDryRunItemSummary,
   OrganizationDryRunOperationSummary,
@@ -125,6 +126,21 @@ function createBlocker(
   }
 }
 
+function getDecision(
+  blockedItems: number,
+  warnings: OrganizationDryRunWarning[]
+): OrganizationDryRunDecision {
+  if (blockedItems > 0) {
+    return "blocked"
+  }
+
+  if (warnings.length > 0) {
+    return "review"
+  }
+
+  return "safe"
+}
+
 export function createOrganizationDryRunReport(
   plan: OrganizationSyncPlan
 ): OrganizationDryRunReport {
@@ -172,10 +188,15 @@ export function createOrganizationDryRunReport(
     }
   }
 
+  const decision = getDecision(
+    blockedItems,
+    warnings
+  )
+
   return {
     generatedAt: new Date(),
     planGeneratedAt: plan.generatedAt,
-    canApply: blockedItems === 0,
+    decision,
     totalItems: plan.items.length,
     applicableItems,
     skippedItems,

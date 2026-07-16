@@ -1,6 +1,11 @@
 import type { OrganizationEntity } from "./organization-entity"
 import type { OrganizationSyncOperation } from "./organization-sync-operation"
 
+export type OrganizationDryRunDecision =
+  | "safe"
+  | "review"
+  | "blocked"
+
 export type OrganizationDryRunItemSummary = {
   totalItems: number
   applicableItems: number
@@ -37,7 +42,7 @@ export type OrganizationDryRunBlocker = {
 export type OrganizationDryRunReport = {
   generatedAt: Date
   planGeneratedAt: Date
-  canApply: boolean
+  decision: OrganizationDryRunDecision
   totalItems: number
   applicableItems: number
   skippedItems: number

@@ -8,6 +8,7 @@ import {
 } from "react"
 
 import {
+  OrganizationSyncDryRun,
   OrganizationSyncReview,
   OrganizationSyncWorkspaceSummary,
 } from "@/features/organization/sync"
@@ -206,6 +207,10 @@ export function EmployeeImportActionPanel({
 
         <OrganizationSyncReview
           review={planResult.review}
+        />
+
+        <OrganizationSyncDryRun
+          dryRun={planResult.dryRun}
         />
 
         <div className="rounded-2xl border border-slate-200 bg-slate-950 p-6 text-white sm:p-8">

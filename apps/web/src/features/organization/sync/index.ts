@@ -53,3 +53,7 @@ export type {
   OrganizationDryRunSummaryViewModel,
   OrganizationDryRunViewModel,
 } from "./view-models/organization-dry-run-view-model"
+
+export {
+  OrganizationSyncDryRun,
+} from "./components/organization-sync-dry-run"

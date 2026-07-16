@@ -40,3 +40,4 @@ export {
 export type {
   ApplyOrganizationSyncPlanActionResult,
 } from "./view-models/apply-organization-sync-action-result"
+export * from "./engine/dry-run"

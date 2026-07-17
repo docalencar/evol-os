@@ -24,14 +24,19 @@ export async function createNotificationCommandRepository() {
       recipientId,
       notificationId,
     }: NotificationCommandTarget) {
+      const readAt =
+        new Date().toISOString()
+
       return supabase
         .from("notifications")
         .update({
-          read_at: new Date().toISOString(),
+          status: "read",
+          read_at: readAt,
         })
         .eq("id", notificationId)
         .eq("company_id", companyId)
         .eq("recipient_id", recipientId)
+        .neq("status", "archived")
         .is("archived_at", null)
         .select("id")
         .maybeSingle()
@@ -41,13 +46,18 @@ export async function createNotificationCommandRepository() {
       companyId,
       recipientId,
     }: NotificationCommandScope) {
+      const readAt =
+        new Date().toISOString()
+
       return supabase
         .from("notifications")
         .update({
-          read_at: new Date().toISOString(),
+          status: "read",
+          read_at: readAt,
         })
         .eq("company_id", companyId)
         .eq("recipient_id", recipientId)
+        .eq("status", "unread")
         .is("read_at", null)
         .is("archived_at", null)
         .select("id")
@@ -58,14 +68,19 @@ export async function createNotificationCommandRepository() {
       recipientId,
       notificationId,
     }: NotificationCommandTarget) {
+      const archivedAt =
+        new Date().toISOString()
+
       return supabase
         .from("notifications")
         .update({
-          archived_at: new Date().toISOString(),
+          status: "archived",
+          archived_at: archivedAt,
         })
         .eq("id", notificationId)
         .eq("company_id", companyId)
         .eq("recipient_id", recipientId)
+        .neq("status", "archived")
         .is("archived_at", null)
         .select("id")
         .maybeSingle()

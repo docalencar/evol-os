@@ -61,3 +61,34 @@ export type {
 export {
   createNotificationFromRule,
 } from "./services/create-notification-from-rule"
+
+export type {
+  FindNotificationsByRecipientInput,
+} from "./repositories/notification-repository"
+
+export {
+  presentNotification,
+  presentNotifications,
+} from "./presenters/notification-presenter"
+
+export type {
+  NotificationViewModel,
+} from "./view-models/notification-view-model"
+
+export {
+  getNotifications,
+} from "./queries/get-notifications"
+
+export type {
+  GetNotificationsInput,
+  GetNotificationsResult,
+} from "./queries/get-notifications"
+
+export {
+  getUnreadNotificationCount,
+} from "./queries/get-unread-notification-count"
+
+export type {
+  GetUnreadNotificationCountInput,
+  GetUnreadNotificationCountResult,
+} from "./queries/get-unread-notification-count"

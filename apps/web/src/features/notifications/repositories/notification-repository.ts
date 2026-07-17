@@ -30,6 +30,14 @@ type NotificationRow = {
   updated_at: string
 }
 
+export type FindNotificationsByRecipientInput = {
+  companyId: string
+  recipientId: string
+  status?: NotificationStatus
+  limit?: number
+  offset?: number
+}
+
 function mapNotificationRow(
   row: NotificationRow
 ): Notification {
@@ -93,6 +101,71 @@ export async function createNotificationRepository() {
               result.data as NotificationRow
             )
           : null,
+        error: result.error,
+      }
+    },
+
+    async findAllByRecipient(
+      input: FindNotificationsByRecipientInput
+    ) {
+      const limit = Math.min(
+        Math.max(input.limit ?? 20, 1),
+        100
+      )
+
+      const offset = Math.max(
+        input.offset ?? 0,
+        0
+      )
+
+      let query = supabase
+        .from("notifications")
+        .select("*")
+        .eq("company_id", input.companyId)
+        .eq("recipient_id", input.recipientId)
+        .order("created_at", {
+          ascending: false,
+        })
+        .range(
+          offset,
+          offset + limit - 1
+        )
+
+      if (input.status) {
+        query = query.eq(
+          "status",
+          input.status
+        )
+      }
+
+      const result = await query
+
+      return {
+        data: result.data
+          ? (
+              result.data as NotificationRow[]
+            ).map(mapNotificationRow)
+          : [],
+        error: result.error,
+      }
+    },
+
+    async countUnread(
+      companyId: string,
+      recipientId: string
+    ) {
+      const result = await supabase
+        .from("notifications")
+        .select("id", {
+          count: "exact",
+          head: true,
+        })
+        .eq("company_id", companyId)
+        .eq("recipient_id", recipientId)
+        .eq("status", "unread")
+
+      return {
+        count: result.count ?? 0,
         error: result.error,
       }
     },

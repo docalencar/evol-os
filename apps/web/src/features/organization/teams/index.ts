@@ -37,3 +37,17 @@ export type {
 export {
   presentTeamDetails,
 } from "./presenters/present-team-details"
+
+export type {
+  TeamWorkspaceMemberViewModel,
+  TeamWorkspaceMetricViewModel,
+  TeamWorkspaceViewModel,
+} from "./view-models/team-workspace-view-model"
+
+export {
+  presentTeamWorkspace,
+} from "./presenters/present-team-workspace"
+
+export {
+  TeamWorkspaceOverview,
+} from "./components/team-workspace-overview"

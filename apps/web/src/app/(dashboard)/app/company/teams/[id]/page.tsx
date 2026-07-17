@@ -14,9 +14,16 @@ import {
 
 import {
   getTeamById,
+  getTeams,
   presentTeamDetails,
+  presentTeamWorkspace,
   TeamEditDialog,
+  TeamWorkspaceOverview,
 } from "@/features/organization/teams"
+
+import {
+  getEmployees,
+} from "@/features/people"
 
 import {
   EntityTimelineSection,
@@ -95,12 +102,18 @@ export default async function TeamDetailsPage({
 
   const [
     team,
+    teams,
+    employees,
     teamTimeline,
   ] = await Promise.all([
     getTeamById(
       companyId,
       teamId
     ),
+
+    getTeams(companyId),
+
+    getEmployees(companyId),
 
     getEntityTimeline({
       companyId,
@@ -114,15 +127,29 @@ export default async function TeamDetailsPage({
     redirect("/app/company/teams")
   }
 
-  const viewModel =
+  const details =
     presentTeamDetails(team)
+
+  const workspace =
+    presentTeamWorkspace({
+      teamId,
+      leaderId:
+        team.manager_id ?? null,
+      childTeamsCount:
+        (teams ?? []).filter(
+          (candidateTeam) =>
+            candidateTeam.parent_team_id ===
+            teamId
+        ).length,
+      employees: employees ?? [],
+    })
 
   return (
     <div className="space-y-8">
       <PageHeader
-        title={viewModel.name}
+        title={details.name}
         description={
-          viewModel.description
+          details.description
         }
         actions={
           <TeamEditDialog
@@ -132,21 +159,25 @@ export default async function TeamDetailsPage({
         }
       />
 
+      <TeamWorkspaceOverview
+        workspace={workspace}
+      />
+
       <DashboardSection
-        title="Visão geral"
-        description="Informações principais e situação atual do time."
+        title="Informações do time"
+        description="Dados estruturais e situação atual."
       >
         <DashboardCard>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <InfoCard
               label="Nome"
-              value={viewModel.name}
+              value={details.name}
             />
 
             <InfoCard
               label="Liderança"
               value={
-                viewModel
+                details
                   .leadershipStatusLabel
               }
             />
@@ -154,7 +185,7 @@ export default async function TeamDetailsPage({
             <InfoCard
               label="Estrutura"
               value={
-                viewModel
+                details
                   .parentTeamStatusLabel
               }
             />
@@ -162,21 +193,21 @@ export default async function TeamDetailsPage({
             <InfoCard
               label="Situação"
               value={
-                viewModel.statusLabel
+                details.statusLabel
               }
             />
 
             <InfoCard
               label="Criado em"
               value={
-                viewModel.createdAtLabel
+                details.createdAtLabel
               }
             />
 
             <InfoCard
               label="Última atualização"
               value={
-                viewModel.updatedAtLabel
+                details.updatedAtLabel
               }
             />
           </div>

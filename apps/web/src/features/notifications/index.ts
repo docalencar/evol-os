@@ -127,3 +127,13 @@ export type {
   NotificationRecipientResolver,
   ResolveNotificationRecipientsOptions,
 } from "./recipients"
+
+export {
+  createNotificationRecipientDirectory,
+  createNotificationRecipientDirectoryRepository,
+  createNotificationRecipientDirectoryService,
+} from "./directory"
+
+export type {
+  NotificationRecipientDirectory,
+} from "./directory"

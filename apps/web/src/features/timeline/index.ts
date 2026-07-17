@@ -1,4 +1,12 @@
 export {
+  ActivityTimelineCard,
+} from "./components/activity-timeline-card"
+
+export type {
+  ActivityTimelineCardProps,
+} from "./components/activity-timeline-card"
+
+export {
   getActivityTimeline,
 } from "./queries/get-activity-timeline"
 

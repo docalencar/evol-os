@@ -11,6 +11,10 @@ export {
 } from "./queries/get-company-timeline"
 
 export {
+  getEntityTimeline,
+} from "./queries/get-entity-timeline"
+
+export {
   presentActivityTimeline,
   presentActivityTimelineItem,
 } from "./presenters/activity-timeline-presenter"
@@ -31,6 +35,10 @@ export type {
 export type {
   GetCompanyTimelineInput,
 } from "./types/company-timeline"
+
+export type {
+  GetEntityTimelineInput,
+} from "./types/entity-timeline"
 
 export type {
   ActivityTimelineItemViewModel,

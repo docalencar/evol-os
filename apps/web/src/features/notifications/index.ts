@@ -92,3 +92,11 @@ export type {
   GetUnreadNotificationCountInput,
   GetUnreadNotificationCountResult,
 } from "./queries/get-unread-notification-count"
+
+export {
+  NotificationBadge,
+  NotificationDropdown,
+  NotificationEmptyState,
+  NotificationItem,
+  NotificationList,
+} from "./components"

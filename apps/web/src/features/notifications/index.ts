@@ -100,3 +100,18 @@ export {
   NotificationItem,
   NotificationList,
 } from "./components"
+
+export {
+  archiveNotificationAction,
+  deleteNotificationAction,
+  markAllNotificationsAsReadAction,
+  markNotificationAsReadAction,
+} from "./actions"
+
+export type {
+  ArchiveNotificationActionInput,
+  DeleteNotificationActionInput,
+  MarkAllNotificationsAsReadActionInput,
+  MarkNotificationAsReadActionInput,
+  NotificationActionResult,
+} from "./actions"

@@ -115,3 +115,15 @@ export type {
   MarkNotificationAsReadActionInput,
   NotificationActionResult,
 } from "./actions"
+
+export {
+  defaultNotificationRecipientResolver,
+  resolveNotificationRecipients,
+} from "./recipients"
+
+export type {
+  NotificationRecipient,
+  NotificationRecipientContext,
+  NotificationRecipientResolver,
+  ResolveNotificationRecipientsOptions,
+} from "./recipients"

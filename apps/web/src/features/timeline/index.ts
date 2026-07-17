@@ -7,6 +7,10 @@ export {
 } from "./queries/get-employee-timeline"
 
 export {
+  getCompanyTimeline,
+} from "./queries/get-company-timeline"
+
+export {
   presentActivityTimeline,
   presentActivityTimelineItem,
 } from "./presenters/activity-timeline-presenter"
@@ -23,6 +27,10 @@ export type {
 export type {
   GetEmployeeTimelineInput,
 } from "./types/employee-timeline"
+
+export type {
+  GetCompanyTimelineInput,
+} from "./types/company-timeline"
 
 export type {
   ActivityTimelineItemViewModel,

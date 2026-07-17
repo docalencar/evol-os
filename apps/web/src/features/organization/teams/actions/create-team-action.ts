@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache"
 
+import { recordActivity } from "@/features/activity"
+
 import { createTeamRepository } from "../repositories/team-repository"
 import { createTeamSchema } from "../schemas/team-schema"
 
@@ -14,33 +16,74 @@ export async function createTeamAction(
   companyId: string,
   input: unknown
 ): Promise<CreateTeamActionState> {
-  const parsedInput = createTeamSchema.safeParse(input)
+  const parsedInput =
+    createTeamSchema.safeParse(input)
 
   if (!parsedInput.success) {
     return {
       success: false,
-      message: "Dados inválidos para criar time.",
+      message:
+        "Dados inválidos para criar time.",
     }
   }
 
-  const teamRepository = await createTeamRepository()
+  const teamRepository =
+    await createTeamRepository()
 
-  const { error } = await teamRepository.create({
-    companyId,
-    name: parsedInput.data.name,
-    description: parsedInput.data.description || null,
-    parentTeamId: parsedInput.data.parentTeamId || null,
-    leaderId: parsedInput.data.leaderId || null,
-  })
+  const { data, error } =
+    await teamRepository.create({
+      companyId,
+      name: parsedInput.data.name,
+      description:
+        parsedInput.data.description || null,
+      parentTeamId:
+        parsedInput.data.parentTeamId || null,
+      leaderId:
+        parsedInput.data.leaderId || null,
+    })
 
-  if (error) {
+  if (error || !data) {
     return {
       success: false,
-      message: error.message,
+      message:
+        error?.message ??
+        "Erro ao criar time.",
     }
   }
 
+  try {
+    await recordActivity({
+      companyId,
+      activityType: "team.created",
+      module: "organization",
+      title: "Time criado",
+      description:
+        `O time ${data.name} foi criado.`,
+      actorType: "user",
+      entityType: "team",
+      entityId: data.id,
+      visibility: "company",
+      metadata: {
+        teamId: data.id,
+        teamName: data.name,
+        parentTeamId:
+          parsedInput.data.parentTeamId || null,
+        leaderId:
+          parsedInput.data.leaderId || null,
+      },
+    })
+  } catch (activityError) {
+    console.error(
+      "Erro ao registrar atividade de criação do time:",
+      activityError
+    )
+  }
+
+  revalidatePath("/app/company")
   revalidatePath("/app/company/teams")
+  revalidatePath(
+    `/app/company/teams/${data.id}`
+  )
 
   return {
     success: true,

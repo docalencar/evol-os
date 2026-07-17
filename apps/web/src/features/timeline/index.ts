@@ -7,6 +7,14 @@ export type {
 } from "./components/activity-timeline-card"
 
 export {
+  EmployeeTimelineSection,
+} from "./components/employee-timeline-section"
+
+export type {
+  EmployeeTimelineSectionProps,
+} from "./components/employee-timeline-section"
+
+export {
   getActivityTimeline,
 } from "./queries/get-activity-timeline"
 

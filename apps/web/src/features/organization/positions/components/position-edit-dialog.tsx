@@ -29,18 +29,23 @@ export function PositionEditDialog({
       open={open}
       onOpenChange={setOpen}
       trigger={
-        <Button variant="secondary" size="sm">
+        <Button
+          variant="secondary"
+          size="sm"
+        >
           Editar
         </Button>
       }
       title="Editar cargo"
       description="Atualize as informações deste cargo."
+      contentClassName="max-w-4xl"
     >
       <PositionForm
         companyId={companyId}
         departments={departments}
         position={position}
         onSuccess={() => setOpen(false)}
+        onCancel={() => setOpen(false)}
       />
     </EntityDialog>
   )

@@ -25,14 +25,20 @@ export function PositionCreateDialog({
     <EntityDialog
       open={open}
       onOpenChange={setOpen}
-      trigger={<Button>Novo cargo</Button>}
+      trigger={
+        <Button>
+          Novo cargo
+        </Button>
+      }
       title="Novo cargo"
       description="Cadastre um cargo da organização."
+      contentClassName="max-w-4xl"
     >
       <PositionForm
         companyId={companyId}
         departments={departments}
         onSuccess={() => setOpen(false)}
+        onCancel={() => setOpen(false)}
       />
     </EntityDialog>
   )

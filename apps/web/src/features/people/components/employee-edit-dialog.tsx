@@ -39,13 +39,17 @@ export function EmployeeEditDialog({
       onOpenChange={setOpen}
       trigger={
         trigger ?? (
-          <Button variant="secondary" size="sm">
+          <Button
+            variant="secondary"
+            size="sm"
+          >
             Editar
           </Button>
         )
       }
       title="Editar colaborador"
       description="Atualize as informações desta pessoa."
+      contentClassName="max-w-4xl"
     >
       <EmployeeForm
         companyId={companyId}
@@ -54,6 +58,7 @@ export function EmployeeEditDialog({
         positions={positions}
         managers={managers}
         onSuccess={() => setOpen(false)}
+        onCancel={() => setOpen(false)}
       />
     </EntityDialog>
   )

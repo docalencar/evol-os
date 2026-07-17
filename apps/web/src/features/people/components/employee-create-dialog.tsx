@@ -31,9 +31,14 @@ export function EmployeeCreateDialog({
     <EntityDialog
       open={open}
       onOpenChange={setOpen}
-      trigger={<Button>Novo Colaborador</Button>}
+      trigger={
+        <Button>
+          Novo Colaborador
+        </Button>
+      }
       title="Novo colaborador"
       description="Cadastre uma pessoa da organização."
+      contentClassName="max-w-4xl"
     >
       <EmployeeForm
         companyId={companyId}
@@ -41,6 +46,7 @@ export function EmployeeCreateDialog({
         positions={positions}
         managers={managers}
         onSuccess={() => setOpen(false)}
+        onCancel={() => setOpen(false)}
       />
     </EntityDialog>
   )

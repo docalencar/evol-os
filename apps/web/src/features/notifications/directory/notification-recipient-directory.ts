@@ -21,6 +21,16 @@ export type NotificationRecipientDirectory = {
     companyId: string,
     employeeId: string
   ): Promise<string | null>
+
+  findTeamLeaderUserId(
+    companyId: string,
+    teamId: string
+  ): Promise<string | null>
+
+  findDepartmentLeaderUserId(
+    companyId: string,
+    departmentId: string
+  ): Promise<string | null>
 }
 
 function throwDirectoryError(
@@ -35,29 +45,31 @@ function throwDirectoryError(
 export function createNotificationRecipientDirectoryService(
   repository: NotificationRecipientDirectoryRepository
 ): NotificationRecipientDirectory {
+  async function findUserIdByEmployeeId(
+    companyId: string,
+    employeeId: string
+  ): Promise<string | null> {
+    const {
+      data,
+      error,
+    } =
+      await repository.findEmployeeUser(
+        companyId,
+        employeeId
+      )
+
+    if (error) {
+      throwDirectoryError(
+        "resolver o usuário do colaborador",
+        error.message
+      )
+    }
+
+    return data?.user_id ?? null
+  }
+
   return {
-    async findUserIdByEmployeeId(
-      companyId,
-      employeeId
-    ) {
-      const {
-        data,
-        error,
-      } =
-        await repository.findEmployeeUser(
-          companyId,
-          employeeId
-        )
-
-      if (error) {
-        throwDirectoryError(
-          "resolver o usuário do colaborador",
-          error.message
-        )
-      }
-
-      return data?.user_id ?? null
-    },
+    findUserIdByEmployeeId,
 
     async findManagerUserId(
       companyId,
@@ -83,23 +95,70 @@ export function createNotificationRecipientDirectoryService(
         return null
       }
 
+      return findUserIdByEmployeeId(
+        companyId,
+        employee.manager_id
+      )
+    },
+
+    async findTeamLeaderUserId(
+      companyId,
+      teamId
+    ) {
       const {
-        data: manager,
-        error: managerError,
+        data: team,
+        error,
       } =
-        await repository.findManagerUser(
+        await repository.findTeamLeader(
           companyId,
-          employee.manager_id
+          teamId
         )
 
-      if (managerError) {
+      if (error) {
         throwDirectoryError(
-          "resolver o usuário do gestor",
-          managerError.message
+          "resolver o líder do time",
+          error.message
         )
       }
 
-      return manager?.user_id ?? null
+      if (!team?.manager_id) {
+        return null
+      }
+
+      return findUserIdByEmployeeId(
+        companyId,
+        team.manager_id
+      )
+    },
+
+    async findDepartmentLeaderUserId(
+      companyId,
+      departmentId
+    ) {
+      const {
+        data: department,
+        error,
+      } =
+        await repository.findDepartmentLeader(
+          companyId,
+          departmentId
+        )
+
+      if (error) {
+        throwDirectoryError(
+          "resolver o gestor do departamento",
+          error.message
+        )
+      }
+
+      if (!department?.manager_id) {
+        return null
+      }
+
+      return findUserIdByEmployeeId(
+        companyId,
+        department.manager_id
+      )
     },
   }
 }

@@ -19,3 +19,7 @@ export type {
 export {
   employeeNotificationRecipientResolver,
 } from "./employee-notification-recipient-resolver"
+
+export {
+  organizationNotificationRecipientResolver,
+} from "./organization-notification-recipient-resolver"

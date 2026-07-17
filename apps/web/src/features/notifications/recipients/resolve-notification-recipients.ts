@@ -4,6 +4,9 @@ import {
 import {
   employeeNotificationRecipientResolver,
 } from "./employee-notification-recipient-resolver"
+import {
+  organizationNotificationRecipientResolver,
+} from "./organization-notification-recipient-resolver"
 import type {
   NotificationRecipient,
   NotificationRecipientContext,
@@ -21,6 +24,7 @@ export async function resolveNotificationRecipients(
   const resolvers =
     options.resolvers ?? [
       employeeNotificationRecipientResolver,
+      organizationNotificationRecipientResolver,
       defaultNotificationRecipientResolver,
     ]
 

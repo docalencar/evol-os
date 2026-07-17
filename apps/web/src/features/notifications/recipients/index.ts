@@ -15,3 +15,7 @@ export type {
   NotificationRecipientContext,
   NotificationRecipientResolver,
 } from "./notification-recipient-resolver"
+
+export {
+  employeeNotificationRecipientResolver,
+} from "./employee-notification-recipient-resolver"

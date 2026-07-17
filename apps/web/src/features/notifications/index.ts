@@ -118,6 +118,7 @@ export type {
 
 export {
   defaultNotificationRecipientResolver,
+  employeeNotificationRecipientResolver,
   resolveNotificationRecipients,
 } from "./recipients"
 

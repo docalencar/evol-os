@@ -1,48 +1,104 @@
-import { DashboardCard } from "@/components/dashboard"
+import {
+  EmployeeTimelineSection,
+  type ActivityTimelineItemViewModel,
+} from "@/features/timeline"
 
 type EmployeeProfileTimelineProps = {
   hireDate?: string | null
+  items: ActivityTimelineItemViewModel[]
 }
 
-function formatDate(date?: string | null) {
-  if (!date) return "Data não informada"
+const ACTOR_TYPE_LABELS: Record<string, string> = {
+  user: "Usuário",
+  system: "Sistema",
+  automation: "Automação",
+  ai: "Inteligência artificial",
+}
 
+function formatDateTime(date: string) {
   return new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "short",
+    timeStyle: "short",
   }).format(new Date(date))
+}
+
+function formatHireDate(
+  date?: string | null
+) {
+  if (!date) {
+    return "Data de admissão não informada."
+  }
+
+  const formattedDate =
+    new Intl.DateTimeFormat("pt-BR", {
+      dateStyle: "short",
+    }).format(new Date(date))
+
+  return `Colaborador admitido em ${formattedDate}.`
+}
+
+function formatLabel(value: string) {
+  return value
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (letter) =>
+      letter.toUpperCase()
+    )
 }
 
 export function EmployeeProfileTimeline({
   hireDate,
+  items,
 }: EmployeeProfileTimelineProps) {
+  const timelineItems =
+    items.length > 0
+      ? items.map((item) => ({
+          title: item.title,
+          description:
+            item.description,
+          actorLabel:
+            ACTOR_TYPE_LABELS[
+              item.actorType
+            ] ??
+            formatLabel(
+              item.actorType
+            ),
+          occurredAtLabel:
+            formatDateTime(
+              item.occurredAt
+            ),
+          moduleLabel:
+            formatLabel(
+              item.module
+            ),
+          activityTypeLabel:
+            formatLabel(
+              item.activityType
+            ),
+        }))
+      : [
+          {
+            title: "Admissão",
+            description:
+              formatHireDate(
+                hireDate
+              ),
+            actorLabel: "Sistema",
+            occurredAtLabel:
+              hireDate
+                ? formatDateTime(
+                    hireDate
+                  )
+                : "Data não informada",
+            moduleLabel: "Pessoas",
+            activityTypeLabel:
+              "Admissão",
+          },
+        ]
+
   return (
-    <DashboardCard
-      title="Timeline"
-      description="Histórico inicial do colaborador."
-    >
-      <div className="space-y-4">
-        <div className="flex gap-3">
-          <div className="mt-1 h-2 w-2 rounded-full bg-slate-900" />
-
-          <div>
-            <p className="font-medium text-slate-900">Admissão</p>
-            <p className="text-sm text-slate-500">
-              Colaborador admitido em {formatDate(hireDate)}.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex gap-3">
-          <div className="mt-1 h-2 w-2 rounded-full bg-slate-300" />
-
-          <div>
-            <p className="font-medium text-slate-900">Próximos eventos</p>
-            <p className="text-sm text-slate-500">
-              Avaliações, feedbacks, movimentações e PDIs aparecerão aqui.
-            </p>
-          </div>
-        </div>
-      </div>
-    </DashboardCard>
+    <EmployeeTimelineSection
+      items={timelineItems}
+      description="Acompanhe admissões, alterações, feedbacks, avaliações e planos de desenvolvimento."
+    />
   )
 }

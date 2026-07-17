@@ -51,6 +51,10 @@ import {
 } from "@/features/talent"
 
 import {
+  getEmployeeTimeline,
+} from "@/features/timeline"
+
+import {
   getCurrentCompanyContext,
 } from "@/lib/supabase/supabase/current-company"
 
@@ -131,6 +135,7 @@ export default async function EmployeeProfilePage({
     teams,
     positions,
     employees,
+    employeeTimeline,
   ] = await Promise.all([
     getEmployeeById(
       companyId,
@@ -162,6 +167,12 @@ export default async function EmployeeProfilePage({
     getEmployees(
       companyId
     ),
+
+    getEmployeeTimeline({
+      companyId,
+      employeeId: id,
+      limit: 20,
+    }),
   ])
 
   if (!employee) {
@@ -340,6 +351,9 @@ export default async function EmployeeProfilePage({
       <EmployeeProfileTimeline
         hireDate={
           employee.hire_date
+        }
+        items={
+          employeeTimeline.items
         }
       />
 

@@ -12,12 +12,14 @@ type AssessmentCycleCreateDialogProps = {
   companyId: string
   templates: AssessmentTemplate[]
   triggerLabel?: string
+  triggerClassName?: string
 }
 
 export function AssessmentCycleCreateDialog({
   companyId,
   templates,
   triggerLabel = "Novo ciclo",
+  triggerClassName,
 }: AssessmentCycleCreateDialogProps) {
   const [open, setOpen] = useState(false)
 
@@ -25,7 +27,11 @@ export function AssessmentCycleCreateDialog({
     <EntityDialog
       open={open}
       onOpenChange={setOpen}
-      trigger={<Button>{triggerLabel}</Button>}
+      trigger={
+        <Button className={triggerClassName}>
+          {triggerLabel}
+        </Button>
+      }
       title="Nova avaliação"
       description="Escolha o modelo, o período e quem participará da avaliação."
     >

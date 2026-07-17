@@ -1,3 +1,5 @@
+import Link from "next/link"
+
 import type { AssessmentAnswer } from "../../types/assessment-answer"
 import type { AssessmentQuestion } from "../../types/assessment-question"
 import type { AssessmentResponseStatus } from "../../types/assessment-response"
@@ -76,15 +78,24 @@ export function AssessmentExecutionWorkspace({
       />
 
       {readOnly ? (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
-          <p className="font-semibold text-emerald-800">
-            Avaliação enviada
-          </p>
+        <div className="flex flex-col gap-4 rounded-xl border border-emerald-200 bg-emerald-50 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-semibold text-emerald-800">
+              Avaliação enviada com sucesso
+            </p>
 
-          <p className="mt-1 text-sm text-emerald-700">
-            As respostas estão disponíveis apenas para consulta e
-            não podem mais ser alteradas.
-          </p>
+            <p className="mt-1 text-sm text-emerald-700">
+              Suas respostas foram registradas e estão
+              disponíveis apenas para consulta.
+            </p>
+          </div>
+
+          <Link
+            href="/app/assessments"
+            className="inline-flex h-10 shrink-0 items-center justify-center rounded-md bg-emerald-700 px-4 text-sm font-medium text-white transition-colors hover:bg-emerald-800"
+          >
+            Voltar para avaliações
+          </Link>
         </div>
       ) : null}
 

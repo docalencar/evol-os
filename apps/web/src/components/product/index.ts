@@ -1,3 +1,12 @@
+export {
+  ProductInsight,
+  type ProductInsightVariant,
+} from "./insight"
+
+export {
+  PageHero,
+} from "./experience"
+
 export { ProductHero } from "./layout/product-hero"
 
 export type {

@@ -1,6 +1,7 @@
 import { DashboardSection } from "@/components/dashboard"
 import {
   ProductActionPanel,
+  ProductInsight,
   ProductInsightList,
   ProductMetricGrid,
 } from "@/components/product"
@@ -39,6 +40,15 @@ export function AssessmentHome({
         companyId={companyId}
         templates={templates}
       />
+
+      <ProductInsight
+        variant="tip"
+        title="Comece com uma avaliação simples"
+      >
+        Crie um modelo com perguntas claras e organizadas
+        por tema. Você poderá aprimorar a estrutura conforme
+        sua empresa ganhar experiência com o processo.
+      </ProductInsight>
 
       <AssessmentPriorityCard priority={home.priority} />
 

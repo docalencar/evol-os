@@ -30,3 +30,10 @@ export type {
   ApplyTeamSyncItemResult,
 } from "./services/apply-team-sync-item"
 
+export type {
+  TeamDetailsViewModel,
+} from "./view-models/team-details-view-model"
+
+export {
+  presentTeamDetails,
+} from "./presenters/present-team-details"

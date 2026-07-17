@@ -1,3 +1,5 @@
+import Link from "next/link"
+
 import { DataTable } from "@/components/shared/data-table"
 
 import { ArchiveTeamButton } from "./archive-team-button"
@@ -14,7 +16,9 @@ type TeamTableProps = {
   teams: TeamTableItem[]
 }
 
-export function TeamTable({ teams }: TeamTableProps) {
+export function TeamTable({
+  teams,
+}: TeamTableProps) {
   return (
     <DataTable
       title="Times"
@@ -26,15 +30,20 @@ export function TeamTable({ teams }: TeamTableProps) {
           key: "name",
           header: "Nome",
           render: (team) => (
-            <span className="font-medium text-slate-900">
+            <Link
+              href={`/app/company/teams/${team.id}`}
+              className="font-medium text-slate-900 transition-colors hover:text-slate-600 hover:underline"
+            >
               {team.name}
-            </span>
+            </Link>
           ),
         },
         {
           key: "description",
           header: "Descrição",
-          render: (team) => team.description || "Sem descrição",
+          render: (team) =>
+            team.description ||
+            "Sem descrição",
         },
         {
           key: "actions",

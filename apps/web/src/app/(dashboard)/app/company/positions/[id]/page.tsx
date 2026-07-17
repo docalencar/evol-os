@@ -21,7 +21,61 @@ import {
   PositionOverviewCard,
 } from "@/features/organization/positions"
 import { getEmployees, type Employee } from "@/features/people"
+import {
+  EntityTimelineSection,
+  getEntityTimeline,
+  type ActivityTimelineItemViewModel,
+} from "@/features/timeline"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
+
+
+function formatTimelineDate(date: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date(date))
+}
+
+function formatTimelineLabel(value: string) {
+  return value
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (letter) =>
+      letter.toUpperCase()
+    )
+}
+
+function presentPositionTimelineItem(
+  item: ActivityTimelineItemViewModel
+) {
+  const actorLabels = {
+    user: "Usuário",
+    system: "Sistema",
+    automation: "Automação",
+    integration: "Integração",
+  } satisfies Record<
+    ActivityTimelineItemViewModel["actorType"],
+    string
+  >
+
+  return {
+    title: item.title,
+    description: item.description,
+    actorLabel:
+      actorLabels[item.actorType],
+    occurredAtLabel:
+      formatTimelineDate(
+        item.occurredAt
+      ),
+    moduleLabel:
+      formatTimelineLabel(
+        item.module
+      ),
+    activityTypeLabel:
+      formatTimelineLabel(
+        item.activityType
+      ),
+  }
+}
 
 type PositionDetailsPageProps = {
   params: Promise<{
@@ -51,6 +105,7 @@ export default async function PositionDetailsPage({
     positionRequirementsData,
     employeesData,
     departments,
+    positionTimeline,
   ] = await Promise.all([
     getPositionById(companyId, positionId),
     getPositionCompetenciesByPosition(companyId, positionId),
@@ -58,6 +113,12 @@ export default async function PositionDetailsPage({
     getPositionRequirementsByPosition(companyId, positionId),
     getEmployees(companyId),
     getDepartments(companyId),
+    getEntityTimeline({
+      companyId,
+      entityType: "position",
+      entityId: positionId,
+      limit: 20,
+    }),
   ])
 
   if (!position) {
@@ -149,6 +210,21 @@ export default async function PositionDetailsPage({
       </DashboardSection>
 
       <PositionEmployeesCard employees={positionEmployees} />
+
+      <DashboardSection
+        title="Histórico do cargo"
+        description="Acompanhe alterações estruturais, vínculos e demais acontecimentos relacionados a este cargo."
+      >
+        <EntityTimelineSection
+          title="Atividades recentes"
+          description="Registro cronológico das movimentações do cargo."
+          emptyTitle="Nenhuma atividade registrada"
+          emptyDescription="As alterações e movimentações deste cargo aparecerão aqui."
+          items={positionTimeline.items.map(
+            presentPositionTimelineItem
+          )}
+        />
+      </DashboardSection>
     </div>
   )
 }

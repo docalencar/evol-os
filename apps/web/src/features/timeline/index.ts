@@ -15,6 +15,14 @@ export type {
 } from "./components/employee-timeline-section"
 
 export {
+  EntityTimelineSection,
+} from "./components/entity-timeline-section"
+
+export type {
+  EntityTimelineSectionProps,
+} from "./components/entity-timeline-section"
+
+export {
   getActivityTimeline,
 } from "./queries/get-activity-timeline"
 

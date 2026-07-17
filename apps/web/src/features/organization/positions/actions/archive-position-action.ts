@@ -5,6 +5,9 @@ import {
 } from "next/cache"
 
 import {
+  recordActivity,
+} from "@/features/activity"
+import {
   failureResult,
   successResult,
 } from "@/lib/actions"
@@ -20,6 +23,12 @@ export async function archivePositionAction(
   try {
     const repository =
       await createPositionRepository()
+
+    const { data: position } =
+      await repository.findById(
+        companyId,
+        positionId
+      )
 
     const { error } =
       await repository.archive(
@@ -46,8 +55,44 @@ export async function archivePositionAction(
       )
     }
 
+    try {
+      await recordActivity({
+        companyId,
+        activityType: "position.archived",
+        module: "organization",
+        title: "Cargo arquivado",
+        description: position?.name
+          ? `O cargo ${position.name} foi arquivado.`
+          : "Um cargo foi arquivado.",
+        actorType: "user",
+        entityType: "position",
+        entityId: positionId,
+        visibility: "company",
+        metadata: {
+          positionId,
+          positionName:
+            position?.name ?? null,
+          departmentId:
+            position?.department_id ?? null,
+          hierarchicalLevel:
+            position?.hierarchical_level ?? null,
+          status:
+            position?.status ?? null,
+        },
+      })
+    } catch (activityError) {
+      console.error(
+        "Erro ao registrar atividade de arquivamento do cargo:",
+        activityError
+      )
+    }
+
+    revalidatePath("/app/company")
     revalidatePath(
       "/app/company/positions"
+    )
+    revalidatePath(
+      `/app/company/positions/${positionId}`
     )
 
     return successResult(

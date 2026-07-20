@@ -2,14 +2,10 @@ import { getDepartments } from "../../departments/queries/get-departments"
 import { getPositions } from "../../positions/queries/get-positions"
 import { getTeams } from "../../teams/queries/get-teams"
 
-export type OrganizationSummary = {
-  departments: number
-  teams: number
-  positions: number
-}
+import type { OrganizationSummary } from "../types/organization-summary"
 
 export async function getOrganizationSummary(
-  companyId: string
+  companyId: string,
 ): Promise<OrganizationSummary> {
   const [
     departments,

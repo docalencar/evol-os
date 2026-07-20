@@ -26,5 +26,20 @@ export function createExecutiveDashboardSummary(): ExecutiveDashboardSummary {
       responses: 0,
       averageScore: null,
     },
+
+    development: {
+      totalPlans: 0,
+
+      kpis: {
+        activePlans: 0,
+        completedPlans: 0,
+        cancelledPlans: 0,
+        averageProgress: 0,
+      },
+
+      distribution: [],
+
+      monthlyEvolution: [],
+    },
   }
 }

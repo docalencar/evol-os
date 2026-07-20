@@ -1,3 +1,9 @@
+import type {
+  DevelopmentDashboardKpis,
+  DevelopmentMonthlyEvolution,
+  DevelopmentPlanDistribution,
+} from "@/features/development"
+
 export type ExecutiveDashboardSummary = {
   employees: {
     total: number
@@ -22,5 +28,15 @@ export type ExecutiveDashboardSummary = {
   assessments: {
     responses: number
     averageScore: number | null
+  }
+
+  development: {
+    totalPlans: number
+
+    kpis: DevelopmentDashboardKpis
+
+    distribution: DevelopmentPlanDistribution
+
+    monthlyEvolution: DevelopmentMonthlyEvolution
   }
 }

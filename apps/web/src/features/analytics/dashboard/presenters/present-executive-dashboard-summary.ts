@@ -23,5 +23,9 @@ export function presentExecutiveDashboardSummary(
     assessments: {
       ...summary.assessments,
     },
+
+    development: {
+      ...summary.development,
+    },
   }
 }

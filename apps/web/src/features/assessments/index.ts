@@ -261,3 +261,15 @@ export {
 } from "./components/assessment-feedback/assessment-feedback-card"
 
 export { getAssessmentFeedback } from "./queries/get-assessment-feedback"
+
+export { AssessmentCycleResultsCard } from "./components/assessment-cycle/assessment-cycle-results-card"
+
+export type { AssessmentStatistics, AssessmentScoreDistributionItem } from "./types/assessment-statistics"
+
+export { calculateAverage } from "./services/calculate-average"
+
+export { calculateStandardDeviation } from "./services/calculate-standard-deviation"
+
+export { calculateScoreDistribution } from "./services/calculate-score-distribution"
+
+export { calculateAssessmentStatistics } from "./services/calculate-assessment-statistics"

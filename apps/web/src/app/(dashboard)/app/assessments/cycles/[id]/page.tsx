@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/shared/page-header"
 import {
   AddParticipantsDialog,
   AssessmentCycleProgressOverview,
+  AssessmentCycleResultsCard,
   GenerateCycleAssessmentsButton,
   getAssessmentCycleById,
   getAssessmentCycleParticipants,
@@ -231,6 +232,15 @@ export default async function AssessmentCyclePage({
         </div>
       </DashboardSection>
 
+
+      <DashboardSection
+        title="Resultados"
+        description="Resumo executivo do ciclo."
+      >
+        <AssessmentCycleResultsCard
+          results={dashboard.results}
+        />
+      </DashboardSection>
 
       <DashboardSection
         title="Indicadores"

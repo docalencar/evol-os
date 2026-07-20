@@ -1,6 +1,7 @@
 import type { ExecutiveDashboardSummary } from "../types/executive-dashboard-summary"
 
 import { createExecutiveDashboardSummary } from "../services/create-executive-dashboard-summary"
+import { presentExecutiveDashboardSummary } from "../presenters/present-executive-dashboard-summary"
 
 type Input = {
   companyId: string
@@ -17,5 +18,5 @@ export async function getExecutiveDashboardSummary(
 
   void input
 
-  return createExecutiveDashboardSummary()
+  return presentExecutiveDashboardSummary(createExecutiveDashboardSummary())
 }

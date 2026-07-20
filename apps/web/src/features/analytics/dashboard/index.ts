@@ -22,3 +22,5 @@ export * from "./types/executive-dashboard-summary"
 export * from "./services/create-executive-dashboard-summary"
 
 export * from "./queries/get-executive-dashboard-summary"
+
+export * from "./presenters/present-executive-dashboard-summary"

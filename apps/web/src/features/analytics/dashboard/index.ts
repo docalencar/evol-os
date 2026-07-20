@@ -17,3 +17,6 @@
 // - interface.
 
 export {}
+
+export * from "./types/executive-dashboard-summary"
+export * from "./services/create-executive-dashboard-summary"

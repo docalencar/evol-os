@@ -279,3 +279,5 @@ export { getAssessmentCycleStatistics } from "./queries/get-assessment-cycle-sta
 export { presentAssessmentStatistics } from "./presenters/present-assessment-statistics"
 
 export { AssessmentStatisticsCard } from "./components/assessment-cycle/assessment-statistics-card"
+
+export { AssessmentScoreDistributionCard } from "./components/assessment-cycle/assessment-score-distribution-card"

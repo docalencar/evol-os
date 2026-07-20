@@ -87,7 +87,7 @@ export async function IntelligenceCenter() {
             title="Colaboradores"
             value={`${people.active} ativos`}
             description={`${people.total} colaboradores cadastrados`}
-            trend={`${people.probation} em acompanhamento`}
+            trend={`${people.inactive} inativos`}
             recommendation="Dados em tempo real."
             href="/app/people"
             tone="success"

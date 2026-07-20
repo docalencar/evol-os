@@ -6,3 +6,5 @@
 // componentes e tipos para este módulo.
 
 export {}
+
+export * from "./types/assessment-statistics"

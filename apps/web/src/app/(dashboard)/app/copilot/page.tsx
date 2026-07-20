@@ -1,29 +1,51 @@
 import {
   CopilotBriefing,
-  CopilotHome,
+  CopilotConversationPanel,
   getCopilotBriefing,
-  getCopilotHome,
-  presentCopilotHome,
+  getCopilotConversation,
+  presentCopilotConversation,
 } from "@/features/ai-copilot"
 
+import {
+  getGlobalCopilotSkills,
+} from "@/features/copilot/skills"
+
 export default async function CopilotPage() {
-  const home =
-    await getCopilotHome()
+  const [
+    briefing,
+    conversation,
+  ] = await Promise.all([
+    getCopilotBriefing(),
+    getCopilotConversation(),
+  ])
 
-  const briefing =
-    await getCopilotBriefing()
+  const conversationViewModel =
+    presentCopilotConversation(
+      conversation
+    )
 
-  const viewModel =
-    presentCopilotHome(home)
+  const skills =
+    getGlobalCopilotSkills()
 
   return (
     <div className="space-y-10">
+      <header>
+        <h1 className="text-3xl font-bold">
+          AI Copilot
+        </h1>
+
+        <p className="mt-2 text-muted-foreground">
+          Seu assistente inteligente para gestão de pessoas.
+        </p>
+      </header>
+
       <CopilotBriefing
         briefing={briefing}
       />
 
-      <CopilotHome
-        viewModel={viewModel}
+      <CopilotConversationPanel
+        skills={skills}
+        initialViewModel={conversationViewModel}
       />
     </div>
   )

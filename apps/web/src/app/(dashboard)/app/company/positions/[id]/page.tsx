@@ -5,8 +5,12 @@ import { z } from "zod"
 import { DashboardSection } from "@/components/dashboard"
 import { PageHeader } from "@/components/shared/page-header"
 import { getCompetencies } from "@/features/competencies"
-import { getPositionCompetenciesByPosition } from "@/features/competencies/position-competencies"
-import { getDepartments } from "@/features/organization/departments"
+import {
+  getPositionCompetenciesByPosition,
+} from "@/features/competencies/position-competencies"
+import {
+  getDepartments,
+} from "@/features/organization/departments"
 import {
   PositionRequirementCreateDialog,
   PositionRequirementsTable,
@@ -17,17 +21,28 @@ import {
   getPositionById,
   PositionCompetenciesCard,
   PositionEditDialog,
-  PositionEmployeesCard,
-  PositionOverviewCard,
+  PositionWorkspaceOverview,
+  presentPositionWorkspace,
 } from "@/features/organization/positions"
-import { getEmployees, type Employee } from "@/features/people"
 import {
+  getEmployees,
+  type Employee,
+} from "@/features/people"
+import {
+  ActivityIntelligenceCard,
   EntityTimelineSection,
+  createActivityIntelligenceAIContext,
   getEntityTimeline,
+  presentActivityIntelligence,
   type ActivityTimelineItemViewModel,
 } from "@/features/timeline"
-import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
+import {
+  createExecutiveAiContext,
+} from "@/features/copilot/context"
+import {
+  getCurrentCompanyContext,
+} from "@/lib/supabase/supabase/current-company"
 
 function formatTimelineDate(date: string) {
   return new Intl.DateTimeFormat("pt-BR", {
@@ -88,15 +103,20 @@ export default async function PositionDetailsPage({
 }: PositionDetailsPageProps) {
   const { id } = await params
 
-  const positionIdResult = z.string().uuid().safeParse(id)
+  const positionIdResult =
+    z.string().uuid().safeParse(id)
 
   if (!positionIdResult.success) {
-    redirect("/app/company/positions")
+    redirect(
+      "/app/company/positions"
+    )
   }
 
-  const positionId = positionIdResult.data
+  const positionId =
+    positionIdResult.data
 
-  const { companyId } = await getCurrentCompanyContext()
+  const { companyId } =
+    await getCurrentCompanyContext()
 
   const [
     position,
@@ -107,10 +127,19 @@ export default async function PositionDetailsPage({
     departments,
     positionTimeline,
   ] = await Promise.all([
-    getPositionById(companyId, positionId),
-    getPositionCompetenciesByPosition(companyId, positionId),
+    getPositionById(
+      companyId,
+      positionId
+    ),
+    getPositionCompetenciesByPosition(
+      companyId,
+      positionId
+    ),
     getCompetencies(companyId),
-    getPositionRequirementsByPosition(companyId, positionId),
+    getPositionRequirementsByPosition(
+      companyId,
+      positionId
+    ),
     getEmployees(companyId),
     getDepartments(companyId),
     getEntityTimeline({
@@ -122,94 +151,134 @@ export default async function PositionDetailsPage({
   ])
 
   if (!position) {
-    redirect("/app/company/positions")
+    redirect(
+      "/app/company/positions"
+    )
   }
 
-  const departmentOptions = (departments ?? []).map((department) => ({
-    id: department.id,
-    name: department.name,
-  }))
+  const departmentOptions =
+    (departments ?? []).map(
+      (department) => ({
+        id: department.id,
+        name: department.name,
+      })
+    )
 
   const positionDepartment =
     departmentOptions.find(
-      (department) => department.id === position.department_id
+      (department) =>
+        department.id ===
+        position.department_id
     ) ?? null
 
-  const employees = (employeesData ?? []) as Employee[]
+  const employees =
+    (employeesData ?? []) as Employee[]
 
-  const positionRequirements = (
-    positionRequirementsData ?? []
-  ) as PositionRequirement[]
+  const positionRequirements =
+    (
+      positionRequirementsData ?? []
+    ) as PositionRequirement[]
 
-  const positionEmployees = employees.filter(
-    (employee) => employee.position_id === position.id
-  )
+  const workspace =
+    presentPositionWorkspace({
+      position,
+      department:
+        positionDepartment,
+      employees,
+      competencyCount:
+        positionCompetencies?.length ??
+        0,
+      requirementCount:
+        positionRequirements.length,
+    })
 
-  const activeEmployees = positionEmployees.filter(
-    (employee) => employee.status === "active"
-  ).length
 
-  const onLeaveEmployees = positionEmployees.filter(
-    (employee) => employee.status === "on_leave"
-  ).length
+  const activityIntelligence =
+    presentActivityIntelligence({
+      activities:
+        positionTimeline.items,
+    })
 
-  const competencyCount = positionCompetencies?.length ?? 0
+  const activityAiContext =
+    createActivityIntelligenceAIContext({
+      intelligence:
+        activityIntelligence,
+    })
+
+  const executiveAiContext =
+    createExecutiveAiContext({
+      entityType: "position",
+      entityId: position.id,
+      companyId,
+      title: workspace.name,
+      metrics: workspace.metrics.map(
+        (metric) => ({
+          id: metric.id,
+          label: metric.label,
+          value: metric.value,
+        })
+      ),
+      metadata: {
+        departmentId:
+          workspace.context.departmentId ?? "",
+        hierarchicalLevel:
+          workspace.context.hierarchicalLevelLabel,
+        status:
+          workspace.context.statusLabel,
+      },
+      activity: activityAiContext,
+    })
+
+  void executiveAiContext
 
   return (
     <div className="space-y-8">
       <PageHeader
-        title={position.name}
+        title={workspace.name}
         description={
-          position.description ?? "Cargo sem descrição cadastrada."
+          workspace.description
         }
         actions={
           <PositionEditDialog
             companyId={companyId}
-            departments={departmentOptions}
+            departments={
+              departmentOptions
+            }
             position={position}
           />
         }
       />
 
-      <DashboardSection
-        title="Visão geral"
-        description="Informações estruturais do cargo e resumo dos vínculos atuais."
-      >
-        <PositionOverviewCard
-          departmentName={positionDepartment?.name ?? null}
-          hierarchicalLevel={position.hierarchical_level}
-          status={position.status}
-          weeklyWorkloadHours={position.weekly_workload_hours}
-          workModel={position.work_model}
-          employmentType={position.employment_type}
-          travelRequirement={position.travel_requirement}
-          competencyCount={competencyCount}
-          employeeCount={positionEmployees.length}
-          activeEmployees={activeEmployees}
-          onLeaveEmployees={onLeaveEmployees}
-        />
-      </DashboardSection>
+      <PositionWorkspaceOverview
+        workspace={workspace}
+      />
 
       <PositionCompetenciesCard
         companyId={companyId}
         positionId={position.id}
-        competencies={competencies ?? []}
-        positionCompetencies={positionCompetencies ?? []}
+        competencies={
+          competencies ?? []
+        }
+        positionCompetencies={
+          positionCompetencies ?? []
+        }
       />
 
       <DashboardSection
         title="Requisitos técnicos"
         description="Defina formação, experiência, certificações, idiomas e conhecimentos necessários para este cargo."
         actions={
-          <PositionRequirementCreateDialog positionId={position.id} />
+          <PositionRequirementCreateDialog
+            positionId={position.id}
+          />
         }
       >
         <PositionRequirementsTable
-          requirements={positionRequirements}
+          requirements={
+            positionRequirements
+          }
         />
       </DashboardSection>
-
-      <PositionEmployeesCard employees={positionEmployees} />
 
       <DashboardSection
         title="Histórico do cargo"
@@ -220,9 +289,11 @@ export default async function PositionDetailsPage({
           description="Registro cronológico das movimentações do cargo."
           emptyTitle="Nenhuma atividade registrada"
           emptyDescription="As alterações e movimentações deste cargo aparecerão aqui."
-          items={positionTimeline.items.map(
-            presentPositionTimelineItem
-          )}
+          items={
+            positionTimeline.items.map(
+              presentPositionTimelineItem
+            )
+          }
         />
       </DashboardSection>
     </div>

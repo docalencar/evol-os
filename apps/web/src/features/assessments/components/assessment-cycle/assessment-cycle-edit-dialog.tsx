@@ -33,12 +33,14 @@ export function AssessmentCycleEditDialog({
       }
       title="Editar ciclo de avaliação"
       description="Atualize as configurações deste ciclo."
+      contentClassName="max-w-4xl"
     >
       <AssessmentCycleForm
         companyId={companyId}
         templates={templates}
         cycle={cycle}
         onSuccess={() => setOpen(false)}
+        onCancel={() => setOpen(false)}
       />
     </EntityDialog>
   )

@@ -1,25 +1,18 @@
-import { DashboardCard, KeyValueList } from "@/components/dashboard"
+import {
+  DashboardCard,
+  KeyValueList,
+} from "@/components/dashboard"
+
+import type {
+  EmployeeWorkspaceOrganizationViewModel,
+} from "../view-models/employee-workspace-view-model"
 
 type EmployeeProfileSidebarProps = {
-  positionName: string
-  teamName: string
-  managerName?: string
-  status: string
-  hireDate: string
-}
-
-function formatDate(date: string) {
-  return new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "short",
-  }).format(new Date(date))
+  organization: EmployeeWorkspaceOrganizationViewModel
 }
 
 export function EmployeeProfileSidebar({
-  positionName,
-  teamName,
-  managerName,
-  status,
-  hireDate,
+  organization,
 }: EmployeeProfileSidebarProps) {
   return (
     <DashboardCard
@@ -30,23 +23,28 @@ export function EmployeeProfileSidebar({
         items={[
           {
             label: "Cargo",
-            value: positionName,
+            value:
+              organization.positionLabel,
           },
           {
             label: "Time",
-            value: teamName,
+            value:
+              organization.teamLabel,
           },
           {
             label: "Gestor",
-            value: managerName || "-",
+            value:
+              organization.managerLabel,
           },
           {
             label: "Status",
-            value: status,
+            value:
+              organization.statusLabel,
           },
           {
             label: "Admissão",
-            value: formatDate(hireDate),
+            value:
+              organization.hireDateLabel,
           },
         ]}
       />

@@ -36,6 +36,8 @@ export async function createTeamAction(
       name: parsedInput.data.name,
       description:
         parsedInput.data.description || null,
+      departmentId:
+        parsedInput.data.departmentId || null,
       parentTeamId:
         parsedInput.data.parentTeamId || null,
       leaderId:
@@ -66,6 +68,8 @@ export async function createTeamAction(
       metadata: {
         teamId: data.id,
         teamName: data.name,
+        departmentId:
+          parsedInput.data.departmentId || null,
         parentTeamId:
           parsedInput.data.parentTeamId || null,
         leaderId:
@@ -81,6 +85,14 @@ export async function createTeamAction(
 
   revalidatePath("/app/company")
   revalidatePath("/app/company/teams")
+  revalidatePath("/app/company/departments")
+
+  if (parsedInput.data.departmentId) {
+    revalidatePath(
+      `/app/company/departments/${parsedInput.data.departmentId}`
+    )
+  }
+
   revalidatePath(
     `/app/company/teams/${data.id}`
   )

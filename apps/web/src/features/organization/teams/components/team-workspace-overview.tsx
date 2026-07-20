@@ -3,6 +3,7 @@ import Link from "next/link"
 import {
   DashboardCard,
   DashboardSection,
+  InfoCard,
   StatCard,
 } from "@/components/dashboard"
 
@@ -12,6 +13,41 @@ import type {
 
 type TeamWorkspaceOverviewProps = {
   workspace: TeamWorkspaceViewModel
+}
+
+type ManagementCardProps = {
+  title: string
+  description: string
+  href: string
+}
+
+function ManagementCard({
+  title,
+  description,
+  href,
+}: ManagementCardProps) {
+  return (
+    <DashboardCard>
+      <div className="flex h-full flex-col justify-between gap-6">
+        <div className="space-y-2">
+          <h3 className="text-base font-semibold text-foreground">
+            {title}
+          </h3>
+
+          <p className="text-sm leading-6 text-muted-foreground">
+            {description}
+          </p>
+        </div>
+
+        <Link
+          href={href}
+          className="inline-flex h-10 w-fit items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+        >
+          Gerenciar
+        </Link>
+      </div>
+    </DashboardCard>
+  )
 }
 
 export function TeamWorkspaceOverview({
@@ -36,6 +72,62 @@ export function TeamWorkspaceOverview({
               />
             )
           )}
+        </div>
+      </DashboardSection>
+
+      <DashboardSection
+        title="Contexto organizacional"
+        description="Posição atual do time dentro da estrutura da empresa."
+      >
+        <DashboardCard>
+          <div className="grid gap-4 md:grid-cols-2">
+            <InfoCard
+              label="Departamento"
+              value={
+                workspace.context
+                  .departmentLabel
+              }
+            />
+
+            <InfoCard
+              label="Time superior"
+              value={
+                workspace.context
+                  .parentTeamLabel
+              }
+            />
+          </div>
+        </DashboardCard>
+      </DashboardSection>
+
+      <DashboardSection
+        title="Gerenciar"
+        description="Acesse as áreas relacionadas à operação e à estrutura deste time."
+      >
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <ManagementCard
+            title="Pessoas"
+            description="Gerencie os colaboradores vinculados ao time e seus respectivos dados profissionais."
+            href="/app/people"
+          />
+
+          <ManagementCard
+            title="Cargos"
+            description="Gerencie as funções e posições profissionais representadas dentro do time."
+            href="/app/company/positions"
+          />
+
+          <ManagementCard
+            title="Departamento"
+            description="Acesse a estrutura departamental à qual este time está organizacionalmente vinculado."
+            href="/app/company/departments"
+          />
+
+          <ManagementCard
+            title="Times"
+            description="Gerencie a hierarquia, os subtimes e os demais times existentes na organização."
+            href="/app/company/teams"
+          />
         </div>
       </DashboardSection>
 

@@ -1,3 +1,16 @@
+export {
+  presentEmployeeWorkspace,
+} from "./profile/presenters/present-employee-workspace"
+
+export type {
+  EmployeeWorkspaceContactViewModel,
+  EmployeeWorkspaceHeaderViewModel,
+  EmployeeWorkspaceMetricViewModel,
+  EmployeeWorkspaceOptionsViewModel,
+  EmployeeWorkspaceOrganizationViewModel,
+  EmployeeWorkspaceViewModel,
+} from "./profile/view-models/employee-workspace-view-model"
+
 export type {
   Employee,
   EmployeeStatus,

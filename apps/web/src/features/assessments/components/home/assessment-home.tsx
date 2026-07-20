@@ -1,5 +1,8 @@
-import { DashboardSection } from "@/components/dashboard"
 import {
+  DashboardSection,
+} from "@/components/dashboard"
+import {
+  NextStepCard,
   ProductActionPanel,
   ProductInsight,
   ProductInsightList,
@@ -7,6 +10,7 @@ import {
 } from "@/components/product"
 
 import {
+  AssessmentCycleCreateDialog,
   AssessmentCycleTable,
   AssessmentTemplateCreateDialog,
   AssessmentTemplateOverviewCard,
@@ -17,8 +21,12 @@ import {
   type AssessmentTemplate,
 } from "@/features/assessments"
 
-import { AssessmentHero } from "./assessment-hero"
-import { AssessmentPriorityCard } from "./assessment-priority-card"
+import {
+  AssessmentHero,
+} from "./assessment-hero"
+import {
+  AssessmentPriorityCard,
+} from "./assessment-priority-card"
 
 type AssessmentHomeProps = {
   companyId: string
@@ -31,8 +39,29 @@ export function AssessmentHome({
   cycles,
   templates,
 }: AssessmentHomeProps) {
-  const assessments = presentAssessments(cycles)
-  const home = presentAssessmentHome(assessments)
+  const assessments =
+    presentAssessments(cycles)
+
+  const home =
+    presentAssessmentHome(
+      assessments,
+      templates
+    )
+
+  const journeyAction =
+    home.journey.kind === "create-template" ? (
+      <AssessmentTemplateCreateDialog
+        companyId={companyId}
+      />
+    ) : home.journey.kind ===
+      "create-assessment" ? (
+      <AssessmentCycleCreateDialog
+        companyId={companyId}
+        templates={templates}
+        triggerLabel="Criar avaliação"
+        triggerClassName="shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0"
+      />
+    ) : undefined
 
   return (
     <div className="space-y-8">
@@ -45,24 +74,46 @@ export function AssessmentHome({
         variant="tip"
         title="Comece com uma avaliação simples"
       >
-        Crie um modelo com perguntas claras e organizadas
-        por tema. Você poderá aprimorar a estrutura conforme
-        sua empresa ganhar experiência com o processo.
+        Crie um modelo com perguntas claras e
+        organizadas por tema. Você poderá aprimorar
+        a estrutura conforme sua empresa ganhar
+        experiência com o processo.
       </ProductInsight>
 
-      <AssessmentPriorityCard priority={home.priority} />
+      <NextStepCard
+        title={home.journey.title}
+        description={home.journey.description}
+        action={journeyAction}
+      />
 
-      <ProductMetricGrid metrics={home.metrics} />
+      <AssessmentPriorityCard
+        priority={home.priority}
+      />
+
+      <ProductMetricGrid
+        metrics={home.metrics}
+      />
 
       <ProductActionPanel
         title="Ações rápidas"
         actions={[
           {
             id: "new-template",
-            label: "Novo Modelo",
+            label: "Novo modelo",
             action: (
               <AssessmentTemplateCreateDialog
                 companyId={companyId}
+              />
+            ),
+          },
+          {
+            id: "new-assessment",
+            label: "Nova avaliação",
+            action: (
+              <AssessmentCycleCreateDialog
+                companyId={companyId}
+                templates={templates}
+                triggerLabel="Nova avaliação"
               />
             ),
           },

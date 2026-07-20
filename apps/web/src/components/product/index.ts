@@ -1,4 +1,8 @@
 export {
+  NextStepCard,
+} from "./feedback"
+
+export {
   ProductInsight,
   type ProductInsightVariant,
 } from "./insight"
@@ -34,3 +38,19 @@ export {
 export {
   ProductInsightList,
 } from "./cards/product-insight-list"
+
+export {
+  ProductWizard,
+  ProductWizardProvider,
+  ProductWizardHeader,
+  ProductWizardProgress,
+  ProductWizardStep,
+  ProductWizardSummary,
+  ProductWizardHelp,
+  ProductWizardFooter,
+  ProductWizardActions,
+  useProductWizard,
+  type ProductWizardContextValue,
+  type ProductWizardProviderProps,
+  type ProductWizardStepDefinition,
+} from "./wizard"

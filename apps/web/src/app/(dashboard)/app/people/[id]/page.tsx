@@ -29,17 +29,17 @@ import {
 } from "@/features/organization/teams"
 
 import {
-  EMPLOYEE_STATUS_LABELS,
   getEmployeeById,
   getEmployees,
+  presentEmployeeWorkspace,
   type Employee,
-  type EmployeeStatus,
 } from "@/features/people"
 
 import {
   EmployeeProfileHeader,
   EmployeeProfileLayout,
   EmployeeProfileSidebar,
+  EmployeeProfileStats,
   EmployeeProfileTimeline,
 } from "@/features/people/profile"
 
@@ -51,8 +51,15 @@ import {
 } from "@/features/talent"
 
 import {
+  ActivityIntelligenceCard,
+  createActivityIntelligenceAIContext,
   getEmployeeTimeline,
+  presentActivityIntelligence,
 } from "@/features/timeline"
+
+import {
+  createExecutiveAiContext,
+} from "@/features/copilot/context"
 
 import {
   getCurrentCompanyContext,
@@ -76,41 +83,14 @@ function getRelationName(
   relation?: Relation
 ) {
   if (!relation) {
-    return "-"
+    return null
   }
 
   if (Array.isArray(relation)) {
-    return relation[0]?.name || "-"
+    return relation[0]?.name ?? null
   }
 
-  return relation.name || "-"
-}
-
-function formatPhone(
-  phone?: string | null
-) {
-  if (!phone) {
-    return "-"
-  }
-
-  const digits =
-    phone.replace(/\D/g, "")
-
-  if (digits.length === 11) {
-    return digits.replace(
-      /^(\d{2})(\d{5})(\d{4})$/,
-      "($1) $2-$3"
-    )
-  }
-
-  if (digits.length === 10) {
-    return digits.replace(
-      /^(\d{2})(\d{4})(\d{4})$/,
-      "($1) $2-$3"
-    )
-  }
-
-  return phone
+  return relation.name || null
 }
 
 type EmployeeProfilePageProps = {
@@ -179,64 +159,50 @@ export default async function EmployeeProfilePage({
     redirect("/app/people")
   }
 
-  const positionName =
-    getRelationName(
-      employee.positions
-    )
-
-  const teamName =
-    getRelationName(
-      employee.teams
-    )
-
-  const statusLabel =
-    EMPLOYEE_STATUS_LABELS[
-      employee.status as EmployeeStatus
-    ]
-
-  const teamList =
-    (teams ?? []) as NamedEntity[]
-
-  const positionList =
-    (positions ?? []) as NamedEntity[]
-
-  const employeeList =
-    (employees ?? []) as Employee[]
-
   const teamOptions =
-    teamList.map((team) => ({
-      id: team.id,
-      name: team.name,
-    }))
+    ((teams ?? []) as NamedEntity[])
+      .map((team) => ({
+        id: team.id,
+        name: team.name,
+      }))
 
   const positionOptions =
-    positionList.map(
-      (position) => ({
+    ((positions ?? []) as NamedEntity[])
+      .map((position) => ({
         id: position.id,
         name: position.name,
-      })
-    )
+      }))
 
   const managerOptions =
-    employeeList
-      .filter(
-        (manager) =>
-          manager.id !== employee.id
-      )
+    ((employees ?? []) as Employee[])
       .map((manager) => ({
         id: manager.id,
         name: manager.full_name,
       }))
 
-  const currentManager =
+  const managerName =
     managerOptions.find(
       (manager) =>
         manager.id ===
         employee.manager_id
-    )
+    )?.name ?? null
 
-  const managerName =
-    currentManager?.name ?? "-"
+  const workspace =
+    presentEmployeeWorkspace({
+      employee,
+      positionName:
+        getRelationName(
+          employee.positions
+        ),
+      teamName:
+        getRelationName(
+          employee.teams
+        ),
+      managerName,
+      teams: teamOptions,
+      positions: positionOptions,
+      managers: managerOptions,
+    })
 
   const insights =
     createEmployeeInsights(
@@ -246,40 +212,87 @@ export default async function EmployeeProfilePage({
   const developmentPlanAiContext =
     getDevelopmentPlanAiContext({
       employeeName:
-        employee.full_name,
+        workspace.employeeName,
 
-      positionName,
+      positionName:
+        workspace.organization
+          .positionLabel,
 
       competencyGaps,
     })
 
   const canGenerateAiSuggestion =
-    positionName !== "-" &&
+    workspace.hasPosition &&
     developmentPlanAiContext
       .competencyGaps.length > 0
+
+
+  const activityIntelligence =
+    presentActivityIntelligence({
+      activities:
+        employeeTimeline.items,
+    })
+
+  const activityAiContext =
+    createActivityIntelligenceAIContext({
+      intelligence:
+        activityIntelligence,
+    })
+
+  const executiveAiContext =
+    createExecutiveAiContext({
+      entityType: "employee",
+      entityId: workspace.id,
+      companyId,
+      title: workspace.employeeName,
+      metrics: workspace.metrics.map(
+        (metric) => ({
+          id: metric.id,
+          label: metric.label,
+          value: metric.value,
+        })
+      ),
+      metadata: {
+        positionId:
+          workspace.organization.positionId ?? "",
+        teamId:
+          workspace.organization.teamId ?? "",
+        managerId:
+          employee.manager_id ?? "",
+      },
+      activity: activityAiContext,
+    })
+
+  void executiveAiContext
 
   return (
     <EmployeeProfileLayout
       sidebar={
         <EmployeeProfileSidebar
-          positionName={positionName}
-          teamName={teamName}
-          managerName={managerName}
-          status={statusLabel}
-          hireDate={
-            employee.hire_date ?? ""
+          organization={
+            workspace.organization
           }
         />
       }
       header={
         <EmployeeProfileHeader
-          companyId={companyId}
+          companyId={
+            workspace.companyId
+          }
           employee={employee}
-          positionName={positionName}
-          teamName={teamName}
-          teams={teamOptions}
-          positions={positionOptions}
-          managers={managerOptions}
+          header={
+            workspace.header
+          }
+          options={
+            workspace.options
+          }
+        />
+      }
+      summary={
+        <EmployeeProfileStats
+          metrics={
+            workspace.metrics
+          }
         />
       }
     >
@@ -287,7 +300,8 @@ export default async function EmployeeProfilePage({
         <TalentSummaryCard
           insights={insights}
           positionId={
-            employee.position_id
+            workspace.organization
+              .positionId
           }
         />
       </DashboardSection>
@@ -298,23 +312,27 @@ export default async function EmployeeProfilePage({
             label="E-mail"
             value={
               <span className="break-all">
-                {employee.email || "-"}
+                {
+                  workspace.contact
+                    .emailLabel
+                }
               </span>
             }
           />
 
           <InfoCard
             label="Telefone"
-            value={formatPhone(
-              employee.phone
-            )}
+            value={
+              workspace.contact
+                .phoneLabel
+            }
           />
 
           <InfoCard
             label="DISC"
             value={
-              employee.disc_profile ||
-              "-"
+              workspace.contact
+                .discProfileLabel
             }
           />
         </div>
@@ -339,14 +357,26 @@ export default async function EmployeeProfilePage({
 
       <DashboardSection title="Competências registradas">
         <EmployeeCompetenciesCard
-          companyId={companyId}
-          employeeId={employee.id}
-          competencies={competencies}
+          companyId={
+            workspace.companyId
+          }
+          employeeId={
+            workspace.id
+          }
+          competencies={
+            competencies
+          }
           employeeCompetencies={
             employeeCompetencies ?? []
           }
         />
       </DashboardSection>
+
+      <ActivityIntelligenceCard
+        intelligence={
+          activityIntelligence
+        }
+      />
 
       <EmployeeProfileTimeline
         hireDate={

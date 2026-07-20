@@ -34,11 +34,13 @@ export function AssessmentCycleCreateDialog({
       }
       title="Nova avaliação"
       description="Escolha o modelo, o período e quem participará da avaliação."
+      contentClassName="max-w-4xl"
     >
       <AssessmentCycleForm
         companyId={companyId}
         templates={templates}
         onSuccess={() => setOpen(false)}
+        onCancel={() => setOpen(false)}
       />
     </EntityDialog>
   )

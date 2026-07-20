@@ -38,12 +38,12 @@ export const assessmentCycleSchema = z
     startDate: z
       .string()
       .trim()
-      .min(1, "Informe a data de início."),
+      .min(1, "Informe quando as respostas poderão começar."),
 
     endDate: z
       .string()
       .trim()
-      .min(1, "Informe a data de término."),
+      .min(1, "Informe o prazo para envio das respostas."),
 
     closeDate: optionalDateSchema,
 
@@ -73,7 +73,7 @@ export const assessmentCycleSchema = z
         code: z.ZodIssueCode.custom,
         path: ["endDate"],
         message:
-          "A data de término deve ser igual ou posterior à data de início.",
+          "O prazo para responder deve ser igual ou posterior ao início das respostas.",
       })
     }
 
@@ -88,7 +88,7 @@ export const assessmentCycleSchema = z
           code: z.ZodIssueCode.custom,
           path: ["closeDate"],
           message:
-            "A data de encerramento deve ser igual ou posterior à data de término.",
+            "O fechamento da avaliação deve ser igual ou posterior ao prazo para responder.",
         })
       }
     }

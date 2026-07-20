@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { redirect } from "next/navigation"
 
 import { z } from "zod"
@@ -8,20 +9,29 @@ import {
   InfoCard,
 } from "@/components/dashboard"
 
-import {
-  PageHeader,
-} from "@/components/shared/page-header"
+import { PageHeader } from "@/components/shared/page-header"
 
 import {
   DepartmentEditDialog,
   getDepartmentById,
 } from "@/features/organization/departments"
 
+import { getPositions } from "@/features/organization/positions/queries/get-positions"
+import { getTeams } from "@/features/organization/teams/queries/get-teams"
+import { getEmployees } from "@/features/people/queries/get-employees"
+
 import {
+  ActivityIntelligenceCard,
   EntityTimelineSection,
+  createActivityIntelligenceAIContext,
   getEntityTimeline,
+  presentActivityIntelligence,
   type ActivityTimelineItemViewModel,
 } from "@/features/timeline"
+
+import {
+  createExecutiveAiContext,
+} from "@/features/copilot/context"
 
 import {
   getCurrentCompanyContext,
@@ -75,6 +85,61 @@ function presentDepartmentTimelineItem(
   }
 }
 
+function belongsToDepartment(
+  item: unknown,
+  departmentId: string
+) {
+  if (
+    !item ||
+    typeof item !== "object"
+  ) {
+    return false
+  }
+
+  const record =
+    item as Record<string, unknown>
+
+  return (
+    record.department_id === departmentId ||
+    record.departmentId === departmentId
+  )
+}
+
+type ManagementCardProps = {
+  title: string
+  description: string
+  href: string
+}
+
+function ManagementCard({
+  title,
+  description,
+  href,
+}: ManagementCardProps) {
+  return (
+    <DashboardCard>
+      <div className="flex h-full flex-col justify-between gap-6">
+        <div className="space-y-2">
+          <h3 className="text-base font-semibold text-foreground">
+            {title}
+          </h3>
+
+          <p className="text-sm leading-6 text-muted-foreground">
+            {description}
+          </p>
+        </div>
+
+        <Link
+          href={href}
+          className="inline-flex h-10 w-fit items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+        >
+          Gerenciar
+        </Link>
+      </div>
+    </DashboardCard>
+  )
+}
+
 export default async function DepartmentDetailsPage({
   params,
 }: DepartmentDetailsPageProps) {
@@ -95,12 +160,21 @@ export default async function DepartmentDetailsPage({
 
   const [
     department,
+    teams,
+    positions,
+    employees,
     departmentTimeline,
   ] = await Promise.all([
     getDepartmentById(
       companyId,
       departmentId
     ),
+
+    getTeams(companyId),
+
+    getPositions(companyId),
+
+    getEmployees(companyId),
 
     getEntityTimeline({
       companyId,
@@ -113,6 +187,89 @@ export default async function DepartmentDetailsPage({
   if (!department) {
     redirect("/app/company/departments")
   }
+
+  const departmentTeams =
+    (teams ?? []).filter((team) =>
+      belongsToDepartment(
+        team,
+        departmentId
+      )
+    )
+
+  const departmentPositions =
+    (positions ?? []).filter((position) =>
+      belongsToDepartment(
+        position,
+        departmentId
+      )
+    )
+
+  const departmentEmployees =
+    (employees ?? []).filter((employee) =>
+      belongsToDepartment(
+        employee,
+        departmentId
+      )
+    )
+
+
+  const activityIntelligence =
+    presentActivityIntelligence({
+      activities:
+        departmentTimeline.items,
+    })
+
+  const activityAiContext =
+    createActivityIntelligenceAIContext({
+      intelligence:
+        activityIntelligence,
+    })
+
+  const executiveAiContext =
+    createExecutiveAiContext({
+      entityType: "department",
+      entityId: department.id,
+      companyId,
+      title: department.name,
+      metrics: [
+        {
+          id: "teams",
+          label: "Times",
+          value: String(
+            departmentTeams.length
+          ),
+        },
+        {
+          id: "positions",
+          label: "Cargos",
+          value: String(
+            departmentPositions.length
+          ),
+        },
+        {
+          id: "employees",
+          label: "Colaboradores",
+          value: String(
+            departmentEmployees.length
+          ),
+        },
+        {
+          id: "leadership",
+          label: "Liderança",
+          value:
+            department.leaderId
+              ? "Líder vinculado"
+              : "Sem líder definido",
+        },
+      ],
+      metadata: {
+        leaderId:
+          department.leaderId ?? "",
+      },
+      activity: activityAiContext,
+    })
+
+  void executiveAiContext
 
   return (
     <div className="space-y-8">
@@ -131,14 +288,30 @@ export default async function DepartmentDetailsPage({
       />
 
       <DashboardSection
-        title="Visão geral"
-        description="Informações principais e situação atual do departamento."
+        title="Resumo do departamento"
+        description="Visão executiva da estrutura e dos vínculos deste departamento."
       >
         <DashboardCard>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <InfoCard
-              label="Nome"
-              value={department.name}
+              label="Times"
+              value={String(
+                departmentTeams.length
+              )}
+            />
+
+            <InfoCard
+              label="Cargos"
+              value={String(
+                departmentPositions.length
+              )}
+            />
+
+            <InfoCard
+              label="Colaboradores"
+              value={String(
+                departmentEmployees.length
+              )}
             />
 
             <InfoCard
@@ -149,31 +322,33 @@ export default async function DepartmentDetailsPage({
                   : "Sem líder definido"
               }
             />
-
-            <InfoCard
-              label="Situação"
-              value={
-                department.archivedAt
-                  ? "Arquivado"
-                  : "Ativo"
-              }
-            />
-
-            <InfoCard
-              label="Criado em"
-              value={formatDate(
-                department.createdAt
-              )}
-            />
-
-            <InfoCard
-              label="Última atualização"
-              value={formatDate(
-                department.updatedAt
-              )}
-            />
           </div>
         </DashboardCard>
+      </DashboardSection>
+
+      <DashboardSection
+        title="Gerenciar"
+        description="Acesse as áreas relacionadas à operação deste departamento."
+      >
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <ManagementCard
+            title="Times"
+            description="Gerencie as equipes que executam o trabalho dentro da estrutura organizacional."
+            href="/app/company/teams"
+          />
+
+          <ManagementCard
+            title="Cargos"
+            description="Gerencie as funções, responsabilidades e posições existentes na empresa."
+            href="/app/company/positions"
+          />
+
+          <ManagementCard
+            title="Pessoas"
+            description="Gerencie os colaboradores e seus respectivos vínculos organizacionais."
+            href="/app/people"
+          />
+        </div>
       </DashboardSection>
 
       <DashboardSection

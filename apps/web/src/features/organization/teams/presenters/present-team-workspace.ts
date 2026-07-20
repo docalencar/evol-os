@@ -20,6 +20,8 @@ type PresentTeamWorkspaceInput = {
   teamId: string
   leaderId: string | null
   childTeamsCount: number
+  departmentName: string | null
+  parentTeamName: string | null
   employees: TeamWorkspaceEmployeeInput[]
   visibleMembersLimit?: number
 }
@@ -61,6 +63,8 @@ export function presentTeamWorkspace({
   teamId,
   leaderId,
   childTeamsCount,
+  departmentName,
+  parentTeamName,
   employees,
   visibleMembersLimit = 6,
 }: PresentTeamWorkspaceInput): TeamWorkspaceViewModel {
@@ -149,6 +153,15 @@ export function presentTeamWorkspace({
             : "Times subordinados",
       },
     ],
+
+    context: {
+      departmentLabel:
+        departmentName ??
+        "Sem departamento vinculado",
+      parentTeamLabel:
+        parentTeamName ??
+        "Sem time superior",
+    },
 
     members,
     visibleMembers,

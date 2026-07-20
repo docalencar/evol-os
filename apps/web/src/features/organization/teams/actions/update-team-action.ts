@@ -44,6 +44,8 @@ export async function updateTeamAction(
       name: parsedInput.data.name,
       description:
         parsedInput.data.description || null,
+      departmentId:
+        parsedInput.data.departmentId || null,
       parentTeamId:
         parsedInput.data.parentTeamId || null,
       leaderId:
@@ -76,6 +78,10 @@ export async function updateTeamAction(
           parsedInput.data.name,
         previousTeamName:
           currentTeam?.name ?? null,
+        departmentId:
+          parsedInput.data.departmentId || null,
+        previousDepartmentId:
+          currentTeam?.department_id ?? null,
         parentTeamId:
           parsedInput.data.parentTeamId || null,
         previousParentTeamId:
@@ -95,6 +101,30 @@ export async function updateTeamAction(
 
   revalidatePath("/app/company")
   revalidatePath("/app/company/teams")
+  revalidatePath("/app/company/departments")
+
+  const affectedDepartmentIds =
+    new Set(
+      [
+        currentTeam?.department_id,
+        parsedInput.data.departmentId,
+      ].filter(
+        (
+          departmentId
+        ): departmentId is string =>
+          Boolean(departmentId)
+      )
+    )
+
+  for (
+    const departmentId
+    of affectedDepartmentIds
+  ) {
+    revalidatePath(
+      `/app/company/departments/${departmentId}`
+    )
+  }
+
   revalidatePath(
     `/app/company/teams/${teamId}`
   )

@@ -2,9 +2,12 @@ import { notFound } from "next/navigation"
 
 import {
   AssessmentExecutionWorkspace,
+  AssessmentFeedbackCard,
   getAssessmentAnswers,
+  getAssessmentFeedback,
   getAssessmentResponseWorkspace,
   getAssessmentTemplateById,
+  presentAssessmentFeedback,
   type AssessmentAnswer,
   type AssessmentQuestion,
   type AssessmentSection,
@@ -75,16 +78,38 @@ export default async function AssessmentResponsePage({
       ])
     )
 
+    const showFeedback =
+      workspace.response.status === "submitted" ||
+      workspace.response.status === "completed"
+
+    const feedback = showFeedback
+      ? presentAssessmentFeedback(
+          getAssessmentFeedback(
+            sections,
+            questions,
+            answers
+          )
+        )
+      : null
+
     return (
-      <AssessmentExecutionWorkspace
-        companyId={companyId}
-        assessmentResponseId={workspace.response.id}
-        responseStatus={workspace.response.status}
-        template={template}
-        sections={sections}
-        questionsBySection={questionsBySection}
-        answers={answers}
-      />
+      <div className="space-y-8">
+        {feedback ? (
+          <AssessmentFeedbackCard
+            feedback={feedback}
+          />
+        ) : null}
+
+        <AssessmentExecutionWorkspace
+          companyId={companyId}
+          assessmentResponseId={workspace.response.id}
+          responseStatus={workspace.response.status}
+          template={template}
+          sections={sections}
+          questionsBySection={questionsBySection}
+          answers={answers}
+        />
+      </div>
     )
   } catch {
     notFound()

@@ -68,3 +68,37 @@ export type {
   ActivityTimelineItemViewModel,
   ActivityTimelineViewModel,
 } from "./view-models/activity-timeline-item-view-model"
+
+export type {
+  ActivityInsightKind,
+  ActivityIntelligenceCategory,
+  ActivityIntelligenceInsight,
+  ActivityIntelligencePriority,
+  ActivityIntelligenceSummary,
+  ActivityIntelligenceViewModel,
+  ActivityRecommendedAction,
+  ActivityRecommendedActionType,
+} from "./intelligence"
+
+export {
+  presentActivityIntelligence,
+} from "./intelligence"
+
+export type {
+  PresentActivityIntelligenceInput,
+} from "./intelligence"
+
+export {
+  ActivityIntelligenceCard,
+} from "./intelligence"
+
+export {
+  createActivityIntelligenceAIContext,
+} from "./intelligence"
+
+export type {
+  ActivityIntelligenceAIActionContext,
+  ActivityIntelligenceAIContext,
+  ActivityIntelligenceAIInsightContext,
+  CreateActivityIntelligenceAIContextInput,
+} from "./intelligence"

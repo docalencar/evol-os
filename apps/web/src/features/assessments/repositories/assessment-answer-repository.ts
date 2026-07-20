@@ -26,6 +26,30 @@ export async function createAssessmentAnswerRepository() {
         .order("created_at", { ascending: true })
     },
 
+    findAllByResponses(
+      companyId: string,
+      assessmentResponseIds: string[]
+    ) {
+      if (assessmentResponseIds.length === 0) {
+        return Promise.resolve({
+          data: [],
+          error: null,
+        })
+      }
+
+      return supabase
+        .from("assessment_answers")
+        .select("*")
+        .eq("company_id", companyId)
+        .in(
+          "assessment_response_id",
+          assessmentResponseIds
+        )
+        .order("created_at", {
+          ascending: true,
+        })
+    },
+
     save(data: SaveAssessmentAnswerData) {
       return supabase
         .from("assessment_answers")
@@ -37,10 +61,13 @@ export async function createAssessmentAnswerRepository() {
             assessment_question_id:
               data.assessmentQuestionId,
             answer_text: data.answerText ?? null,
-            answer_number: data.answerNumber ?? null,
-            answer_boolean: data.answerBoolean ?? null,
+            answer_number:
+              data.answerNumber ?? null,
+            answer_boolean:
+              data.answerBoolean ?? null,
             score: data.score ?? null,
-            updated_at: new Date().toISOString(),
+            updated_at:
+              new Date().toISOString(),
           },
           {
             onConflict:

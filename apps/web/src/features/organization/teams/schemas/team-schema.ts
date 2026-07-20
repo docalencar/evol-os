@@ -14,6 +14,7 @@ export const createTeamSchema = z.object({
     .nullable()
     .optional(),
 
+  departmentId: z.string().uuid().nullable().optional(),
   parentTeamId: z.string().uuid("Time pai inválido.").nullable().optional(),
 
   leaderId: z.string().uuid("Líder inválido.").nullable().optional(),

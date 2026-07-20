@@ -4,6 +4,7 @@ type CreateTeamData = {
   companyId: string
   name: string
   description?: string | null
+  departmentId?: string | null
   parentTeamId?: string | null
   leaderId?: string | null
 }
@@ -13,6 +14,7 @@ type UpdateTeamData = {
   teamId: string
   name: string
   description?: string | null
+  departmentId?: string | null
   parentTeamId?: string | null
   leaderId?: string | null
 }
@@ -47,6 +49,7 @@ export async function createTeamRepository() {
           company_id: data.companyId,
           name: data.name,
           description: data.description ?? null,
+          department_id: data.departmentId ?? null,
           parent_team_id: data.parentTeamId ?? null,
           manager_id: data.leaderId ?? null,
         })
@@ -60,6 +63,7 @@ export async function createTeamRepository() {
         .update({
           name: data.name,
           description: data.description ?? null,
+          department_id: data.departmentId ?? null,
           parent_team_id: data.parentTeamId ?? null,
           manager_id: data.leaderId ?? null,
           updated_at: new Date().toISOString(),

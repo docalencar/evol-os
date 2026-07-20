@@ -19,8 +19,14 @@ export type TeamWorkspaceMetricViewModel = {
   description: string
 }
 
+export type TeamWorkspaceContextViewModel = {
+  departmentLabel: string
+  parentTeamLabel: string
+}
+
 export type TeamWorkspaceViewModel = {
   metrics: TeamWorkspaceMetricViewModel[]
+  context: TeamWorkspaceContextViewModel
   members: TeamWorkspaceMemberViewModel[]
   visibleMembers: TeamWorkspaceMemberViewModel[]
   totalMembers: number

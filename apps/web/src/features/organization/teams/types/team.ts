@@ -7,6 +7,7 @@ export interface Team {
   name: string
   description: string | null
 
+  departmentId: string | null
   parentTeamId: string | null
   leaderId: string | null
 

@@ -1,11 +1,21 @@
 "use client"
 
-import { useTransition } from "react"
+import {
+  useRef,
+  useState,
+  useTransition,
+} from "react"
 import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import {
+  ProductWizard,
+  ProductWizardActions,
+  ProductWizardFooter,
+  ProductWizardProgress,
+  ProductWizardStep,
+  useProductWizard,
+  type ProductWizardStepDefinition,
+} from "@/components/product"
 
 import { createAssessmentCycleAction } from "../../actions/create-assessment-cycle-action"
 import { updateAssessmentCycleAction } from "../../actions/update-assessment-cycle-action"
@@ -13,29 +23,203 @@ import {
   assessmentCycleStatusOptions,
   assessmentCycleTypeOptions,
 } from "../../constants/assessment-cycle-options"
-import type { AssessmentCycle } from "../../types/assessment-cycle"
+import type {
+  AssessmentCycle,
+  AssessmentCycleStatus,
+  AssessmentCycleType,
+} from "../../types/assessment-cycle"
 import type { AssessmentTemplate } from "../../types/assessment-template"
+import {
+  AssessmentInformationStep,
+  AssessmentInformationSummary,
+} from "./steps/assessment-information-step"
+import {
+  AssessmentParticipantsStep,
+  AssessmentParticipantsSummary,
+  getAssessmentParticipantLabels,
+} from "./steps/assessment-participants-step"
+import {
+  AssessmentPrivacyStep,
+  AssessmentPrivacySummary,
+} from "./steps/assessment-privacy-step"
+import { AssessmentReviewStep } from "./steps/assessment-review-step"
+import {
+  AssessmentScheduleStep,
+  AssessmentScheduleSummary,
+  formatAssessmentDate,
+} from "./steps/assessment-schedule-step"
 
 type AssessmentCycleFormProps = {
   companyId: string
   templates: AssessmentTemplate[]
   cycle?: AssessmentCycle
   onSuccess?: () => void
+  onCancel?: () => void
 }
 
-const selectClassName =
-  "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-
-const textareaClassName =
-  "flex min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+const wizardSteps: ProductWizardStepDefinition[] = [
+  {
+    id: "information",
+    title: "Informações",
+    description:
+      "Identifique a avaliação e escolha o modelo utilizado.",
+  },
+  {
+    id: "schedule",
+    title: "Cronograma",
+    description:
+      "Defina o período de respostas e o encerramento.",
+  },
+  {
+    id: "participants",
+    title: "Participantes",
+    description:
+      "Escolha quem poderá participar da avaliação.",
+  },
+  {
+    id: "privacy",
+    title: "Privacidade",
+    description:
+      "Defina como a identidade será tratada.",
+  },
+  {
+    id: "review",
+    title: "Revisão",
+    description:
+      "Confira as configurações antes de concluir.",
+  },
+]
 
 export function AssessmentCycleForm({
   companyId,
   templates,
   cycle,
   onSuccess,
+  onCancel,
 }: AssessmentCycleFormProps) {
-  const [isPending, startTransition] = useTransition()
+  const formRef = useRef<HTMLFormElement>(null)
+  const [isPending, startTransition] =
+    useTransition()
+
+  const [name, setName] = useState(
+    cycle?.name ?? ""
+  )
+  const [description, setDescription] =
+    useState(cycle?.description ?? "")
+  const [
+    assessmentTemplateId,
+    setAssessmentTemplateId,
+  ] = useState(
+    cycle?.assessment_template_id ?? ""
+  )
+  const [assessmentType, setAssessmentType] =
+    useState<AssessmentCycleType>(
+      cycle?.assessment_type ?? "performance"
+    )
+  const [status, setStatus] =
+    useState<AssessmentCycleStatus>(
+      cycle?.status ?? "draft"
+    )
+
+  const [startDate, setStartDate] =
+    useState(cycle?.start_date ?? "")
+  const [endDate, setEndDate] =
+    useState(cycle?.end_date ?? "")
+  const [closeDate, setCloseDate] =
+    useState(cycle?.close_date ?? "")
+
+  const [
+    allowSelfAssessment,
+    setAllowSelfAssessment,
+  ] = useState(
+    cycle?.allow_self_assessment ?? true
+  )
+  const [
+    allowManagerAssessment,
+    setAllowManagerAssessment,
+  ] = useState(
+    cycle?.allow_manager_assessment ?? true
+  )
+  const [
+    allowPeerAssessment,
+    setAllowPeerAssessment,
+  ] = useState(
+    cycle?.allow_peer_assessment ?? false
+  )
+  const [
+    allowDirectReportAssessment,
+    setAllowDirectReportAssessment,
+  ] = useState(
+    cycle?.allow_direct_report_assessment ??
+      false
+  )
+  const [anonymous, setAnonymous] =
+    useState(cycle?.anonymous ?? false)
+
+  const activeTemplates = templates.filter(
+    (template) =>
+      template.active &&
+      template.status === "active"
+  )
+
+  const selectedTemplate =
+    activeTemplates.find(
+      (template) =>
+        template.id === assessmentTemplateId
+    )
+
+  const participantLabels =
+    getAssessmentParticipantLabels({
+      allowSelfAssessment,
+      allowManagerAssessment,
+      allowPeerAssessment,
+      allowDirectReportAssessment,
+    })
+
+  const assessmentTypeLabel =
+    assessmentCycleTypeOptions.find(
+      (option) =>
+        option.value === assessmentType
+    )?.label ?? assessmentType
+
+  const statusLabel =
+    assessmentCycleStatusOptions.find(
+      (option) => option.value === status
+    )?.label ?? status
+
+  function handleStartDateChange(
+    value: string
+  ) {
+    setStartDate(value)
+
+    if (endDate && value && endDate < value) {
+      setEndDate("")
+      setCloseDate("")
+      return
+    }
+
+    if (
+      closeDate &&
+      value &&
+      closeDate < value
+    ) {
+      setCloseDate("")
+    }
+  }
+
+  function handleEndDateChange(
+    value: string
+  ) {
+    setEndDate(value)
+
+    if (
+      closeDate &&
+      value &&
+      closeDate < value
+    ) {
+      setCloseDate("")
+    }
+  }
 
   function handleSubmit(formData: FormData) {
     startTransition(async () => {
@@ -45,7 +229,10 @@ export function AssessmentCycleForm({
             cycle.id,
             formData
           )
-        : await createAssessmentCycleAction(companyId, formData)
+        : await createAssessmentCycleAction(
+            companyId,
+            formData
+          )
 
       if (!result.success) {
         toast.error(result.message)
@@ -58,233 +245,364 @@ export function AssessmentCycleForm({
   }
 
   return (
-    <form action={handleSubmit} className="space-y-6">
-      <div className="space-y-2">
-        <Label htmlFor="name">Nome do ciclo</Label>
+    <form
+      ref={formRef}
+      action={handleSubmit}
+      className="min-h-0"
+    >
+      <input type="hidden" name="name" value={name} />
+      <input
+        type="hidden"
+        name="description"
+        value={description}
+      />
+      <input
+        type="hidden"
+        name="assessmentTemplateId"
+        value={assessmentTemplateId}
+      />
+      <input
+        type="hidden"
+        name="assessmentType"
+        value={assessmentType}
+      />
+      <input
+        type="hidden"
+        name="status"
+        value={status}
+      />
+      <input
+        type="hidden"
+        name="startDate"
+        value={startDate}
+      />
+      <input
+        type="hidden"
+        name="endDate"
+        value={endDate}
+      />
+      <input
+        type="hidden"
+        name="closeDate"
+        value={closeDate}
+      />
 
-        <Input
-          id="name"
-          name="name"
-          defaultValue={cycle?.name ?? ""}
-          placeholder="Ex.: Avaliação de Desempenho 2026"
-          minLength={2}
-          maxLength={120}
-          required
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="description">Descrição</Label>
-
-        <textarea
-          id="description"
-          name="description"
-          className={textareaClassName}
-          defaultValue={cycle?.description ?? ""}
-          placeholder="Descreva o objetivo deste ciclo."
-          maxLength={500}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="assessmentTemplateId">
-          Template da avaliação
-        </Label>
-
-        <select
-          id="assessmentTemplateId"
-          name="assessmentTemplateId"
-          className={selectClassName}
-          defaultValue={
-            cycle?.assessment_template_id ?? ""
-          }
-          required
-        >
-          <option value="" disabled>
-            Selecione um template
-          </option>
-
-          {templates
-            .filter(
-              (template) =>
-                template.active &&
-                template.status === "active"
-            )
-            .map((template) => (
-              <option
-                key={template.id}
-                value={template.id}
-              >
-                {template.name}
-              </option>
-            ))}
-        </select>
-
-        {templates.filter(
-          (template) =>
-            template.active &&
-            template.status === "active"
-        ).length === 0 ? (
-          <p className="text-sm text-amber-600">
-            Crie e ative um template antes de cadastrar o ciclo.
-          </p>
-        ) : null}
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="assessmentType">Tipo de avaliação</Label>
-
-          <select
-            id="assessmentType"
-            name="assessmentType"
-            className={selectClassName}
-            defaultValue={cycle?.assessment_type ?? "performance"}
-            required
-          >
-            {assessmentCycleTypeOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="status">Status</Label>
-
-          <select
-            id="status"
-            name="status"
-            className={selectClassName}
-            defaultValue={cycle?.status ?? "draft"}
-            required
-          >
-            {assessmentCycleStatusOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="space-y-2">
-          <Label htmlFor="startDate">Data de início</Label>
-
-          <Input
-            id="startDate"
-            name="startDate"
-            type="date"
-            defaultValue={cycle?.start_date ?? ""}
-            required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="endDate">Data de término</Label>
-
-          <Input
-            id="endDate"
-            name="endDate"
-            type="date"
-            defaultValue={cycle?.end_date ?? ""}
-            required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="closeDate">Encerramento</Label>
-
-          <Input
-            id="closeDate"
-            name="closeDate"
-            type="date"
-            defaultValue={cycle?.close_date ?? ""}
-          />
-        </div>
-      </div>
-
-      <fieldset className="space-y-3 rounded-md border p-4">
-        <legend className="px-1 text-sm font-medium">
-          Origens da avaliação
-        </legend>
-
-        <label className="flex items-center gap-3 text-sm">
-          <input
-            type="checkbox"
-            name="allowSelfAssessment"
-            defaultChecked={cycle?.allow_self_assessment ?? true}
-            className="h-4 w-4 rounded border-input"
-          />
-          Autoavaliação
-        </label>
-
-        <label className="flex items-center gap-3 text-sm">
-          <input
-            type="checkbox"
-            name="allowManagerAssessment"
-            defaultChecked={
-              cycle?.allow_manager_assessment ?? true
-            }
-            className="h-4 w-4 rounded border-input"
-          />
-          Avaliação pelo gestor
-        </label>
-
-        <label className="flex items-center gap-3 text-sm">
-          <input
-            type="checkbox"
-            name="allowPeerAssessment"
-            defaultChecked={cycle?.allow_peer_assessment ?? false}
-            className="h-4 w-4 rounded border-input"
-          />
-          Avaliação por pares
-        </label>
-
-        <label className="flex items-center gap-3 text-sm">
-          <input
-            type="checkbox"
-            name="allowDirectReportAssessment"
-            defaultChecked={
-              cycle?.allow_direct_report_assessment ?? false
-            }
-            className="h-4 w-4 rounded border-input"
-          />
-          Avaliação por liderados
-        </label>
-      </fieldset>
-
-      <label className="flex items-start gap-3 rounded-md border p-4">
+      {allowSelfAssessment ? (
         <input
-          type="checkbox"
-          name="anonymous"
-          defaultChecked={cycle?.anonymous ?? false}
-          className="mt-0.5 h-4 w-4 rounded border-input"
+          type="hidden"
+          name="allowSelfAssessment"
+          value="on"
         />
+      ) : null}
 
-        <span className="space-y-1">
-          <span className="block text-sm font-medium">
-            Respostas anônimas
-          </span>
+      {allowManagerAssessment ? (
+        <input
+          type="hidden"
+          name="allowManagerAssessment"
+          value="on"
+        />
+      ) : null}
 
-          <span className="block text-sm text-muted-foreground">
-            A identidade dos avaliadores poderá ser protegida na
-            apresentação dos resultados.
-          </span>
-        </span>
-      </label>
+      {allowPeerAssessment ? (
+        <input
+          type="hidden"
+          name="allowPeerAssessment"
+          value="on"
+        />
+      ) : null}
 
-      <div className="flex justify-end">
-        <Button type="submit" disabled={isPending}>
-          {isPending
-            ? "Salvando..."
-            : cycle
-              ? "Salvar alterações"
-              : "Criar ciclo"}
-        </Button>
-      </div>
+      {allowDirectReportAssessment ? (
+        <input
+          type="hidden"
+          name="allowDirectReportAssessment"
+          value="on"
+        />
+      ) : null}
+
+      {anonymous ? (
+        <input
+          type="hidden"
+          name="anonymous"
+          value="on"
+        />
+      ) : null}
+
+      <ProductWizard
+        steps={wizardSteps}
+        onComplete={() =>
+          formRef.current?.requestSubmit()
+        }
+      >
+        <div className="shrink-0 pb-4">
+          <ProductWizardProgress />
+        </div>
+
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
+          <ProductWizardStep
+            id="information"
+            title="Informações"
+            description="Identifique a avaliação e escolha o modelo utilizado."
+            summary={
+              <AssessmentInformationSummary
+                name={name}
+                templateName={selectedTemplate?.name}
+              />
+            }
+          >
+            <AssessmentInformationStep
+              templates={templates}
+              name={name}
+              description={description}
+              assessmentTemplateId={
+                assessmentTemplateId
+              }
+              assessmentType={assessmentType}
+              status={status}
+              onNameChange={setName}
+              onDescriptionChange={
+                setDescription
+              }
+              onAssessmentTemplateIdChange={
+                setAssessmentTemplateId
+              }
+              onAssessmentTypeChange={
+                setAssessmentType
+              }
+              onStatusChange={setStatus}
+            />
+          </ProductWizardStep>
+
+          <ProductWizardStep
+            id="schedule"
+            title="Cronograma"
+            description="Defina o período de respostas e o fechamento."
+            summary={
+              <AssessmentScheduleSummary
+                startDate={startDate}
+                endDate={endDate}
+                closeDate={closeDate}
+              />
+            }
+          >
+            <AssessmentScheduleStep
+              startDate={startDate}
+              endDate={endDate}
+              closeDate={closeDate}
+              onStartDateChange={
+                handleStartDateChange
+              }
+              onEndDateChange={
+                handleEndDateChange
+              }
+              onCloseDateChange={setCloseDate}
+            />
+          </ProductWizardStep>
+
+          <ProductWizardStep
+            id="participants"
+            title="Participantes"
+            description="Escolha quem poderá avaliar."
+            summary={
+              <AssessmentParticipantsSummary
+                labels={participantLabels}
+              />
+            }
+          >
+            <AssessmentParticipantsStep
+              allowSelfAssessment={
+                allowSelfAssessment
+              }
+              allowManagerAssessment={
+                allowManagerAssessment
+              }
+              allowPeerAssessment={
+                allowPeerAssessment
+              }
+              allowDirectReportAssessment={
+                allowDirectReportAssessment
+              }
+              onAllowSelfAssessmentChange={
+                setAllowSelfAssessment
+              }
+              onAllowManagerAssessmentChange={
+                setAllowManagerAssessment
+              }
+              onAllowPeerAssessmentChange={
+                setAllowPeerAssessment
+              }
+              onAllowDirectReportAssessmentChange={
+                setAllowDirectReportAssessment
+              }
+            />
+          </ProductWizardStep>
+
+          <ProductWizardStep
+            id="privacy"
+            title="Privacidade"
+            description="Defina como a identidade será tratada."
+            summary={
+              <AssessmentPrivacySummary
+                anonymous={anonymous}
+              />
+            }
+          >
+            <AssessmentPrivacyStep
+              anonymous={anonymous}
+              onAnonymousChange={setAnonymous}
+            />
+          </ProductWizardStep>
+
+          <ProductWizardStep
+            id="review"
+            title="Revisão"
+            description="Confira tudo antes de salvar."
+            summary="Configuração pronta para conclusão"
+          >
+            <AssessmentReviewStep
+              name={name}
+              templateName={
+                selectedTemplate?.name
+              }
+              assessmentTypeLabel={
+                assessmentTypeLabel
+              }
+              statusLabel={statusLabel}
+              startDateLabel={
+                formatAssessmentDate(startDate)
+              }
+              endDateLabel={
+                formatAssessmentDate(endDate)
+              }
+              closeDateLabel={
+                formatAssessmentDate(closeDate)
+              }
+              participantLabels={
+                participantLabels
+              }
+              anonymous={anonymous}
+            />
+          </ProductWizardStep>
+        </div>
+
+        <AssessmentCycleWizardFooter
+          isPending={isPending}
+          isEditing={Boolean(cycle)}
+          hasActiveTemplates={
+            activeTemplates.length > 0
+          }
+          name={name}
+          assessmentTemplateId={
+            assessmentTemplateId
+          }
+          startDate={startDate}
+          endDate={endDate}
+          participantCount={
+            participantLabels.length
+          }
+          onCancel={onCancel}
+        />
+      </ProductWizard>
     </form>
+  )
+}
+
+type AssessmentCycleWizardFooterProps = {
+  isPending: boolean
+  isEditing: boolean
+  hasActiveTemplates: boolean
+  name: string
+  assessmentTemplateId: string
+  startDate: string
+  endDate: string
+  participantCount: number
+  onCancel?: () => void
+}
+
+function AssessmentCycleWizardFooter({
+  isPending,
+  isEditing,
+  hasActiveTemplates,
+  name,
+  assessmentTemplateId,
+  startDate,
+  endDate,
+  participantCount,
+  onCancel,
+}: AssessmentCycleWizardFooterProps) {
+  const { currentStepId } =
+    useProductWizard()
+
+  function validateCurrentStep() {
+    if (currentStepId === "information") {
+      if (name.trim().length < 2) {
+        toast.error(
+          "Informe um nome com pelo menos 2 caracteres."
+        )
+        return false
+      }
+
+      if (!assessmentTemplateId) {
+        toast.error(
+          "Selecione um modelo de avaliação."
+        )
+        return false
+      }
+    }
+
+    if (currentStepId === "schedule") {
+      if (!startDate) {
+        toast.error(
+          "Informe quando as respostas começam."
+        )
+        return false
+      }
+
+      if (!endDate) {
+        toast.error(
+          "Informe o prazo para responder."
+        )
+        return false
+      }
+
+      if (endDate < startDate) {
+        toast.error(
+          "O prazo deve ser igual ou posterior ao início."
+        )
+        return false
+      }
+    }
+
+    if (
+      currentStepId === "participants" &&
+      participantCount === 0
+    ) {
+      toast.error(
+        "Selecione pelo menos uma origem de avaliação."
+      )
+      return false
+    }
+
+    return true
+  }
+
+  return (
+    <ProductWizardFooter>
+      <ProductWizardActions
+        onCancel={onCancel}
+        onBeforeNext={
+          validateCurrentStep
+        }
+        onBeforeComplete={
+          validateCurrentStep
+        }
+        completeLabel={
+          isEditing
+            ? "Salvar alterações"
+            : "Criar ciclo"
+        }
+        disabled={!hasActiveTemplates}
+        isPending={isPending}
+      />
+    </ProductWizardFooter>
   )
 }

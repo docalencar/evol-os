@@ -13,6 +13,10 @@ import {
 } from "@/components/shared/page-header"
 
 import {
+  getDepartmentById,
+} from "@/features/organization/departments"
+
+import {
   getTeamById,
   getTeams,
   presentTeamDetails,
@@ -26,10 +30,17 @@ import {
 } from "@/features/people"
 
 import {
+  ActivityIntelligenceCard,
   EntityTimelineSection,
+  createActivityIntelligenceAIContext,
   getEntityTimeline,
+  presentActivityIntelligence,
   type ActivityTimelineItemViewModel,
 } from "@/features/timeline"
+
+import {
+  createExecutiveAiContext,
+} from "@/features/copilot/context"
 
 import {
   getCurrentCompanyContext,
@@ -127,6 +138,23 @@ export default async function TeamDetailsPage({
     redirect("/app/company/teams")
   }
 
+  const department =
+    team.department_id
+      ? await getDepartmentById(
+          companyId,
+          team.department_id
+        )
+      : null
+
+  const parentTeam =
+    team.parent_team_id
+      ? (teams ?? []).find(
+          (candidateTeam) =>
+            candidateTeam.id ===
+            team.parent_team_id
+        ) ?? null
+      : null
+
   const details =
     presentTeamDetails(team)
 
@@ -141,8 +169,49 @@ export default async function TeamDetailsPage({
             candidateTeam.parent_team_id ===
             teamId
         ).length,
+      departmentName:
+        department?.name ?? null,
+      parentTeamName:
+        parentTeam?.name ?? null,
       employees: employees ?? [],
     })
+
+
+  const activityIntelligence =
+    presentActivityIntelligence({
+      activities:
+        teamTimeline.items,
+    })
+
+  const activityAiContext =
+    createActivityIntelligenceAIContext({
+      intelligence:
+        activityIntelligence,
+    })
+
+  const executiveAiContext =
+    createExecutiveAiContext({
+      entityType: "team",
+      entityId: team.id,
+      companyId,
+      title: team.name,
+      metrics: workspace.metrics.map(
+        (metric) => ({
+          id: metric.id,
+          label: metric.label,
+          value: String(metric.value),
+        })
+      ),
+      metadata: {
+        departmentId:
+          team.department_id ?? "",
+        parentTeamId:
+          team.parent_team_id ?? "",
+      },
+      activity: activityAiContext,
+    })
+
+  void executiveAiContext
 
   return (
     <div className="space-y-8">
@@ -213,6 +282,13 @@ export default async function TeamDetailsPage({
           </div>
         </DashboardCard>
       </DashboardSection>
+
+
+      <ActivityIntelligenceCard
+        intelligence={
+          activityIntelligence
+        }
+      />
 
       <DashboardSection
         title="Histórico do time"

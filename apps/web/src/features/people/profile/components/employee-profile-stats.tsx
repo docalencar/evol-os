@@ -5,76 +5,56 @@ import {
   Users,
 } from "lucide-react"
 
-import { StatCard } from "@/components/dashboard"
+import {
+  StatCard,
+} from "@/components/dashboard"
+
+import type {
+  EmployeeWorkspaceMetricViewModel,
+} from "../view-models/employee-workspace-view-model"
 
 type EmployeeProfileStatsProps = {
-  hireDate?: string | null
-  teamName: string
-  positionName: string
+  metrics: EmployeeWorkspaceMetricViewModel[]
 }
 
-function getYearsInCompany(date?: string | null) {
-  if (!date) return "-"
+function getMetricIcon(
+  metricId: EmployeeWorkspaceMetricViewModel["id"]
+) {
+  switch (metricId) {
+    case "company-tenure":
+      return <Building2 size={20} />
 
-  const hireDate = new Date(date)
-  const today = new Date()
+    case "position":
+      return <BriefcaseBusiness size={20} />
 
-  let years = today.getFullYear() - hireDate.getFullYear()
+    case "team":
+      return <Users size={20} />
 
-  const monthDiff = today.getMonth() - hireDate.getMonth()
-
-  if (
-    monthDiff < 0 ||
-    (monthDiff === 0 && today.getDate() < hireDate.getDate())
-  ) {
-    years--
+    case "hire-date":
+      return <CalendarDays size={20} />
   }
-
-  return years <= 0 ? "< 1 ano" : `${years} ano${years > 1 ? "s" : ""}`
-}
-
-function formatDate(date?: string | null) {
-  if (!date) return "-"
-
-  return new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "short",
-  }).format(new Date(date))
 }
 
 export function EmployeeProfileStats({
-  hireDate,
-  teamName,
-  positionName,
+  metrics,
 }: EmployeeProfileStatsProps) {
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      <StatCard
-        label="Tempo de empresa"
-        value={getYearsInCompany(hireDate)}
-        description="Vínculo"
-        icon={<Building2 size={20} />}
-      />
-
-      <StatCard
-        label="Cargo"
-        value={positionName}
-        description="Função atual"
-        icon={<BriefcaseBusiness size={20} />}
-      />
-
-      <StatCard
-        label="Time"
-        value={teamName}
-        description="Equipe"
-        icon={<Users size={20} />}
-      />
-
-      <StatCard
-        label="Admissão"
-        value={formatDate(hireDate)}
-        description="Data"
-        icon={<CalendarDays size={20} />}
-      />
+      {metrics.map((metric) => (
+        <StatCard
+          key={metric.id}
+          label={metric.label}
+          value={metric.value}
+          description={
+            metric.description
+          }
+          icon={
+            getMetricIcon(
+              metric.id
+            )
+          }
+        />
+      ))}
     </div>
   )
 }

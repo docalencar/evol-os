@@ -1,7 +1,7 @@
 import type { ExecutiveDashboardSummary } from "../types/executive-dashboard-summary"
 
-import { createExecutiveDashboardSummary } from "../services/create-executive-dashboard-summary"
 import { presentExecutiveDashboardSummary } from "../presenters/present-executive-dashboard-summary"
+import { createExecutiveDashboardSummary } from "../services/create-executive-dashboard-summary"
 
 type Input = {
   companyId: string
@@ -10,13 +10,9 @@ type Input = {
 export async function getExecutiveDashboardSummary(
   input: Input,
 ): Promise<ExecutiveDashboardSummary> {
-  // PR-084D em diante:
-  // Buscar dados reais dos módulos de Employees, Departments,
-  // Positions e Assessments e preencher o summary.
-  //
-  // O parâmetro é mantido desde já para estabilizar a API pública.
-
   void input
 
-  return presentExecutiveDashboardSummary(createExecutiveDashboardSummary())
+  return presentExecutiveDashboardSummary(
+    createExecutiveDashboardSummary(),
+  )
 }

@@ -2,6 +2,7 @@ import type { ExecutiveDashboardSummary } from "../types/executive-dashboard-sum
 
 import { getOrganizationSummary } from "@/features/organization"
 import { getPeopleSummary } from "@/features/people/dashboard/queries/get-people-summary"
+import { getAssessmentSummary } from "@/features/analytics"
 
 import { presentExecutiveDashboardSummary } from "../presenters/present-executive-dashboard-summary"
 
@@ -15,9 +16,11 @@ export async function getExecutiveDashboardSummary(
   const [
     people,
     organization,
+    assessments,
   ] = await Promise.all([
     getPeopleSummary(input.companyId),
     getOrganizationSummary(input.companyId),
+    getAssessmentSummary(input.companyId),
   ])
 
   return presentExecutiveDashboardSummary({
@@ -36,14 +39,14 @@ export async function getExecutiveDashboardSummary(
     },
 
     assessmentCycles: {
-      total: 0,
-      active: 0,
-      completed: 0,
+      total: assessments.cycles.total,
+      active: assessments.cycles.active,
+      completed: assessments.cycles.completed,
     },
 
     assessments: {
-      responses: 0,
-      averageScore: null,
+      responses: assessments.responses.completed,
+      averageScore: assessments.averageScore,
     },
   })
 }

@@ -8,3 +8,8 @@
 export {}
 
 export * from "./types/assessment-statistics"
+
+export * from "./services/calculate-average"
+export * from "./services/calculate-standard-deviation"
+export * from "./services/calculate-score-distribution"
+export * from "./services/calculate-assessment-statistics"

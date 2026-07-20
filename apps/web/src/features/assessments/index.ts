@@ -273,3 +273,5 @@ export { calculateStandardDeviation } from "./services/calculate-standard-deviat
 export { calculateScoreDistribution } from "./services/calculate-score-distribution"
 
 export { calculateAssessmentStatistics } from "./services/calculate-assessment-statistics"
+
+export { getAssessmentCycleStatistics } from "./queries/get-assessment-cycle-statistics"

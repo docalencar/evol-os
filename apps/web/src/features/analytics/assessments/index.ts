@@ -16,3 +16,5 @@ export * from "./services/calculate-assessment-statistics"
 
 export * from "./presenters/assessment-cycle-results-presenter"
 export * from "./presenters/present-assessment-statistics"
+
+export * from "./queries/get-assessment-cycle-statistics"

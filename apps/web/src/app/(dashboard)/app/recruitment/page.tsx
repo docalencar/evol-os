@@ -33,6 +33,8 @@ export default async function RecruitmentPage() {
 
       <RecruitmentWorkspaceToolbar
         departments={options.departments}
+        positions={options.positions}
+        employees={options.employees}
       />
 
       {jobOpenings.length === 0 ? (

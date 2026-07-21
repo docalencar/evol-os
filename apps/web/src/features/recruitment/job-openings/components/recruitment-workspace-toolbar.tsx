@@ -13,8 +13,15 @@ type RecruitmentDepartmentOption = {
   name: string
 }
 
+type RecruitmentEmployeeOption = {
+  id: string
+  fullName: string
+}
+
 type RecruitmentWorkspaceToolbarProps = {
   departments: RecruitmentDepartmentOption[]
+  positions: RecruitmentDepartmentOption[]
+  employees: RecruitmentEmployeeOption[]
 }
 
 const selectClassName = [
@@ -25,6 +32,8 @@ const selectClassName = [
 
 export function RecruitmentWorkspaceToolbar({
   departments,
+  positions,
+  employees,
 }: RecruitmentWorkspaceToolbarProps) {
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -92,7 +101,11 @@ export function RecruitmentWorkspaceToolbar({
         </div>
 
         <div className="w-full xl:w-auto">
-          <JobOpeningCreateWizard />
+          <JobOpeningCreateWizard
+            departments={departments}
+            positions={positions}
+            employees={employees}
+          />
         </div>
       </div>
     </section>

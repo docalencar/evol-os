@@ -65,3 +65,7 @@ export {
   createJobOpeningAction,
   updateJobOpeningAction,
 } from "./actions"
+
+export {
+  JobOpeningTable,
+} from "./components/job-opening-table"

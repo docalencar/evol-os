@@ -1,8 +1,21 @@
 import { StatCard } from "@/components/dashboard/stat-card"
 import { EmptyState } from "@/components/empty-state/empty-state"
 import { PageHeader } from "@/components/shared/page-header"
+import {
+  getJobOpeningFormOptions,
+  getJobOpenings,
+  JobOpeningTable,
+} from "@/features/recruitment"
+import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
-export default function RecruitmentPage() {
+export default async function RecruitmentPage() {
+  const { companyId } = await getCurrentCompanyContext()
+
+  const [jobOpenings, options] = await Promise.all([
+    getJobOpenings(companyId),
+    getJobOpeningFormOptions(companyId),
+  ])
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -17,11 +30,20 @@ export default function RecruitmentPage() {
         <StatCard label="Contratações" value={0} />
       </div>
 
-      <EmptyState
-        title="Nenhuma vaga cadastrada."
-        description="Crie sua primeira vaga para iniciar o recrutamento."
-        actionLabel="Nova vaga"
-      />
+      {jobOpenings.length === 0 ? (
+        <EmptyState
+          title="Nenhuma vaga cadastrada."
+          description="Crie sua primeira vaga para iniciar o recrutamento."
+          actionLabel="Nova vaga"
+        />
+      ) : (
+        <JobOpeningTable
+          jobOpenings={jobOpenings}
+          positions={options.positions}
+          departments={options.departments}
+          employees={options.employees}
+        />
+      )}
     </div>
   )
 }

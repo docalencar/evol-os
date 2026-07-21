@@ -19,6 +19,7 @@ export {
   getJobOpeningById,
   getJobOpeningFormOptions,
   getJobOpenings,
+  JobOpeningTable,
   jobOpeningIdSchema,
   updateJobOpening,
   updateJobOpeningAction,

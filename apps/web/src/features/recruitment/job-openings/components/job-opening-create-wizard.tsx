@@ -9,6 +9,7 @@ import {
   ProductWizardProgress,
   ProductWizardStep,
   ProductWizardSummary,
+  useProductWizard,
   type ProductWizardStepDefinition,
 } from "@/components/product/wizard"
 import { EntityDialog } from "@/components/shared/entity-dialog"
@@ -26,6 +27,9 @@ import type {
   JobOpeningPriority,
   JobOpeningReason,
 } from "../types/job-opening"
+import {
+  jobOpeningWizardSchema,
+} from "../schemas"
 
 type JobOpeningWizardOption = {
   id: string
@@ -58,6 +62,10 @@ type JobOpeningWizardValues = {
   targetHireDate: JobOpening["targetHireDate"]
   notes: JobOpening["notes"]
 }
+
+type JobOpeningWizardErrors = Partial<
+  Record<keyof JobOpeningWizardValues, string>
+>
 
 const INITIAL_VALUES: JobOpeningWizardValues = {
   openingReason: null,
@@ -158,6 +166,8 @@ export function JobOpeningCreateWizard({
   const [values, setValues] =
     useState<JobOpeningWizardValues>(INITIAL_VALUES)
 
+  const errors = getWizardErrors(values)
+
   function updateValue<Key extends keyof JobOpeningWizardValues>(
     key: Key,
     value: JobOpeningWizardValues[Key]
@@ -243,6 +253,7 @@ export function JobOpeningCreateWizard({
           >
             <ReasonStep
               value={values.openingReason}
+              error={errors.openingReason}
               onChange={(value) =>
                 updateValue("openingReason", value)
               }
@@ -266,6 +277,7 @@ export function JobOpeningCreateWizard({
               positions={positions}
               employees={employees}
               values={values}
+              errors={errors}
               onChange={updateValue}
             />
           </ProductWizardStep>
@@ -283,6 +295,7 @@ export function JobOpeningCreateWizard({
             <OwnersStep
               employees={employees}
               values={values}
+              errors={errors}
               onChange={updateValue}
             />
           </ProductWizardStep>
@@ -301,6 +314,7 @@ export function JobOpeningCreateWizard({
           >
             <DetailsStep
               values={values}
+              errors={errors}
               onChange={updateValue}
             />
           </ProductWizardStep>
@@ -322,13 +336,10 @@ export function JobOpeningCreateWizard({
           </ProductWizardStep>
         </div>
 
-        <ProductWizardFooter>
-          <ProductWizardActions
-            onCancel={() => handleOpenChange(false)}
-            nextLabel="Próximo"
-            completeLabel="Próximo"
-          />
-        </ProductWizardFooter>
+        <JobOpeningWizardFooter
+          errors={errors}
+          onCancel={() => handleOpenChange(false)}
+        />
       </ProductWizard>
     </EntityDialog>
   )
@@ -343,13 +354,18 @@ type WizardChangeHandler = <
 
 function ReasonStep({
   value,
+  error,
   onChange,
 }: {
   value: JobOpeningWizardValues["openingReason"]
+  error?: string
   onChange: (value: JobOpeningReason) => void
 }) {
   return (
-    <fieldset className="space-y-3">
+    <fieldset
+      className="space-y-3"
+      aria-invalid={Boolean(error)}
+    >
       <legend className="sr-only">
         Por que esta vaga está sendo aberta?
       </legend>
@@ -379,6 +395,8 @@ function ReasonStep({
           </span>
         </label>
       ))}
+
+      <FieldError message={error} />
     </fieldset>
   )
 }
@@ -388,12 +406,14 @@ function OrganizationStep({
   positions,
   employees,
   values,
+  errors,
   onChange,
 }: {
   departments: JobOpeningWizardOption[]
   positions: JobOpeningWizardOption[]
   employees: JobOpeningWizardEmployeeOption[]
   values: JobOpeningWizardValues
+  errors: JobOpeningWizardErrors
   onChange: WizardChangeHandler
 }) {
   return (
@@ -404,6 +424,7 @@ function OrganizationStep({
         value={values.departmentId}
         placeholder="Selecione um departamento"
         options={departments}
+        error={errors.departmentId}
         onChange={(value) =>
           onChange("departmentId", value || null)
         }
@@ -415,6 +436,7 @@ function OrganizationStep({
         value={values.positionId}
         placeholder="Selecione um cargo"
         options={positions}
+        error={errors.positionId}
         onChange={(value) =>
           onChange("positionId", value || null)
         }
@@ -426,6 +448,7 @@ function OrganizationStep({
         value={values.requestingManagerId}
         placeholder="Selecione um gestor"
         employees={employees}
+        error={errors.requestingManagerId}
         onChange={(value) =>
           onChange("requestingManagerId", value || null)
         }
@@ -437,10 +460,12 @@ function OrganizationStep({
 function OwnersStep({
   employees,
   values,
+  errors,
   onChange,
 }: {
   employees: JobOpeningWizardEmployeeOption[]
   values: JobOpeningWizardValues
+  errors: JobOpeningWizardErrors
   onChange: WizardChangeHandler
 }) {
   return (
@@ -451,6 +476,7 @@ function OwnersStep({
         value={values.recruiterId}
         placeholder="Selecione um recruiter"
         employees={employees}
+        error={errors.recruiterId}
         onChange={(value) =>
           onChange("recruiterId", value || null)
         }
@@ -462,6 +488,7 @@ function OwnersStep({
         value={values.approverId}
         placeholder="Selecione um aprovador"
         employees={employees}
+        error={errors.approverId}
         onChange={(value) =>
           onChange("approverId", value || null)
         }
@@ -478,9 +505,11 @@ function OwnersStep({
 
 function DetailsStep({
   values,
+  errors,
   onChange,
 }: {
   values: JobOpeningWizardValues
+  errors: JobOpeningWizardErrors
   onChange: WizardChangeHandler
 }) {
   return (
@@ -500,6 +529,7 @@ function DetailsStep({
             )
           }
           className={selectClassName}
+          aria-invalid={Boolean(errors.priority)}
         >
           <option value="">Selecione uma prioridade</option>
 
@@ -509,6 +539,8 @@ function DetailsStep({
             </option>
           ))}
         </select>
+
+        <FieldError message={errors.priority} />
       </div>
 
       <div className="space-y-2">
@@ -649,6 +681,7 @@ function WizardSelect({
   value,
   placeholder,
   options,
+  error,
   onChange,
 }: {
   id: string
@@ -656,6 +689,7 @@ function WizardSelect({
   value: string | null
   placeholder: string
   options: JobOpeningWizardOption[]
+  error?: string
   onChange: (value: string) => void
 }) {
   return (
@@ -667,6 +701,7 @@ function WizardSelect({
         value={value ?? ""}
         onChange={(event) => onChange(event.target.value)}
         className={selectClassName}
+        aria-invalid={Boolean(error)}
       >
         <option value="">{placeholder}</option>
 
@@ -676,6 +711,8 @@ function WizardSelect({
           </option>
         ))}
       </select>
+
+      <FieldError message={error} />
     </div>
   )
 }
@@ -686,6 +723,7 @@ function WizardEmployeeSelect({
   value,
   placeholder,
   employees,
+  error,
   onChange,
 }: {
   id: string
@@ -693,6 +731,7 @@ function WizardEmployeeSelect({
   value: string | null
   placeholder: string
   employees: JobOpeningWizardEmployeeOption[]
+  error?: string
   onChange: (value: string) => void
 }) {
   return (
@@ -704,6 +743,7 @@ function WizardEmployeeSelect({
         value={value ?? ""}
         onChange={(event) => onChange(event.target.value)}
         className={selectClassName}
+        aria-invalid={Boolean(error)}
       >
         <option value="">{placeholder}</option>
 
@@ -713,6 +753,8 @@ function WizardEmployeeSelect({
           </option>
         ))}
       </select>
+
+      <FieldError message={error} />
     </div>
   )
 }
@@ -734,6 +776,91 @@ function ReviewItem({
         {value}
       </p>
     </div>
+  )
+}
+
+function JobOpeningWizardFooter({
+  errors,
+  onCancel,
+}: {
+  errors: JobOpeningWizardErrors
+  onCancel: () => void
+}) {
+  const { currentStepId } = useProductWizard()
+
+  const fieldsByStep: Record<
+    string,
+    Array<keyof JobOpeningWizardValues>
+  > = {
+    "1-reason": ["openingReason"],
+    "2-organization": [
+      "departmentId",
+      "positionId",
+      "requestingManagerId",
+    ],
+    "3-owners": ["recruiterId", "approverId"],
+    "4-details": ["priority"],
+    "5-review": [],
+  }
+
+  const currentStepIsInvalid = (
+    fieldsByStep[currentStepId] ?? []
+  ).some((field) => Boolean(errors[field]))
+
+  return (
+    <ProductWizardFooter>
+      <ProductWizardActions
+        onCancel={onCancel}
+        nextLabel="Próximo"
+        completeLabel="Próximo"
+        disabled={currentStepIsInvalid}
+      />
+    </ProductWizardFooter>
+  )
+}
+
+function FieldError({
+  message,
+}: {
+  message?: string
+}) {
+  if (!message) {
+    return null
+  }
+
+  return (
+    <p className="text-sm text-red-600">
+      {message}
+    </p>
+  )
+}
+
+function getWizardErrors(
+  values: JobOpeningWizardValues
+): JobOpeningWizardErrors {
+  const result =
+    jobOpeningWizardSchema.safeParse(values)
+
+  if (result.success) {
+    return {}
+  }
+
+  return result.error.issues.reduce<JobOpeningWizardErrors>(
+    (errors, issue) => {
+      const field = issue.path[0]
+
+      if (
+        typeof field === "string" &&
+        field in values &&
+        !errors[field as keyof JobOpeningWizardValues]
+      ) {
+        errors[field as keyof JobOpeningWizardValues] =
+          issue.message
+      }
+
+      return errors
+    },
+    {}
   )
 }
 

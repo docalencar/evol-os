@@ -10,3 +10,7 @@ export type {
   CreateJobOpeningInput,
   UpdateJobOpeningInput,
 } from "./job-opening-schema"
+
+export {
+  jobOpeningWizardSchema,
+} from "./job-opening-wizard-schema"

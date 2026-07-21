@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   BarChart3,
   BookOpen,
+  BriefcaseBusiness,
   Building2,
   ClipboardList,
   Home,
@@ -13,6 +14,7 @@ import {
 const items = [
   { href: "/app", label: "Início", icon: Home },
   { href: "/app/people", label: "Pessoas", icon: Users },
+  { href: "/app/recruitment", label: "Recruitment", icon: BriefcaseBusiness },
   {href: "/app/competencies",
   label: "Competências",
   icon: BookOpen,},

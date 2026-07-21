@@ -150,3 +150,20 @@ export type {
   FeedbackThreadParticipantViewModel,
   FeedbackThreadViewModel,
 } from "./thread"
+
+export {
+  createFeedbackAiContext,
+  presentFeedbackAiContext,
+} from "./intelligence"
+
+export type {
+  CreateFeedbackAiContextInput,
+  FeedbackAiContext,
+  FeedbackAiContextConversation,
+  FeedbackAiContextMessage,
+  FeedbackAiContextMessageType,
+  FeedbackAiContextMetrics,
+  FeedbackAiContextParticipant,
+  FeedbackAiContextParticipantRole,
+  FeedbackAiContextPresentation,
+} from "./intelligence"

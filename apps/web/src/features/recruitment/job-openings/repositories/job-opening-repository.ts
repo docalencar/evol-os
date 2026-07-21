@@ -83,6 +83,13 @@ type UpdateJobOpeningData = Omit<
   jobOpeningId: string
 }
 
+type UpdateJobOpeningStatusData = {
+  companyId: string
+  jobOpeningId: string
+  status: JobOpeningStatus
+  approverId: string | null
+  approvedAt: string | null
+}
 
 function mapJobOpening(
   row: JobOpeningRow
@@ -293,5 +300,32 @@ export async function createJobOpeningRepository() {
       }
     },
 
+    async updateStatus(
+      input: UpdateJobOpeningStatusData
+    ) {
+      const { data, error } = await supabase
+        .from("recruitment_job_openings")
+        .update({
+          status: input.status,
+          approver_id: input.approverId,
+          approved_at: input.approvedAt,
+          updated_at:
+            new Date().toISOString(),
+        })
+        .eq("company_id", input.companyId)
+        .eq("id", input.jobOpeningId)
+        .is("deleted_at", null)
+        .select("*")
+        .single()
+
+      return {
+        data: data
+          ? mapJobOpening(
+              data as JobOpeningRow
+            )
+          : null,
+        error,
+      }
+    },
   }
 }

@@ -73,3 +73,7 @@ export {
 export {
   RecruitmentWorkspaceToolbar,
 } from "./components/recruitment-workspace-toolbar"
+
+export {
+  JobOpeningCreateWizard,
+} from "./components/job-opening-create-wizard"

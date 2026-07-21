@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
 import {
@@ -7,6 +6,7 @@ import {
   JOB_OPENING_STATUSES,
   JOB_OPENING_STATUS_LABELS,
 } from "../constants/job-opening-options"
+import { JobOpeningCreateWizard } from "./job-opening-create-wizard"
 
 type RecruitmentDepartmentOption = {
   id: string
@@ -91,9 +91,9 @@ export function RecruitmentWorkspaceToolbar({
           </select>
         </div>
 
-        <Button type="button" className="w-full xl:w-auto">
-          Nova vaga
-        </Button>
+        <div className="w-full xl:w-auto">
+          <JobOpeningCreateWizard />
+        </div>
       </div>
     </section>
   )

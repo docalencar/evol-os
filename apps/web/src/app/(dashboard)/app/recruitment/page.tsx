@@ -5,6 +5,7 @@ import {
   getJobOpeningFormOptions,
   getJobOpenings,
   JobOpeningTable,
+  RecruitmentWorkspaceToolbar,
 } from "@/features/recruitment"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
@@ -29,6 +30,10 @@ export default async function RecruitmentPage() {
         <StatCard label="Em andamento" value={0} />
         <StatCard label="Contratações" value={0} />
       </div>
+
+      <RecruitmentWorkspaceToolbar
+        departments={options.departments}
+      />
 
       {jobOpenings.length === 0 ? (
         <EmptyState

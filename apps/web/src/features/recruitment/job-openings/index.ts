@@ -69,3 +69,7 @@ export {
 export {
   JobOpeningTable,
 } from "./components/job-opening-table"
+
+export {
+  RecruitmentWorkspaceToolbar,
+} from "./components/recruitment-workspace-toolbar"

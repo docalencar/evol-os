@@ -9,6 +9,7 @@ export {
   JOB_OPENING_STATUS_LABELS,
   JOB_OPENING_WORK_MODELS,
   JOB_OPENING_WORK_MODEL_LABELS,
+  RecruitmentWorkspaceToolbar,
   changeJobOpeningStatus,
   changeJobOpeningStatusAction,
   changeJobOpeningStatusSchema,

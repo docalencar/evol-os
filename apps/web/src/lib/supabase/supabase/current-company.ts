@@ -20,6 +20,7 @@ export async function getCurrentCompanyContext() {
     .from("company_members")
     .select("company_id")
     .eq("user_id", user.id)
+    .eq("status", "active")
     .limit(1)
     .maybeSingle()
 
@@ -54,10 +55,29 @@ export async function getCurrentCompanyContext() {
     redirect("/onboarding")
   }
 
+  const {
+    data: person,
+    error: personError,
+  } = await supabase
+    .from("people")
+    .select("*")
+    .eq("company_id", company.id)
+    .eq("user_id", user.id)
+    .limit(1)
+    .maybeSingle()
+
+  if (personError) {
+    throw new Error(
+      "Não foi possível identificar a pessoa vinculada ao usuário."
+    )
+  }
+
   return {
     supabase,
     user,
     companyId: company.id,
     companyName: company.name,
+    person,
+    personId: person?.id ?? null,
   }
 }

@@ -21,6 +21,10 @@ import {
 } from "@/features/feedbacks/components/feedback-thread-sidebar"
 
 import {
+  FeedbackAiAnalysisCard,
+} from "@/features/feedbacks/intelligence"
+
+import {
   getFeedbackMessages,
 } from "@/features/feedbacks/queries/get-feedback-messages"
 import {
@@ -131,6 +135,10 @@ export default async function FeedbackThreadPage({
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <main className="min-w-0 space-y-6">
+          <FeedbackAiAnalysisCard
+            threadId={viewModel.id}
+          />
+
           <FeedbackMessageList
             messages={viewModel.messages}
           />

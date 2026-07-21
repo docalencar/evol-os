@@ -167,3 +167,14 @@ export type {
   FeedbackAiContextParticipantRole,
   FeedbackAiContextPresentation,
 } from "./intelligence"
+
+export {
+  generateFeedbackAiAnalysisAction,
+} from "./intelligence"
+
+export type {
+  FeedbackAiAnalysis,
+  FeedbackAiTone,
+  GenerateFeedbackAiAnalysisActionData,
+  GenerateFeedbackAiAnalysisActionInput,
+} from "./intelligence"

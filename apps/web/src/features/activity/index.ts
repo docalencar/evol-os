@@ -1,4 +1,14 @@
 export {
+  ApprovalActivityAdapter,
+  mapApprovalEventToActivity,
+} from "./adapters"
+
+export type {
+  ActivityPublisher,
+  MappedApprovalActivity,
+} from "./adapters"
+
+export {
   ACTIVITY_ACTOR_TYPES,
   ACTIVITY_VISIBILITIES,
 } from "./types/activity"

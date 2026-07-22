@@ -3,6 +3,9 @@ export {
   JOB_OPENING_EMPLOYMENT_TYPE_LABELS,
   JobOpeningCreateWizard,
   JobOpeningStatusActions,
+  ApproveRecruitmentRequest,
+  CreateRecruitmentApproval,
+  RejectRecruitmentRequest,
   JOB_OPENING_PRIORITIES,
   JOB_OPENING_PRIORITY_LABELS,
   JOB_OPENING_REASONS,
@@ -45,4 +48,7 @@ export type {
   JobOpeningFormOptions,
   JobOpeningPositionOption,
   UpdateJobOpeningInput,
+  FindRecruitmentApprovalRequests,
+  RecruitmentApprovalJobOpeningRepository,
+  RejectRecruitmentApprovalCommand,
 } from "./job-openings"

@@ -49,6 +49,18 @@ export {
 } from "./services"
 
 export {
+  ApproveRecruitmentRequest,
+  CreateRecruitmentApproval,
+  RejectRecruitmentRequest,
+} from "./integrations/approval"
+
+export type {
+  FindRecruitmentApprovalRequests,
+  RecruitmentApprovalJobOpeningRepository,
+  RejectRecruitmentApprovalCommand,
+} from "./integrations/approval"
+
+export {
   getJobOpeningById,
   getJobOpeningFormOptions,
   getJobOpenings,

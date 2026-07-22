@@ -1,4 +1,17 @@
 import {
+  ApproveRequest,
+  CreateApprovalRequest,
+  RejectRequest,
+  createApprovalRequestRepository,
+  getApprovalRequests,
+} from "@/features/approval"
+
+import {
+  ApproveRecruitmentRequest,
+  CreateRecruitmentApproval,
+  RejectRecruitmentRequest,
+} from "../integrations/approval"
+import {
   createJobOpeningRepository,
 } from "../repositories/job-opening-repository"
 import type {
@@ -50,27 +63,13 @@ export function getAllowedJobOpeningStatusTransitions(
   return [...ALLOWED_TRANSITIONS[status]]
 }
 
-const STATUS_ACTIVITY: Record<
+const STATUS_ACTIVITY: Partial<Record<
   JobOpeningStatus,
   {
     activityType: string
     title: string
   }
-> = {
-  draft: {
-    activityType:
-      "job_opening.returned_to_draft",
-    title: "Vaga devolvida para rascunho",
-  },
-  pending_approval: {
-    activityType:
-      "job_opening.submitted_for_approval",
-    title: "Vaga enviada para aprovação",
-  },
-  approved: {
-    activityType: "job_opening.approved",
-    title: "Vaga aprovada",
-  },
+>> = {
   open: {
     activityType: "job_opening.opened",
     title: "Vaga aberta",
@@ -141,49 +140,90 @@ export async function changeJobOpeningStatus(
     )
   }
 
-  let approverId = existing.approverId
-  let approvedAt = existing.approvedAt
-
-  if (
-    input.values.status ===
-    "pending_approval"
-  ) {
+  if (input.values.status === "pending_approval") {
     if (!input.values.approverId) {
-      throw new Error(
-        "Informe o aprovador da vaga."
-      )
+      throw new Error("Informe o aprovador da vaga.")
     }
 
     await validateJobOpeningRelations({
       companyId: input.companyId,
-      approverId:
-        input.values.approverId,
+      approverId: input.values.approverId,
     })
 
-    approverId = input.values.approverId
-    approvedAt = null
+    const approvalRepository =
+      await createApprovalRequestRepository()
+
+    return new CreateRecruitmentApproval(
+      repository,
+      new CreateApprovalRequest(approvalRepository),
+      crypto.randomUUID
+    ).execute({
+      companyId: input.companyId,
+      jobOpeningId: existing.id,
+      approverId: input.values.approverId,
+      requesterUserId: input.userId,
+      requesterPersonId: input.actorPersonId,
+      requestedAt: new Date(),
+    })
   }
 
-  if (input.values.status === "approved") {
+  if (
+    existing.status === "pending_approval" &&
+    input.values.status === "approved"
+  ) {
     if (!input.actorPersonId) {
       throw new Error(
         "Não foi possível identificar a pessoa responsável pela aprovação."
       )
     }
 
-    await validateJobOpeningRelations({
+    const approvalRepository =
+      await createApprovalRequestRepository()
+
+    return new ApproveRecruitmentRequest(
+      repository,
+      getApprovalRequests,
+      new ApproveRequest(approvalRepository),
+      crypto.randomUUID
+    ).execute({
       companyId: input.companyId,
-      approverId: input.actorPersonId,
+      jobOpeningId: existing.id,
+      actorUserId: input.userId,
+      actorPersonId: input.actorPersonId,
+      occurredAt: new Date(),
     })
-
-    approverId = input.actorPersonId
-    approvedAt = new Date().toISOString()
   }
 
-  if (input.values.status === "draft") {
-    approverId = null
-    approvedAt = null
+  if (
+    existing.status === "pending_approval" &&
+    input.values.status === "draft"
+  ) {
+    if (!input.actorPersonId) {
+      throw new Error(
+        "Não foi possível identificar a pessoa responsável pela rejeição."
+      )
+    }
+
+    const approvalRepository =
+      await createApprovalRequestRepository()
+
+    return new RejectRecruitmentRequest(
+      repository,
+      getApprovalRequests,
+      new RejectRequest(approvalRepository),
+      crypto.randomUUID
+    ).execute({
+      companyId: input.companyId,
+      jobOpeningId: existing.id,
+      actorUserId: input.userId,
+      actorPersonId: input.actorPersonId,
+      occurredAt: new Date(),
+      reason: "Vaga devolvida para rascunho.",
+    })
   }
+
+  const approverId = existing.approverId
+  const approvedAt = existing.approvedAt
 
   if (
     input.values.status === "open" &&
@@ -213,6 +253,12 @@ export async function changeJobOpeningStatus(
 
   const activity =
     STATUS_ACTIVITY[input.values.status]
+
+  if (!activity) {
+    throw new Error(
+      "A transição de aprovação deve ser processada pelo Approval Framework."
+    )
+  }
 
   await recordJobOpeningActivity({
     companyId: input.companyId,

@@ -16,6 +16,7 @@ import {
 } from "@/components/product/wizard"
 import { EntityDialog } from "@/components/shared/entity-dialog"
 import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -114,6 +115,7 @@ const selectClassName = [
   "h-10 w-full rounded-md border border-slate-200 bg-white px-3",
   "text-sm text-slate-900 outline-none transition-colors",
   "focus:border-slate-400 focus:ring-2 focus:ring-slate-200",
+  "aria-[invalid=true]:border-red-500 aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-red-100",
 ].join(" ")
 
 export function JobOpeningCreateWizard({
@@ -275,8 +277,16 @@ function ReasonStep({ values, errors, employees, onChange }: {
 }) {
   return (
     <div className="space-y-5">
-      <fieldset className="space-y-2" aria-invalid={Boolean(errors.openingReason)}>
-        <legend className="sr-only">Motivo da vaga</legend>
+      <fieldset
+        className="space-y-2"
+        aria-invalid={Boolean(errors.openingReason)}
+        aria-describedby={errors.openingReason ? "opening-reason-error" : undefined}
+      >
+        <legend className="mb-2 text-sm font-medium text-slate-700">
+          Selecione o motivo da abertura
+          <span className="ml-1 text-red-600" aria-hidden="true">*</span>
+          <span className="sr-only"> (obrigatório)</span>
+        </legend>
         {JOB_OPENING_REASONS.map((reason) => (
           <label key={reason} className="flex cursor-pointer items-center gap-3 rounded-lg border p-4 hover:bg-slate-50">
             <input type="radio" name="opening-reason" checked={values.openingReason === reason} onChange={() => {
@@ -286,15 +296,15 @@ function ReasonStep({ values, errors, employees, onChange }: {
             <span className="text-sm font-medium">{JOB_OPENING_REASON_LABELS[reason]}</span>
           </label>
         ))}
-        <FieldError message={errors.openingReason} />
+        <FieldError id="opening-reason-error" message={errors.openingReason} />
       </fieldset>
 
-      <Field label="Justificativa" id="opening-justification" error={errors.openingJustification}>
-        <Textarea id="opening-justification" rows={5} value={values.openingJustification} onChange={(event) => onChange("openingJustification", event.target.value)} />
+      <Field label="Justificativa da abertura" id="opening-justification" error={errors.openingJustification} required description="Explique brevemente a necessidade que motivou esta vaga.">
+        <Textarea id="opening-justification" rows={5} value={values.openingJustification} onChange={(event) => onChange("openingJustification", event.target.value)} placeholder="Descreva o contexto e a necessidade da abertura." aria-invalid={Boolean(errors.openingJustification)} aria-describedby={errors.openingJustification ? "opening-justification-error" : "opening-justification-description"} />
       </Field>
 
       {values.openingReason === "replacement" ? (
-        <EmployeeSelect id="replaced-employee" label="Pessoa substituída" value={values.replacedEmployeeId} employees={employees} error={errors.replacedEmployeeId} onChange={(value) => onChange("replacedEmployeeId", value)} />
+        <EmployeeSelect id="replaced-employee" label="Pessoa substituída" value={values.replacedEmployeeId} employees={employees} error={errors.replacedEmployeeId} required onChange={(value) => onChange("replacedEmployeeId", value)} />
       ) : null}
     </div>
   )
@@ -303,11 +313,11 @@ function ReasonStep({ values, errors, employees, onChange }: {
 function IdentificationStep({ values, errors, onChange }: StepProps) {
   return (
     <div className="space-y-5">
-      <Field label="Título" id="opening-title" error={errors.title}>
-        <Input id="opening-title" value={values.title} onChange={(event) => onChange("title", event.target.value)} placeholder="Ex.: Analista de Recursos Humanos" />
+      <Field label="Título da vaga" id="opening-title" error={errors.title} required description="Use um título claro e reconhecido pelo mercado.">
+        <Input id="opening-title" value={values.title} onChange={(event) => onChange("title", event.target.value)} placeholder="Ex.: Analista de Recursos Humanos" aria-invalid={Boolean(errors.title)} aria-describedby={errors.title ? "opening-title-error" : "opening-title-description"} />
       </Field>
-      <Field label="Descrição" id="opening-description" error={errors.description}>
-        <Textarea id="opening-description" rows={7} value={values.description} onChange={(event) => onChange("description", event.target.value)} />
+      <Field label="Descrição da vaga" id="opening-description" error={errors.description} required description="Apresente responsabilidades, escopo e contexto da oportunidade.">
+        <Textarea id="opening-description" rows={7} value={values.description} onChange={(event) => onChange("description", event.target.value)} placeholder="Descreva as principais responsabilidades e expectativas." aria-invalid={Boolean(errors.description)} aria-describedby={errors.description ? "opening-description-error" : "opening-description-description"} />
       </Field>
     </div>
   )
@@ -322,7 +332,7 @@ function OrganizationStep({ values, errors, departments, positions, employees, o
     <div className="space-y-5">
       <OptionSelect id="opening-department" label="Departamento" value={values.departmentId} options={departments} error={errors.departmentId} onChange={(value) => onChange("departmentId", value)} />
       <OptionSelect id="opening-position" label="Cargo" value={values.positionId} options={positions} error={errors.positionId} onChange={(value) => onChange("positionId", value)} />
-      <EmployeeSelect id="opening-manager" label="Gestor responsável" value={values.requestingManagerId} employees={employees} error={errors.requestingManagerId} onChange={(value) => onChange("requestingManagerId", value)} />
+      <EmployeeSelect id="opening-manager" label="Gestor responsável" value={values.requestingManagerId} employees={employees} error={errors.requestingManagerId} required onChange={(value) => onChange("requestingManagerId", value)} />
     </div>
   )
 }
@@ -330,9 +340,9 @@ function OrganizationStep({ values, errors, departments, positions, employees, o
 function SizingStep({ values, errors, onChange }: StepProps) {
   return (
     <div className="grid gap-5 sm:grid-cols-3">
-      <NumberField id="positions-count" label="Quantidade de posições" value={values.positionsCount} error={errors.positionsCount} onChange={(value) => onChange("positionsCount", value)} />
-      <NumberField id="current-headcount" label="Quadro atual" value={values.currentHeadcount} error={errors.currentHeadcount} onChange={(value) => onChange("currentHeadcount", value)} />
-      <NumberField id="target-headcount" label="Quadro ideal" value={values.targetHeadcount} error={errors.targetHeadcount} onChange={(value) => onChange("targetHeadcount", value)} />
+      <NumberField id="positions-count" label="Quantidade de posições" value={values.positionsCount} error={errors.positionsCount} required onChange={(value) => onChange("positionsCount", value)} />
+      <NumberField id="current-headcount" label="Headcount atual" value={values.currentHeadcount} error={errors.currentHeadcount} required onChange={(value) => onChange("currentHeadcount", value)} />
+      <NumberField id="target-headcount" label="Headcount futuro" value={values.targetHeadcount} error={errors.targetHeadcount} required onChange={(value) => onChange("targetHeadcount", value)} />
     </div>
   )
 }
@@ -376,63 +386,150 @@ type ReviewLabels = {
 }
 
 function ReviewStep({ values, labels }: { values: JobOpeningWizardValues; labels: ReviewLabels }) {
-  const items = [
-    ["Motivo", labels.reason],
-    ["Justificativa", values.openingJustification || "Não informada"],
-    ...(values.openingReason === "replacement" ? [["Pessoa substituída", labels.replacedEmployee]] : []),
-    ["Título", values.title || "Não informado"],
-    ["Descrição", values.description || "Não informada"],
-    ["Departamento", labels.department],
-    ["Cargo", labels.position],
-    ["Gestor responsável", labels.manager],
-    ["Quantidade de posições", numberLabel(values.positionsCount)],
-    ["Quadro atual", numberLabel(values.currentHeadcount)],
-    ["Quadro ideal", numberLabel(values.targetHeadcount)],
-    ["Modelo de trabalho", values.workModel ? JOB_OPENING_WORK_MODEL_LABELS[values.workModel] : "Não informado"],
-    ["Regime", values.employmentType ? JOB_OPENING_EMPLOYMENT_TYPE_LABELS[values.employmentType] : "Não informado"],
-    ["Prevista no orçamento", values.isBudgeted === null ? "Não informado" : values.isBudgeted ? "Sim" : "Não"],
-    ["Faixa salarial", values.salaryMin !== null || values.salaryMax !== null ? `${numberLabel(values.salaryMin)} — ${numberLabel(values.salaryMax)}` : "Não informada"],
-    ["Recruiter", labels.recruiter],
-    ["Prioridade", values.priority ? JOB_OPENING_PRIORITY_LABELS[values.priority] : "Não informada"],
-    ["Data prevista", values.targetHireDate ?? "Não informada"],
-    ["Observações", values.notes ?? "Não informadas"],
+  const groups = [
+    {
+      title: "Motivo",
+      items: [
+        ["Motivo da abertura", labels.reason],
+        ["Justificativa", textLabel(values.openingJustification)],
+        [
+          "Pessoa substituída",
+          values.openingReason === "replacement"
+            ? labels.replacedEmployee
+            : "Não aplicável",
+        ],
+      ],
+    },
+    {
+      title: "Identificação",
+      items: [
+        ["Título da vaga", textLabel(values.title)],
+        ["Descrição", textLabel(values.description)],
+      ],
+    },
+    {
+      title: "Estrutura",
+      items: [
+        ["Departamento", labels.department],
+        ["Cargo", labels.position],
+        ["Gestor responsável", labels.manager],
+      ],
+    },
+    {
+      title: "Dimensionamento",
+      items: [
+        ["Quantidade de posições", numberLabel(values.positionsCount)],
+        ["Headcount atual", numberLabel(values.currentHeadcount)],
+        ["Headcount futuro", numberLabel(values.targetHeadcount)],
+      ],
+    },
+    {
+      title: "Condições",
+      items: [
+        [
+          "Modelo de trabalho",
+          values.workModel
+            ? JOB_OPENING_WORK_MODEL_LABELS[values.workModel]
+            : "Não informado",
+        ],
+        [
+          "Regime de contratação",
+          values.employmentType
+            ? JOB_OPENING_EMPLOYMENT_TYPE_LABELS[values.employmentType]
+            : "Não informado",
+        ],
+        ["Prevista no orçamento", booleanLabel(values.isBudgeted)],
+        [
+          "Faixa salarial",
+          salaryRangeLabel(values.salaryMin, values.salaryMax),
+        ],
+      ],
+    },
+    {
+      title: "Planejamento",
+      items: [
+        ["Recruiter", labels.recruiter],
+        [
+          "Prioridade",
+          values.priority
+            ? JOB_OPENING_PRIORITY_LABELS[values.priority]
+            : "Não informada",
+        ],
+        ["Data alvo", dateLabel(values.targetHireDate)],
+        ["Observações", textLabel(values.notes)],
+      ],
+    },
   ]
 
-  return <div className="grid gap-3 sm:grid-cols-2">{items.map(([label, value]) => <ReviewItem key={label} label={label} value={value} />)}</div>
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border border-blue-100 bg-blue-50/60 p-4">
+        <h3 className="text-sm font-semibold text-slate-900">
+          Confira antes de criar a vaga
+        </h3>
+
+        <p className="mt-1 text-sm leading-6 text-slate-600">
+          Volte às etapas anteriores caso alguma informação precise ser ajustada.
+        </p>
+      </div>
+
+      {groups.map((group) => (
+        <Card key={group.title} className="p-4 sm:p-5">
+          <h3 className="border-b border-slate-100 pb-3 text-sm font-semibold text-slate-900">
+            {group.title}
+          </h3>
+
+          <dl className="mt-4 grid gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
+            {group.items.map(([label, value]) => (
+              <div key={label} className="min-w-0">
+                <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  {label}
+                </dt>
+
+                <dd className="mt-1 break-words whitespace-pre-wrap text-sm font-medium leading-6 text-slate-900">
+                  {value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </Card>
+      ))}
+    </div>
+  )
 }
 
 type StepProps = { values: JobOpeningWizardValues; errors: WizardErrors; onChange: WizardChange }
 
-function Field({ label, id, error, children }: { label: string; id: string; error?: string; children: React.ReactNode }) {
-  return <div className="space-y-2"><Label htmlFor={id}>{label}</Label>{children}<FieldError message={error} /></div>
+function Field({ label, id, error, description, required = false, children }: { label: string; id: string; error?: string; description?: string; required?: boolean; children: React.ReactNode }) {
+  return <div className="space-y-2"><Label htmlFor={id}>{label}{required ? <><span className="ml-1 text-red-600" aria-hidden="true">*</span><span className="sr-only"> (obrigatório)</span></> : <span className="ml-1 font-normal text-slate-500">(opcional)</span>}</Label>{description ? <p id={`${id}-description`} className="text-xs leading-5 text-slate-500">{description}</p> : null}{children}<FieldError id={`${id}-error`} message={error} /></div>
 }
 
 function OptionSelect({ id, label, value, options, error, onChange }: { id: string; label: string; value: string | null; options: WizardOption[]; error?: string; onChange: (value: string | null) => void }) {
-  return <Field label={label} id={id} error={error}><select id={id} value={value ?? ""} onChange={(event) => onChange(event.target.value || null)} className={selectClassName} aria-invalid={Boolean(error)}><option value="">Selecione</option>{options.map((option) => <option key={option.id} value={option.id}>{option.name}</option>)}</select></Field>
+  return <Field label={label} id={id} error={error} required><select id={id} value={value ?? ""} onChange={(event) => onChange(event.target.value || null)} className={selectClassName} aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined}><option value="">Selecione</option>{options.map((option) => <option key={option.id} value={option.id}>{option.name}</option>)}</select></Field>
 }
 
-function EmployeeSelect({ id, label, value, employees, error, onChange }: { id: string; label: string; value: string | null; employees: WizardEmployeeOption[]; error?: string; onChange: (value: string | null) => void }) {
-  return <Field label={label} id={id} error={error}><select id={id} value={value ?? ""} onChange={(event) => onChange(event.target.value || null)} className={selectClassName} aria-invalid={Boolean(error)}><option value="">Selecione</option>{employees.map((employee) => <option key={employee.id} value={employee.id}>{employee.fullName}</option>)}</select></Field>
+function EmployeeSelect({ id, label, value, employees, error, required = false, onChange }: { id: string; label: string; value: string | null; employees: WizardEmployeeOption[]; error?: string; required?: boolean; onChange: (value: string | null) => void }) {
+  return <Field label={label} id={id} error={error} required={required}><select id={id} value={value ?? ""} onChange={(event) => onChange(event.target.value || null)} className={selectClassName} aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined}><option value="">Selecione</option>{employees.map((employee) => <option key={employee.id} value={employee.id}>{employee.fullName}</option>)}</select></Field>
 }
 
 function EnumSelect<Value extends string>({ id, label, value, options, error, onChange }: { id: string; label: string; value: Value | null; options: Array<{ value: Value; label: string }>; error?: string; onChange: (value: Value | null) => void }) {
-  return <Field label={label} id={id} error={error}><select id={id} value={value ?? ""} onChange={(event) => onChange(options.find((option) => option.value === event.target.value)?.value ?? null)} className={selectClassName} aria-invalid={Boolean(error)}><option value="">Selecione</option>{options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></Field>
+  return <Field label={label} id={id} error={error} required><select id={id} value={value ?? ""} onChange={(event) => onChange(options.find((option) => option.value === event.target.value)?.value ?? null)} className={selectClassName} aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined}><option value="">Selecione</option>{options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></Field>
 }
 
 function BudgetSelect({ value, error, onChange }: { value: boolean | null; error?: string; onChange: (value: boolean | null) => void }) {
-  return <Field label="Prevista no orçamento" id="is-budgeted" error={error}><select id="is-budgeted" value={value === null ? "" : String(value)} onChange={(event) => onChange(event.target.value === "" ? null : event.target.value === "true")} className={selectClassName} aria-invalid={Boolean(error)}><option value="">Selecione</option><option value="true">Sim</option><option value="false">Não</option></select></Field>
+  return <Field label="Prevista no orçamento" id="is-budgeted" error={error} required><select id="is-budgeted" value={value === null ? "" : String(value)} onChange={(event) => onChange(event.target.value === "" ? null : event.target.value === "true")} className={selectClassName} aria-invalid={Boolean(error)} aria-describedby={error ? "is-budgeted-error" : undefined}><option value="">Selecione</option><option value="true">Sim</option><option value="false">Não</option></select></Field>
 }
 
-function NumberField({ id, label, value, error, onChange }: { id: string; label: string; value: number | null; error?: string; onChange: (value: number | null) => void }) {
-  return <Field label={label} id={id} error={error}><Input id={id} type="number" value={value ?? ""} onChange={(event) => onChange(event.target.value ? Number(event.target.value) : null)} aria-invalid={Boolean(error)} /></Field>
+function NumberField({ id, label, value, error, required = false, onChange }: { id: string; label: string; value: number | null; error?: string; required?: boolean; onChange: (value: number | null) => void }) {
+  return <Field label={label} id={id} error={error} required={required}><Input id={id} type="number" inputMode="decimal" value={value ?? ""} onChange={(event) => onChange(event.target.value ? Number(event.target.value) : null)} aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined} /></Field>
 }
 
-function ReviewItem({ label, value }: { label: string; value: string }) {
-  return <div className="space-y-1 rounded-lg border p-4"><p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p><p className="break-words whitespace-pre-wrap text-sm font-medium text-slate-900">{value}</p></div>
-}
-
-function FieldError({ message }: { message?: string }) {
-  return message ? <p className="text-sm text-red-600">{message}</p> : null
+function FieldError({ id, message }: { id?: string; message?: string }) {
+  return message ? (
+    <p id={id} role="alert" className="text-sm text-red-600">
+      {message}
+    </p>
+  ) : null
 }
 
 function WizardFooter({ errors, isPending, onCancel }: { errors: WizardErrors; isPending: boolean; onCancel: () => void }) {
@@ -478,4 +575,44 @@ function employeeLabel(options: WizardEmployeeOption[], id: string | null) {
 
 function numberLabel(value: number | null) {
   return value === null ? "Não informado" : String(value)
+}
+
+function textLabel(value: string | null) {
+  return value?.trim() || "Não informado"
+}
+
+function booleanLabel(value: boolean | null) {
+  return value === null ? "Não informado" : value ? "Sim" : "Não"
+}
+
+function dateLabel(value: string | null) {
+  if (!value) return "Não informado"
+
+  return new Intl.DateTimeFormat("pt-BR").format(
+    new Date(`${value}T00:00:00`)
+  )
+}
+
+function salaryRangeLabel(
+  minimum: number | null,
+  maximum: number | null
+) {
+  const formatter = new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  })
+
+  if (minimum !== null && maximum !== null) {
+    return `${formatter.format(minimum)} — ${formatter.format(maximum)}`
+  }
+
+  if (minimum !== null) {
+    return `A partir de ${formatter.format(minimum)}`
+  }
+
+  if (maximum !== null) {
+    return `Até ${formatter.format(maximum)}`
+  }
+
+  return "Não informado"
 }

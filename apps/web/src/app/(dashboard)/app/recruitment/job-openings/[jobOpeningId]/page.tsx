@@ -1,6 +1,5 @@
 import {
   DashboardCard,
-  DashboardEmptyState,
   DashboardSection,
   KeyValueList,
   StatCard,
@@ -19,6 +18,11 @@ import {
   JOB_OPENING_WORK_MODEL_LABELS,
   jobOpeningIdSchema,
 } from "@/features/recruitment"
+import {
+  EntityTimelineSection,
+  getEntityTimeline,
+  type ActivityTimelineItemViewModel,
+} from "@/features/timeline"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 type JobOpeningDetailsPageProps = {
@@ -26,6 +30,16 @@ type JobOpeningDetailsPageProps = {
     jobOpeningId: string
   }>
 }
+
+const ACTOR_LABELS = {
+  user: "Usuário",
+  system: "Sistema",
+  automation: "Automação",
+  integration: "Integração",
+} satisfies Record<
+  ActivityTimelineItemViewModel["actorType"],
+  string
+>
 
 function formatDate(value: string | null) {
   if (!value) {
@@ -52,6 +66,32 @@ function formatCurrency(value: number | null) {
   }).format(value)
 }
 
+function formatTimelineDate(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date(value))
+}
+
+function formatTimelineLabel(value: string) {
+  return value
+    .replace(/[_.-]+/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
+}
+
+function presentJobOpeningTimelineItem(
+  item: ActivityTimelineItemViewModel
+) {
+  return {
+    title: item.title,
+    description: item.description,
+    actorLabel: ACTOR_LABELS[item.actorType],
+    occurredAtLabel: formatTimelineDate(item.occurredAt),
+    moduleLabel: formatTimelineLabel(item.module),
+    activityTypeLabel: formatTimelineLabel(item.activityType),
+  }
+}
+
 export default async function JobOpeningDetailsPage({
   params,
 }: JobOpeningDetailsPageProps) {
@@ -70,12 +110,18 @@ export default async function JobOpeningDetailsPage({
   }
 
   const { companyId } = await getCurrentCompanyContext()
-  const [jobOpening, options] = await Promise.all([
+  const [jobOpening, options, jobOpeningTimeline] = await Promise.all([
     getJobOpeningById(
       companyId,
       idResult.data.jobOpeningId
     ),
     getJobOpeningFormOptions(companyId),
+    getEntityTimeline({
+      companyId,
+      entityType: "job_opening",
+      entityId: idResult.data.jobOpeningId,
+      limit: 20,
+    }),
   ])
 
   if (!jobOpening) {
@@ -257,9 +303,14 @@ export default async function JobOpeningDetailsPage({
         title="Atividades"
         description="Acompanhe as movimentações relacionadas a esta vaga."
       >
-        <DashboardEmptyState
-          title="Nenhuma atividade registrada"
-          description="As movimentações desta vaga aparecerão aqui."
+        <EntityTimelineSection
+          title="Atividades recentes"
+          description="Registro cronológico das movimentações da vaga."
+          emptyTitle="Nenhuma atividade registrada"
+          emptyDescription="As movimentações desta vaga aparecerão aqui."
+          items={jobOpeningTimeline.items.map(
+            presentJobOpeningTimelineItem
+          )}
         />
       </DashboardSection>
     </div>

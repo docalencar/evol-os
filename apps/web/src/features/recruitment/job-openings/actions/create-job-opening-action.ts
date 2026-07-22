@@ -1,5 +1,7 @@
 "use server"
 
+import { revalidatePath } from "next/cache"
+
 import {
   failureResult,
   successResult,
@@ -38,6 +40,8 @@ export async function createJobOpeningAction(
         userId: user.id,
         values: parsed.data,
       })
+
+    revalidatePath("/app/recruitment")
 
     return successResult(
       "Vaga criada com sucesso.",

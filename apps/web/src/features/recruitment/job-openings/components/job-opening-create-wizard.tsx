@@ -1,6 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 import {
   ProductWizard,
@@ -28,12 +30,10 @@ import {
   JOB_OPENING_WORK_MODELS,
   JOB_OPENING_WORK_MODEL_LABELS,
 } from "../constants/job-opening-options"
+import { createJobOpeningAction } from "../actions"
 import { jobOpeningWizardSchema } from "../schemas"
 import type {
   JobOpening,
-  JobOpeningEmploymentType,
-  JobOpeningPriority,
-  JobOpeningWorkModel,
 } from "../types/job-opening"
 
 type WizardOption = { id: string; name: string }
@@ -121,8 +121,10 @@ export function JobOpeningCreateWizard({
   positions,
   employees,
 }: JobOpeningCreateWizardProps) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [values, setValues] = useState(INITIAL_VALUES)
+  const [isPending, startTransition] = useTransition()
   const errors = getErrors(values)
 
   function updateValue<Key extends keyof JobOpeningWizardValues>(
@@ -133,8 +135,36 @@ export function JobOpeningCreateWizard({
   }
 
   function handleOpenChange(nextOpen: boolean) {
+    if (isPending && !nextOpen) return
+
     setOpen(nextOpen)
     if (!nextOpen) setValues(INITIAL_VALUES)
+  }
+
+  function handleSubmit() {
+    const parsed = jobOpeningWizardSchema.safeParse(values)
+
+    if (!parsed.success) {
+      toast.error(
+        parsed.error.issues[0]?.message ??
+          "Revise os dados informados."
+      )
+      return
+    }
+
+    startTransition(async () => {
+      const result = await createJobOpeningAction(parsed.data)
+
+      if (!result.success) {
+        toast.error(result.message)
+        return
+      }
+
+      toast.success(result.message)
+      setOpen(false)
+      setValues(INITIAL_VALUES)
+      router.refresh()
+    })
   }
 
   const labels = {
@@ -158,7 +188,11 @@ export function JobOpeningCreateWizard({
       contentClassName="max-w-4xl"
       bodyClassName="overflow-y-auto"
     >
-      <ProductWizard key={open ? "open" : "closed"} steps={steps}>
+      <ProductWizard
+        key={open ? "open" : "closed"}
+        steps={steps}
+        onComplete={handleSubmit}
+      >
         <div className="pb-5"><ProductWizardProgress /></div>
 
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-1 py-1">
@@ -223,7 +257,11 @@ export function JobOpeningCreateWizard({
           </ProductWizardStep>
         </div>
 
-        <WizardFooter errors={errors} onCancel={() => handleOpenChange(false)} />
+        <WizardFooter
+          errors={errors}
+          isPending={isPending}
+          onCancel={() => handleOpenChange(false)}
+        />
       </ProductWizard>
     </EntityDialog>
   )
@@ -302,9 +340,9 @@ function SizingStep({ values, errors, onChange }: StepProps) {
 function ConditionsStep({ values, errors, onChange }: StepProps) {
   return (
     <div className="space-y-5">
-      <EnumSelect id="work-model" label="Modelo de trabalho" value={values.workModel} options={JOB_OPENING_WORK_MODELS.map((value) => ({ value, label: JOB_OPENING_WORK_MODEL_LABELS[value] }))} error={errors.workModel} onChange={(value) => onChange("workModel", value as JobOpeningWorkModel | null)} />
-      <EnumSelect id="employment-type" label="Regime de contratação" value={values.employmentType} options={JOB_OPENING_EMPLOYMENT_TYPES.map((value) => ({ value, label: JOB_OPENING_EMPLOYMENT_TYPE_LABELS[value] }))} error={errors.employmentType} onChange={(value) => onChange("employmentType", value as JobOpeningEmploymentType | null)} />
-      <EnumSelect id="is-budgeted" label="Prevista no orçamento" value={values.isBudgeted === null ? null : String(values.isBudgeted)} options={[{ value: "true", label: "Sim" }, { value: "false", label: "Não" }]} error={errors.isBudgeted} onChange={(value) => onChange("isBudgeted", value === null ? null : value === "true")} />
+      <EnumSelect id="work-model" label="Modelo de trabalho" value={values.workModel} options={JOB_OPENING_WORK_MODELS.map((value) => ({ value, label: JOB_OPENING_WORK_MODEL_LABELS[value] }))} error={errors.workModel} onChange={(value) => onChange("workModel", value)} />
+      <EnumSelect id="employment-type" label="Regime de contratação" value={values.employmentType} options={JOB_OPENING_EMPLOYMENT_TYPES.map((value) => ({ value, label: JOB_OPENING_EMPLOYMENT_TYPE_LABELS[value] }))} error={errors.employmentType} onChange={(value) => onChange("employmentType", value)} />
+      <BudgetSelect value={values.isBudgeted} error={errors.isBudgeted} onChange={(value) => onChange("isBudgeted", value)} />
       <div className="grid gap-5 sm:grid-cols-2">
         <NumberField id="salary-min" label="Salário mínimo" value={values.salaryMin} error={errors.salaryMin} onChange={(value) => onChange("salaryMin", value)} />
         <NumberField id="salary-max" label="Salário máximo" value={values.salaryMax} error={errors.salaryMax} onChange={(value) => onChange("salaryMax", value)} />
@@ -317,7 +355,7 @@ function PlanningStep({ values, errors, employees, onChange }: StepProps & { emp
   return (
     <div className="space-y-5">
       <EmployeeSelect id="opening-recruiter" label="Recruiter" value={values.recruiterId} employees={employees} error={errors.recruiterId} onChange={(value) => onChange("recruiterId", value)} />
-      <EnumSelect id="opening-priority" label="Prioridade" value={values.priority} options={JOB_OPENING_PRIORITIES.map((value) => ({ value, label: JOB_OPENING_PRIORITY_LABELS[value] }))} error={errors.priority} onChange={(value) => onChange("priority", value as JobOpeningPriority | null)} />
+      <EnumSelect id="opening-priority" label="Prioridade" value={values.priority} options={JOB_OPENING_PRIORITIES.map((value) => ({ value, label: JOB_OPENING_PRIORITY_LABELS[value] }))} error={errors.priority} onChange={(value) => onChange("priority", value)} />
       <Field label="Data prevista" id="target-date" error={errors.targetHireDate}>
         <Input id="target-date" type="date" value={values.targetHireDate ?? ""} onChange={(event) => onChange("targetHireDate", event.target.value || null)} />
       </Field>
@@ -377,8 +415,12 @@ function EmployeeSelect({ id, label, value, employees, error, onChange }: { id: 
   return <Field label={label} id={id} error={error}><select id={id} value={value ?? ""} onChange={(event) => onChange(event.target.value || null)} className={selectClassName} aria-invalid={Boolean(error)}><option value="">Selecione</option>{employees.map((employee) => <option key={employee.id} value={employee.id}>{employee.fullName}</option>)}</select></Field>
 }
 
-function EnumSelect({ id, label, value, options, error, onChange }: { id: string; label: string; value: string | null; options: Array<{ value: string; label: string }>; error?: string; onChange: (value: string | null) => void }) {
-  return <Field label={label} id={id} error={error}><select id={id} value={value ?? ""} onChange={(event) => onChange(event.target.value || null)} className={selectClassName} aria-invalid={Boolean(error)}><option value="">Selecione</option>{options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></Field>
+function EnumSelect<Value extends string>({ id, label, value, options, error, onChange }: { id: string; label: string; value: Value | null; options: Array<{ value: Value; label: string }>; error?: string; onChange: (value: Value | null) => void }) {
+  return <Field label={label} id={id} error={error}><select id={id} value={value ?? ""} onChange={(event) => onChange(options.find((option) => option.value === event.target.value)?.value ?? null)} className={selectClassName} aria-invalid={Boolean(error)}><option value="">Selecione</option>{options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></Field>
+}
+
+function BudgetSelect({ value, error, onChange }: { value: boolean | null; error?: string; onChange: (value: boolean | null) => void }) {
+  return <Field label="Prevista no orçamento" id="is-budgeted" error={error}><select id="is-budgeted" value={value === null ? "" : String(value)} onChange={(event) => onChange(event.target.value === "" ? null : event.target.value === "true")} className={selectClassName} aria-invalid={Boolean(error)}><option value="">Selecione</option><option value="true">Sim</option><option value="false">Não</option></select></Field>
 }
 
 function NumberField({ id, label, value, error, onChange }: { id: string; label: string; value: number | null; error?: string; onChange: (value: number | null) => void }) {
@@ -393,7 +435,7 @@ function FieldError({ message }: { message?: string }) {
   return message ? <p className="text-sm text-red-600">{message}</p> : null
 }
 
-function WizardFooter({ errors, onCancel }: { errors: WizardErrors; onCancel: () => void }) {
+function WizardFooter({ errors, isPending, onCancel }: { errors: WizardErrors; isPending: boolean; onCancel: () => void }) {
   const { currentStepId } = useProductWizard()
   const fields: Record<string, Array<keyof JobOpeningWizardValues>> = {
     "1-reason": ["openingReason", "openingJustification", "replacedEmployeeId"],
@@ -405,7 +447,7 @@ function WizardFooter({ errors, onCancel }: { errors: WizardErrors; onCancel: ()
     "7-review": [],
   }
   const disabled = (fields[currentStepId] ?? []).some((field) => Boolean(errors[field]))
-  return <ProductWizardFooter><ProductWizardActions onCancel={onCancel} nextLabel="Próximo" completeLabel="Próximo" disabled={disabled} /></ProductWizardFooter>
+  return <ProductWizardFooter><ProductWizardActions onCancel={onCancel} nextLabel="Próximo" completeLabel="Criar vaga" disabled={disabled} isPending={isPending} /></ProductWizardFooter>
 }
 
 function getErrors(values: JobOpeningWizardValues): WizardErrors {
@@ -413,9 +455,17 @@ function getErrors(values: JobOpeningWizardValues): WizardErrors {
   if (result.success) return {}
   return result.error.issues.reduce<WizardErrors>((errors, issue) => {
     const field = issue.path[0]
-    if (typeof field === "string" && field in values && !errors[field as keyof JobOpeningWizardValues]) errors[field as keyof JobOpeningWizardValues] = issue.message
+    if (isWizardField(field) && !errors[field]) {
+      errors[field] = issue.message
+    }
     return errors
   }, {})
+}
+
+function isWizardField(
+  field: PropertyKey
+): field is keyof JobOpeningWizardValues {
+  return typeof field === "string" && field in INITIAL_VALUES
 }
 
 function optionLabel(options: WizardOption[], id: string | null) {

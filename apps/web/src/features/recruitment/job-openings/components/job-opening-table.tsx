@@ -1,3 +1,5 @@
+import Link from "next/link"
+
 import { DataTable } from "@/components/shared/data-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -99,9 +101,12 @@ export function JobOpeningTable({
           key: "title",
           header: "Título",
           render: (jobOpening) => (
-            <span className="font-medium text-slate-900">
+            <Link
+              href={`/app/recruitment/job-openings/${jobOpening.id}`}
+              className="font-medium text-slate-900 hover:text-primary hover:underline"
+            >
               {jobOpening.title}
-            </span>
+            </Link>
           ),
         },
         {
@@ -151,9 +156,18 @@ export function JobOpeningTable({
         {
           key: "actions",
           header: "Ações",
-          render: () => (
+          render: (jobOpening) => (
             <div className="flex items-center gap-2">
-              <Button type="button" variant="outline" size="sm">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                render={
+                  <Link
+                    href={`/app/recruitment/job-openings/${jobOpening.id}`}
+                  />
+                }
+              >
                 Visualizar
               </Button>
 

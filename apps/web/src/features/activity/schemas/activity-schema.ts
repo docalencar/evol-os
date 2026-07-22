@@ -28,6 +28,13 @@ export const recordActivitySchema = z
       .min(1)
       .max(160),
 
+    idempotencyKey: z
+      .string()
+      .trim()
+      .min(1)
+      .max(200)
+      .optional(),
+
     module: z
       .string()
       .trim()

@@ -56,7 +56,8 @@ function cloneMetadataValue(
 }
 
 export function mapApprovalEventToActivity(
-  event: ApprovalDomainEvent
+  event: ApprovalDomainEvent,
+  idempotencyKey?: string
 ): MappedApprovalActivity | null {
   const title = APPROVAL_ACTIVITY_TITLES[event.eventType]
 
@@ -67,6 +68,7 @@ export function mapApprovalEventToActivity(
   return {
     companyId: event.companyId,
     activityType: event.eventType,
+    idempotencyKey,
     module: "approval",
     title,
     description: null,
@@ -96,8 +98,14 @@ export class ApprovalActivityAdapter {
     private readonly publisher: ActivityPublisher
   ) {}
 
-  async publish(event: ApprovalDomainEvent): Promise<boolean> {
-    const activity = mapApprovalEventToActivity(event)
+  async publish(
+    event: ApprovalDomainEvent,
+    idempotencyKey?: string
+  ): Promise<boolean> {
+    const activity = mapApprovalEventToActivity(
+      event,
+      idempotencyKey
+    )
 
     if (!activity) {
       return false

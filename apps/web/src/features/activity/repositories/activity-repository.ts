@@ -26,11 +26,12 @@ export async function createActivityRepository() {
     async create(
       input: ValidatedRecordActivityInput
     ) {
-      return supabase
+      const result = await supabase
         .from("activity_events")
         .insert({
           company_id: input.companyId,
           activity_type: input.activityType,
+          idempotency_key: input.idempotencyKey ?? null,
           module: input.module,
           title: input.title,
           description: input.description ?? null,
@@ -64,6 +65,37 @@ export async function createActivityRepository() {
           occurred_at,
           created_at
         `)
+        .single()
+
+      if (
+        result.error?.code !== "23505" ||
+        !input.idempotencyKey
+      ) {
+        return result
+      }
+
+      return supabase
+        .from("activity_events")
+        .select(`
+          id,
+          company_id,
+          activity_type,
+          module,
+          title,
+          description,
+          actor_type,
+          actor_id,
+          entity_type,
+          entity_id,
+          subject_type,
+          subject_id,
+          visibility,
+          metadata,
+          occurred_at,
+          created_at
+        `)
+        .eq("company_id", input.companyId)
+        .eq("idempotency_key", input.idempotencyKey)
         .single()
     },
 

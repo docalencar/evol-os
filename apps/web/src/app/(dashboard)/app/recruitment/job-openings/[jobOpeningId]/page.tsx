@@ -7,10 +7,11 @@ import {
 import { EmptyState } from "@/components/empty-state/empty-state"
 import { PageHeader } from "@/components/shared/page-header"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import {
+  getAllowedJobOpeningStatusTransitions,
   getJobOpeningById,
   getJobOpeningFormOptions,
+  JobOpeningStatusActions,
   JOB_OPENING_EMPLOYMENT_TYPE_LABELS,
   JOB_OPENING_PRIORITY_LABELS,
   JOB_OPENING_REASON_LABELS,
@@ -163,12 +164,17 @@ export default async function JobOpeningDetailsPage({
             <Badge>
               {JOB_OPENING_STATUS_LABELS[jobOpening.status]}
             </Badge>
-            <Button type="button" variant="outline" disabled>
-              Editar
-            </Button>
-            <Button type="button" variant="secondary" disabled>
-              Mais ações
-            </Button>
+            <JobOpeningStatusActions
+              jobOpeningId={jobOpening.id}
+              currentStatus={jobOpening.status}
+              allowedTransitions={
+                getAllowedJobOpeningStatusTransitions(
+                  jobOpening.status
+                )
+              }
+              approverId={jobOpening.approverId}
+              employees={options.employees}
+            />
           </>
         }
       />

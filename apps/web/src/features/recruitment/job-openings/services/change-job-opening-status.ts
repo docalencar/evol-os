@@ -44,6 +44,12 @@ const ALLOWED_TRANSITIONS: Record<
   filled: [],
 }
 
+export function getAllowedJobOpeningStatusTransitions(
+  status: JobOpeningStatus
+): JobOpeningStatus[] {
+  return [...ALLOWED_TRANSITIONS[status]]
+}
+
 const STATUS_ACTIVITY: Record<
   JobOpeningStatus,
   {
@@ -121,7 +127,9 @@ export async function changeJobOpeningStatus(
   }
 
   const allowedTransitions =
-    ALLOWED_TRANSITIONS[existing.status]
+    getAllowedJobOpeningStatusTransitions(
+      existing.status
+    )
 
   if (
     !allowedTransitions.includes(

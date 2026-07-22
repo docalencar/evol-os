@@ -42,6 +42,7 @@ export type {
 
 export {
   changeJobOpeningStatus,
+  getAllowedJobOpeningStatusTransitions,
   createJobOpening,
   updateJobOpening,
   validateJobOpeningRelations,
@@ -77,3 +78,7 @@ export {
 export {
   JobOpeningCreateWizard,
 } from "./components/job-opening-create-wizard"
+
+export {
+  JobOpeningStatusActions,
+} from "./components/job-opening-status-actions"

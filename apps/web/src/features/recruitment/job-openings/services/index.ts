@@ -1,5 +1,6 @@
 export {
   changeJobOpeningStatus,
+  getAllowedJobOpeningStatusTransitions,
 } from "./change-job-opening-status"
 
 export {

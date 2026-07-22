@@ -1,5 +1,7 @@
 "use server"
 
+import { revalidatePath } from "next/cache"
+
 import {
   failureResult,
   successResult,
@@ -44,6 +46,11 @@ export async function changeJobOpeningStatusAction(
         actorPersonId: personId,
         values: parsed.data,
       })
+
+    revalidatePath("/app/recruitment")
+    revalidatePath(
+      `/app/recruitment/job-openings/${jobOpening.id}`
+    )
 
     return successResult(
       "Status da vaga atualizado com sucesso.",

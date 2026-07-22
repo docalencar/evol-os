@@ -12,6 +12,8 @@ export type PlanningScenarioStatus =
 
 export type Version = number
 
+export const INITIAL_PLANNING_SNAPSHOT_VERSION = 1
+
 export type Workspace = Readonly<{
   id: string
   companyId: string
@@ -40,6 +42,11 @@ export type PublishedSnapshotContract = Readonly<{
   sourceScenarioId: string | null
   version: Version
   publishedAt: Date
+}>
+
+export type WorkspaceBootstrap = Readonly<{
+  workspace: Workspace
+  initialSnapshot: PublishedSnapshotContract
 }>
 
 export type ChangeSet = Readonly<{

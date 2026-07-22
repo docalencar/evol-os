@@ -14,6 +14,8 @@ const workspaceId = "00000000-0000-4000-8000-000000000002"
 const baseSnapshotId = "00000000-0000-4000-8000-000000000003"
 const scenarioId = "00000000-0000-4000-8000-000000000004"
 const publishedSnapshotId = "00000000-0000-4000-8000-000000000005"
+const secondScenarioId = "00000000-0000-4000-8000-000000000006"
+const secondPublishedSnapshotId = "00000000-0000-4000-8000-000000000007"
 const initialDate = new Date("2026-07-01T12:00:00.000Z")
 
 function newScenario() {
@@ -29,26 +31,46 @@ function newScenario() {
 }
 
 function baseSnapshot() {
-  return PublishedSnapshot.restore({
-    id: baseSnapshotId,
-    companyId,
-    workspaceId,
-    sourceScenarioId: null,
-    version: 1,
-    publishedAt: initialDate,
-  })
-}
-
-test("cria workspace no escopo da empresa e versão inicial", () => {
-  const workspace = createWorkspace({
+  return createWorkspace({
     id: workspaceId,
     companyId,
+    initialSnapshotId: baseSnapshotId,
+    allocatedInitialSnapshotVersion: 1,
+    createdAt: initialDate,
+  }).initialSnapshot
+}
+
+test("cria workspace e estratégia explícita de snapshot inicial", () => {
+  const bootstrap = createWorkspace({
+    id: workspaceId,
+    companyId,
+    initialSnapshotId: baseSnapshotId,
+    allocatedInitialSnapshotVersion: 1,
     createdAt: initialDate,
   })
 
-  assert.equal(workspace.companyId, companyId)
-  assert.equal(workspace.version, 1)
-  assert.equal(workspace.id, workspaceId)
+  assert.equal(bootstrap.workspace.companyId, companyId)
+  assert.equal(bootstrap.workspace.version, 1)
+  assert.equal(bootstrap.workspace.id, workspaceId)
+  assert.equal(bootstrap.initialSnapshot.id, baseSnapshotId)
+  assert.equal(bootstrap.initialSnapshot.version, 1)
+  assert.equal(bootstrap.initialSnapshot.sourceScenarioId, null)
+  assert.equal(
+    bootstrap.initialSnapshot.domainEvents[0]?.payload.bootstrap,
+    true
+  )
+})
+
+test("snapshot inicial exige a versão inicial reservada", () => {
+  assert.throws(() =>
+    PublishedSnapshot.bootstrap({
+      id: baseSnapshotId,
+      companyId,
+      workspaceId,
+      version: 2,
+      publishedAt: initialDate,
+    })
+  )
 })
 
 test("cria cenário draft com snapshot base e evento", () => {
@@ -107,6 +129,7 @@ test("não publica cenário draft", () => {
     publishScenario(newScenario(), {
       snapshotId: publishedSnapshotId,
       baseSnapshot: baseSnapshot(),
+      allocatedSnapshotVersion: 2,
       occurredAt: new Date("2026-07-04T12:00:00Z"),
     })
   )
@@ -119,6 +142,7 @@ test("publica cenário aprovado e cria snapshot imutável", () => {
   const result = publishScenario(approved, {
     snapshotId: publishedSnapshotId,
     baseSnapshot: baseSnapshot(),
+    allocatedSnapshotVersion: 2,
     occurredAt: new Date("2026-07-04T12:00:00Z"),
   })
 
@@ -169,6 +193,64 @@ test("publicação valida snapshot-base e isolamento por empresa", () => {
     publishScenario(approved, {
       snapshotId: publishedSnapshotId,
       baseSnapshot: foreignSnapshot,
+      allocatedSnapshotVersion: 2,
+      occurredAt: new Date("2026-07-04T12:00:00Z"),
+    })
+  )
+})
+
+test("dois cenários do mesmo snapshot usam versões alocadas diferentes", () => {
+  const first = newScenario()
+    .submit(new Date("2026-07-02T12:00:00Z"))
+    .approve(new Date("2026-07-03T12:00:00Z"))
+  const second = createScenario({
+    id: secondScenarioId,
+    companyId,
+    workspaceId,
+    baseSnapshotId,
+    name: "Segundo cenário",
+    createdAt: initialDate,
+  })
+    .submit(new Date("2026-07-02T12:00:00Z"))
+    .approve(new Date("2026-07-03T12:00:00Z"))
+
+  const firstResult = publishScenario(first, {
+    snapshotId: publishedSnapshotId,
+    baseSnapshot: baseSnapshot(),
+    allocatedSnapshotVersion: 2,
+    occurredAt: new Date("2026-07-04T12:00:00Z"),
+  })
+  const secondResult = publishScenario(second, {
+    snapshotId: secondPublishedSnapshotId,
+    baseSnapshot: baseSnapshot(),
+    allocatedSnapshotVersion: 3,
+    occurredAt: new Date("2026-07-04T13:00:00Z"),
+  })
+
+  assert.equal(firstResult.snapshot.version, 2)
+  assert.equal(secondResult.snapshot.version, 3)
+  assert.equal(firstResult.snapshot.sourceScenarioId, scenarioId)
+  assert.equal(secondResult.snapshot.sourceScenarioId, secondScenarioId)
+})
+
+test("valida que a versão alocada seja posterior ao snapshot-base", () => {
+  const approved = newScenario()
+    .submit(new Date("2026-07-02T12:00:00Z"))
+    .approve(new Date("2026-07-03T12:00:00Z"))
+
+  assert.throws(() =>
+    publishScenario(approved, {
+      snapshotId: publishedSnapshotId,
+      baseSnapshot: baseSnapshot(),
+      allocatedSnapshotVersion: 1,
+      occurredAt: new Date("2026-07-04T12:00:00Z"),
+    })
+  )
+  assert.throws(() =>
+    publishScenario(approved, {
+      snapshotId: publishedSnapshotId,
+      baseSnapshot: baseSnapshot(),
+      allocatedSnapshotVersion: 0,
       occurredAt: new Date("2026-07-04T12:00:00Z"),
     })
   )
@@ -195,7 +277,9 @@ test("restore não recria eventos históricos", () => {
   const scenario = PlanningScenario.restore(
     newScenario().toContract()
   )
-  const snapshot = baseSnapshot()
+  const snapshot = PublishedSnapshot.restore(
+    baseSnapshot().toContract()
+  )
 
   assert.deepEqual(scenario.domainEvents, [])
   assert.deepEqual(snapshot.domainEvents, [])
@@ -206,6 +290,8 @@ test("schemas rejeitam identificadores e nomes inválidos", () => {
     createWorkspace({
       id: "inválido",
       companyId,
+      initialSnapshotId: baseSnapshotId,
+      allocatedInitialSnapshotVersion: 1,
       createdAt: initialDate,
     })
   )

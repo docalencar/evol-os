@@ -1,11 +1,12 @@
 import type { PlanningScenario } from "../domain/planning-scenario"
 import { PublishedSnapshot } from "../domain/published-snapshot"
 import { assertPlanningDomain } from "../domain/planning-domain-error"
-import { incrementVersion } from "./increment-version"
+import { requireVersion } from "../domain/planning-domain-support"
 
 type PublishScenarioInput = {
   snapshotId: string
   baseSnapshot: PublishedSnapshot
+  allocatedSnapshotVersion: number
   occurredAt: Date
 }
 
@@ -17,6 +18,14 @@ export function publishScenario(
     input.baseSnapshot.id === scenario.baseSnapshotId,
     "invalid_input",
     "O snapshot-base não corresponde ao cenário."
+  )
+  const allocatedSnapshotVersion = requireVersion(
+    input.allocatedSnapshotVersion
+  )
+  assertPlanningDomain(
+    allocatedSnapshotVersion > input.baseSnapshot.version,
+    "invalid_input",
+    "A versão alocada deve ser posterior à versão do snapshot-base."
   )
   assertPlanningDomain(
     input.baseSnapshot.companyId === scenario.companyId &&
@@ -31,7 +40,7 @@ export function publishScenario(
     companyId: publishedScenario.companyId,
     workspaceId: publishedScenario.workspaceId,
     sourceScenarioId: publishedScenario.id,
-    version: incrementVersion(input.baseSnapshot.version),
+    version: allocatedSnapshotVersion,
     publishedAt: input.occurredAt,
   })
 

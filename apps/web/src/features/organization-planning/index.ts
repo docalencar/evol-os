@@ -16,4 +16,5 @@ export type {
   PlanningScenarioStatus,
   Version,
   Workspace,
+  WorkspaceBootstrap,
 } from "./types/planning-contracts"

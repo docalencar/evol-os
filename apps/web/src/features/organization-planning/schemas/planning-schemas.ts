@@ -1,8 +1,14 @@
 import { z } from "zod"
 
+import { INITIAL_PLANNING_SNAPSHOT_VERSION } from "../types/planning-contracts"
+
 export const createWorkspaceSchema = z.object({
   id: z.string().uuid(),
   companyId: z.string().uuid(),
+  initialSnapshotId: z.string().uuid(),
+  allocatedInitialSnapshotVersion: z.literal(
+    INITIAL_PLANNING_SNAPSHOT_VERSION
+  ),
   createdAt: z.date(),
 })
 

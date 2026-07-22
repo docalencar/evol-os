@@ -33,6 +33,11 @@ create table if not exists public.organization_planning_snapshots (
     on delete cascade,
   constraint organization_planning_snapshots_version_check
     check (version > 0),
+  constraint organization_planning_snapshots_bootstrap_check
+    check (
+      (version = 1 and source_scenario_id is null)
+      or (version > 1 and source_scenario_id is not null)
+    ),
   constraint organization_planning_snapshots_workspace_version_key
     unique (workspace_id, version),
   constraint organization_planning_snapshots_id_company_key
@@ -179,3 +184,9 @@ using (public.is_company_member(company_id));
 create policy "admins and hr create planning snapshots"
 on public.organization_planning_snapshots for insert
 with check (public.has_company_role(company_id, array['owner', 'admin', 'hr']));
+
+comment on column public.organization_planning_snapshots.source_scenario_id is
+  'Nulo apenas no snapshot inicial do workspace; snapshots derivados apontam para o cenário publicado.';
+
+comment on column public.organization_planning_snapshots.version is
+  'Versão alocada de forma única por workspace. A versão 1 é reservada ao bootstrap inicial.';

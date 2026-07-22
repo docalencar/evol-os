@@ -39,10 +39,10 @@ export async function createSnapshotRepository() {
         .eq("company_id", companyId)
         .order("published_at", { ascending: false })
 
-      return {
-        data: error ? null : (data ?? []).map((row) => mapSnapshot(row as SnapshotRow)),
-        error,
-      }
+      if (error) throw new Error(error.message)
+      return (data ?? []).map((row) =>
+        mapSnapshot(row as SnapshotRow)
+      )
     },
 
     async findById(companyId: string, snapshotId: string) {
@@ -53,15 +53,13 @@ export async function createSnapshotRepository() {
         .eq("id", snapshotId)
         .maybeSingle()
 
-      return {
-        data: data ? mapSnapshot(data as SnapshotRow) : null,
-        error,
-      }
+      if (error) throw new Error(error.message)
+      return data ? mapSnapshot(data as SnapshotRow) : null
     },
 
     async create(snapshot: PublishedSnapshot) {
       const value = snapshot.toContract()
-      return database
+      const { error } = await database
         .from("organization_planning_snapshots")
         .insert({
           id: value.id,
@@ -71,6 +69,8 @@ export async function createSnapshotRepository() {
           version: value.version,
           published_at: value.publishedAt.toISOString(),
         })
+
+      if (error) throw new Error(error.message)
     },
   }
 }

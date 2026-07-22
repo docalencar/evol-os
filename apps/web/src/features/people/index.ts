@@ -42,6 +42,12 @@ export { createEmployeeRepository } from "./repositories/employee-repository"
 export { createRoleRepository } from "./repositories/role-repository"
 
 export { getEmployees } from "./queries/get-employees"
+export {
+  getEmployeeHiresInPeriod,
+} from "./queries/get-employee-hires-in-period"
+export type {
+  EmployeeHireInPeriod,
+} from "./queries/get-employee-hires-in-period"
 export { getEmployeeById } from "./queries/get-employee-by-id"
 export { getRoles } from "./queries/get-roles"
 export { getRoleById } from "./queries/get-role-by-id"
@@ -155,4 +161,3 @@ export type {
   ApplyEmployeeSyncItemInput,
   ApplyEmployeeSyncItemResult,
 } from "./services/apply-employee-sync-item"
-

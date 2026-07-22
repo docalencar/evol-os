@@ -48,10 +48,10 @@ export async function createScenarioRepository() {
         .eq("company_id", companyId)
         .order("updated_at", { ascending: false })
 
-      return {
-        data: error ? null : (data ?? []).map((row) => mapScenario(row as ScenarioRow)),
-        error,
-      }
+      if (error) throw new Error(error.message)
+      return (data ?? []).map((row) =>
+        mapScenario(row as ScenarioRow)
+      )
     },
 
     async findById(companyId: string, scenarioId: string) {
@@ -62,15 +62,13 @@ export async function createScenarioRepository() {
         .eq("id", scenarioId)
         .maybeSingle()
 
-      return {
-        data: data ? mapScenario(data as ScenarioRow) : null,
-        error,
-      }
+      if (error) throw new Error(error.message)
+      return data ? mapScenario(data as ScenarioRow) : null
     },
 
     async create(scenario: PlanningScenario) {
       const value = scenario.toContract()
-      return database
+      const { error } = await database
         .from("organization_planning_scenarios")
         .insert({
           id: value.id,
@@ -84,11 +82,13 @@ export async function createScenarioRepository() {
           created_at: value.createdAt.toISOString(),
           updated_at: value.updatedAt.toISOString(),
         })
+
+      if (error) throw new Error(error.message)
     },
 
     async save(scenario: PlanningScenario, expectedVersion: number) {
       const value = scenario.toContract()
-      return database
+      const { data, error } = await database
         .from("organization_planning_scenarios")
         .update({
           name: value.name,
@@ -103,6 +103,11 @@ export async function createScenarioRepository() {
         .neq("status", "published")
         .select("id")
         .maybeSingle()
+
+      if (error) throw new Error(error.message)
+      if (!data) {
+        throw new Error("PLANNING_VERSION_CONFLICT")
+      }
     },
   }
 }

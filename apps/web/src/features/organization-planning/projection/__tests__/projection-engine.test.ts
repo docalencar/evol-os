@@ -138,7 +138,14 @@ test("ProjectionEngine freezes state produced by an executor", () => {
     canExecute: () => true,
     execute: (context) => context.withOrganization({
       ...context.organization,
-      departments: [{ id: "department-1" }],
+      departments: [{
+        id: "department-1",
+        name: "Departamento",
+        code: null,
+        description: null,
+        parentDepartmentId: null,
+        status: "active",
+      }],
     }),
   }
   const result = ProjectionEngine.create([executor]).project({
@@ -178,4 +185,340 @@ test("ProjectionResult freezes its result collections and exposes validity", () 
   assert.equal(Object.isFrozen(result), true)
   assert.equal(Object.isFrozen(result.warnings), true)
   assert.equal(Object.isFrozen(result.errors), true)
+})
+
+function departmentChangeSet(
+  id: string,
+  version: number,
+  changeType:
+    | "department.create"
+    | "department.update"
+    | "department.archive",
+  payload: Readonly<Record<string, unknown>>
+): ChangeSet {
+  return Object.freeze({
+    id,
+    companyId: "company-1",
+    scenarioId: "scenario-1",
+    changeType,
+    payload: Object.freeze({ ...payload }),
+    version,
+  })
+}
+
+test("DepartmentExecutor creates, updates and archives departments", () => {
+  const result = ProjectionEngine.create().project({
+    snapshot,
+    scenario,
+    changeSets: [
+      departmentChangeSet(
+        "change-1",
+        1,
+        "department.create",
+        {
+          departmentId: "department-1",
+          name: " Financeiro ",
+          code: " FIN ",
+        }
+      ),
+      departmentChangeSet(
+        "change-2",
+        2,
+        "department.update",
+        {
+          departmentId: "department-1",
+          name: "Finanças",
+          description: "Área financeira",
+        }
+      ),
+      departmentChangeSet(
+        "change-3",
+        3,
+        "department.archive",
+        {
+          departmentId: "department-1",
+        }
+      ),
+    ],
+  })
+
+  assert.equal(result.isValid, true)
+  assert.deepEqual(result.organization.departments, [
+    {
+      id: "department-1",
+      name: "Finanças",
+      code: "FIN",
+      description: "Área financeira",
+      parentDepartmentId: null,
+      status: "archived",
+    },
+  ])
+  assert.equal(result.metrics.departments, 1)
+  assert.deepEqual(result.warnings, [])
+})
+
+test("DepartmentExecutor preserves hierarchy between sequential change sets", () => {
+  const result = ProjectionEngine.create().project({
+    snapshot,
+    scenario,
+    changeSets: [
+      departmentChangeSet(
+        "change-1",
+        1,
+        "department.create",
+        {
+          departmentId: "department-parent",
+          name: "Operações",
+        }
+      ),
+      departmentChangeSet(
+        "change-2",
+        2,
+        "department.create",
+        {
+          departmentId: "department-child",
+          name: "Logística",
+          parentDepartmentId:
+            "department-parent",
+        }
+      ),
+    ],
+  })
+
+  assert.equal(result.isValid, true)
+  assert.equal(
+    result.organization.departments[1]
+      ?.parentDepartmentId,
+    "department-parent"
+  )
+})
+
+test("DepartmentExecutor rejects duplicate active names", () => {
+  const result = ProjectionEngine.create().project({
+    snapshot,
+    scenario,
+    changeSets: [
+      departmentChangeSet(
+        "change-1",
+        1,
+        "department.create",
+        {
+          departmentId: "department-1",
+          name: "Financeiro",
+        }
+      ),
+      departmentChangeSet(
+        "change-2",
+        2,
+        "department.create",
+        {
+          departmentId: "department-2",
+          name: " financeiro ",
+        }
+      ),
+    ],
+  })
+
+  assert.equal(result.isValid, false)
+  assert.equal(
+    result.errors[0]?.code,
+    "department.create.name_already_exists"
+  )
+  assert.equal(
+    result.organization.departments.length,
+    1
+  )
+})
+
+test("DepartmentExecutor reports invalid payloads as projection errors", () => {
+  const result = ProjectionEngine.create().project({
+    snapshot,
+    scenario,
+    changeSets: [
+      departmentChangeSet(
+        "change-1",
+        1,
+        "department.create",
+        {
+          departmentId: "department-1",
+        }
+      ),
+    ],
+  })
+
+  assert.equal(result.isValid, false)
+  assert.equal(
+    result.errors[0]?.code,
+    "department.change_set.invalid_payload"
+  )
+  assert.deepEqual(
+    result.organization.departments,
+    []
+  )
+})
+
+test("DepartmentExecutor emits warning for idempotent update", () => {
+  const result = ProjectionEngine.create().project({
+    snapshot,
+    scenario,
+    changeSets: [
+      departmentChangeSet(
+        "change-1",
+        1,
+        "department.create",
+        {
+          departmentId: "department-1",
+          name: "Financeiro",
+        }
+      ),
+      departmentChangeSet(
+        "change-2",
+        2,
+        "department.update",
+        {
+          departmentId: "department-1",
+          name: "Financeiro",
+        }
+      ),
+    ],
+  })
+
+  assert.equal(result.isValid, true)
+  assert.equal(
+    result.warnings[0]?.code,
+    "department.update.no_changes"
+  )
+})
+
+test("DepartmentExecutor blocks hierarchy cycles", () => {
+  const result = ProjectionEngine.create().project({
+    snapshot,
+    scenario,
+    changeSets: [
+      departmentChangeSet(
+        "change-1",
+        1,
+        "department.create",
+        {
+          departmentId: "department-a",
+          name: "Departamento A",
+        }
+      ),
+      departmentChangeSet(
+        "change-2",
+        2,
+        "department.create",
+        {
+          departmentId: "department-b",
+          name: "Departamento B",
+          parentDepartmentId: "department-a",
+        }
+      ),
+      departmentChangeSet(
+        "change-3",
+        3,
+        "department.update",
+        {
+          departmentId: "department-a",
+          parentDepartmentId: "department-b",
+        }
+      ),
+    ],
+  })
+
+  assert.equal(result.isValid, false)
+  assert.equal(
+    result.errors[0]?.code,
+    "department.update.hierarchy_cycle"
+  )
+  assert.equal(
+    result.organization.departments[0]
+      ?.parentDepartmentId,
+    null
+  )
+})
+
+test("DepartmentExecutor blocks archive with active children", () => {
+  const result = ProjectionEngine.create().project({
+    snapshot,
+    scenario,
+    changeSets: [
+      departmentChangeSet(
+        "change-1",
+        1,
+        "department.create",
+        {
+          departmentId: "department-parent",
+          name: "Operações",
+        }
+      ),
+      departmentChangeSet(
+        "change-2",
+        2,
+        "department.create",
+        {
+          departmentId: "department-child",
+          name: "Logística",
+          parentDepartmentId:
+            "department-parent",
+        }
+      ),
+      departmentChangeSet(
+        "change-3",
+        3,
+        "department.archive",
+        {
+          departmentId: "department-parent",
+        }
+      ),
+    ],
+  })
+
+  assert.equal(result.isValid, false)
+  assert.equal(
+    result.errors[0]?.code,
+    "department.archive.has_active_children"
+  )
+  assert.equal(
+    result.organization.departments[0]?.status,
+    "active"
+  )
+})
+
+test("DepartmentExecutor produces deterministic immutable results", () => {
+  const input = {
+    snapshot,
+    scenario,
+    changeSets: [
+      departmentChangeSet(
+        "change-1",
+        1,
+        "department.create",
+        {
+          departmentId: "department-1",
+          name: "Financeiro",
+          code: "FIN",
+        }
+      ),
+    ],
+  }
+
+  const first =
+    ProjectionEngine.create().project(input)
+  const second =
+    ProjectionEngine.create().project(input)
+
+  assert.deepEqual(first, second)
+  assert.equal(
+    Object.isFrozen(
+      first.organization.departments
+    ),
+    true
+  )
+  assert.equal(
+    Object.isFrozen(
+      first.organization.departments[0]
+    ),
+    true
+  )
 })

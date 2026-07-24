@@ -1,5 +1,6 @@
 export * from "./contracts"
 export * from "./context"
+export * from "./departments"
 export * from "./engine"
 export * from "./executors"
 export * from "./pipeline"

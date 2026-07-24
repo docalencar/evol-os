@@ -34,6 +34,16 @@ export const PROJECTED_POSITION_STATUSES = [
 export type ProjectedPositionStatus =
   (typeof PROJECTED_POSITION_STATUSES)[number]
 
+export const PROJECTED_EMPLOYEE_STATUSES = [
+  "active",
+  "inactive",
+  "on_leave",
+  "terminated",
+] as const
+
+export type ProjectedEmployeeStatus =
+  (typeof PROJECTED_EMPLOYEE_STATUSES)[number]
+
 export type ProjectedDepartment = Readonly<{
   id: string
   name: string
@@ -67,6 +77,12 @@ export type ProjectedPosition = Readonly<{
 
 export type ProjectedEmployee = Readonly<{
   id: string
+  fullName: string
+  email: string | null
+  status: ProjectedEmployeeStatus
+  managerId: string | null
+  departmentId: string | null
+  teamId: string | null
   positionId: string | null
 }>
 
@@ -130,6 +146,16 @@ export const POSITION_MUTABLE_FIELDS = [
 
 export type PositionMutableField =
   (typeof POSITION_MUTABLE_FIELDS)[number]
+
+export const EMPLOYEE_MUTABLE_FIELDS = [
+  "fullName",
+  "email",
+  "status",
+  "managerId",
+] as const
+
+export type EmployeeMutableField =
+  (typeof EMPLOYEE_MUTABLE_FIELDS)[number]
 
 export type ProjectionInternalEvent =
   | Readonly<{
@@ -196,6 +222,33 @@ export type ProjectionInternalEvent =
       previousDepartmentId: string | null
       departmentId: string | null
     }>
+  | Readonly<{
+      type: "employee.created"
+      changeSetId: string
+      employeeId: string
+    }>
+  | Readonly<{
+      type: "employee.updated"
+      changeSetId: string
+      employeeId: string
+      changedFields: readonly EmployeeMutableField[]
+    }>
+  | Readonly<{
+      type: "employee.archived"
+      changeSetId: string
+      employeeId: string
+    }>
+  | Readonly<{
+      type: "employee.moved"
+      changeSetId: string
+      employeeId: string
+      previousDepartmentId: string | null
+      departmentId: string | null
+      previousTeamId: string | null
+      teamId: string | null
+      previousPositionId: string | null
+      positionId: string | null
+    }>
 
 export type ProjectionInput = Readonly<{
   snapshot: PublishedSnapshotContract
@@ -203,13 +256,14 @@ export type ProjectionInput = Readonly<{
   changeSets: readonly ChangeSet[]
 }>
 
-export const EMPTY_PROJECTION_METRICS: ProjectionMetrics = Object.freeze({
-  headcount: 0,
-  vacancies: 0,
-  salaryMass: 0,
-  departments: 0,
-  positions: 0,
-})
+export const EMPTY_PROJECTION_METRICS: ProjectionMetrics =
+  Object.freeze({
+    headcount: 0,
+    vacancies: 0,
+    salaryMass: 0,
+    departments: 0,
+    positions: 0,
+  })
 
 export function createEmptyProjectedOrganization(): ProjectedOrganization {
   return freezeProjectedOrganization({
@@ -226,12 +280,22 @@ export function freezeProjectedOrganization(
   organization: ProjectedOrganization
 ): ProjectedOrganization {
   return Object.freeze({
-    departments: freezeEntities(organization.departments),
+    departments: freezeEntities(
+      organization.departments
+    ),
     teams: freezeEntities(organization.teams),
-    positions: freezeEntities(organization.positions),
-    employees: freezeEntities(organization.employees),
-    vacancies: freezeEntities(organization.vacancies),
-    metrics: Object.freeze({ ...organization.metrics }),
+    positions: freezeEntities(
+      organization.positions
+    ),
+    employees: freezeEntities(
+      organization.employees
+    ),
+    vacancies: freezeEntities(
+      organization.vacancies
+    ),
+    metrics: Object.freeze({
+      ...organization.metrics,
+    }),
   })
 }
 
@@ -239,6 +303,10 @@ function freezeEntities<T extends object>(
   entities: readonly T[]
 ): readonly Readonly<T>[] {
   return Object.freeze(
-    entities.map((entity) => Object.freeze({ ...entity }))
+    entities.map((entity) =>
+      Object.freeze({
+        ...entity,
+      })
+    )
   )
 }

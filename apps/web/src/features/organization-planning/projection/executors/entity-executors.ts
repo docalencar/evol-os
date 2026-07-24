@@ -11,6 +11,17 @@ import {
   type ParsedDepartmentChangeSet,
 } from "../departments"
 import {
+  archiveProjectedEmployee,
+  createProjectedEmployee,
+  EMPLOYEE_CHANGE_TYPES,
+  isEmployeeChangeType,
+  moveProjectedEmployee,
+  parseEmployeeChangeSet,
+  updateProjectedEmployee,
+  type EmployeeMutationResult,
+  type ParsedEmployeeChangeSet,
+} from "../employees"
+import {
   archiveProjectedPosition,
   createProjectedPosition,
   isPositionChangeType,
@@ -34,13 +45,6 @@ import {
   type ParsedTeamChangeSet,
 } from "../teams/team-change-set"
 import type { ChangeSetExecutor } from "./change-set-executor"
-
-const EMPLOYEE_CHANGE_TYPES = [
-  "employee.create",
-  "employee.update",
-  "employee.transfer",
-  "employee.terminate",
-] as const
 
 const VACANCY_CHANGE_TYPES = [
   "vacancy.create",
@@ -240,14 +244,56 @@ export class EmployeeExecutor
   readonly name = "EmployeeExecutor"
 
   canExecute(changeSet: ChangeSet) {
-    return supports(
-      EMPLOYEE_CHANGE_TYPES,
-      changeSet
+    return isEmployeeChangeType(
+      changeSet.changeType
     )
   }
 
-  execute(context: ProjectionContext) {
-    return context
+  execute(
+    context: ProjectionContext,
+    changeSet: ChangeSet
+  ) {
+    const parsed =
+      parseEmployeeChangeSet(changeSet)
+
+    if (!parsed.success) {
+      return context.addError(parsed.issue)
+    }
+
+    const result = executeEmployeeMutation(
+      context,
+      parsed.changeSet
+    )
+
+    if (!result.success) {
+      return context.addError(result.issue)
+    }
+
+    let nextContext = context
+
+    if (
+      result.employees !==
+      context.organization.employees
+    ) {
+      nextContext = nextContext.withOrganization({
+        ...context.organization,
+        employees: result.employees,
+      })
+    }
+
+    if (result.event) {
+      nextContext = nextContext.addEvent(
+        result.event
+      )
+    }
+
+    if (result.warning) {
+      nextContext = nextContext.addWarning(
+        result.warning
+      )
+    }
+
+    return nextContext
   }
 }
 
@@ -372,8 +418,56 @@ function executePositionMutation(
   }
 }
 
+function executeEmployeeMutation(
+  context: ProjectionContext,
+  changeSet: ParsedEmployeeChangeSet
+): EmployeeMutationResult {
+  switch (changeSet.changeType) {
+    case "employee.create":
+      return createProjectedEmployee(
+        context.organization.employees,
+        {
+          departments:
+            context.organization.departments,
+          teams: context.organization.teams,
+          positions: context.organization.positions,
+        },
+        changeSet.id,
+        changeSet.payload
+      )
+
+    case "employee.update":
+      return updateProjectedEmployee(
+        context.organization.employees,
+        changeSet.id,
+        changeSet.payload
+      )
+
+    case "employee.archive":
+      return archiveProjectedEmployee(
+        context.organization.employees,
+        changeSet.id,
+        changeSet.payload
+      )
+
+    case "employee.move":
+      return moveProjectedEmployee(
+        context.organization.employees,
+        {
+          departments:
+            context.organization.departments,
+          teams: context.organization.teams,
+          positions: context.organization.positions,
+        },
+        changeSet.id,
+        changeSet.payload
+      )
+  }
+}
+
 export {
   DEPARTMENT_CHANGE_TYPES,
+  EMPLOYEE_CHANGE_TYPES,
   POSITION_CHANGE_TYPES,
   TEAM_CHANGE_TYPES,
 }

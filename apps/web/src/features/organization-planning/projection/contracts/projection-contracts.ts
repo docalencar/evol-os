@@ -9,6 +9,9 @@ import type {
   PlanningScenarioContract,
   PublishedSnapshotContract,
 } from "../../types/planning-contracts"
+import type {
+  OrganizationSnapshot,
+} from "../../snapshot"
 
 export const PROJECTED_DEPARTMENT_STATUSES = [
   "active",
@@ -252,6 +255,7 @@ export type ProjectionInternalEvent =
 
 export type ProjectionInput = Readonly<{
   snapshot: PublishedSnapshotContract
+  organizationSnapshot?: OrganizationSnapshot
   scenario: PlanningScenarioContract
   changeSets: readonly ChangeSet[]
 }>

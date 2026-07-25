@@ -7,7 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:projection": "tsx --test src/features/organization-planning/projection/**/*.test.ts"
+    "test": "tsx --test",
+    "test:watch": "tsx --test --watch",
+    "test:coverage": "tsx --test --experimental-test-coverage",
+    "test:projection": "tsx --test src/features/organization-planning/projection/**/*.test.ts",
+    "check": "npm run test && npm run build"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

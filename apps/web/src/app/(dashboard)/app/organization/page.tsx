@@ -6,11 +6,14 @@ import {
   FileStack,
   GitBranch,
   Layers3,
-  Plus,
   Sparkles,
 } from "lucide-react"
 
 import { PageHeader } from "@/components/shared/page-header"
+import {
+  PlanningScenarioCreateDialog,
+  PlanningWorkspaceCreateButton,
+} from "@/features/organization-planning"
 import {
   getPlanningHome,
   type PlanningHomeScenario,
@@ -20,7 +23,10 @@ import type {
 } from "@/features/organization-planning/types/planning-contracts"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
-const STATUS_LABELS: Record<PlanningScenarioStatus, string> = {
+const STATUS_LABELS: Record<
+  PlanningScenarioStatus,
+  string
+> = {
   draft: "Rascunho",
   submitted: "Em aprovação",
   approved: "Aprovado",
@@ -29,7 +35,10 @@ const STATUS_LABELS: Record<PlanningScenarioStatus, string> = {
   archived: "Arquivado",
 }
 
-const STATUS_CLASSES: Record<PlanningScenarioStatus, string> = {
+const STATUS_CLASSES: Record<
+  PlanningScenarioStatus,
+  string
+> = {
   draft:
     "border-slate-200 bg-slate-50 text-slate-700",
   submitted:
@@ -130,7 +139,9 @@ function ScenarioRow({
       </td>
 
       <td className="px-4 py-4">
-        <PlanningStatusBadge status={scenario.status} />
+        <PlanningStatusBadge
+          status={scenario.status}
+        />
       </td>
 
       <td className="px-4 py-4 text-sm text-muted-foreground">
@@ -167,25 +178,17 @@ function EmptyWorkspace() {
         </div>
 
         <h2 className="mt-5 text-xl font-semibold">
-          O planejamento organizacional ainda não foi iniciado
+          O planejamento organizacional ainda não foi
+          iniciado
         </h2>
 
         <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-          O workspace reúne snapshots e cenários para que alterações
-          organizacionais sejam planejadas antes de afetarem a operação.
+          O workspace reúne snapshots e cenários para que
+          alterações organizacionais sejam planejadas antes
+          de afetarem a operação.
         </p>
 
-        <span
-          className={[
-            "mt-6 inline-flex cursor-not-allowed items-center gap-2",
-            "rounded-md bg-primary px-4 py-2 text-sm font-medium",
-            "text-primary-foreground opacity-60",
-          ].join(" ")}
-          title="A criação automática do workspace será implementada na próxima etapa."
-        >
-          <Plus className="h-4 w-4" />
-          Iniciar planejamento
-        </span>
+        <PlanningWorkspaceCreateButton className="mt-6" />
       </div>
     </section>
   )
@@ -203,8 +206,8 @@ function EmptyScenarios() {
       </h3>
 
       <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-muted-foreground">
-        Crie um cenário para simular mudanças na estrutura sem alterar
-        imediatamente a organização atual.
+        Crie um cenário para simular mudanças na estrutura
+        sem alterar imediatamente a organização atual.
       </p>
     </div>
   )
@@ -214,7 +217,8 @@ export default async function OrganizationPage() {
   const { companyId, companyName } =
     await getCurrentCompanyContext()
 
-  const planning = await getPlanningHome(companyId)
+  const planning =
+    await getPlanningHome(companyId)
 
   const workspaceUpdatedAt =
     planning.workspace?.updatedAt ?? null
@@ -222,24 +226,25 @@ export default async function OrganizationPage() {
   const snapshotPublishedAt =
     planning.currentSnapshot?.publishedAt ?? null
 
+  const canCreateScenario =
+    Boolean(planning.workspace) &&
+    Boolean(planning.currentSnapshot)
+
   return (
     <div className="space-y-8">
       <PageHeader
         title="Planejamento Organizacional"
         description="Planeje mudanças, avalie cenários e publique somente quando a estrutura estiver pronta."
         actions={
-          planning.workspace ? (
-            <span
-              className={[
-                "inline-flex cursor-not-allowed items-center gap-2",
-                "rounded-md bg-primary px-4 py-2 text-sm font-medium",
-                "text-primary-foreground opacity-60",
-              ].join(" ")}
-              title="A criação de cenários será implementada na próxima etapa."
-            >
-              <Plus className="h-4 w-4" />
-              Novo cenário
-            </span>
+          canCreateScenario &&
+          planning.workspace &&
+          planning.currentSnapshot ? (
+            <PlanningScenarioCreateDialog
+              workspaceId={planning.workspace.id}
+              baseSnapshotId={
+                planning.currentSnapshot.id
+              }
+            />
           ) : null
         }
       />
@@ -255,14 +260,14 @@ export default async function OrganizationPage() {
             </div>
 
             <h2 className="mt-5 text-2xl font-semibold tracking-tight md:text-3xl">
-              Evolua a estrutura da {companyName} com decisões
-              planejadas.
+              Evolua a estrutura da {companyName} com
+              decisões planejadas.
             </h2>
 
             <p className="mt-3 max-w-2xl leading-7 text-muted-foreground">
-              Trabalhe com cenários separados da operação atual,
-              acompanhe versões e mantenha um histórico confiável das
-              estruturas publicadas.
+              Trabalhe com cenários separados da operação
+              atual, acompanhe versões e mantenha um
+              histórico confiável das estruturas publicadas.
             </p>
           </div>
 
@@ -285,7 +290,9 @@ export default async function OrganizationPage() {
 
                 <p className="mt-0.5 text-sm text-muted-foreground">
                   {planning.currentSnapshot
-                    ? formatDate(snapshotPublishedAt)
+                    ? formatDate(
+                        snapshotPublishedAt
+                      )
                     : "Inicie o workspace para criar a base."}
                 </p>
               </div>
@@ -308,7 +315,9 @@ export default async function OrganizationPage() {
               }
               description={
                 planning.currentSnapshot
-                  ? `Publicado em ${formatDate(snapshotPublishedAt)}`
+                  ? `Publicado em ${formatDate(
+                      snapshotPublishedAt
+                    )}`
                   : "Nenhuma estrutura publicada."
               }
               icon={Layers3}
@@ -316,21 +325,29 @@ export default async function OrganizationPage() {
 
             <MetricCard
               title="Cenários ativos"
-              value={planning.metrics.activeScenarios}
+              value={
+                planning.metrics.activeScenarios
+              }
               description="Rascunhos e cenários em análise."
               icon={GitBranch}
             />
 
             <MetricCard
               title="Em aprovação"
-              value={planning.metrics.pendingApprovalScenarios}
+              value={
+                planning.metrics
+                  .pendingApprovalScenarios
+              }
               description="Cenários aguardando uma decisão."
               icon={Clock3}
             />
 
             <MetricCard
               title="Cenários publicados"
-              value={planning.metrics.publishedScenarios}
+              value={
+                planning.metrics
+                  .publishedScenarios
+              }
               description="Planejamentos convertidos em snapshots."
               icon={FileStack}
             />
@@ -344,8 +361,8 @@ export default async function OrganizationPage() {
                 </h2>
 
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Acompanhe os planejamentos criados a partir da
-                  estrutura publicada.
+                  Acompanhe os planejamentos criados a
+                  partir da estrutura publicada.
                 </p>
               </div>
 
@@ -386,12 +403,14 @@ export default async function OrganizationPage() {
                   </thead>
 
                   <tbody>
-                    {planning.scenarios.map((scenario) => (
-                      <ScenarioRow
-                        key={scenario.id}
-                        scenario={scenario}
-                      />
-                    ))}
+                    {planning.scenarios.map(
+                      (scenario) => (
+                        <ScenarioRow
+                          key={scenario.id}
+                          scenario={scenario}
+                        />
+                      )
+                    )}
                   </tbody>
                 </table>
               </div>

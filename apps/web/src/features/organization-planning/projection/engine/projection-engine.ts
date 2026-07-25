@@ -1,12 +1,25 @@
-import type { ChangeSet } from "../../types/planning-contracts"
-import { ProjectionContext } from "../context"
-import type { ProjectionInput } from "../contracts"
+import type {
+  ChangeSet,
+} from "../../types/planning-contracts"
+import {
+  bootstrapProjectedOrganization,
+} from "../bootstrap"
+import {
+  ProjectionContext,
+} from "../context"
+import type {
+  ProjectionInput,
+} from "../contracts"
 import {
   DEFAULT_CHANGE_SET_EXECUTORS,
   type ChangeSetExecutor,
 } from "../executors"
-import { ProjectionPipeline } from "../pipeline"
-import { ProjectionResult } from "../result"
+import {
+  ProjectionPipeline,
+} from "../pipeline"
+import {
+  ProjectionResult,
+} from "../result"
 import {
   StructuralProjectionMetricsCalculator,
   type ProjectionMetricsCalculator,
@@ -18,7 +31,8 @@ import {
 
 export class ProjectionEngine {
   constructor(
-    private readonly pipeline: ProjectionPipeline,
+    private readonly pipeline:
+      ProjectionPipeline,
     private readonly validators:
       readonly ProjectionValidator[],
     private readonly metricsCalculator:
@@ -26,33 +40,51 @@ export class ProjectionEngine {
   ) {}
 
   static create(
-    executors: readonly ChangeSetExecutor[] =
+    executors:
+      readonly ChangeSetExecutor[] =
       DEFAULT_CHANGE_SET_EXECUTORS
   ) {
     return new ProjectionEngine(
       new ProjectionPipeline(executors),
-      [new ProjectionContractValidator()],
+      [
+        new ProjectionContractValidator(),
+      ],
       new StructuralProjectionMetricsCalculator()
     )
   }
 
-  project(input: ProjectionInput): ProjectionResult {
+  project(
+    input: ProjectionInput
+  ): ProjectionResult {
     const orderedChangeSets =
       orderChangeSets(input.changeSets)
+
+    const initialOrganization =
+      input.organizationSnapshot
+        ? bootstrapProjectedOrganization(
+            input.organizationSnapshot
+          )
+        : undefined
 
     const initialContext =
       ProjectionContext.create(
         input.snapshot,
         input.scenario,
-        orderedChangeSets
+        orderedChangeSets,
+        initialOrganization
       )
 
     const projectedContext =
-      this.pipeline.execute(initialContext)
+      this.pipeline.execute(
+        initialContext
+      )
 
     const contractErrors =
-      this.validators.flatMap((validator) =>
-        validator.validate(projectedContext)
+      this.validators.flatMap(
+        (validator) =>
+          validator.validate(
+            projectedContext
+          )
       )
 
     const metrics =
@@ -61,11 +93,15 @@ export class ProjectionEngine {
       )
 
     const finalContext =
-      projectedContext.withMetrics(metrics)
+      projectedContext.withMetrics(
+        metrics
+      )
 
     return ProjectionResult.create({
-      organization: finalContext.organization,
-      warnings: finalContext.warnings,
+      organization:
+        finalContext.organization,
+      warnings:
+        finalContext.warnings,
       errors: Object.freeze([
         ...finalContext.errors,
         ...contractErrors,
@@ -80,8 +116,11 @@ function orderChangeSets(
   return Object.freeze(
     [...changeSets].sort(
       (left, right) =>
-        left.version - right.version ||
-        left.id.localeCompare(right.id)
+        left.version -
+          right.version ||
+        left.id.localeCompare(
+          right.id
+        )
     )
   )
 }

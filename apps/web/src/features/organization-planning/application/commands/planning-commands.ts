@@ -1,3 +1,8 @@
+import type {
+  PlanningChangeSetPayload,
+  PlanningChangeType,
+} from "../../change-sets"
+
 export type CreateWorkspaceCommand = Readonly<{
   companyId: string
   workspaceId: string
@@ -14,6 +19,17 @@ export type CreateScenarioCommand = Readonly<{
   description?: string | null
   occurredAt: Date
 }>
+
+export type CreatePlanningChangeSetCommand = {
+  [TChangeType in PlanningChangeType]: Readonly<{
+    companyId: string
+    changeSetId: string
+    scenarioId: string
+    changeType: TChangeType
+    payload: PlanningChangeSetPayload<TChangeType>
+    occurredAt: Date
+  }>
+}[PlanningChangeType]
 
 export type PublishScenarioCommand = Readonly<{
   companyId: string

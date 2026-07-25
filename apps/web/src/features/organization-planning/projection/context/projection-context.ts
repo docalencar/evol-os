@@ -31,15 +31,23 @@ export class ProjectionContext {
   static create(
     snapshot: PublishedSnapshotContract,
     scenario: PlanningScenarioContract,
-    changeSets: readonly ChangeSet[]
+    changeSets: readonly ChangeSet[],
+    initialOrganization:
+      ProjectedOrganization =
+      createEmptyProjectedOrganization()
   ) {
-    const organization = createEmptyProjectedOrganization()
+    const organization =
+      freezeProjectedOrganization(
+        initialOrganization
+      )
 
     return new ProjectionContext(
       Object.freeze({
         snapshot,
         scenario,
-        changeSets: Object.freeze([...changeSets]),
+        changeSets: Object.freeze([
+          ...changeSets,
+        ]),
         organization,
         events: Object.freeze([]),
         warnings: Object.freeze([]),
@@ -100,10 +108,11 @@ export class ProjectionContext {
 
     return this.copy({
       metrics: immutableMetrics,
-      organization: freezeProjectedOrganization({
-        ...this.organization,
-        metrics: immutableMetrics,
-      }),
+      organization:
+        freezeProjectedOrganization({
+          ...this.organization,
+          metrics: immutableMetrics,
+        }),
     })
   }
 
@@ -120,7 +129,9 @@ export class ProjectionContext {
     return this.copy({
       warnings: Object.freeze([
         ...this.warnings,
-        Object.freeze({ ...warning }),
+        Object.freeze({
+          ...warning,
+        }),
       ]),
     })
   }
@@ -129,7 +140,9 @@ export class ProjectionContext {
     return this.copy({
       errors: Object.freeze([
         ...this.errors,
-        Object.freeze({ ...error }),
+        Object.freeze({
+          ...error,
+        }),
       ]),
     })
   }
@@ -158,5 +171,34 @@ function freezeProjectionEvent(
     })
   }
 
-  return Object.freeze({ ...event })
+  if (event.type === "team.updated") {
+    return Object.freeze({
+      ...event,
+      changedFields: Object.freeze([
+        ...event.changedFields,
+      ]),
+    })
+  }
+
+  if (event.type === "position.updated") {
+    return Object.freeze({
+      ...event,
+      changedFields: Object.freeze([
+        ...event.changedFields,
+      ]),
+    })
+  }
+
+  if (event.type === "employee.updated") {
+    return Object.freeze({
+      ...event,
+      changedFields: Object.freeze([
+        ...event.changedFields,
+      ]),
+    })
+  }
+
+  return Object.freeze({
+    ...event,
+  })
 }

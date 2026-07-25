@@ -1,5 +1,6 @@
 export type {
   ArchiveScenarioCommand,
+  CreatePlanningChangeSetCommand,
   CreateScenarioCommand,
   CreateWorkspaceCommand,
   PublishScenarioCommand,

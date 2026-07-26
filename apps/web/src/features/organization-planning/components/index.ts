@@ -41,3 +41,6 @@ export {
 export {
   ScenarioImpactSummaryCard,
 } from "./comparison"
+export {
+  ScenarioIntelligencePanel,
+} from "./intelligence"

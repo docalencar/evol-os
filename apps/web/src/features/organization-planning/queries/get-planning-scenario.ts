@@ -7,9 +7,23 @@ import {
 import {
   getScenarioComparison,
 } from "../comparison"
+
+import {
+  calculateStructuralImpact,
+  generateScenarioInsights,
+} from "../intelligence"
+
+import type {
+  ScenarioStructuralImpact,
+  ScenarioInsight,
+} from "../intelligence"
 import {
   createServerProjectScenarioService,
 } from "../factories"
+
+import {
+  createOrganizationSnapshotBuilder,
+} from "../snapshot"
 import type {
   ProjectionResult,
 } from "../projection"
@@ -18,6 +32,10 @@ import type {
 } from "../types/planning-contracts"
 import { getScenario } from "./get-scenario"
 import { getSnapshot } from "./get-snapshot"
+import {
+  calculateSpanOfControl,
+  calculatePositionCapacity,
+} from "../intelligence"
 
 export type PlanningScenarioPageScenario = Readonly<{
   id: string
@@ -66,6 +84,18 @@ export type PlanningScenarioPageComparison =
     ReturnType<typeof getScenarioComparison>
   >
 
+export type PlanningScenarioPageStructuralImpact =
+  ScenarioStructuralImpact
+
+export type PlanningScenarioPageSpanOfControl =
+  ReturnType<typeof calculateSpanOfControl>
+
+export type PlanningScenarioPagePositionCapacity =
+  ReturnType<typeof calculatePositionCapacity>
+
+export type PlanningScenarioPageInsights =
+  readonly ScenarioInsight[]
+
 export type PlanningScenarioPageChangeSet =
   Awaited<
     ReturnType<typeof getPlanningChangeSets>
@@ -78,6 +108,10 @@ export type PlanningScenarioPage = Readonly<{
   changeSets: readonly PlanningScenarioPageChangeSet[]
   projection: PlanningScenarioPageProjection
   comparison: PlanningScenarioPageComparison
+  structuralImpact: PlanningScenarioPageStructuralImpact
+  spanOfControl: PlanningScenarioPageSpanOfControl
+  positionCapacity: PlanningScenarioPagePositionCapacity
+  insights: PlanningScenarioPageInsights
 }>
 
 function toScenarioView(
@@ -140,11 +174,15 @@ export async function getPlanningScenario(
   const projectScenarioService =
     await createServerProjectScenarioService()
 
+  const organizationSnapshotBuilder =
+    await createOrganizationSnapshotBuilder()
+
   const [
     baseSnapshot,
     changeSets,
     projection,
     comparison,
+    organizationSnapshot,
   ] = await Promise.all([
     getSnapshot(
       companyId,
@@ -162,6 +200,9 @@ export async function getPlanningScenario(
       companyId,
       scenarioId,
     }),
+    organizationSnapshotBuilder.build(
+      companyId
+    ),
   ])
 
   if (!baseSnapshot) {
@@ -182,17 +223,46 @@ export async function getPlanningScenario(
   const frozenChangeSets =
     Object.freeze([...changeSets])
 
+  const structuralImpact =
+    calculateStructuralImpact(
+      organizationSnapshot,
+      projection.organization
+    )
+
+    const spanOfControl =
+  calculateSpanOfControl(
+    projection.organization
+  )
+
+  const positionCapacity =
+    calculatePositionCapacity({
+      positions:
+        projection.organization.positions,
+      employees:
+        projection.organization.employees,
+    })
+
+  const insights =
+    generateScenarioInsights(
+      organizationSnapshot,
+      projection.organization
+    )
+
   return Object.freeze({
-    scenario: toScenarioView(scenario),
-    baseSnapshot: toSnapshotView(baseSnapshot),
-    metrics: Object.freeze({
-      totalChanges: frozenChangeSets.length,
-      pendingChanges: frozenChangeSets.length,
-      warnings: projection.warnings.length,
-      projectedVersion: scenario.version,
-    }),
-    changeSets: frozenChangeSets,
-    projection: toProjectionView(projection),
-    comparison,
-  })
+  scenario: toScenarioView(scenario),
+  baseSnapshot: toSnapshotView(baseSnapshot),
+  metrics: Object.freeze({
+    totalChanges: frozenChangeSets.length,
+    pendingChanges: frozenChangeSets.length,
+    warnings: projection.warnings.length,
+    projectedVersion: scenario.version,
+  }),
+  changeSets: frozenChangeSets,
+  projection: toProjectionView(projection),
+  comparison,
+  structuralImpact,
+  spanOfControl,
+  positionCapacity,
+  insights,
+})
 }

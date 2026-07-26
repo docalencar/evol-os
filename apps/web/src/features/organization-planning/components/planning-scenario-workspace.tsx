@@ -27,6 +27,10 @@ import {
   ScenarioImpactSummaryCard,
 } from "./comparison"
 
+import {
+  ScenarioIntelligencePanel,
+} from "./intelligence"
+
 
 type PlanningScenarioWorkspaceProps = {
   planning: PlanningScenarioPage
@@ -163,6 +167,25 @@ export function PlanningScenarioWorkspace({
 
 
         <div className="space-y-5">
+
+          <ScenarioIntelligencePanel
+            structuralImpact={
+              planning.structuralImpact
+            }
+            insights={
+              planning.insights
+            }
+            spanOfControl={
+              planning.spanOfControl
+            }
+            positionCapacity={
+              planning.positionCapacity
+            }
+            employees={
+              projection.organization.employees
+            }
+          />
+
 
           <ScenarioImpactSummaryCard
             summary={

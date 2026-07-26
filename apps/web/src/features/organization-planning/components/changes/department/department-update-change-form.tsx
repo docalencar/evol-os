@@ -23,17 +23,32 @@ import {
 
 import {
   createPlanningChangeSetAction,
+  updatePlanningChangeSetAction,
 } from "../../../actions"
 import {
   ProjectedDepartmentSelector,
   type ProjectedDepartmentSelectorOption,
 } from "../../selectors"
 
+type DepartmentUpdateChangeSetEditData = {
+  id: string
+  version: number
+  payload: {
+    departmentId: string
+    name?: string
+    code?: string | null
+    description?: string | null
+    parentDepartmentId?: string | null
+  }
+}
+
 type DepartmentUpdateChangeFormProps = {
   scenarioId: string
   department: ProjectedDepartmentSelectorOption
   departments:
     readonly ProjectedDepartmentSelectorOption[]
+  editChangeSet?:
+    DepartmentUpdateChangeSetEditData
   onCancel?: () => void
   onSuccess?: () => void
 }
@@ -52,7 +67,7 @@ const textareaClassName = [
 ].join(" ")
 
 function normalizeOptionalValue(
-  value: string | null
+  value: string | null | undefined
 ) {
   return value ?? ""
 }
@@ -61,39 +76,75 @@ export function DepartmentUpdateChangeForm({
   scenarioId,
   department,
   departments,
+  editChangeSet,
   onCancel,
   onSuccess,
 }: DepartmentUpdateChangeFormProps) {
   const router = useRouter()
 
+  const initialName =
+    editChangeSet?.payload.name ??
+    department.name
+
+  const initialCode =
+    editChangeSet
+      ? normalizeOptionalValue(
+          editChangeSet.payload.code
+        )
+      : normalizeOptionalValue(
+          department.code
+        )
+
+  const initialDescription =
+    editChangeSet
+      ? normalizeOptionalValue(
+          editChangeSet.payload.description
+        )
+      : normalizeOptionalValue(
+          department.description
+        )
+
+  const initialParentDepartmentId =
+    editChangeSet
+      ? normalizeOptionalValue(
+          editChangeSet.payload
+            .parentDepartmentId
+        )
+      : normalizeOptionalValue(
+          department.parentDepartmentId
+        )
+
   const [
     name,
     setName,
-  ] = useState(department.name)
+  ] = useState(initialName)
 
   const [
     code,
     setCode,
-  ] = useState(
-    normalizeOptionalValue(department.code)
-  )
+  ] = useState(initialCode)
 
   const [
     description,
     setDescription,
-  ] = useState(
-    normalizeOptionalValue(department.description)
-  )
+  ] = useState(initialDescription)
 
   const [
     isPending,
     startTransition,
   ] = useTransition()
 
+  const isEditing = Boolean(editChangeSet)
+
+  const departmentId =
+    editChangeSet?.payload.departmentId ??
+    department.id
+
   const availableParentDepartments =
     departments.filter(
       (candidateDepartment) =>
-        candidateDepartment.id !== department.id
+        candidateDepartment.id !==
+        departmentId
     )
 
   function handleSubmit(formData: FormData) {
@@ -101,21 +152,8 @@ export function DepartmentUpdateChangeForm({
       formData.get("parentDepartmentId") ?? ""
     )
 
-    const initialCode =
-      normalizeOptionalValue(department.code)
-
-    const initialDescription =
-      normalizeOptionalValue(
-        department.description
-      )
-
-    const initialParentDepartmentId =
-      normalizeOptionalValue(
-        department.parentDepartmentId
-      )
-
     const hasChanges =
-      name !== department.name ||
+      name !== initialName ||
       code !== initialCode ||
       description !== initialDescription ||
       parentDepartmentId !==
@@ -129,18 +167,34 @@ export function DepartmentUpdateChangeForm({
     }
 
     startTransition(async () => {
-      const result =
-        await createPlanningChangeSetAction({
-          scenarioId,
-          changeType: "department.update",
-          payload: {
-            departmentId: department.id,
-            name,
-            code,
-            description,
-            parentDepartmentId,
-          },
-        })
+      const result = editChangeSet
+        ? await updatePlanningChangeSetAction({
+            scenarioId,
+            changeSetId: editChangeSet.id,
+            expectedVersion:
+              editChangeSet.version,
+            changeType: "department.update",
+            payload: {
+              departmentId:
+                editChangeSet.payload
+                  .departmentId,
+              name,
+              code,
+              description,
+              parentDepartmentId,
+            },
+          })
+        : await createPlanningChangeSetAction({
+            scenarioId,
+            changeType: "department.update",
+            payload: {
+              departmentId: department.id,
+              name,
+              code,
+              description,
+              parentDepartmentId,
+            },
+          })
 
       if (!result.success) {
         toast.error(result.message)
@@ -213,7 +267,7 @@ export function DepartmentUpdateChangeForm({
         label="Departamento superior"
         departments={availableParentDepartments}
         defaultValue={
-          department.parentDepartmentId ?? ""
+          initialParentDepartmentId
         }
         disabled={isPending}
         allowNoDepartment
@@ -251,7 +305,9 @@ export function DepartmentUpdateChangeForm({
           disabled={isPending}
           onClick={onCancel}
         >
-          Voltar
+          {isEditing
+            ? "Cancelar"
+            : "Voltar"}
         </Button>
 
         <Button
@@ -259,8 +315,12 @@ export function DepartmentUpdateChangeForm({
           disabled={isPending}
         >
           {isPending
-            ? "Criando alteração..."
-            : "Atualizar departamento"}
+            ? isEditing
+              ? "Salvando alteração..."
+              : "Criando alteração..."
+            : isEditing
+              ? "Salvar alterações"
+              : "Atualizar departamento"}
         </Button>
       </div>
     </form>

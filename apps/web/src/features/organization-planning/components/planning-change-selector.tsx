@@ -108,10 +108,9 @@ export function PlanningChangeSelector({
 
         <ChangeCategoryCard
           title="Equipe"
-          description="Crie equipes e reorganize suas relações dentro da empresa."
+          description="Crie, atualize ou arquive equipes na estrutura projetada."
           icon={Users}
-          disabled
-          onClick={() => undefined}
+          onClick={() => onSelect("team")}
         />
 
         <ChangeCategoryCard

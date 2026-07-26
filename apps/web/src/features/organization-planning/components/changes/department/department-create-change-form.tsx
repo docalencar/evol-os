@@ -22,16 +22,31 @@ import {
 
 import {
   createPlanningChangeSetAction,
+  updatePlanningChangeSetAction,
 } from "../../../actions"
 import {
   ProjectedDepartmentSelector,
   type ProjectedDepartmentSelectorOption,
 } from "../../selectors"
 
+type DepartmentCreateChangeSetEditData = {
+  id: string
+  version: number
+  payload: {
+    departmentId: string
+    name: string
+    code: string | null
+    description: string | null
+    parentDepartmentId: string | null
+  }
+}
+
 type DepartmentCreateChangeFormProps = {
   scenarioId: string
   departments:
     readonly ProjectedDepartmentSelectorOption[]
+  editChangeSet?:
+    DepartmentCreateChangeSetEditData
   onCancel?: () => void
   onSuccess?: () => void
 }
@@ -49,9 +64,16 @@ const textareaClassName = [
   "disabled:opacity-50",
 ].join(" ")
 
+function normalizeOptionalValue(
+  value: string | null | undefined
+) {
+  return value ?? ""
+}
+
 export function DepartmentCreateChangeForm({
   scenarioId,
   departments,
+  editChangeSet,
   onCancel,
   onSuccess,
 }: DepartmentCreateChangeFormProps) {
@@ -61,6 +83,8 @@ export function DepartmentCreateChangeForm({
     isPending,
     startTransition,
   ] = useTransition()
+
+  const isEditing = Boolean(editChangeSet)
 
   function handleSubmit(formData: FormData) {
     const name = String(
@@ -79,19 +103,68 @@ export function DepartmentCreateChangeForm({
       formData.get("parentDepartmentId") ?? ""
     )
 
+    if (editChangeSet) {
+      const initialCode =
+        normalizeOptionalValue(
+          editChangeSet.payload.code
+        )
+
+      const initialDescription =
+        normalizeOptionalValue(
+          editChangeSet.payload.description
+        )
+
+      const initialParentDepartmentId =
+        normalizeOptionalValue(
+          editChangeSet.payload
+            .parentDepartmentId
+        )
+
+      const hasChanges =
+        name !== editChangeSet.payload.name ||
+        code !== initialCode ||
+        description !== initialDescription ||
+        parentDepartmentId !==
+          initialParentDepartmentId
+
+      if (!hasChanges) {
+        toast.info(
+          "Nenhuma alteração foi realizada no departamento."
+        )
+        return
+      }
+    }
+
     startTransition(async () => {
-      const result =
-        await createPlanningChangeSetAction({
-          scenarioId,
-          changeType: "department.create",
-          payload: {
-            departmentId: crypto.randomUUID(),
-            name,
-            code,
-            description,
-            parentDepartmentId,
-          },
-        })
+      const result = editChangeSet
+        ? await updatePlanningChangeSetAction({
+            scenarioId,
+            changeSetId: editChangeSet.id,
+            expectedVersion:
+              editChangeSet.version,
+            changeType: "department.create",
+            payload: {
+              departmentId:
+                editChangeSet.payload
+                  .departmentId,
+              name,
+              code,
+              description,
+              parentDepartmentId,
+            },
+          })
+        : await createPlanningChangeSetAction({
+            scenarioId,
+            changeType: "department.create",
+            payload: {
+              departmentId:
+                crypto.randomUUID(),
+              name,
+              code,
+              description,
+              parentDepartmentId,
+            },
+          })
 
       if (!result.success) {
         toast.error(result.message)
@@ -118,6 +191,9 @@ export function DepartmentCreateChangeForm({
         <Input
           id="planning-department-name"
           name="name"
+          defaultValue={
+            editChangeSet?.payload.name
+          }
           placeholder="Ex.: Operações"
           minLength={2}
           maxLength={120}
@@ -139,6 +215,9 @@ export function DepartmentCreateChangeForm({
         <Input
           id="planning-department-code"
           name="code"
+          defaultValue={normalizeOptionalValue(
+            editChangeSet?.payload.code
+          )}
           placeholder="Ex.: OPS"
           maxLength={50}
           disabled={isPending}
@@ -155,6 +234,10 @@ export function DepartmentCreateChangeForm({
         name="parentDepartmentId"
         label="Departamento superior"
         departments={departments}
+        defaultValue={normalizeOptionalValue(
+          editChangeSet?.payload
+            .parentDepartmentId
+        )}
         disabled={isPending}
         allowNoDepartment
         description="Selecione o departamento ao qual esta nova unidade ficará subordinada ou mantenha-a no nível principal."
@@ -169,6 +252,9 @@ export function DepartmentCreateChangeForm({
           id="planning-department-description"
           name="description"
           className={textareaClassName}
+          defaultValue={normalizeOptionalValue(
+            editChangeSet?.payload.description
+          )}
           placeholder="Descreva a responsabilidade e o objetivo deste departamento."
           maxLength={500}
           disabled={isPending}
@@ -187,7 +273,9 @@ export function DepartmentCreateChangeForm({
           disabled={isPending}
           onClick={onCancel}
         >
-          Voltar
+          {isEditing
+            ? "Cancelar"
+            : "Voltar"}
         </Button>
 
         <Button
@@ -195,8 +283,12 @@ export function DepartmentCreateChangeForm({
           disabled={isPending}
         >
           {isPending
-            ? "Criando alteração..."
-            : "Criar departamento"}
+            ? isEditing
+              ? "Salvando alteração..."
+              : "Criando alteração..."
+            : isEditing
+              ? "Salvar alterações"
+              : "Criar departamento"}
         </Button>
       </div>
     </form>

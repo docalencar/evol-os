@@ -54,3 +54,9 @@ export type {
   OrganizationReadService,
   OrganizationSnapshotBuilder,
 } from "./snapshot"
+
+export {
+  getScenarioChangeHistory,
+  type GetScenarioChangeHistoryInput,
+  type ScenarioChangeHistory,
+} from "./change-sets/queries"

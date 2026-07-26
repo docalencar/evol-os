@@ -2,19 +2,33 @@ import type {
   PlanningChangeSet,
 } from "../../change-sets"
 
+import type {
+  ProjectedDepartmentSelectorOption,
+} from "../selectors"
+
 import {
   getChangeSetActionStyle,
 } from "./change-set-action-style"
+
 import { ChangeSetBadge } from "./change-set-badge"
+
 import {
   getChangeSetPresentation,
 } from "./change-set-description"
+
+import { ChangeSetEditDialog } from "./change-set-edit-dialog"
+
 import { ChangeSetIcon } from "./change-set-icon"
+
 
 type ChangeSetCardProps = Readonly<{
   changeSet: PlanningChangeSet
   position: number
+  scenarioId: string
+  departments:
+    readonly ProjectedDepartmentSelectorOption[]
 }>
+
 
 function formatPayload(
   payload: PlanningChangeSet["payload"]
@@ -26,9 +40,12 @@ function formatPayload(
   }
 }
 
+
 export function ChangeSetCard({
   changeSet,
   position,
+  scenarioId,
+  departments,
 }: ChangeSetCardProps) {
   const presentation =
     getChangeSetPresentation(changeSet)
@@ -77,10 +94,18 @@ export function ChangeSetCard({
               ) : null}
             </div>
 
-            <ChangeSetBadge
-              action={presentation.action}
-              label={presentation.actionLabel}
-            />
+            <div className="flex items-center gap-2">
+              <ChangeSetBadge
+                action={presentation.action}
+                label={presentation.actionLabel}
+              />
+
+              <ChangeSetEditDialog
+                changeSet={changeSet}
+                scenarioId={scenarioId}
+                departments={departments}
+              />
+            </div>
           </div>
 
           <p className="text-sm leading-6 text-muted-foreground">

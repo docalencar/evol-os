@@ -162,6 +162,45 @@ export async function createPlanningChangeSetAction(
 
         break
       }
+
+      case "team.create": {
+        await handler.execute({
+          companyId,
+          changeSetId,
+          scenarioId: parsed.data.scenarioId,
+          changeType: parsed.data.changeType,
+          payload: parsed.data.payload,
+          occurredAt,
+        })
+
+        break
+      }
+
+      case "team.update": {
+        await handler.execute({
+          companyId,
+          changeSetId,
+          scenarioId: parsed.data.scenarioId,
+          changeType: parsed.data.changeType,
+          payload: parsed.data.payload,
+          occurredAt,
+        })
+
+        break
+      }
+
+      case "team.archive": {
+        await handler.execute({
+          companyId,
+          changeSetId,
+          scenarioId: parsed.data.scenarioId,
+          changeType: parsed.data.changeType,
+          payload: parsed.data.payload,
+          occurredAt,
+        })
+
+        break
+      }
     }
 
     revalidatePath("/app/organization")

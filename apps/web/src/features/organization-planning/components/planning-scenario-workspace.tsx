@@ -11,9 +11,11 @@ import type {
 import {
   ChangeSetTimeline,
 } from "./change-sets"
+
 import {
   PlanningChangeDialog,
 } from "./planning-change-dialog"
+
 import {
   ProjectionErrorList,
   ProjectionOrganizationPreview,
@@ -21,9 +23,11 @@ import {
   ProjectionWarningList,
 } from "./projection"
 
+
 type PlanningScenarioWorkspaceProps = {
   planning: PlanningScenarioPage
 }
+
 
 function MetricCard({
   title,
@@ -61,6 +65,7 @@ function MetricCard({
   )
 }
 
+
 export function PlanningScenarioWorkspace({
   planning,
 }: PlanningScenarioWorkspaceProps) {
@@ -71,9 +76,12 @@ export function PlanningScenarioWorkspace({
     projection,
   } = planning
 
+
   return (
     <div className="space-y-6">
+
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+
         <MetricCard
           title="Alterações"
           value={metrics.totalChanges}
@@ -101,11 +109,16 @@ export function PlanningScenarioWorkspace({
           description="Versão atual da simulação."
           icon={Layers3}
         />
+
       </section>
 
+
       <section className="grid gap-6 lg:grid-cols-[minmax(0,1.65fr)_minmax(320px,0.85fr)]">
+
         <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+
           <div className="flex flex-col gap-4 border-b px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
+
             <div>
               <h2 className="text-lg font-semibold">
                 Linha do tempo de alterações
@@ -117,45 +130,63 @@ export function PlanningScenarioWorkspace({
               </p>
             </div>
 
+
             <PlanningChangeDialog
               scenarioId={scenario.id}
               departments={
-                projection.organization
-                  .departments
+                projection.organization.departments
+              }
+              teams={
+                projection.organization.teams
               }
               disabled={
                 scenario.status !== "draft"
               }
             />
+
           </div>
+
 
           <ChangeSetTimeline
             changeSets={changeSets}
+            scenarioId={scenario.id}
+            departments={
+              projection.organization.departments
+            }
           />
+
         </div>
 
+
         <div className="space-y-5">
+
           <ProjectionSummary
             organization={
               projection.organization
             }
           />
 
+
           <ProjectionErrorList
             errors={projection.errors}
           />
 
+
           <ProjectionWarningList
             warnings={projection.warnings}
           />
+
 
           <ProjectionOrganizationPreview
             organization={
               projection.organization
             }
           />
+
         </div>
+
       </section>
+
     </div>
   )
 }

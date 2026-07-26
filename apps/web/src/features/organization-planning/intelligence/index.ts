@@ -43,3 +43,12 @@ export type {
   ScenarioExecutiveSummary,
 } from "./executive-summary"
 
+
+export {
+  calculateCostImpact,
+} from "./cost-analysis"
+
+export type {
+  CostImpactResult,
+  CostImpactStatus,
+} from "./cost-analysis"

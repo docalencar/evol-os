@@ -7,9 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "tsx --test",
-    "test:watch": "tsx --test --watch",
-    "test:coverage": "tsx --test --experimental-test-coverage",
+    "test": "tsx --import ./test/setup.ts --test",
+    "test:watch": "tsx --import ./test/setup.ts --test --watch",
+    "test:coverage": "tsx --import ./test/setup.ts --test --experimental-test-coverage",
     "test:projection": "tsx --test src/features/organization-planning/projection/**/*.test.ts",
     "check": "npm run test && npm run build"
   },

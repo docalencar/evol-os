@@ -33,4 +33,13 @@ export type {
   PositionCapacityResult,
   PositionCapacityRisk,
 } from "./position-capacity"
+export {
+  calculateExecutiveScenarioSummary,
+} from "./executive-summary"
+
+export type {
+  ExecutiveScenarioStatus,
+  ExecutiveRecommendation,
+  ScenarioExecutiveSummary,
+} from "./executive-summary"
 

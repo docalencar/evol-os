@@ -11,6 +11,9 @@ import {
 import {
   calculateStructuralImpact,
   generateScenarioInsights,
+  calculateSpanOfControl,
+  calculatePositionCapacity,
+  calculateExecutiveScenarioSummary,
 } from "../intelligence"
 
 import type {
@@ -32,10 +35,6 @@ import type {
 } from "../types/planning-contracts"
 import { getScenario } from "./get-scenario"
 import { getSnapshot } from "./get-snapshot"
-import {
-  calculateSpanOfControl,
-  calculatePositionCapacity,
-} from "../intelligence"
 
 export type PlanningScenarioPageScenario = Readonly<{
   id: string
@@ -93,6 +92,9 @@ export type PlanningScenarioPageSpanOfControl =
 export type PlanningScenarioPagePositionCapacity =
   ReturnType<typeof calculatePositionCapacity>
 
+export type PlanningScenarioPageExecutiveSummary =
+  ReturnType<typeof calculateExecutiveScenarioSummary>
+
 export type PlanningScenarioPageInsights =
   readonly ScenarioInsight[]
 
@@ -111,6 +113,7 @@ export type PlanningScenarioPage = Readonly<{
   structuralImpact: PlanningScenarioPageStructuralImpact
   spanOfControl: PlanningScenarioPageSpanOfControl
   positionCapacity: PlanningScenarioPagePositionCapacity
+  executiveSummary: PlanningScenarioPageExecutiveSummary
   insights: PlanningScenarioPageInsights
 }>
 
@@ -248,6 +251,15 @@ export async function getPlanningScenario(
       projection.organization
     )
 
+  const executiveSummary =
+    calculateExecutiveScenarioSummary({
+      comparison: comparison.summary,
+      structuralImpact,
+      insights,
+      spanOfControl,
+      positionCapacity,
+    })
+
   return Object.freeze({
   scenario: toScenarioView(scenario),
   baseSnapshot: toSnapshotView(baseSnapshot),
@@ -263,6 +275,7 @@ export async function getPlanningScenario(
   structuralImpact,
   spanOfControl,
   positionCapacity,
+  executiveSummary,
   insights,
 })
 }

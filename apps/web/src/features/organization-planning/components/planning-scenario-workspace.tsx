@@ -28,6 +28,7 @@ import {
 } from "./comparison"
 
 import {
+  ScenarioExecutiveSummaryCard,
   ScenarioIntelligencePanel,
 } from "./intelligence"
 
@@ -167,6 +168,12 @@ export function PlanningScenarioWorkspace({
 
 
         <div className="space-y-5">
+
+          <ScenarioExecutiveSummaryCard
+            summary={
+              planning.executiveSummary
+            }
+          />
 
           <ScenarioIntelligencePanel
             structuralImpact={

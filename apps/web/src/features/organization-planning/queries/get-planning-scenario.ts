@@ -3,6 +3,10 @@ import "server-only"
 import {
   getPlanningChangeSets,
 } from "../change-sets/queries"
+
+import {
+  getScenarioComparison,
+} from "../comparison"
 import {
   createServerProjectScenarioService,
 } from "../factories"
@@ -57,6 +61,11 @@ export type PlanningScenarioPageProjection =
     isValid: boolean
   }>
 
+export type PlanningScenarioPageComparison =
+  Awaited<
+    ReturnType<typeof getScenarioComparison>
+  >
+
 export type PlanningScenarioPageChangeSet =
   Awaited<
     ReturnType<typeof getPlanningChangeSets>
@@ -68,6 +77,7 @@ export type PlanningScenarioPage = Readonly<{
   metrics: PlanningScenarioPageMetrics
   changeSets: readonly PlanningScenarioPageChangeSet[]
   projection: PlanningScenarioPageProjection
+  comparison: PlanningScenarioPageComparison
 }>
 
 function toScenarioView(
@@ -134,6 +144,7 @@ export async function getPlanningScenario(
     baseSnapshot,
     changeSets,
     projection,
+    comparison,
   ] = await Promise.all([
     getSnapshot(
       companyId,
@@ -144,6 +155,10 @@ export async function getPlanningScenario(
       scenarioId,
     }),
     projectScenarioService.execute({
+      companyId,
+      scenarioId,
+    }),
+    getScenarioComparison({
       companyId,
       scenarioId,
     }),
@@ -178,5 +193,6 @@ export async function getPlanningScenario(
     }),
     changeSets: frozenChangeSets,
     projection: toProjectionView(projection),
+    comparison,
   })
 }

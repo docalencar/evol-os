@@ -23,6 +23,10 @@ import {
   ProjectionWarningList,
 } from "./projection"
 
+import {
+  ScenarioImpactSummaryCard,
+} from "./comparison"
+
 
 type PlanningScenarioWorkspaceProps = {
   planning: PlanningScenarioPage
@@ -159,6 +163,12 @@ export function PlanningScenarioWorkspace({
 
 
         <div className="space-y-5">
+
+          <ScenarioImpactSummaryCard
+            summary={
+              planning.comparison.summary
+            }
+          />
 
           <ProjectionSummary
             organization={

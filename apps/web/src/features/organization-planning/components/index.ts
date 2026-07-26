@@ -37,3 +37,7 @@ export {
   ProjectedDepartmentSelector,
   type ProjectedDepartmentSelectorOption,
 } from "./selectors"
+
+export {
+  ScenarioImpactSummaryCard,
+} from "./comparison"

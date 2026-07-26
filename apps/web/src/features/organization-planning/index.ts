@@ -60,3 +60,11 @@ export {
   type GetScenarioChangeHistoryInput,
   type ScenarioChangeHistory,
 } from "./change-sets/queries"
+
+export {
+  createScenarioComparison,
+  getScenarioComparison,
+  type GetScenarioComparisonInput,
+  type ScenarioComparison,
+  type ScenarioComparisonSummary,
+} from "./comparison"

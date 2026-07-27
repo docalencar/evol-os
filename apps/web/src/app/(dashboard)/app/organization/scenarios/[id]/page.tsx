@@ -9,18 +9,21 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 
 import { PageHeader } from "@/components/shared/page-header"
+
 import {
-  getScenarioChangeHistory,
+  getPlanningScenario,
+  ScenarioExecutiveSummaryCard,
+  ScenarioIntelligencePanel,
 } from "@/features/organization-planning"
-import {
-  createScenarioRepository,
-} from "@/features/organization-planning/repositories/scenario-repository"
+
 import type {
   PlanningScenarioStatus,
-} from "@/features/organization-planning/types/planning-contracts"
+} from "@/features/organization-planning"
+
 import {
   getCurrentCompanyContext,
 } from "@/lib/supabase/supabase/current-company"
+
 
 const STATUS_LABELS: Record<
   PlanningScenarioStatus,
@@ -34,21 +37,21 @@ const STATUS_LABELS: Record<
   archived: "Arquivado",
 }
 
-function formatDate(
-  value: string | null
-) {
-  if (!value) {
-    return "-"
-  }
 
+function formatDate(
+  value: string
+) {
   return new Intl.DateTimeFormat(
     "pt-BR",
     {
       dateStyle: "medium",
       timeStyle: "short",
     }
-  ).format(new Date(value))
+  ).format(
+    new Date(value)
+  )
 }
+
 
 function MetricCard({
   title,
@@ -84,6 +87,7 @@ function MetricCard({
   )
 }
 
+
 function StatusBadge({
   status,
 }: {
@@ -96,6 +100,7 @@ function StatusBadge({
   )
 }
 
+
 export default async function ScenarioPage({
   params,
 }: {
@@ -107,34 +112,27 @@ export default async function ScenarioPage({
     id,
   } = await params
 
+
   const {
     companyId,
   } = await getCurrentCompanyContext()
 
-  const scenarioRepository =
-    await createScenarioRepository()
 
   const scenario =
-    await scenarioRepository.findById(
+    await getPlanningScenario(
       companyId,
       id
     )
+
 
   if (!scenario) {
     notFound()
   }
 
-  const history =
-    await getScenarioChangeHistory({
-      companyId,
-      scenarioId: scenario.id,
-    })
-
-  const data =
-    scenario.toContract()
 
   return (
     <div className="space-y-8">
+
       <Link
         href="/app/organization"
         className="inline-flex items-center gap-2 text-sm text-muted-foreground"
@@ -143,114 +141,160 @@ export default async function ScenarioPage({
         Voltar
       </Link>
 
+
       <PageHeader
-        title={data.name}
+        title={scenario.scenario.name}
         description={
-          data.description ??
+          scenario.scenario.description ??
           "Cenário de planejamento organizacional."
         }
       />
 
+
       <section className="rounded-2xl border bg-card p-6 shadow-sm">
         <div className="flex items-center gap-3">
+
           <StatusBadge
-            status={data.status}
+            status={
+              scenario.scenario.status
+            }
           />
 
           <span className="text-sm text-muted-foreground">
-            Versão {data.version}
+            Versão {scenario.scenario.version}
           </span>
+
         </div>
+
 
         <p className="mt-4 text-sm text-muted-foreground">
           Atualizado em{" "}
           {formatDate(
-            data.updatedAt.toISOString()
+            scenario.scenario.updatedAt
           )}
         </p>
+
       </section>
 
+
       <section className="grid gap-4 md:grid-cols-3">
+
         <MetricCard
           title="Alterações"
           value={
-            history.totalChanges
+            scenario.metrics.totalChanges
           }
           description="Mudanças planejadas"
           icon={ListChecks}
         />
 
+
         <MetricCard
-          title="Primeira alteração"
+          title="Alertas"
           value={
-            history.firstChangedAt
-              ? "Sim"
-              : "-"
+            scenario.metrics.warnings
           }
-          description={
-            formatDate(
-              history.firstChangedAt
-            )
-          }
+          description="Pontos encontrados na projeção"
           icon={CalendarClock}
         />
 
+
         <MetricCard
-          title="Última alteração"
+          title="Projeção"
           value={
-            history.lastChangedAt
-              ? "Sim"
-              : "-"
+            scenario.metrics.projectedVersion
           }
-          description={
-            formatDate(
-              history.lastChangedAt
-            )
-          }
+          description="Versão projetada"
           icon={GitBranch}
         />
+
       </section>
 
+
+      <ScenarioExecutiveSummaryCard
+        summary={
+          scenario.executiveSummary
+        }
+      />
+
+
+      <ScenarioIntelligencePanel
+        structuralImpact={
+          scenario.structuralImpact
+        }
+
+        insights={
+          scenario.insights
+        }
+
+        spanOfControl={
+          scenario.spanOfControl
+        }
+
+        positionCapacity={
+          scenario.positionCapacity
+        }
+
+        employees={
+          scenario.projection.organization.employees
+        }
+      />
+
+
       <section className="rounded-2xl border bg-card">
+
         <div className="border-b p-5">
           <h2 className="font-semibold">
             Histórico de alterações
           </h2>
         </div>
 
-        {history.changeSets.length === 0 ? (
-          <div className="p-8 text-center text-sm text-muted-foreground">
-            Nenhuma alteração registrada.
-          </div>
-        ) : (
-          <div className="divide-y">
-            {history.changeSets.map(
-              (changeSet) => (
-                <div
-                  key={changeSet.id}
-                  className="flex justify-between p-5"
-                >
-                  <div>
-                    <p className="font-medium">
-                      {changeSet.changeType}
-                    </p>
 
-                    <p className="text-sm text-muted-foreground">
-                      Versão {changeSet.version}
-                    </p>
-                  </div>
+        {
+          scenario.changeSets.length === 0 ? (
+            <div className="p-8 text-center text-sm text-muted-foreground">
+              Nenhuma alteração registrada.
+            </div>
+          ) : (
 
-                  <p className="text-sm text-muted-foreground">
-                    {formatDate(
-                      changeSet.updatedAt
-                    )}
-                  </p>
-                </div>
-              )
-            )}
-          </div>
-        )}
+            <div className="divide-y">
+
+              {
+                scenario.changeSets.map(
+                  (changeSet) => (
+                    <div
+                      key={changeSet.id}
+                      className="flex justify-between p-5"
+                    >
+
+                      <div>
+                        <p className="font-medium">
+                          {changeSet.changeType}
+                        </p>
+
+                        <p className="text-sm text-muted-foreground">
+                          Versão {changeSet.version}
+                        </p>
+                      </div>
+
+                      <p className="text-sm text-muted-foreground">
+                        {formatDate(
+                          changeSet.updatedAt
+                        )}
+                      </p>
+
+                    </div>
+                  )
+                )
+
+              }
+
+            </div>
+          )
+        }
+
       </section>
+
     </div>
   )
 }

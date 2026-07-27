@@ -44,3 +44,7 @@ export {
 export {
   ScenarioIntelligencePanel,
 } from "./intelligence"
+
+export {
+  ScenarioExecutiveSummaryCard,
+} from "./intelligence"

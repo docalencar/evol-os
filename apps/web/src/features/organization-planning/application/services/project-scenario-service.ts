@@ -1,12 +1,24 @@
 import {
   toProjectionChangeSets,
 } from "../../change-sets/adapters/to-projection-change-set"
+import type {
+  PlanningChangeSet,
+} from "../../change-sets"
+import type {
+  PlanningScenario,
+} from "../../domain/planning-scenario"
+import type {
+  PublishedSnapshot,
+} from "../../domain/published-snapshot"
 import {
   ProjectionEngine,
 } from "../../projection"
 import type {
   ProjectionResult,
 } from "../../projection"
+import type {
+  OrganizationSnapshot,
+} from "../../snapshot"
 import {
   PlanningApplicationError,
   requireApplicationEntity,
@@ -22,11 +34,25 @@ export type ProjectScenarioInput = Readonly<{
   scenarioId: string
 }>
 
+export type ProjectScenarioExecution =
+  Readonly<{
+    scenario: PlanningScenario
+    snapshot: PublishedSnapshot
+    organizationSnapshot:
+      OrganizationSnapshot
+    changeSets:
+      readonly PlanningChangeSet[]
+    projection: ProjectionResult
+  }>
+
 export type ProjectScenarioServiceDependencies =
   Readonly<{
-    scenarios: ScenarioApplicationRepository
-    snapshots: SnapshotApplicationRepository
-    changeSets: PlanningChangeSetApplicationRepository
+    scenarios:
+      ScenarioApplicationRepository
+    snapshots:
+      SnapshotApplicationRepository
+    changeSets:
+      PlanningChangeSetApplicationRepository
     projectionEngine?: ProjectionEngine
   }>
 
@@ -52,6 +78,15 @@ export class ProjectScenarioService {
   async execute(
     input: ProjectScenarioInput
   ): Promise<ProjectionResult> {
+    const execution =
+      await this.executeWithContext(input)
+
+    return execution.projection
+  }
+
+  async executeWithContext(
+    input: ProjectScenarioInput
+  ): Promise<ProjectScenarioExecution> {
     const scenario =
       requireApplicationEntity(
         await this.scenarios.findById(
@@ -71,10 +106,11 @@ export class ProjectScenarioService {
       )
 
     const organizationSnapshot =
-      await this.snapshots.findOrganizationById(
-        input.companyId,
-        scenario.baseSnapshotId
-      )
+      await this.snapshots
+        .findOrganizationById(
+          input.companyId,
+          scenario.baseSnapshotId
+        )
 
     if (!organizationSnapshot) {
       throw new PlanningApplicationError(
@@ -89,16 +125,30 @@ export class ProjectScenarioService {
         scenario.id
       )
 
-    return this.projectionEngine.project({
-      snapshot:
-        snapshot.toContract(),
+    const changeSets =
+      Object.freeze([
+        ...planningChangeSets,
+      ])
+
+    const projection =
+      this.projectionEngine.project({
+        snapshot:
+          snapshot.toContract(),
+        organizationSnapshot,
+        scenario:
+          scenario.toContract(),
+        changeSets:
+          toProjectionChangeSets(
+            changeSets
+          ),
+      })
+
+    return Object.freeze({
+      scenario,
+      snapshot,
       organizationSnapshot,
-      scenario:
-        scenario.toContract(),
-      changeSets:
-        toProjectionChangeSets(
-          planningChangeSets
-        ),
+      changeSets,
+      projection,
     })
   }
 }

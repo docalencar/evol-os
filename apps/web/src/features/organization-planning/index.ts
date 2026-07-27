@@ -87,3 +87,17 @@ export {
 export {
   applyScenarioChangeSets,
 } from "./application/services/apply-scenario-change-sets"
+export { createProjection } from "./services/create-projection"
+
+export type {
+  Projection,
+} from "./domain/projection"
+
+export type {
+  ProjectionContract,
+  ProjectionManifest,
+  ProjectionStatus,
+} from "./projection/contracts/projection-persistence-contract"
+export {
+  createProjectionRepository,
+} from "./repositories/projection-repository"

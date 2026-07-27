@@ -84,9 +84,42 @@ const organizationSnapshot:
       Object.freeze([]),
   })
 
+const departmentChangeSet:
+  PlanningChangeSet =
+  Object.freeze({
+    id: "change-set-1",
+    companyId,
+    scenarioId,
+    changeType:
+      "department.create",
+    payload:
+      Object.freeze({
+        departmentId:
+          "department-1",
+        name:
+          "Financeiro",
+        code:
+          "FIN",
+        description:
+          null,
+        parentDepartmentId:
+          null,
+      }),
+    version: 1,
+    createdAt:
+      "2026-07-02T10:00:00.000Z",
+    updatedAt:
+      "2026-07-02T10:00:00.000Z",
+  })
+
 class InMemoryScenarioRepository
   implements ScenarioApplicationRepository
 {
+  readonly calls: Array<{
+    companyId: string
+    scenarioId: string
+  }> = []
+
   constructor(
     private readonly storedScenario:
       PlanningScenario | null
@@ -96,6 +129,13 @@ class InMemoryScenarioRepository
     requestedCompanyId: string,
     requestedScenarioId: string
   ) {
+    this.calls.push({
+      companyId:
+        requestedCompanyId,
+      scenarioId:
+        requestedScenarioId,
+    })
+
     if (
       requestedCompanyId !==
         companyId ||
@@ -116,6 +156,16 @@ class InMemoryScenarioRepository
 class InMemorySnapshotRepository
   implements SnapshotApplicationRepository
 {
+  readonly snapshotCalls: Array<{
+    companyId: string
+    snapshotId: string
+  }> = []
+
+  readonly organizationCalls: Array<{
+    companyId: string
+    snapshotId: string
+  }> = []
+
   constructor(
     private readonly storedSnapshot:
       PublishedSnapshot | null,
@@ -127,6 +177,13 @@ class InMemorySnapshotRepository
     requestedCompanyId: string,
     requestedSnapshotId: string
   ) {
+    this.snapshotCalls.push({
+      companyId:
+        requestedCompanyId,
+      snapshotId:
+        requestedSnapshotId,
+    })
+
     if (
       requestedCompanyId !==
         companyId ||
@@ -143,6 +200,13 @@ class InMemorySnapshotRepository
     requestedCompanyId: string,
     requestedSnapshotId: string
   ) {
+    this.organizationCalls.push({
+      companyId:
+        requestedCompanyId,
+      snapshotId:
+        requestedSnapshotId,
+    })
+
     if (
       requestedCompanyId !==
         companyId ||
@@ -196,6 +260,26 @@ function createService(input?: {
   changeSets?:
     readonly PlanningChangeSet[]
 }) {
+  const scenarios =
+    new InMemoryScenarioRepository(
+      input?.storedScenario ===
+        undefined
+        ? scenario
+        : input.storedScenario
+    )
+
+  const snapshots =
+    new InMemorySnapshotRepository(
+      input?.storedSnapshot ===
+        undefined
+        ? snapshot
+        : input.storedSnapshot,
+      input?.storedOrganization ===
+        undefined
+        ? organizationSnapshot
+        : input.storedOrganization
+    )
+
   const changeSets =
     new InMemoryPlanningChangeSetRepository(
       input?.changeSets ?? []
@@ -203,36 +287,93 @@ function createService(input?: {
 
   const service =
     new ProjectScenarioService(
-      new InMemoryScenarioRepository(
-        input?.storedScenario ===
-          undefined
-          ? scenario
-          : input.storedScenario
-      ),
-      new InMemorySnapshotRepository(
-        input?.storedSnapshot ===
-          undefined
-          ? snapshot
-          : input.storedSnapshot,
-        input?.storedOrganization ===
-          undefined
-          ? organizationSnapshot
-          : input.storedOrganization
-      ),
+      scenarios,
+      snapshots,
       changeSets
     )
 
   return {
     service,
+    scenarios,
+    snapshots,
     changeSets,
   }
 }
 
 test(
-  "ProjectScenarioService carrega o cenário, snapshot, organização e change sets",
+  "ProjectScenarioService executeWithContext retorna todo o contexto da projeção",
   async () => {
     const {
       service,
+    } = createService({
+      changeSets: [
+        departmentChangeSet,
+      ],
+    })
+
+    const execution =
+      await service.executeWithContext({
+        companyId,
+        scenarioId,
+      })
+
+    assert.equal(
+      execution.scenario,
+      scenario
+    )
+
+    assert.equal(
+      execution.snapshot,
+      snapshot
+    )
+
+    assert.equal(
+      execution.organizationSnapshot,
+      organizationSnapshot
+    )
+
+    assert.deepEqual(
+      execution.changeSets,
+      [
+        departmentChangeSet,
+      ]
+    )
+
+    assert.equal(
+      execution.projection.isValid,
+      true
+    )
+
+    assert.deepEqual(
+      execution.projection.organization.departments,
+      [
+        {
+          id: "department-1",
+          name: "Financeiro",
+          code: "FIN",
+          description: null,
+          parentDepartmentId: null,
+          status: "active",
+        },
+      ]
+    )
+
+    assert.equal(
+      Object.isFrozen(
+        execution
+      ),
+      true
+    )
+  }
+)
+
+test(
+  "ProjectScenarioService execute carrega o cenário, snapshot, organização e change sets",
+  async () => {
+    const {
+      service,
+      scenarios,
+      snapshots,
       changeSets,
     } = createService()
 
@@ -259,6 +400,36 @@ test(
     )
 
     assert.deepEqual(
+      scenarios.calls,
+      [
+        {
+          companyId,
+          scenarioId,
+        },
+      ]
+    )
+
+    assert.deepEqual(
+      snapshots.snapshotCalls,
+      [
+        {
+          companyId,
+          snapshotId,
+        },
+      ]
+    )
+
+    assert.deepEqual(
+      snapshots.organizationCalls,
+      [
+        {
+          companyId,
+          snapshotId,
+        },
+      ]
+    )
+
+    assert.deepEqual(
       changeSets.calls,
       [
         {
@@ -280,34 +451,6 @@ test(
 test(
   "ProjectScenarioService aplica os change sets do cenário sobre o snapshot-base",
   async () => {
-    const departmentChangeSet:
-      PlanningChangeSet =
-      Object.freeze({
-        id: "change-set-1",
-        companyId,
-        scenarioId,
-        changeType:
-          "department.create",
-        payload:
-          Object.freeze({
-            departmentId:
-              "department-1",
-            name:
-              "Financeiro",
-            code:
-              "FIN",
-            description:
-              null,
-            parentDepartmentId:
-              null,
-          }),
-        version: 1,
-        createdAt:
-          "2026-07-02T10:00:00.000Z",
-        updatedAt:
-          "2026-07-02T10:00:00.000Z",
-      })
-
     const {
       service,
     } = createService({
@@ -353,6 +496,7 @@ test(
   async () => {
     const {
       service,
+      snapshots,
       changeSets,
     } = createService({
       storedScenario: null,
@@ -392,6 +536,16 @@ test(
     )
 
     assert.equal(
+      snapshots.snapshotCalls.length,
+      0
+    )
+
+    assert.equal(
+      snapshots.organizationCalls.length,
+      0
+    )
+
+    assert.equal(
       changeSets.calls.length,
       0
     )
@@ -403,6 +557,7 @@ test(
   async () => {
     const {
       service,
+      snapshots,
       changeSets,
     } = createService({
       storedSnapshot: null,
@@ -439,6 +594,11 @@ test(
 
         return true
       }
+    )
+
+    assert.equal(
+      snapshots.organizationCalls.length,
+      0
     )
 
     assert.equal(

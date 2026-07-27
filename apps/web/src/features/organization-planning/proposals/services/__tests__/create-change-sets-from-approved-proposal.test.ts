@@ -93,16 +93,23 @@ test(
     )
 
 
+    const createdChangeSet =
+      createdInputs[0] as {
+        changeType: string
+        payload: {
+          name?: string
+        }
+      }
+
+
     assert.equal(
-      (createdInputs[0] as any)
-        .changeType,
+      createdChangeSet.changeType,
       "department.create"
     )
 
 
     assert.equal(
-      (createdInputs[0] as any)
-        .payload.name,
+      createdChangeSet.payload.name,
       "Financeiro"
     )
 

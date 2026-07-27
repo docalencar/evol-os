@@ -1,7 +1,3 @@
-import type {
-  ProjectionContract,
-} from "../../projection"
-
 import {
   createScenarioIntelligence,
 } from "../../intelligence"

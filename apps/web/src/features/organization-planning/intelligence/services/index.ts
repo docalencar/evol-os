@@ -4,3 +4,5 @@ export * from "./create-organization-intelligence"
 export * from "./create-scenario-intelligence"
 export * from "./create-vacancy-intelligence"
 export * from "./create-workforce-intelligence"
+
+export * from "./create-executive-decision"

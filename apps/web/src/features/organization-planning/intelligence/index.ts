@@ -1,4 +1,3 @@
-export * from "./comparative"
 export * from "./cost-analysis"
 export * from "./executive-summary"
 export * from "./insights"

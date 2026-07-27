@@ -10,6 +10,18 @@ export type {
   GenerateScenarioProjectionServiceDependencies,
 } from "./generate-scenario-projection-service"
 
+
+export {
+  createGenerateScenarioIntelligenceService,
+  GenerateScenarioIntelligenceService,
+} from "./generate-scenario-intelligence-service"
+
+export type {
+  GenerateScenarioIntelligenceInput,
+  GenerateScenarioIntelligenceServiceDependencies,
+} from "./generate-scenario-intelligence-service"
+
+
 export {
   createProjectScenarioService,
   ProjectScenarioService,
@@ -20,6 +32,7 @@ export type {
   ProjectScenarioInput,
   ProjectScenarioServiceDependencies,
 } from "./project-scenario-service"
+
 
 export {
   projectScenario,

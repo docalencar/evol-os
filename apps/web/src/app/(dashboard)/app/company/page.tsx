@@ -1,3 +1,40 @@
+import Link from "next/link"
+
+import {
+  ArrowRight,
+  CalendarClock,
+  CheckCircle2,
+  Clock3,
+  FileStack,
+  GitBranch,
+  Layers3,
+  Sparkles,
+} from "lucide-react"
+
+import { PageHeader } from "@/components/shared/page-header"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+
+import {
+  DepartmentCreateDialog,
+  DepartmentTable,
+  getDepartments,
+} from "@/features/organization/departments"
+
+import {
+  OrganizationTree,
+  OrganizationClassificationAlert,
+  analyzeOrganizationClassification,
+  getOrganizationTree,
+} from "@/features/organization/structure"
+
+import {
+  EntityTimelineSection,
+  getCompanyTimeline,
+  type ActivityTimelineItemViewModel,
+} from "@/features/timeline"
+
+import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 
 const ACTOR_LABELS = {
@@ -10,6 +47,7 @@ const ACTOR_LABELS = {
   string
 >
 
+
 function formatDate(date: string) {
   return new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "short",
@@ -17,11 +55,15 @@ function formatDate(date: string) {
   }).format(new Date(date))
 }
 
+
 function formatLabel(value: string) {
   return value
     .replace(/[_-]+/g, " ")
-    .replace(/\b\w/g, (letter) => letter.toUpperCase())
+    .replace(/\b\w/g, (letter) =>
+      letter.toUpperCase()
+    )
 }
+
 
 function presentTimelineItem(
   item: ActivityTimelineItemViewModel
@@ -36,30 +78,16 @@ function presentTimelineItem(
   }
 }
 
-import Link from "next/link"
-
-import { PageHeader } from "@/components/shared/page-header"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import {
-  DepartmentCreateDialog,
-  DepartmentTable,
-  getDepartments,
-} from "@/features/organization/departments"
-
-import {
-  EntityTimelineSection,
-  getCompanyTimeline,
-  type ActivityTimelineItemViewModel,
-} from "@/features/timeline"
-import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 export default async function CompanyPage() {
-  const { companyId } = await getCurrentCompanyContext()
+  const { companyId } =
+    await getCurrentCompanyContext()
+
 
   const [
     departments,
     companyTimeline,
+    organizationTree,
   ] = await Promise.all([
     getDepartments(companyId),
 
@@ -67,17 +95,39 @@ export default async function CompanyPage() {
       companyId,
       limit: 20,
     }),
+
+    getOrganizationTree(companyId),
   ])
+const organizationClassification =
+  analyzeOrganizationClassification(
+    departments
+  )
 
   return (
     <div className="space-y-6">
+
       <PageHeader
         title="Organização"
         description="Gerencie a estrutura organizacional da empresa."
-        actions={<DepartmentCreateDialog companyId={companyId} />}
+        actions={
+          <DepartmentCreateDialog
+            companyId={companyId}
+          />
+        }
       />
 
-      <DepartmentTable departments={departments ?? []} />
+      <OrganizationClassificationAlert
+        insight={organizationClassification}
+      />
+
+      <OrganizationTree
+        nodes={organizationTree}
+      />
+
+
+      <DepartmentTable
+        departments={departments ?? []}
+      />
 
 
       <Card>
@@ -86,27 +136,40 @@ export default async function CompanyPage() {
           description="Últimas atividades registradas em toda a organização."
           emptyTitle="Nenhuma atividade registrada"
           emptyDescription="Quando houver movimentações, elas aparecerão aqui."
-          items={companyTimeline.items.map(
-            presentTimelineItem
-          )}
+          items={
+            companyTimeline.items.map(
+              presentTimelineItem
+            )
+          }
         />
       </Card>
 
+
       <Card>
         <div className="flex items-center justify-between">
+
           <div>
-            <h3 className="text-lg font-semibold">Cargos</h3>
+            <h3 className="text-lg font-semibold">
+              Cargos
+            </h3>
 
             <p className="mt-2 text-sm text-slate-600">
               Defina os cargos utilizados pelos colaboradores.
             </p>
           </div>
 
+
           <Link href="/app/company/positions">
-            <Button variant="secondary">Gerenciar cargos</Button>
+
+            <Button variant="secondary">
+              Gerenciar cargos
+            </Button>
+
           </Link>
+
         </div>
       </Card>
+
     </div>
   )
 }

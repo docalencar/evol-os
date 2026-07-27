@@ -1,5 +1,6 @@
 export type OrganizationSummary = {
+  organizationalUnits: number
   departments: number
-  positions: number
   teams: number
+  positions: number
 }

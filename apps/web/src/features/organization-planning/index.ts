@@ -2,7 +2,6 @@ export { createWorkspace } from "./services/create-workspace"
 export { createScenario } from "./services/create-scenario"
 export { archiveScenario } from "./services/archive-scenario"
 export { publishScenario } from "./services/publish-scenario"
-
 export { getScenario } from "./queries/get-scenario"
 export { listScenarios } from "./queries/list-scenarios"
 export { getSnapshot } from "./queries/get-snapshot"
@@ -68,3 +67,23 @@ export {
   type ScenarioComparison,
   type ScenarioComparisonSummary,
 } from "./comparison"
+export {
+  createOrganizationReorganizationProposal,
+} from "./proposals"
+
+export {
+  OrganizationProposalButton,
+  OrganizationProposalEditor,
+} from "./proposals"
+
+export type {
+  OrganizationProposalStatus,
+  OrganizationReorganizationChange,
+  OrganizationReorganizationProposal,
+} from "./proposals"
+export {
+  applyApprovedScenarioAction,
+} from "./actions/apply-approved-scenario-action"
+export {
+  applyScenarioChangeSets,
+} from "./application/services/apply-scenario-change-sets"

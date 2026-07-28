@@ -430,6 +430,7 @@ function executePositionMutation(
     case "position.archive":
       return archiveProjectedPosition(
         context.organization.positions,
+        context.organization.employees,
         changeSet.id,
         changeSet.payload
       )

@@ -24,6 +24,13 @@ esta pasta define **como a equipe desenvolve software no dia a dia**.
 
 - development-workflow.md
 
+## Colaboração e processo
+
+- agent-protocol.md
+- code-review.md
+- release-process.md
+- pr-template.md
+
 ## Padrões
 
 - frontend-standards.md
@@ -32,8 +39,8 @@ esta pasta define **como a equipe desenvolve software no dia a dia**.
 
 ## Qualidade
 
-- testing-checklist.md
-- pull-request-checklist.md
+- testing-checklist.md _(planejado — ver NEXT_STEPS / PR-080)_
+- pull-request-checklist.md _(planejado — a checklist canônica vigente é a do `../../CLAUDE.md` §8)_
 
 ---
 

@@ -9,6 +9,10 @@
 > arquitetura e workflow de implementação). Este `AGENTS.md` **complementa** o
 > `CLAUDE.md`; não o substitui nem o repete. Onde houver detalhe técnico, a
 > referência é sempre o `CLAUDE.md` e `docs/engineering/`.
+>
+> Operacionalização deste guia (o *como* da colaboração assíncrona):
+> `docs/engineering/agent-protocol.md` (protocolo e handoff), `code-review.md`
+> (revisão), `pr-template.md` (especificação de PR) e `release-process.md`.
 
 ---
 
@@ -70,14 +74,20 @@ O ciclo abaixo é a aplicação colaborativa do workflow oficial
 
 ```text
 Ideia
-  → Arquitetura            (Product Architect)
-  → Planejamento da PR     (Product Architect)
-  → Implementação          (Implementation Agent)
-  → Build + Testes         (Implementation Agent)
-  → Revisão                (Product Architect · Human Reviewer)
-  → Correções              (Implementation Agent)
-  → Merge                  (Human Reviewer)
+  → Arquitetura                          (Product Architect)
+  → Planejamento da PR                   (Product Architect)
+  → Implementação                        (Implementation Agent)
+  → Build + Testes                       (Implementation Agent)
+  → Revisão técnica / de qualidade       (Quality Reviewer)      ← recebe o handoff
+  → Revisão arquitetural, quando aplicável (Product Architect)
+  → Correções                            (Implementation Agent)
+  → Aprovação final + Merge              (Human Reviewer)
 ```
+
+Após a implementação, o handoff vai para o **Quality Reviewer** (revisão técnica).
+A **revisão arquitetural** é acionada pelo Product Architect quando a mudança toca
+arquitetura ou contratos. A **aprovação final, o merge, as migrations e qualquer
+ação irreversível** são exclusivos do **Human Reviewer**.
 
 O recorte de cada PR segue a metodologia do `CLAUDE.md` (§8): objetivo único e
 ciclo curto (PR pequena → review simples → merge → próxima PR).

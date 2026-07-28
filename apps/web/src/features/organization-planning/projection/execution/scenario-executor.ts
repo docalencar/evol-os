@@ -1,11 +1,15 @@
 import type { ChangeSet } from "../../types/planning-contracts"
 import {
+  createEmptyProjectedOrganization,
   freezeProjectedOrganization,
   type ProjectionInput,
   type ProjectionIssue,
 } from "../contracts"
 import { orderChangeSets, ProjectionEngine } from "../engine"
-import type { ScenarioExecutionResult } from "./scenario-execution-result"
+import {
+  createScenarioExecutionResult,
+  type ScenarioExecutionResult,
+} from "./scenario-execution-result"
 
 // Fonte de tempo injetável (epoch em milissegundos). Permite execuções
 // determinísticas em teste sem acoplar o executor ao relógio do sistema.
@@ -43,6 +47,24 @@ export class ScenarioExecutor {
       input.changeSets
     )
 
+    const duplicateIdIssue =
+      findDuplicateChangeSetIdIssue(orderedChangeSets)
+
+    if (duplicateIdIssue) {
+      const finishedAt = this.clock()
+      const organization = createEmptyProjectedOrganization()
+
+      return createScenarioExecutionResult({
+        organization,
+        metrics: organization.metrics,
+        issues: Object.freeze([duplicateIdIssue]),
+        warnings: Object.freeze([]),
+        executedChangeSets: Object.freeze([]),
+        generatedAtTimestamp: startedAt,
+        duration: finishedAt - startedAt,
+      })
+    }
+
     const projection = this.engine.project({
       snapshot: input.snapshot,
       scenario: input.scenario,
@@ -72,16 +94,43 @@ export class ScenarioExecutor {
 
     const finishedAt = this.clock()
 
-    return Object.freeze({
+    return createScenarioExecutionResult({
       organization,
       metrics: organization.metrics,
       issues,
       warnings,
       executedChangeSets,
-      generatedAt: new Date(startedAt),
+      generatedAtTimestamp: startedAt,
       duration: finishedAt - startedAt,
     })
   }
+}
+
+function findDuplicateChangeSetIdIssue(
+  changeSets: readonly ChangeSet[]
+): ProjectionIssue | null {
+  const occurrences = new Map<string, number>()
+
+  for (const changeSet of changeSets) {
+    occurrences.set(
+      changeSet.id,
+      (occurrences.get(changeSet.id) ?? 0) + 1
+    )
+  }
+
+  const duplicateIds = [...occurrences.entries()]
+    .filter(([, count]) => count > 1)
+    .map(([id]) => id)
+    .sort((left, right) => left.localeCompare(right))
+
+  if (duplicateIds.length === 0) {
+    return null
+  }
+
+  return Object.freeze({
+    code: "scenario.execution.duplicate_change_set_id",
+    message: `A execução possui IDs de change set duplicados: ${duplicateIds.join(", ")}.`,
+  })
 }
 
 function freezeChangeSet(changeSet: ChangeSet): ChangeSet {

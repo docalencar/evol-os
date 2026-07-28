@@ -17,3 +17,28 @@ export type ScenarioExecutionResult = Readonly<{
   generatedAt: Date
   duration: number
 }>
+
+type ScenarioExecutionResultInput = Omit<
+  ScenarioExecutionResult,
+  "generatedAt"
+> & Readonly<{
+  generatedAtTimestamp: number
+}>
+
+export function createScenarioExecutionResult(
+  input: ScenarioExecutionResultInput
+): ScenarioExecutionResult {
+  const generatedAtTimestamp = input.generatedAtTimestamp
+
+  return Object.freeze({
+    organization: input.organization,
+    metrics: input.metrics,
+    issues: input.issues,
+    warnings: input.warnings,
+    executedChangeSets: input.executedChangeSets,
+    get generatedAt() {
+      return new Date(generatedAtTimestamp)
+    },
+    duration: input.duration,
+  })
+}

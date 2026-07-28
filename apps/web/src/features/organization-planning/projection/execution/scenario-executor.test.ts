@@ -167,6 +167,127 @@ test("ScenarioExecutor surfaces a projection failure as issues", () => {
   assert.equal(result.executedChangeSets.length, 0)
 })
 
+test("ScenarioExecutor rejects two valid change sets with the same id before projection", () => {
+  const changeSets = Object.freeze([
+    createDepartment("change-duplicate", 1, "department-1", "Financeiro"),
+    createDepartment("change-duplicate", 2, "department-2", "Operações"),
+  ])
+  const originalPayloads = changeSets.map((current) => current.payload)
+  let engineCalls = 0
+  const emittedEvents: string[] = []
+  const engine = {
+    project() {
+      engineCalls += 1
+      emittedEvents.push("change-set.executed")
+      throw new Error("O Projection Engine não deveria ser chamado.")
+    },
+  }
+  const ScenarioExecutorConstructor =
+    ScenarioExecutor as unknown as new (
+      engineDependency: typeof engine,
+      clock: ExecutionClock
+    ) => ScenarioExecutor
+  const executor = new ScenarioExecutorConstructor(
+    engine,
+    sequentialClock([1000, 1005])
+  )
+
+  const result = executor.execute({
+    snapshot,
+    scenario,
+    changeSets,
+  })
+
+  assert.equal(engineCalls, 0)
+  assert.deepEqual(emittedEvents, [])
+  assert.deepEqual(result.executedChangeSets, [])
+  assert.deepEqual(result.organization.departments, [])
+  assert.deepEqual(result.issues, [{
+    code: "scenario.execution.duplicate_change_set_id",
+    message: "A execução possui IDs de change set duplicados: change-duplicate.",
+  }])
+  assert.equal(result.generatedAt.getTime(), 1000)
+  assert.equal(result.duration, 5)
+  assert.equal(snapshot.publishedAt.getTime(), Date.parse("2026-01-01T00:00:00.000Z"))
+  assert.deepEqual(
+    changeSets.map((current) => current.payload),
+    originalPayloads
+  )
+})
+
+test("ScenarioExecutor rejects a valid then invalid change set with the same id", () => {
+  const result = ScenarioExecutor.create().execute({
+    snapshot,
+    scenario,
+    changeSets: [
+      createDepartment("change-duplicate", 1, "department-1", "Financeiro"),
+      changeSet("change-duplicate", 2, "department.create", {
+        departmentId: "department-2",
+      }),
+    ],
+  })
+
+  assert.equal(
+    result.issues[0]?.code,
+    "scenario.execution.duplicate_change_set_id"
+  )
+  assert.deepEqual(result.executedChangeSets, [])
+  assert.deepEqual(result.organization.departments, [])
+})
+
+test("ScenarioExecutor rejects an invalid then valid change set with the same id", () => {
+  const result = ScenarioExecutor.create().execute({
+    snapshot,
+    scenario,
+    changeSets: [
+      changeSet("change-duplicate", 1, "department.create", {
+        departmentId: "department-1",
+      }),
+      createDepartment("change-duplicate", 2, "department-2", "Operações"),
+    ],
+  })
+
+  assert.equal(
+    result.issues[0]?.code,
+    "scenario.execution.duplicate_change_set_id"
+  )
+  assert.deepEqual(result.executedChangeSets, [])
+  assert.deepEqual(result.organization.departments, [])
+})
+
+test("ScenarioExecutor reports duplicate ids deterministically", () => {
+  const first = ScenarioExecutor.create(
+    sequentialClock([1000, 1005])
+  ).execute({
+    snapshot,
+    scenario,
+    changeSets: [
+      createDepartment("change-z", 1, "department-1", "Financeiro"),
+      createDepartment("change-a", 2, "department-2", "Operações"),
+      createDepartment("change-z", 3, "department-3", "Pessoas"),
+      createDepartment("change-a", 4, "department-4", "Produto"),
+    ],
+  })
+  const second = ScenarioExecutor.create(
+    sequentialClock([1000, 1005])
+  ).execute({
+    snapshot,
+    scenario,
+    changeSets: [
+      createDepartment("change-a", 4, "department-4", "Produto"),
+      createDepartment("change-z", 3, "department-3", "Pessoas"),
+      createDepartment("change-a", 2, "department-2", "Operações"),
+      createDepartment("change-z", 1, "department-1", "Financeiro"),
+    ],
+  })
+
+  assert.deepEqual(first, second)
+  assert.equal(
+    first.issues[0]?.message,
+    "A execução possui IDs de change set duplicados: change-a, change-z."
+  )
+})
+
 test("ScenarioExecutor reports all completed change sets around an intermediate failure", () => {
   const result = ScenarioExecutor.create().execute({
     snapshot,
@@ -230,6 +351,30 @@ test("ScenarioExecutor is deterministic for equivalent inputs and clock", () => 
     new Date(1000)
   )
   assert.equal(first.duration, 5)
+  assert.notEqual(first.generatedAt, first.generatedAt)
+  assert.equal(first.generatedAt.getTime(), 1000)
+})
+
+test("ScenarioExecutionResult exposes a defensive Date on every generatedAt read", () => {
+  const result = ScenarioExecutor.create(
+    sequentialClock([1000, 1005])
+  ).execute({
+    snapshot,
+    scenario,
+    changeSets: [],
+  })
+  const first = result.generatedAt
+  const expected = first.getTime()
+
+  first.setTime(0)
+
+  const second = result.generatedAt
+  const third = result.generatedAt
+
+  assert.equal(second.getTime(), expected)
+  assert.equal(third.getTime(), expected)
+  assert.notEqual(second, first)
+  assert.notEqual(third, second)
 })
 
 test("ScenarioExecutor produces an immutable result", () => {

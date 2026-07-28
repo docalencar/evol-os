@@ -7,5 +7,9 @@ export {
 } from "./create-server-generate-scenario-intelligence-service"
 
 export {
+  createServerGenerateScenarioAnalysisService,
+} from "./create-server-generate-scenario-analysis-service"
+
+export {
   createServerProjectScenarioService,
 } from "./create-server-project-scenario-service"

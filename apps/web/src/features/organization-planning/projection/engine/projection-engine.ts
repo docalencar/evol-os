@@ -77,6 +77,7 @@ export class ProjectionEngine {
         ...finalContext.errors,
         ...contractErrors,
       ]),
+      events: finalContext.events,
     })
   }
 }

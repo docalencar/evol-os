@@ -163,8 +163,35 @@ test("ScenarioExecutor surfaces a projection failure as issues", () => {
     "department.change_set.invalid_payload"
   )
   assert.deepEqual(result.organization.departments, [])
-  // Mesmo em falha, o executor devolve um resultado (não lança).
-  assert.equal(result.executedChangeSets.length, 1)
+  // O change set que falhou não é reportado como executado.
+  assert.equal(result.executedChangeSets.length, 0)
+})
+
+test("ScenarioExecutor reports only change sets completed before an intermediate failure", () => {
+  const result = ScenarioExecutor.create().execute({
+    snapshot,
+    scenario,
+    changeSets: [
+      createDepartment("change-1", 1, "department-1", "Financeiro"),
+      changeSet("change-2", 2, "department.create", {
+        departmentId: "department-2",
+      }),
+      createDepartment("change-3", 3, "department-3", "Operações"),
+    ],
+  })
+
+  assert.deepEqual(
+    result.executedChangeSets.map((current) => current.id),
+    ["change-1"]
+  )
+  assert.deepEqual(
+    result.organization.departments.map((department) => department.id),
+    ["department-1"]
+  )
+  assert.equal(
+    result.issues[0]?.changeSetId,
+    "change-2"
+  )
 })
 
 test("ScenarioExecutor reports metrics from the projection", () => {
@@ -206,21 +233,56 @@ test("ScenarioExecutor is deterministic for equivalent inputs and clock", () => 
 })
 
 test("ScenarioExecutor produces an immutable result", () => {
+  const nestedPayload = {
+    departmentId: "department-1",
+    name: "Financeiro",
+    metadata: {
+      tags: ["critical"],
+    },
+  }
+  const inputChangeSet = changeSet(
+    "change-1",
+    1,
+    "department.create",
+    nestedPayload
+  )
   const result = ScenarioExecutor.create().execute({
     snapshot,
     scenario,
-    changeSets: [
-      createDepartment("change-1", 1, "department-1", "Financeiro"),
-    ],
+    changeSets: [inputChangeSet],
   })
 
   assert.equal(Object.isFrozen(result), true)
   assert.equal(Object.isFrozen(result.executedChangeSets), true)
   assert.equal(Object.isFrozen(result.organization), true)
   assert.equal(Object.isFrozen(result.organization.departments), true)
+  assert.equal(Object.isFrozen(result.metrics), true)
+  assert.equal(Object.isFrozen(result.issues), true)
+  assert.equal(Object.isFrozen(result.warnings), true)
+  assert.equal(Object.isFrozen(result.executedChangeSets[0]), true)
+  assert.equal(Object.isFrozen(result.executedChangeSets[0]?.payload), true)
+  assert.equal(
+    Object.isFrozen(
+      result.executedChangeSets[0]?.payload.metadata
+    ),
+    true
+  )
   assert.throws(() => {
     ;(result.executedChangeSets as ChangeSet[]).push(
       createDepartment("change-x", 9, "department-x", "X")
     )
   }, TypeError)
+  assert.throws(() => {
+    ;(result.executedChangeSets[0] as { version: number }).version = 99
+  }, TypeError)
+  assert.throws(() => {
+    const metadata = result.executedChangeSets[0]?.payload.metadata as {
+      tags: string[]
+    }
+    metadata.tags.push("mutated")
+  }, TypeError)
+
+  assert.equal(inputChangeSet.version, 1)
+  assert.deepEqual(inputChangeSet.payload, nestedPayload)
+  assert.equal(snapshot.publishedAt.getTime(), Date.parse("2026-01-01T00:00:00.000Z"))
 })

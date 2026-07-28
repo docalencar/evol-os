@@ -1,4 +1,9 @@
-import type { ProjectionInput } from "../contracts"
+import type { ChangeSet } from "../../types/planning-contracts"
+import {
+  freezeProjectedOrganization,
+  type ProjectionInput,
+  type ProjectionIssue,
+} from "../contracts"
 import { orderChangeSets, ProjectionEngine } from "../engine"
 import type { ScenarioExecutionResult } from "./scenario-execution-result"
 
@@ -34,26 +39,87 @@ export class ScenarioExecutor {
   ): ScenarioExecutionResult {
     const startedAt = this.clock()
 
-    const executedChangeSets = orderChangeSets(
+    const orderedChangeSets = orderChangeSets(
       input.changeSets
     )
 
     const projection = this.engine.project({
       snapshot: input.snapshot,
       scenario: input.scenario,
-      changeSets: executedChangeSets,
+      changeSets: orderedChangeSets,
     })
+
+    const executedChangeSetIds = new Set(
+      projection.events
+        .filter(
+          (event) => event.type === "change-set.executed"
+        )
+        .map((event) => event.changeSetId)
+    )
+    const executedChangeSets = Object.freeze(
+      orderedChangeSets
+        .filter((changeSet) =>
+          executedChangeSetIds.has(changeSet.id)
+        )
+        .map(freezeChangeSet)
+    )
+
+    const organization = freezeProjectedOrganization(
+      projection.organization
+    )
+    const issues = freezeIssues(projection.errors)
+    const warnings = freezeIssues(projection.warnings)
 
     const finishedAt = this.clock()
 
     return Object.freeze({
-      organization: projection.organization,
-      metrics: projection.metrics,
-      issues: projection.errors,
-      warnings: projection.warnings,
+      organization,
+      metrics: organization.metrics,
+      issues,
+      warnings,
       executedChangeSets,
       generatedAt: new Date(startedAt),
       duration: finishedAt - startedAt,
     })
   }
+}
+
+function freezeChangeSet(changeSet: ChangeSet): ChangeSet {
+  return Object.freeze({
+    ...changeSet,
+    payload: freezePayload(changeSet.payload),
+  })
+}
+
+function freezePayload(
+  payload: Readonly<Record<string, unknown>>
+): Readonly<Record<string, unknown>> {
+  return freezeValue(payload) as Readonly<Record<string, unknown>>
+}
+
+function freezeValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return Object.freeze(value.map(freezeValue))
+  }
+
+  if (value !== null && typeof value === "object") {
+    return Object.freeze(
+      Object.fromEntries(
+        Object.entries(value).map(([key, current]) => [
+          key,
+          freezeValue(current),
+        ])
+      )
+    )
+  }
+
+  return value
+}
+
+function freezeIssues(
+  issues: readonly ProjectionIssue[]
+): readonly ProjectionIssue[] {
+  return Object.freeze(
+    issues.map((issue) => Object.freeze({ ...issue }))
+  )
 }

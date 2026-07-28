@@ -1,4 +1,5 @@
 import type {
+  ProjectionInternalEvent,
   ProjectedOrganization,
   ProjectionIssue,
   ProjectionMetrics,
@@ -9,7 +10,8 @@ export class ProjectionResult {
     readonly organization: ProjectedOrganization,
     readonly warnings: readonly ProjectionIssue[],
     readonly errors: readonly ProjectionIssue[],
-    readonly metrics: ProjectionMetrics
+    readonly metrics: ProjectionMetrics,
+    readonly events: readonly ProjectionInternalEvent[]
   ) {
     Object.freeze(this)
   }
@@ -18,12 +20,14 @@ export class ProjectionResult {
     organization: ProjectedOrganization
     warnings?: readonly ProjectionIssue[]
     errors?: readonly ProjectionIssue[]
+    events?: readonly ProjectionInternalEvent[]
   }) {
     return new ProjectionResult(
       input.organization,
       Object.freeze([...(input.warnings ?? [])]),
       Object.freeze([...(input.errors ?? [])]),
-      input.organization.metrics
+      input.organization.metrics,
+      Object.freeze([...(input.events ?? [])])
     )
   }
 

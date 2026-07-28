@@ -6,10 +6,17 @@ export class ProjectionPipeline {
   constructor(private readonly executors: readonly ChangeSetExecutor[]) {}
 
   execute(context: ProjectionContext) {
-    return context.changeSets.reduce(
-      (current, changeSet) => this.executeChangeSet(current, changeSet),
-      context
-    )
+    let current = context
+
+    for (const changeSet of context.changeSets) {
+      if (current.errors.length > 0) {
+        break
+      }
+
+      current = this.executeChangeSet(current, changeSet)
+    }
+
+    return current
   }
 
   private executeChangeSet(context: ProjectionContext, changeSet: ChangeSet) {
@@ -25,7 +32,13 @@ export class ProjectionPipeline {
         }))
     }
 
-    return executor.execute(context, changeSet).addEvent(Object.freeze({
+    const executed = executor.execute(context, changeSet)
+
+    if (executed.errors.length > context.errors.length) {
+      return executed
+    }
+
+    return executed.addEvent(Object.freeze({
       type: "change-set.executed",
       changeSetId: changeSet.id,
       executor: executor.name,

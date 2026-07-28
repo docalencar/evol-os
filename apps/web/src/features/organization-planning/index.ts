@@ -110,3 +110,7 @@ export type {
 export {
   createProjectionRepository,
 } from "./repositories/projection-repository"
+
+export * from "./decision"
+
+export * from "./analysis"

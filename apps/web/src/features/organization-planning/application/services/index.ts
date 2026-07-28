@@ -11,6 +11,31 @@ export type {
 } from "./generate-scenario-projection-service"
 
 
+
+
+export {
+  createGenerateScenarioDecisionService,
+  GenerateScenarioDecisionService,
+} from "./generate-scenario-decision-service"
+
+export type {
+  CreateDecisionFromAnalysis,
+  GenerateScenarioDecisionInput,
+  GenerateScenarioDecisionServiceDependencies,
+  ScenarioAnalysisGenerator,
+} from "./generate-scenario-decision-service"
+
+export {
+  createGenerateScenarioAnalysisService,
+  GenerateScenarioAnalysisService,
+} from "./generate-scenario-analysis-service"
+
+export type {
+  GenerateScenarioAnalysisInput,
+  GenerateScenarioAnalysisServiceDependencies,
+  GetScenarioComparisonSummary,
+} from "./generate-scenario-analysis-service"
+
 export {
   createGenerateScenarioIntelligenceService,
   GenerateScenarioIntelligenceService,

@@ -1,163 +1,142 @@
 import assert from "node:assert/strict"
 import test from "node:test"
+
+import type { PlanningChangeSet } from "../../change-sets"
 import { PlanningScenario } from "../../domain/planning-scenario"
 import { PublishedSnapshot } from "../../domain/published-snapshot"
-import { ScenarioExecutor } from "../../projection/execution"
-import type {
-  ChangeSetApplicationRepository,
-  ScenarioApplicationRepository,
-  SnapshotApplicationRepository,
-} from "../ports"
-import { PlanningApplicationError } from "../handlers/planning-handler-support"
+import {
+  createEmptyProjectedOrganization,
+  freezeProjectedOrganization,
+} from "../../projection/contracts"
+import { ProjectionResult } from "../../projection/result"
+import type { OrganizationSnapshot } from "../../snapshot"
+import { ORGANIZATION_SNAPSHOT_SCHEMA_VERSION } from "../../snapshot"
 import {
   ScenarioComparisonApplicationService,
   ScenarioComparisonProjectionError,
 } from "../services"
-import type { ChangeSet } from "../../types/planning-contracts"
+import type {
+  ProjectScenarioExecution,
+  ProjectScenarioService,
+} from "../services/project-scenario-service"
 
 const companyId = "company-1"
 const workspaceId = "workspace-1"
 const snapshotId = "snapshot-1"
 const scenarioId = "scenario-1"
 
-function scenario() {
-  return PlanningScenario.restore({
-    id: scenarioId,
-    companyId,
-    workspaceId,
-    baseSnapshotId: snapshotId,
-    name: "Cenário",
-    description: null,
-    status: "draft",
-    version: 1,
-    createdAt: new Date("2026-07-01T00:00:00.000Z"),
-    updatedAt: new Date("2026-07-01T00:00:00.000Z"),
-  })
-}
+const scenario = PlanningScenario.restore({
+  id: scenarioId,
+  companyId,
+  workspaceId,
+  baseSnapshotId: snapshotId,
+  name: "Cenário",
+  description: null,
+  status: "draft",
+  version: 1,
+  createdAt: new Date("2026-07-01T00:00:00.000Z"),
+  updatedAt: new Date("2026-07-01T00:00:00.000Z"),
+})
 
-function snapshot(workspace = workspaceId) {
-  return PublishedSnapshot.restore({
-    id: snapshotId,
-    companyId,
-    workspaceId: workspace,
-    sourceScenarioId: null,
-    version: 1,
-    publishedAt: new Date("2026-07-01T00:00:00.000Z"),
-  })
-}
+const snapshot = PublishedSnapshot.restore({
+  id: snapshotId,
+  companyId,
+  workspaceId,
+  sourceScenarioId: null,
+  version: 1,
+  publishedAt: new Date("2026-07-01T00:00:00.000Z"),
+})
 
-function departmentChangeSet(): ChangeSet {
-  return {
-    id: "change-1",
-    companyId,
-    scenarioId,
-    changeType: "department.create",
-    payload: {
-      departmentId: "department-1",
+const organizationSnapshot: OrganizationSnapshot = Object.freeze({
+  schemaVersion: ORGANIZATION_SNAPSHOT_SCHEMA_VERSION,
+  generatedAt: "2026-07-01T00:00:00.000Z",
+  departments: Object.freeze([]),
+  teams: Object.freeze([]),
+  positions: Object.freeze([]),
+  employees: Object.freeze([]),
+})
+
+const organization = freezeProjectedOrganization({
+  ...createEmptyProjectedOrganization(),
+  departments: [
+    Object.freeze({
+      id: "department-1",
       name: "Produto",
       code: "PROD",
-    },
-    version: 1,
-  }
-}
+      description: null,
+      parentDepartmentId: null,
+      status: "active" as const,
+    }),
+  ],
+  metrics: Object.freeze({
+    headcount: 0,
+    vacancies: 0,
+    salaryMass: 0,
+    departments: 1,
+    positions: 0,
+  }),
+})
 
-class MemoryScenarioRepository implements ScenarioApplicationRepository {
-  constructor(readonly value: PlanningScenario | null) {}
+const execution = (projection: ProjectionResult): ProjectScenarioExecution =>
+  Object.freeze({
+    scenario,
+    snapshot,
+    organizationSnapshot,
+    changeSets: Object.freeze([]) as readonly PlanningChangeSet[],
+    projection,
+  })
 
-  async findById(company: string, id: string) {
-    if (company !== companyId || id !== scenarioId) return null
+class ProjectScenarioServiceFake {
+  readonly calls: Array<{ companyId: string; scenarioId: string }> = []
+
+  constructor(private readonly value: ProjectScenarioExecution) {}
+
+  async executeWithContext(input: { companyId: string; scenarioId: string }) {
+    this.calls.push(input)
     return this.value
   }
-
-  async create() {}
-  async save() {}
 }
 
-class MemorySnapshotRepository implements SnapshotApplicationRepository {
-  constructor(readonly value: PublishedSnapshot | null) {}
-
-  async findById(company: string, id: string) {
-    if (company !== companyId || id !== snapshotId) return null
-    return this.value
-  }
-
-  async create() {}
+function asProjectScenarioService(fake: ProjectScenarioServiceFake) {
+  return fake as unknown as ProjectScenarioService
 }
 
-class MemoryChangeSetRepository implements ChangeSetApplicationRepository {
-  calls: Readonly<{ companyId: string; scenarioId: string }>[] = []
-
-  constructor(readonly values: readonly ChangeSet[]) {}
-
-  async findByScenario(company: string, scenario: string) {
-    this.calls.push({ companyId: company, scenarioId: scenario })
-    return this.values
-  }
-}
-
-test("ScenarioComparisonApplicationService orchestrates repositories through presenter", async () => {
-  const changeSets = new MemoryChangeSetRepository([departmentChangeSet()])
+test("ScenarioComparisonApplicationService projects through ProjectScenarioService and presents the comparison", async () => {
+  const projectScenario = new ProjectScenarioServiceFake(
+    execution(ProjectionResult.create({ organization }))
+  )
   const service = new ScenarioComparisonApplicationService(
-    new MemoryScenarioRepository(scenario()),
-    new MemorySnapshotRepository(snapshot()),
-    changeSets
+    asProjectScenarioService(projectScenario)
   )
 
   const viewModel = await service.execute({ companyId, scenarioId })
 
+  assert.deepEqual(projectScenario.calls, [{ companyId, scenarioId }])
   assert.equal(viewModel.departments.created[0]?.entity.name, "Produto")
   assert.equal(viewModel.summary.departments.created, 1)
   assert.equal(viewModel.summary.totalChanges, 1)
-  assert.deepEqual(changeSets.calls, [{ companyId, scenarioId }])
   assert.doesNotThrow(() => JSON.stringify(viewModel))
   assert.equal("salaryMass" in viewModel.summary.metrics, false)
 })
 
-test("ScenarioComparisonApplicationService reports a missing scenario before loading dependencies", async () => {
-  const changeSets = new MemoryChangeSetRepository([])
-  const service = new ScenarioComparisonApplicationService(
-    new MemoryScenarioRepository(null),
-    new MemorySnapshotRepository(snapshot()),
-    changeSets
-  )
-
-  await assert.rejects(
-    service.execute({ companyId, scenarioId }),
-    (error: unknown) =>
-      error instanceof PlanningApplicationError && error.code === "not_found"
-  )
-  assert.equal(changeSets.calls.length, 0)
-})
-
-test("ScenarioComparisonApplicationService validates snapshot workspace relation", async () => {
-  const service = new ScenarioComparisonApplicationService(
-    new MemoryScenarioRepository(scenario()),
-    new MemorySnapshotRepository(snapshot("workspace-other")),
-    new MemoryChangeSetRepository([])
-  )
-
-  await assert.rejects(
-    service.execute({ companyId, scenarioId }),
-    (error: unknown) =>
-      error instanceof PlanningApplicationError &&
-      error.code === "invalid_relation"
-  )
-})
-
-test("ScenarioComparisonApplicationService rejects invalid projection before comparison and presentation", async () => {
-  const duplicate = departmentChangeSet()
-  const duplicateChangeSets = [
-    duplicate,
-    { ...duplicate, payload: { ...duplicate.payload } },
-  ]
+test("ScenarioComparisonApplicationService rejects an invalid projection before comparison and presentation", async () => {
   let comparisonCalls = 0
   let presenterCalls = 0
+  const invalidProjection = ProjectionResult.create({
+    organization,
+    errors: [
+      Object.freeze({
+        code: "projection.invalid",
+        message: "Projeção inválida.",
+        changeSetId: "change-set-1",
+      }),
+    ],
+  })
   const service = new ScenarioComparisonApplicationService(
-    new MemoryScenarioRepository(scenario()),
-    new MemorySnapshotRepository(snapshot()),
-    new MemoryChangeSetRepository(duplicateChangeSets),
+    asProjectScenarioService(
+      new ProjectScenarioServiceFake(execution(invalidProjection))
+    ),
     {
-      execute: (input) => ScenarioExecutor.create(() => 0).execute(input),
       compare: () => {
         comparisonCalls += 1
         throw new Error("Comparison não deveria ser chamado.")
@@ -174,15 +153,10 @@ test("ScenarioComparisonApplicationService rejects invalid projection before com
     (error: unknown) => {
       assert.equal(error instanceof ScenarioComparisonProjectionError, true)
 
-      if (!(error instanceof ScenarioComparisonProjectionError)) {
-        return false
-      }
+      if (!(error instanceof ScenarioComparisonProjectionError)) return false
 
       assert.equal(error.code, "scenario_comparison.projection_failed")
-      assert.deepEqual(
-        error.issues.map((issue) => issue.code),
-        ["scenario.execution.duplicate_change_set_id"]
-      )
+      assert.deepEqual(error.issues, invalidProjection.errors)
       return true
     }
   )

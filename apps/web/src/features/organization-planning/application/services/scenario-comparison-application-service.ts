@@ -5,21 +5,9 @@ import type {
 } from "../../projection/comparison/comparison-contracts"
 import { ScenarioComparisonPresenter } from "../../projection/comparison/presenters"
 import type { ScenarioComparisonViewModel } from "../../projection/comparison/view-models"
+import { bootstrapProjectedOrganization } from "../../projection/bootstrap"
 import type { ProjectionIssue } from "../../projection/contracts"
-import {
-  ScenarioExecutor,
-  type ScenarioExecutionInput,
-  type ScenarioExecutionResult,
-} from "../../projection/execution"
-import type {
-  PlanningChangeSetApplicationRepository,
-  ScenarioApplicationRepository,
-  SnapshotApplicationRepository,
-} from "../ports"
-import {
-  assertApplicationRelation,
-  requireApplicationEntity,
-} from "../handlers/planning-handler-support"
+import type { ProjectScenarioService } from "./project-scenario-service"
 
 export type ScenarioComparisonApplicationInput = Readonly<{
   companyId: string
@@ -40,67 +28,43 @@ export class ScenarioComparisonProjectionError extends Error {
 }
 
 type ScenarioComparisonPipeline = Readonly<{
-  execute(input: ScenarioExecutionInput): ScenarioExecutionResult
   compare(input: ScenarioComparisonInput): ScenarioComparisonResult
   present(comparison: ScenarioComparisonResult): ScenarioComparisonViewModel
 }>
 
 const defaultPipeline: ScenarioComparisonPipeline = Object.freeze({
-  execute: (input) => ScenarioExecutor.create().execute(input),
   compare: (input) => ScenarioComparisonEngine.create().compare(input),
   present: (comparison) => ScenarioComparisonPresenter.present(comparison),
 })
 
 export class ScenarioComparisonApplicationService {
   constructor(
-    private readonly scenarios: ScenarioApplicationRepository,
-    private readonly snapshots: SnapshotApplicationRepository,
-    private readonly changeSets: PlanningChangeSetApplicationRepository,
+    private readonly projectScenarioService: ProjectScenarioService,
     private readonly pipeline: ScenarioComparisonPipeline = defaultPipeline
   ) {}
 
   async execute(
     input: ScenarioComparisonApplicationInput
   ): Promise<ScenarioComparisonViewModel> {
-    const scenario = requireApplicationEntity(
-      await this.scenarios.findById(input.companyId, input.scenarioId),
-      "Cenário não encontrado."
-    )
-    const [baseSnapshot, changeSets] = await Promise.all([
-      this.snapshots.findById(input.companyId, scenario.baseSnapshotId),
-      this.changeSets.findByScenario(input.companyId, scenario.id),
-    ])
-    const snapshot = requireApplicationEntity(
-      baseSnapshot,
-      "Snapshot-base não encontrado."
-    )
-    assertApplicationRelation(
-      snapshot.workspaceId === scenario.workspaceId,
-      "O snapshot-base não pertence ao workspace do cenário."
-    )
+    const execution = await this.projectScenarioService.executeWithContext(input)
 
-    const executionInput = {
-      snapshot: snapshot.toContract(),
-      scenario: scenario.toContract(),
-    }
-    const baseOrganization = this.pipeline.execute({
-      ...executionInput,
-      changeSets: [],
-    }).organization
-    const execution = this.pipeline.execute({
-      ...executionInput,
-      changeSets,
-    })
-
-    if (execution.issues.length > 0) {
-      throw new ScenarioComparisonProjectionError(execution.issues)
+    if (execution.projection.errors.length > 0) {
+      throw new ScenarioComparisonProjectionError(execution.projection.errors)
     }
 
     const comparison = this.pipeline.compare({
-      baseOrganization,
-      projectedOrganization: execution.organization,
+      baseOrganization: bootstrapProjectedOrganization(
+        execution.organizationSnapshot
+      ),
+      projectedOrganization: execution.projection.organization,
     })
 
     return this.pipeline.present(comparison)
   }
+}
+
+export function createScenarioComparisonApplicationService(
+  projectScenarioService: ProjectScenarioService
+) {
+  return new ScenarioComparisonApplicationService(projectScenarioService)
 }

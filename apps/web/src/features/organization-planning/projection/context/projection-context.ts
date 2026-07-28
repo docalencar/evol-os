@@ -19,11 +19,14 @@ type ProjectionContextProps = Readonly<{
   organization: ProjectedOrganization
   events: readonly ProjectionInternalEvent[]
   warnings: readonly ProjectionIssue[]
+  errors: readonly ProjectionIssue[]
   metrics: ProjectionMetrics
 }>
 
 export class ProjectionContext {
-  private constructor(private readonly props: ProjectionContextProps) {}
+  private constructor(
+    private readonly props: ProjectionContextProps
+  ) {}
 
   static create(
     snapshot: PublishedSnapshotContract,
@@ -31,27 +34,59 @@ export class ProjectionContext {
     changeSets: readonly ChangeSet[]
   ) {
     const organization = createEmptyProjectedOrganization()
-    return new ProjectionContext(Object.freeze({
-      snapshot,
-      scenario,
-      changeSets: Object.freeze([...changeSets]),
-      organization,
-      events: Object.freeze([]),
-      warnings: Object.freeze([]),
-      metrics: organization.metrics,
-    }))
+
+    return new ProjectionContext(
+      Object.freeze({
+        snapshot,
+        scenario,
+        changeSets: Object.freeze([...changeSets]),
+        organization,
+        events: Object.freeze([]),
+        warnings: Object.freeze([]),
+        errors: Object.freeze([]),
+        metrics: organization.metrics,
+      })
+    )
   }
 
-  get snapshot() { return this.props.snapshot }
-  get scenario() { return this.props.scenario }
-  get changeSets() { return this.props.changeSets }
-  get organization() { return this.props.organization }
-  get events() { return this.props.events }
-  get warnings() { return this.props.warnings }
-  get metrics() { return this.props.metrics }
+  get snapshot() {
+    return this.props.snapshot
+  }
 
-  withOrganization(organization: ProjectedOrganization) {
-    const immutableOrganization = freezeProjectedOrganization(organization)
+  get scenario() {
+    return this.props.scenario
+  }
+
+  get changeSets() {
+    return this.props.changeSets
+  }
+
+  get organization() {
+    return this.props.organization
+  }
+
+  get events() {
+    return this.props.events
+  }
+
+  get warnings() {
+    return this.props.warnings
+  }
+
+  get errors() {
+    return this.props.errors
+  }
+
+  get metrics() {
+    return this.props.metrics
+  }
+
+  withOrganization(
+    organization: ProjectedOrganization
+  ) {
+    const immutableOrganization =
+      freezeProjectedOrganization(organization)
+
     return this.copy({
       organization: immutableOrganization,
       metrics: immutableOrganization.metrics,
@@ -59,21 +94,87 @@ export class ProjectionContext {
   }
 
   withMetrics(metrics: ProjectionMetrics) {
+    const immutableMetrics = Object.freeze({
+      ...metrics,
+    })
+
     return this.copy({
-      metrics,
-      organization: freezeProjectedOrganization({ ...this.organization, metrics }),
+      metrics: immutableMetrics,
+      organization: freezeProjectedOrganization({
+        ...this.organization,
+        metrics: immutableMetrics,
+      }),
     })
   }
 
   addEvent(event: ProjectionInternalEvent) {
-    return this.copy({ events: Object.freeze([...this.events, Object.freeze(event)]) })
+    return this.copy({
+      events: Object.freeze([
+        ...this.events,
+        freezeProjectionEvent(event),
+      ]),
+    })
   }
 
   addWarning(warning: ProjectionIssue) {
-    return this.copy({ warnings: Object.freeze([...this.warnings, Object.freeze(warning)]) })
+    return this.copy({
+      warnings: Object.freeze([
+        ...this.warnings,
+        Object.freeze({ ...warning }),
+      ]),
+    })
   }
 
-  private copy(changes: Partial<ProjectionContextProps>) {
-    return new ProjectionContext(Object.freeze({ ...this.props, ...changes }))
+  addError(error: ProjectionIssue) {
+    return this.copy({
+      errors: Object.freeze([
+        ...this.errors,
+        Object.freeze({ ...error }),
+      ]),
+    })
   }
+
+  private copy(
+    changes: Partial<ProjectionContextProps>
+  ) {
+    return new ProjectionContext(
+      Object.freeze({
+        ...this.props,
+        ...changes,
+      })
+    )
+  }
+}
+
+function freezeProjectionEvent(
+  event: ProjectionInternalEvent
+): ProjectionInternalEvent {
+  if (event.type === "department.updated") {
+    return Object.freeze({
+      ...event,
+      changedFields: freezeChangedFields(event.changedFields),
+    })
+  }
+
+  if (event.type === "team.updated") {
+    return Object.freeze({
+      ...event,
+      changedFields: freezeChangedFields(event.changedFields),
+    })
+  }
+
+  if (event.type === "position.updated") {
+    return Object.freeze({
+      ...event,
+      changedFields: freezeChangedFields(event.changedFields),
+    })
+  }
+
+  return Object.freeze({ ...event })
+}
+
+function freezeChangedFields<TField extends string>(
+  changedFields: readonly TField[]
+): readonly TField[] {
+  return Object.freeze([...changedFields])
 }

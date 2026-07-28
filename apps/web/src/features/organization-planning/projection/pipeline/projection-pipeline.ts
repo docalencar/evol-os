@@ -25,7 +25,13 @@ export class ProjectionPipeline {
         }))
     }
 
-    return executor.execute(context, changeSet).addEvent(Object.freeze({
+    const executed = executor.execute(context, changeSet)
+
+    if (executed.errors.length > context.errors.length) {
+      return executed
+    }
+
+    return executed.addEvent(Object.freeze({
       type: "change-set.executed",
       changeSetId: changeSet.id,
       executor: executor.name,

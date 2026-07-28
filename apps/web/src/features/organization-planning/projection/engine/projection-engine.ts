@@ -1,4 +1,3 @@
-import type { ChangeSet } from "../../types/planning-contracts"
 import { ProjectionContext } from "../context"
 import type { ProjectionInput } from "../contracts"
 import {
@@ -15,6 +14,7 @@ import {
   ProjectionContractValidator,
   type ProjectionValidator,
 } from "../validators"
+import { orderChangeSets } from "./order-change-sets"
 
 export class ProjectionEngine {
   constructor(
@@ -77,18 +77,7 @@ export class ProjectionEngine {
         ...finalContext.errors,
         ...contractErrors,
       ]),
+      events: finalContext.events,
     })
   }
-}
-
-function orderChangeSets(
-  changeSets: readonly ChangeSet[]
-) {
-  return Object.freeze(
-    [...changeSets].sort(
-      (left, right) =>
-        left.version - right.version ||
-        left.id.localeCompare(right.id)
-    )
-  )
 }

@@ -35,13 +35,18 @@ const scenario: PlanningScenarioContract = Object.freeze({
   updatedAt: new Date("2026-01-02T00:00:00.000Z"),
 })
 
-function changeSet(id: string, version: number, changeType = "department.create"): ChangeSet {
+function changeSet(
+  id: string,
+  version: number,
+  changeType = "department.create",
+  payload: Readonly<Record<string, unknown>> = {}
+): ChangeSet {
   return Object.freeze({
     id,
     companyId: "company-1",
     scenarioId: "scenario-1",
     changeType,
-    payload: Object.freeze({}),
+    payload: Object.freeze({ ...payload }),
     version,
   })
 }
@@ -61,14 +66,24 @@ test("ProjectionContext starts with an immutable empty organization", () => {
 })
 
 test("Pipeline discovers the executor and records its execution", () => {
-  const context = ProjectionContext.create(snapshot, scenario, [changeSet("change-1", 1)])
+  const context = ProjectionContext.create(snapshot, scenario, [
+    changeSet("change-1", 1, "department.create", {
+      departmentId: "department-1",
+      name: "Financeiro",
+    }),
+  ])
   const projected = new ProjectionPipeline([new DepartmentExecutor()]).execute(context)
 
-  assert.deepEqual(projected.events, [{
-    type: "change-set.executed",
-    changeSetId: "change-1",
-    executor: "DepartmentExecutor",
-  }])
+  assert.deepEqual(
+    projected.events.filter(
+      (event) => event.type === "change-set.executed"
+    ),
+    [{
+      type: "change-set.executed",
+      changeSetId: "change-1",
+      executor: "DepartmentExecutor",
+    }]
+  )
   assert.deepEqual(projected.warnings, [])
 })
 
@@ -81,6 +96,43 @@ test("Pipeline reports an unsupported change set without mutating the state", ()
   assert.equal(projected.organization, context.organization)
   assert.equal(projected.warnings[0]?.code, "unhandled_change_set")
   assert.equal(projected.events[0]?.type, "change-set.unhandled")
+})
+
+test("Pipeline continues after a failed change set and records only completed executions", () => {
+  const executed: string[] = []
+  const executor: ChangeSetExecutor = {
+    name: "FailingExecutor",
+    canExecute: () => true,
+    execute: (context, currentChangeSet) => {
+      executed.push(currentChangeSet.id)
+
+      if (currentChangeSet.id === "change-2") {
+        return context.addError(Object.freeze({
+          code: "execution_failed",
+          message: "Falha de execução.",
+          changeSetId: currentChangeSet.id,
+        }))
+      }
+
+      return context
+    },
+  }
+  const context = ProjectionContext.create(snapshot, scenario, [
+    changeSet("change-1", 1),
+    changeSet("change-2", 2),
+    changeSet("change-3", 3),
+  ])
+
+  const projected = new ProjectionPipeline([executor]).execute(context)
+
+  assert.deepEqual(executed, ["change-1", "change-2", "change-3"])
+  assert.deepEqual(
+    projected.events.map((event) =>
+      event.type === "change-set.executed" ? event.changeSetId : null
+    ),
+    ["change-1", "change-3"]
+  )
+  assert.equal(projected.errors[0]?.changeSetId, "change-2")
 })
 
 test("ProjectionEngine executes change sets by version and id", () => {

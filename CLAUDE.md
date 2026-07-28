@@ -224,7 +224,33 @@ Antes de concluir:
 
 ---
 
-## 9. Em resumo
+## 9. Trabalho com IA: contexto, risco e parada
+
+Agentes trabalham com o menor contexto suficiente: referenciam documentos pelo
+caminho, usam diff, contrato ou trecho específico em vez de copiar arquivos
+inteiros e não reconstroem conversas quando Git, PRs, ADRs e código já registram o
+estado. Cada agente assume uma responsabilidade por vez. Contexto transitório
+vive na PR; conhecimento permanente, na documentação canônica. Handoffs são
+curtos, acionáveis e seguem `docs/engineering/agent-protocol.md`.
+
+A revisão é proporcional ao risco:
+
+| Risco | Exemplos | Fluxo |
+| --- | --- | --- |
+| **Baixo** | Texto, estilo, UI puramente visual, documentação sem mudança de contrato e ajustes locais sem regra de negócio | Especificação → Implementação → Check → Aprovação humana |
+| **Médio** | CRUD, actions, queries, repositories, presenters, formulários com validação e integração entre camadas existentes | Especificação → Implementação → Check → Revisão técnica → Aprovação humana |
+| **Alto** | Engines, projeções, sincronização, cálculos financeiros, autenticação/autorização, migrations críticas, contratos públicos e execução/publicação de cenários | Especificação → Implementação → Check → Revisão P0/P1 → Correção focada, quando necessária → Uma revalidação → Aprovação humana |
+
+**Critério de parada.** Sem finding P0/P1, a revisão técnica termina. Com finding
+P0/P1, corrige-se somente o problema confirmado e revisa-se apenas o novo diff uma
+vez. Sem novo P0/P1, a mudança segue para aprovação humana; sugestões e refactors
+fora de escopo não prolongam a PR. O protocolo operacional e a classificação
+detalhada vivem em `docs/engineering/agent-protocol.md` e
+`docs/engineering/code-review.md`.
+
+---
+
+## 10. Em resumo
 
 Este projeto **evolui incrementalmente**: PRs pequenas, cada uma com valor próprio
 e build verde. A arquitetura e a direção dos fluxos devem ser **preservadas**;

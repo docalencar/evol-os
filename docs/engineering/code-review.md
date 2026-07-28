@@ -93,6 +93,33 @@ Nunca tratar preferência pessoal como erro.
 
 ---
 
+## Revisão automatizada
+
+O revisor de IA usa o diff como escopo primário e revisa apenas comportamento
+introduzido ou alterado pela PR. Procura bugs, regressões, quebra de contrato,
+segurança, ausência de teste obrigatório e violações arquiteturais, priorizando
+P0/P1 — equivalentes a `BLOCKER` e `REQUIRED`. Cada finding cita arquivo, linha,
+cenário de falha e evidência, além de declarar limitações de verificação.
+
+O revisor não deve:
+
+- revisar arquivos não alterados sem dependência concreta;
+- pedir reorganização estética ou bloquear por preferência pessoal;
+- propor abstrações sem necessidade comprovada;
+- ampliar o escopo;
+- repetir findings corrigidos;
+- reiniciar uma revisão completa depois de correção localizada.
+
+**Critério de parada:**
+
+1. Sem `BLOCKER` ou `REQUIRED`, aprovar tecnicamente.
+2. Com finding bloqueante, solicitar correção focada.
+3. Após a correção, revisar o novo diff uma única vez.
+4. Sem novo problema bloqueante, aprovar.
+5. Sugestões não prolongam o ciclo.
+
+---
+
 ## Evidências e limitações
 
 Todo apontamento aponta para **arquivo/linha, contrato ou comando** que o sustenta

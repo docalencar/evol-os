@@ -1,171 +1,62 @@
-# NEXT_STEPS
+# Próximos passos — Organization Planning
 
-Este documento representa as próximas entregas planejadas para o Evol OS.
+## Estado atual
 
----
+Scenario Execution está integrado à `main`.
 
-# Status atual
+Entregas consolidadas:
 
-## Infraestrutura
+- Projection Pipeline e Projection Engine;
+- ordenação determinística;
+- Scenario Executor e Scenario Execution Result;
+- métricas reutilizadas do Projection Engine;
+- identificação dos Change Sets realmente executados;
+- continuação controlada após erros;
+- rejeição antecipada de IDs duplicados;
+- imutabilidade defensiva;
+- contrato `generatedAt: Date` preservado;
+- testes, build e `git diff --check` aprovados;
+- revisão P0/P1 aprovada.
 
-- [x] Next.js 15
-- [x] Supabase
-- [x] RLS
-- [x] Autenticação
-- [x] Company Context
-- [x] Dashboard
-- [x] Sidebar
-- [x] Layout Base
+## Próxima unidade: Scenario Comparison
 
----
+**Objetivo:** comparar o snapshot base com o estado produzido pela execução da
+projeção.
 
-## Organização
+Resultados esperados:
 
-- [x] CRUD de Departamentos
-- [x] CRUD de Times
-- [x] CRUD de Cargos
-- [x] Estrutura profissional do Cargo (PR-078)
+- resumo estrutural;
+- colaboradores adicionados, alterados, movidos, arquivados ou removidos;
+- departamentos, times e posições criados, alterados ou arquivados;
+- variação de headcount e de métricas;
+- dados adequados para dashboard, aprovação, auditoria e exportação.
 
----
+Fora do escopo inicial:
 
-## Pessoas
+- UI;
+- persistência do resultado;
+- aprovação e publicação;
+- PDF e planilha;
+- recomendações generativas por IA.
 
-- [x] Cadastro
-- [x] Perfil
-- [x] Insights
-- [x] Competências do colaborador
+## Ordem prevista
 
----
+1. Scenario Comparison
+2. Planning Indicators
+3. Planning Dashboard
+4. Scenario Approval
+5. Scenario Publication
+6. Audit Trail
+7. Exportação
 
-## Competências
+## Continuidade entre agentes
 
-- [x] CRUD
-- [x] Competências por Cargo
-- [x] Competências por Colaborador
+Ao trocar de conversa ou agente, fornecer apenas:
 
----
+- objetivo da próxima PR;
+- branch atual;
+- documentos canônicos;
+- arquivos diretamente relacionados;
+- último resultado de validação.
 
-## Desenvolvimento
-
-- [x] Plano de Desenvolvimento (PDI)
-- [x] Templates
-- [x] Dashboard Executivo
-- [x] AI Foundation (Mock)
-
----
-
-# Em andamento
-
-## PR-079A — Refatoração do PositionForm
-
-- [x] Nova organização por diretórios
-- [x] Componentes por responsabilidade
-- [x] Tipos compartilhados
-- [x] Opções centralizadas
-- [x] Build verde
-
----
-
-## PR-079B — Jornada e Regime de Trabalho
-
-- [ ] Departamento responsável
-- [ ] Jornada semanal
-- [ ] Modalidade de trabalho
-- [ ] Regime contratual
-- [ ] Exigência de viagens
-- [ ] Atualizar Position Details
-- [ ] Atualizar Position Overview Card
-- [ ] Build
-- [ ] Testes funcionais
-
----
-
-# Próximas PRs
-
-## PR-080 — Engineering Foundation
-
-- [ ] ENGINEERING_GUIDE
-- [ ] EVOL_ENGINEERING_PRINCIPLES
-- [ ] Playbooks
-- [ ] Checklists
-- [ ] Workflow oficial
-- [ ] Atualização do AI_CONTEXT
-
----
-
-## Organização
-
-- [ ] Faixa salarial
-- [ ] Responsabilidades do cargo
-- [ ] Perfil ideal do cargo
-- [ ] Career Path
-- [ ] Organograma avançado
-
----
-
-## Performance
-
-- [ ] Avaliações
-- [ ] Feedback
-- [ ] One-on-One
-- [ ] OKRs
-- [ ] Analytics
-
----
-
-## Talent Intelligence
-
-- [ ] Nine Box
-- [ ] Sucessão
-- [ ] Talent Review
-- [ ] Recomendações por IA
-
----
-
-## Enterprise
-
-- [ ] Auditoria
-- [ ] API Pública
-- [ ] Integrações
-- [ ] White Label
-- [ ] Marketplace
-
----
-
-# Engenharia
-
-Todas as novas implementações deverão seguir o fluxo oficial:
-
-Modelagem
-
-↓
-
-Arquitetura
-
-↓
-
-Persistência
-
-↓
-
-Interface
-
-↓
-
-Build verde
-
-↓
-
-Teste funcional
-
-↓
-
-Documentação
-
-↓
-
-Commit
-
-↓
-
-Push
+Não copiar o histórico completo do projeto.

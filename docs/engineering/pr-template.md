@@ -25,6 +25,9 @@ O que está errado, faltando ou bloqueado — em uma ou duas frases.
 ## Objetivo (único)
 O resultado que esta PR entrega. Se precisar de "e", provavelmente são duas PRs.
 
+## Nível de risco
+Baixo, médio ou alto, com justificativa curta baseada no CLAUDE.md (§9).
+
 ## Escopo
 O que será feito.
 
@@ -43,6 +46,14 @@ Camadas, fluxos e feature de referência a espelhar; padrões existentes a reuti
 ## Contratos envolvidos
 Contratos públicos / `index.ts` tocados. Alterá-los é gatilho de escalonamento
 (AGENTS.md §5–6).
+
+## Limites de alteração
+- Arquivos ou diretórios permitidos:
+- Arquivos ou diretórios proibidos:
+- Contratos a preservar:
+- Dependências que não podem ser adicionadas:
+
+Informar apenas áreas relevantes; não listar a árvore completa do projeto.
 
 ## Critérios de aceitação
 Condições objetivas e verificáveis para considerar a PR correta.
@@ -74,8 +85,9 @@ Referência à checklist do CLAUDE.md (§8) + qualquer critério específico des
 
 ## Relatório final esperado
 O handoff que a descrição da PR deve conter ao final (agent-protocol.md §4):
-escopo entregue, decisões, validações executadas e resultados, comandos não
-executados e motivo, riscos e pendências.
+escopo entregue, arquivos ou áreas alterados, decisões relevantes, validações,
+comandos não executados e motivo, riscos e pendências. Não copiar a especificação
+completa nem repetir documentação canônica.
 ```
 
 ---

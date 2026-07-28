@@ -85,6 +85,29 @@ Campos sem conteúdo são omitidos — não se preenche com "N/A" decorativo. O 
 
 ---
 
+## 4.1 Orçamento de contexto e prompts incrementais
+
+O contexto enviado a cada agente deve ser o menor pacote capaz de sustentar sua
+responsabilidade atual. Referencie fontes canônicas pelo caminho e avance por
+prompts incrementais; não copie histórico completo de conversa, documentação
+integral, decisões não relacionadas nem explicações já registradas no repositório.
+
+**Pacote mínimo para implementação:** objetivo único, escopo, fora de escopo,
+contratos preservados, arquivos ou áreas permitidos, critérios de aceitação, nível
+de risco e caminhos dos documentos canônicos.
+
+**Pacote mínimo para revisão:** especificação, diff, validações declaradas e
+contratos ou ADRs diretamente afetados. A revisão analisa regressões introduzidas
+pelo diff, prioriza P0/P1 (`BLOCKER`/`REQUIRED`), ignora estilo sem impacto, não
+amplia escopo e não revisa novamente toda a base após uma correção pequena.
+
+Após correção, o handoff contém somente o finding corrigido, arquivos alterados,
+decisão aplicada, validações e novo diff relevante. Finding bloqueante recebe uma
+única revalidação focada; outro ciclo só começa se a correção introduzir novo
+P0/P1 comprovado.
+
+---
+
 ## 5. Artefatos de comunicação
 
 A ponte entre agentes são artefatos rastreáveis, priorizando Git e GitHub:

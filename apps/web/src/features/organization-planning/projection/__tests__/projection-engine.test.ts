@@ -98,7 +98,7 @@ test("Pipeline reports an unsupported change set without mutating the state", ()
   assert.equal(projected.events[0]?.type, "change-set.unhandled")
 })
 
-test("Pipeline stops after a failed change set and records only completed executions", () => {
+test("Pipeline continues after a failed change set and records only completed executions", () => {
   const executed: string[] = []
   const executor: ChangeSetExecutor = {
     name: "FailingExecutor",
@@ -125,12 +125,12 @@ test("Pipeline stops after a failed change set and records only completed execut
 
   const projected = new ProjectionPipeline([executor]).execute(context)
 
-  assert.deepEqual(executed, ["change-1", "change-2"])
+  assert.deepEqual(executed, ["change-1", "change-2", "change-3"])
   assert.deepEqual(
     projected.events.map((event) =>
       event.type === "change-set.executed" ? event.changeSetId : null
     ),
-    ["change-1"]
+    ["change-1", "change-3"]
   )
   assert.equal(projected.errors[0]?.changeSetId, "change-2")
 })

@@ -167,7 +167,7 @@ test("ScenarioExecutor surfaces a projection failure as issues", () => {
   assert.equal(result.executedChangeSets.length, 0)
 })
 
-test("ScenarioExecutor reports only change sets completed before an intermediate failure", () => {
+test("ScenarioExecutor reports all completed change sets around an intermediate failure", () => {
   const result = ScenarioExecutor.create().execute({
     snapshot,
     scenario,
@@ -182,11 +182,11 @@ test("ScenarioExecutor reports only change sets completed before an intermediate
 
   assert.deepEqual(
     result.executedChangeSets.map((current) => current.id),
-    ["change-1"]
+    ["change-1", "change-3"]
   )
   assert.deepEqual(
     result.organization.departments.map((department) => department.id),
-    ["department-1"]
+    ["department-1", "department-3"]
   )
   assert.equal(
     result.issues[0]?.changeSetId,

@@ -62,3 +62,14 @@ export type {
 export {
   projectScenario,
 } from "./project-scenario"
+
+
+export {
+  ScenarioComparisonApplicationService,
+  ScenarioComparisonProjectionError,
+  createScenarioComparisonApplicationService,
+} from "./scenario-comparison-application-service"
+
+export type {
+  ScenarioComparisonApplicationInput,
+} from "./scenario-comparison-application-service"

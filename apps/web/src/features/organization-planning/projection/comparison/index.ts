@@ -7,6 +7,7 @@ export { compareTeams } from "./team-comparator"
 export { comparePositions } from "./position-comparator"
 export { compareEmployees } from "./employee-comparator"
 export { createComparisonSummary } from "./comparison-summary"
+export * from "./components"
 export * from "./presenters"
 export * from "./view-models"
 

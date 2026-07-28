@@ -197,13 +197,9 @@ alto risco
 
 # Definition of Done
 
-Uma implementação só está pronta quando:
+A conclusão técnica de uma mudança segue a **Definition of Done canônica do
+`../../CLAUDE.md` (§8)**, que é a fonte única. Este documento não reproduz a
+checklist nem mantém uma segunda versão dela.
 
-- build verde;
-- testes concluídos;
-- documentação atualizada;
-- código revisado;
-- commit realizado;
-- push concluído.
-
-Sem esses itens a implementação não está concluída.
+Commit e push permanecem como **etapas do fluxo de integração** (ver a seção
+"9. Git", acima), e não como critérios internos da conclusão técnica.

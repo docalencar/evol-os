@@ -152,11 +152,29 @@ function freezeProjectionEvent(
   if (event.type === "department.updated") {
     return Object.freeze({
       ...event,
-      changedFields: Object.freeze([
-        ...event.changedFields,
-      ]),
+      changedFields: freezeChangedFields(event.changedFields),
+    })
+  }
+
+  if (event.type === "team.updated") {
+    return Object.freeze({
+      ...event,
+      changedFields: freezeChangedFields(event.changedFields),
+    })
+  }
+
+  if (event.type === "position.updated") {
+    return Object.freeze({
+      ...event,
+      changedFields: freezeChangedFields(event.changedFields),
     })
   }
 
   return Object.freeze({ ...event })
+}
+
+function freezeChangedFields<TField extends string>(
+  changedFields: readonly TField[]
+): readonly TField[] {
+  return Object.freeze([...changedFields])
 }

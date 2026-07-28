@@ -522,3 +522,217 @@ test("DepartmentExecutor produces deterministic immutable results", () => {
     true
   )
 })
+
+test("ProjectionEngine does not apply an out-of-scope change set", () => {
+  const executed: string[] = []
+  const recordingExecutor: ChangeSetExecutor = {
+    name: "RecordingExecutor",
+    canExecute: () => true,
+    execute: (context, currentChangeSet) => {
+      executed.push(currentChangeSet.id)
+      return context
+    },
+  }
+  const outOfScope: ChangeSet = Object.freeze({
+    id: "change-out",
+    companyId: "company-2",
+    scenarioId: "scenario-1",
+    changeType: "department.create",
+    payload: Object.freeze({
+      departmentId: "department-1",
+      name: "Financeiro",
+    }),
+    version: 1,
+  })
+
+  const result = ProjectionEngine.create([
+    recordingExecutor,
+  ]).project({
+    snapshot,
+    scenario,
+    changeSets: [outOfScope],
+  })
+
+  assert.equal(result.isValid, false)
+  assert.equal(
+    result.errors.some(
+      (error) =>
+        error.code === "change_set_scope_mismatch"
+    ),
+    true
+  )
+  assert.deepEqual(
+    result.organization.departments,
+    []
+  )
+  assert.deepEqual(result.warnings, [])
+  assert.deepEqual(executed, [])
+})
+
+test("ProjectionEngine skips execution when a change set is out of scope", () => {
+  const executed: string[] = []
+  const recordingExecutor: ChangeSetExecutor = {
+    name: "RecordingExecutor",
+    canExecute: () => true,
+    execute: (context, currentChangeSet) => {
+      executed.push(currentChangeSet.id)
+      return context
+    },
+  }
+
+  const outOfScope: ChangeSet = Object.freeze({
+    id: "change-out",
+    companyId: "company-1",
+    scenarioId: "scenario-2",
+    changeType: "department.create",
+    payload: Object.freeze({
+      departmentId: "department-1",
+      name: "Financeiro",
+    }),
+    version: 1,
+  })
+
+  const result = ProjectionEngine.create([
+    recordingExecutor,
+  ]).project({
+    snapshot,
+    scenario,
+    changeSets: [outOfScope],
+  })
+
+  assert.deepEqual(executed, [])
+  assert.equal(result.isValid, false)
+  assert.equal(
+    result.errors.some(
+      (error) =>
+        error.code === "change_set_scope_mismatch"
+    ),
+    true
+  )
+  assert.deepEqual(
+    result.organization.departments,
+    []
+  )
+  assert.deepEqual(result.warnings, [])
+})
+
+test("ProjectionEngine rejects department archive with an active team", () => {
+  const result = ProjectionEngine.create().project({
+    snapshot,
+    scenario,
+    changeSets: [
+      organizationalChangeSet(
+        "change-1",
+        1,
+        "department.create",
+        {
+          departmentId: "department-1",
+          name: "Financeiro",
+        }
+      ),
+      organizationalChangeSet(
+        "change-2",
+        2,
+        "team.create",
+        {
+          teamId: "team-1",
+          name: "Contas a pagar",
+          departmentId: "department-1",
+        }
+      ),
+      organizationalChangeSet(
+        "change-3",
+        3,
+        "department.archive",
+        {
+          departmentId: "department-1",
+        }
+      ),
+    ],
+  })
+
+  assert.equal(result.isValid, false)
+  assert.equal(
+    result.errors[0]?.code,
+    "department.archive.has_active_teams"
+  )
+  assert.equal(
+    result.organization.departments[0]?.status,
+    "active"
+  )
+  assert.equal(
+    result.organization.teams[0]?.status,
+    "active"
+  )
+})
+
+test("ProjectionEngine rejects department archive with an active position", () => {
+  const result = ProjectionEngine.create().project({
+    snapshot,
+    scenario,
+    changeSets: [
+      organizationalChangeSet(
+        "change-1",
+        1,
+        "department.create",
+        {
+          departmentId: "department-1",
+          name: "Financeiro",
+        }
+      ),
+      organizationalChangeSet(
+        "change-2",
+        2,
+        "position.create",
+        {
+          positionId: "position-1",
+          name: "Analista financeiro",
+          departmentId: "department-1",
+          hierarchicalLevel: "analyst",
+          weeklyWorkloadHours: 40,
+          workModel: "hybrid",
+          employmentType: "clt",
+          travelRequirement: "none",
+        }
+      ),
+      organizationalChangeSet(
+        "change-3",
+        3,
+        "department.archive",
+        {
+          departmentId: "department-1",
+        }
+      ),
+    ],
+  })
+
+  assert.equal(result.isValid, false)
+  assert.equal(
+    result.errors[0]?.code,
+    "department.archive.has_active_positions"
+  )
+  assert.equal(
+    result.organization.departments[0]?.status,
+    "active"
+  )
+  assert.equal(
+    result.organization.positions[0]?.status,
+    "active"
+  )
+})
+
+function organizationalChangeSet(
+  id: string,
+  version: number,
+  changeType: string,
+  payload: Readonly<Record<string, unknown>>
+): ChangeSet {
+  return Object.freeze({
+    id,
+    companyId: "company-1",
+    scenarioId: "scenario-1",
+    changeType,
+    payload: Object.freeze({ ...payload }),
+    version,
+  })
+}

@@ -1,6 +1,10 @@
 import assert from "node:assert/strict"
 import test from "node:test"
-import type { ProjectedDepartment } from "../contracts"
+import type {
+  ProjectedDepartment,
+  ProjectedPosition,
+  ProjectedTeam,
+} from "../contracts"
 import {
   archiveProjectedDepartment,
   createProjectedDepartment,
@@ -16,6 +20,38 @@ function department(
     code: "FIN",
     description: null,
     parentDepartmentId: null,
+    status: "active",
+    ...overrides,
+  })
+}
+
+function team(
+  overrides: Partial<ProjectedTeam> = {}
+): ProjectedTeam {
+  return Object.freeze({
+    id: "team-1",
+    name: "Contas a pagar",
+    code: "CAP",
+    description: null,
+    departmentId: "department-1",
+    status: "active",
+    ...overrides,
+  })
+}
+
+function position(
+  overrides: Partial<ProjectedPosition> = {}
+): ProjectedPosition {
+  return Object.freeze({
+    id: "position-1",
+    name: "Analista financeiro",
+    description: null,
+    departmentId: "department-1",
+    hierarchicalLevel: "analyst",
+    weeklyWorkloadHours: 40,
+    workModel: "hybrid",
+    employmentType: "clt",
+    travelRequirement: "none",
     status: "active",
     ...overrides,
   })
@@ -493,6 +529,8 @@ test("archiveProjectedDepartment archives an active department", () => {
 
   const result = archiveProjectedDepartment(
     source,
+    [],
+    [],
     "change-1",
     {
       departmentId: "department-1",
@@ -528,6 +566,8 @@ test("archiveProjectedDepartment reports an already archived department as a war
 
   const result = archiveProjectedDepartment(
     source,
+    [],
+    [],
     "change-1",
     {
       departmentId: "department-1",
@@ -563,6 +603,8 @@ test("archiveProjectedDepartment rejects a department with active children", () 
         parentDepartmentId: "department-parent",
       }),
     ],
+    [],
+    [],
     "change-1",
     {
       departmentId: "department-parent",
@@ -597,9 +639,101 @@ test("archiveProjectedDepartment allows archive when all children are archived",
         status: "archived",
       }),
     ],
+    [],
+    [],
     "change-1",
     {
       departmentId: "department-parent",
+    }
+  )
+
+  assert.equal(result.success, true)
+
+  if (!result.success) {
+    return
+  }
+
+  assert.equal(
+    result.departments[0]?.status,
+    "archived"
+  )
+})
+
+test("archiveProjectedDepartment rejects a department with active teams", () => {
+  const departments = Object.freeze([department()])
+  const teams = Object.freeze([
+    team({ id: "team-1", departmentId: "department-1" }),
+  ])
+
+  const result = archiveProjectedDepartment(
+    departments,
+    teams,
+    [],
+    "change-1",
+    {
+      departmentId: "department-1",
+    }
+  )
+
+  assert.equal(result.success, false)
+
+  if (result.success) {
+    return
+  }
+
+  assert.equal(
+    result.issue.code,
+    "department.archive.has_active_teams"
+  )
+  assert.equal(departments[0]?.status, "active")
+  assert.equal(teams[0]?.status, "active")
+})
+
+test("archiveProjectedDepartment rejects a department with active positions", () => {
+  const departments = Object.freeze([department()])
+  const positions = Object.freeze([
+    position({ id: "position-1", departmentId: "department-1" }),
+  ])
+
+  const result = archiveProjectedDepartment(
+    departments,
+    [],
+    positions,
+    "change-1",
+    {
+      departmentId: "department-1",
+    }
+  )
+
+  assert.equal(result.success, false)
+
+  if (result.success) {
+    return
+  }
+
+  assert.equal(
+    result.issue.code,
+    "department.archive.has_active_positions"
+  )
+  assert.equal(departments[0]?.status, "active")
+  assert.equal(positions[0]?.status, "active")
+})
+
+test("archiveProjectedDepartment allows archive when children, teams and positions are archived", () => {
+  const result = archiveProjectedDepartment(
+    [
+      department(),
+      department({
+        id: "department-child",
+        parentDepartmentId: "department-1",
+        status: "archived",
+      }),
+    ],
+    [team({ status: "archived", departmentId: "department-1" })],
+    [position({ status: "archived", departmentId: "department-1" })],
+    "change-1",
+    {
+      departmentId: "department-1",
     }
   )
 

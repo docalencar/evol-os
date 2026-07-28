@@ -299,6 +299,8 @@ function executeDepartmentMutation(
     case "department.archive":
       return archiveProjectedDepartment(
         context.organization.departments,
+        context.organization.teams,
+        context.organization.positions,
         changeSet.id,
         changeSet.payload
       )

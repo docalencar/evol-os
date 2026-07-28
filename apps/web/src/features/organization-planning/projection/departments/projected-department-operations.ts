@@ -1,6 +1,8 @@
 import type {
   DepartmentMutableField,
   ProjectedDepartment,
+  ProjectedPosition,
+  ProjectedTeam,
   ProjectionInternalEvent,
   ProjectionIssue,
 } from "../contracts"
@@ -233,6 +235,8 @@ export function updateProjectedDepartment(
 
 export function archiveProjectedDepartment(
   departments: readonly ProjectedDepartment[],
+  teams: readonly ProjectedTeam[],
+  positions: readonly ProjectedPosition[],
   changeSetId: string,
   payload: DepartmentArchivePayload
 ): DepartmentMutationResult {
@@ -274,6 +278,40 @@ export function archiveProjectedDepartment(
     return failure(
       "department.archive.has_active_children",
       `O departamento ${currentDepartment.id} possui departamentos filhos ativos: ${activeChildren.join(", ")}.`,
+      changeSetId
+    )
+  }
+
+  const activeTeams = teams
+    .filter(
+      (team) =>
+        team.status === "active" &&
+        team.departmentId === currentDepartment.id
+    )
+    .map((team) => team.id)
+    .sort((left, right) => left.localeCompare(right))
+
+  if (activeTeams.length > 0) {
+    return failure(
+      "department.archive.has_active_teams",
+      `O departamento ${currentDepartment.id} possui times ativos vinculados: ${activeTeams.join(", ")}.`,
+      changeSetId
+    )
+  }
+
+  const activePositions = positions
+    .filter(
+      (position) =>
+        position.status === "active" &&
+        position.departmentId === currentDepartment.id
+    )
+    .map((position) => position.id)
+    .sort((left, right) => left.localeCompare(right))
+
+  if (activePositions.length > 0) {
+    return failure(
+      "department.archive.has_active_positions",
+      `O departamento ${currentDepartment.id} possui cargos ativos vinculados: ${activePositions.join(", ")}.`,
       changeSetId
     )
   }

@@ -47,21 +47,28 @@ export class ProjectionEngine {
         orderedChangeSets
       )
 
-    const projectedContext =
-      this.pipeline.execute(initialContext)
-
+    // A validação de contrato roda ANTES de qualquer mutação do estado
+    // projetado. Um change set fora de escopo (ou qualquer outra violação de
+    // contrato) invalida todo o input; nesse caso o pipeline não é executado,
+    // de forma que nenhum change set produza eventos, warnings ou alterações
+    // organizacionais.
     const contractErrors =
       this.validators.flatMap((validator) =>
-        validator.validate(projectedContext)
+        validator.validate(initialContext)
       )
+
+    const executedContext =
+      contractErrors.length > 0
+        ? initialContext
+        : this.pipeline.execute(initialContext)
 
     const metrics =
       this.metricsCalculator.calculate(
-        projectedContext.organization
+        executedContext.organization
       )
 
     const finalContext =
-      projectedContext.withMetrics(metrics)
+      executedContext.withMetrics(metrics)
 
     return ProjectionResult.create({
       organization: finalContext.organization,

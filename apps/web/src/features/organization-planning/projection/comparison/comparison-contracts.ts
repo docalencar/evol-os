@@ -69,6 +69,10 @@ export type PositionComparison = StructuralEntityComparison<
 export type EmployeeMoved = Readonly<{
   before: ProjectedEmployee
   after: ProjectedEmployee
+  previousDepartmentId: string | null
+  departmentId: string | null
+  previousTeamId: string | null
+  teamId: string | null
   previousPositionId: string | null
   positionId: string | null
 }>

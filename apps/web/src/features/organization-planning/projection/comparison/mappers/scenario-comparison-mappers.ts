@@ -65,6 +65,10 @@ export function mapEmployeeComparison(
     })),
     moved: comparison.moved.map((move) => ({
       employee: mapEmployee(move.after),
+      previousDepartmentId: move.previousDepartmentId,
+      departmentId: move.departmentId,
+      previousTeamId: move.previousTeamId,
+      teamId: move.teamId,
       previousPositionId: move.previousPositionId,
       positionId: move.positionId,
     })),

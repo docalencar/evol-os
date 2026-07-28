@@ -45,7 +45,16 @@ test("ScenarioComparisonPresenter maps the engine result to a detached view mode
         parentDepartmentId: null,
         status: "active",
       }],
-      employees: [{ id: "employee-1", positionId: "position-1" }],
+      employees: [{
+        id: "employee-1",
+        fullName: "Colaborador 1",
+        email: null,
+        status: "active",
+        managerId: null,
+        departmentId: null,
+        teamId: null,
+        positionId: "position-1",
+      }],
     }),
     projectedOrganization: organization({
       departments: [{
@@ -76,7 +85,16 @@ test("ScenarioComparisonPresenter maps the engine result to a detached view mode
         travelRequirement: "none",
         status: "active",
       }],
-      employees: [{ id: "employee-1", positionId: "position-2" }],
+      employees: [{
+        id: "employee-1",
+        fullName: "Colaborador 1",
+        email: null,
+        status: "active",
+        managerId: null,
+        departmentId: null,
+        teamId: null,
+        positionId: "position-2",
+      }],
       metrics: metrics({ vacancies: 1, positions: 2 }),
     }),
   })
@@ -106,6 +124,10 @@ test("ScenarioComparisonPresenter maps the engine result to a detached view mode
   assert.equal(viewModel.positions.created[0]?.entity.id, "position-2")
   assert.deepEqual(viewModel.employees.moved[0], {
     employee: { id: "employee-1", positionId: "position-2" },
+    previousDepartmentId: null,
+    departmentId: null,
+    previousTeamId: null,
+    teamId: null,
     previousPositionId: "position-1",
     positionId: "position-2",
   })

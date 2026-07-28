@@ -96,3 +96,34 @@ test("ScenarioComparisonPage renders summary and entity changes", () => {
   assert.match(html, /Produto/)
   assert.doesNotMatch(html, /salaryMass/)
 })
+
+test("ScenarioComparisonPage does not render the empty state for an employee transfer", () => {
+  const comparison: ScenarioComparisonViewModel = {
+    ...emptyComparison,
+    employees: {
+      ...emptyComparison.employees,
+      moved: [{
+        employee: { id: "employee-1", positionId: "position-1" },
+        previousDepartmentId: "department-1",
+        departmentId: "department-2",
+        previousTeamId: "team-1",
+        teamId: "team-2",
+        previousPositionId: "position-1",
+        positionId: "position-1",
+      }],
+    },
+    summary: {
+      ...emptyComparison.summary,
+      employees: { added: 0, moved: 1, removed: 0, total: 1 },
+      totalChanges: 1,
+    },
+  }
+
+  const html = renderToStaticMarkup(createElement(ScenarioComparisonPage, {
+    comparison,
+  }))
+
+  assert.match(html, /1 alterações no cenário/)
+  assert.match(html, /Movimentados · 1/)
+  assert.doesNotMatch(html, /Nenhuma alteração encontrada/)
+})

@@ -29,10 +29,18 @@ export function compareEmployees(
       continue
     }
 
-    if (before.positionId !== after.positionId) {
+    if (
+      before.departmentId !== after.departmentId ||
+      before.teamId !== after.teamId ||
+      before.positionId !== after.positionId
+    ) {
       moved.push(Object.freeze({
         before: freezeEntity(before),
         after: freezeEntity(after),
+        previousDepartmentId: before.departmentId,
+        departmentId: after.departmentId,
+        previousTeamId: before.teamId,
+        teamId: after.teamId,
         previousPositionId: before.positionId,
         positionId: after.positionId,
       }))

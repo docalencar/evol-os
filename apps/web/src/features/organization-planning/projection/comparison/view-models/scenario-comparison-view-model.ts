@@ -64,6 +64,10 @@ export type StructuralComparisonViewModel<TEntity> = Readonly<{
 
 export type EmployeeMoveViewModel = Readonly<{
   employee: EmployeeComparisonItemViewModel
+  previousDepartmentId: string | null
+  departmentId: string | null
+  previousTeamId: string | null
+  teamId: string | null
   previousPositionId: string | null
   positionId: string | null
 }>

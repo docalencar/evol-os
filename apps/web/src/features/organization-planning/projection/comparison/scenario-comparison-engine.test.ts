@@ -61,9 +61,20 @@ function position(
 
 function employee(
   id: string,
-  positionId: string | null
+  positionId: string | null,
+  overrides: Partial<ProjectedEmployee> = {}
 ): ProjectedEmployee {
-  return Object.freeze({ id, positionId })
+  return Object.freeze({
+    id,
+    fullName: `Colaborador ${id}`,
+    email: null,
+    status: "active",
+    managerId: null,
+    departmentId: null,
+    teamId: null,
+    positionId,
+    ...overrides,
+  })
 }
 
 function metrics(
@@ -204,14 +215,12 @@ test("ScenarioComparisonEngine compares departments, teams, positions and employ
   )
   assert.equal(result.employees.added[0]?.entity.id, "employee-added")
   assert.deepEqual(result.employees.moved[0], {
-    before: {
-      id: "employee-moved",
-      positionId: "position-updated",
-    },
-    after: {
-      id: "employee-moved",
-      positionId: "position-created",
-    },
+    before: employee("employee-moved", "position-updated"),
+    after: employee("employee-moved", "position-created"),
+    previousDepartmentId: null,
+    departmentId: null,
+    previousTeamId: null,
+    teamId: null,
     previousPositionId: "position-updated",
     positionId: "position-created",
   })
@@ -239,6 +248,114 @@ test("ScenarioComparisonEngine compares departments, teams, positions and employ
   })
   assert.equal("salaryMass" in result.summary.metrics, false)
   assert.equal(result.summary.totalChanges, 15)
+})
+
+test("ScenarioComparisonEngine recognizes department and team transfers that preserve the position", () => {
+  const baseOrganization = organization({
+    employees: Object.freeze([
+      employee("employee-transferred", "position-1", {
+        departmentId: "department-1",
+        teamId: "team-1",
+      }),
+    ]),
+  })
+  const projectedOrganization = organization({
+    employees: Object.freeze([
+      employee("employee-transferred", "position-1", {
+        departmentId: "department-2",
+        teamId: "team-2",
+      }),
+    ]),
+  })
+
+  const result = ScenarioComparisonEngine.create().compare({
+    baseOrganization,
+    projectedOrganization,
+  })
+
+  assert.equal(result.employees.moved.length, 1)
+  assert.deepEqual(result.employees.moved[0], {
+    before: baseOrganization.employees[0],
+    after: projectedOrganization.employees[0],
+    previousDepartmentId: "department-1",
+    departmentId: "department-2",
+    previousTeamId: "team-1",
+    teamId: "team-2",
+    previousPositionId: "position-1",
+    positionId: "position-1",
+  })
+  assert.equal(result.summary.employees.moved, 1)
+  assert.equal(result.summary.totalChanges, 1)
+})
+
+test("ScenarioComparisonEngine recognizes a department-only transfer", () => {
+  const baseOrganization = organization({
+    employees: Object.freeze([
+      employee("employee-transferred", "position-1", {
+        departmentId: "department-1",
+        teamId: "team-1",
+      }),
+    ]),
+  })
+  const projectedOrganization = organization({
+    employees: Object.freeze([
+      employee("employee-transferred", "position-1", {
+        departmentId: "department-2",
+        teamId: "team-1",
+      }),
+    ]),
+  })
+
+  const result = ScenarioComparisonEngine.create().compare({
+    baseOrganization,
+    projectedOrganization,
+  })
+  const move = result.employees.moved[0]
+
+  assert.equal(result.employees.moved.length, 1)
+  assert.equal(result.summary.employees.moved, 1)
+  assert.equal(result.summary.totalChanges, 1)
+  assert.equal(move?.previousDepartmentId, "department-1")
+  assert.equal(move?.departmentId, "department-2")
+  assert.equal(move?.previousTeamId, "team-1")
+  assert.equal(move?.teamId, "team-1")
+  assert.equal(move?.previousPositionId, "position-1")
+  assert.equal(move?.positionId, "position-1")
+})
+
+test("ScenarioComparisonEngine recognizes a team-only transfer", () => {
+  const baseOrganization = organization({
+    employees: Object.freeze([
+      employee("employee-transferred", "position-1", {
+        departmentId: "department-1",
+        teamId: "team-1",
+      }),
+    ]),
+  })
+  const projectedOrganization = organization({
+    employees: Object.freeze([
+      employee("employee-transferred", "position-1", {
+        departmentId: "department-1",
+        teamId: "team-2",
+      }),
+    ]),
+  })
+
+  const result = ScenarioComparisonEngine.create().compare({
+    baseOrganization,
+    projectedOrganization,
+  })
+  const move = result.employees.moved[0]
+
+  assert.equal(result.employees.moved.length, 1)
+  assert.equal(result.summary.employees.moved, 1)
+  assert.equal(result.summary.totalChanges, 1)
+  assert.equal(move?.previousDepartmentId, "department-1")
+  assert.equal(move?.departmentId, "department-1")
+  assert.equal(move?.previousTeamId, "team-1")
+  assert.equal(move?.teamId, "team-2")
+  assert.equal(move?.previousPositionId, "position-1")
+  assert.equal(move?.positionId, "position-1")
 })
 
 test("ScenarioComparisonEngine is deterministic and preserves its inputs", () => {

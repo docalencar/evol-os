@@ -74,16 +74,26 @@ export function parseEmployeeChangeSet(
     case "employee.transfer":
       return parseTransferChangeSet(changeSet)
 
+    case "employee.terminate":
+      // Reconhecido pelo contrato, mas a semântica de desligamento ainda não é
+      // suportada nesta fase (adiada para ADR de extensão de contrato). Falha de
+      // forma explícita e determinística com o erro padrão de operação não
+      // suportada.
+      return unsupportedChangeType(changeSet)
+
     default:
-      // employee.terminate ainda não é suportado (adiado para ADR/decisão
-      // separada, ver escopo da PR #8). O tipo permanece no contrato, mas
-      // qualquer change set desse tipo produz um erro determinístico.
-      return failure(
-        changeSet,
-        "employee.change_set.unsupported",
-        `O tipo ${changeSet.changeType} não é suportado pelo executor de colaboradores.`
-      )
+      return unsupportedChangeType(changeSet)
   }
+}
+
+function unsupportedChangeType(
+  changeSet: ChangeSet
+): EmployeeChangeSetParseResult {
+  return failure(
+    changeSet,
+    "employee.change_set.unsupported",
+    `O tipo ${changeSet.changeType} não é suportado pelo executor de colaboradores.`
+  )
 }
 
 function parseCreateChangeSet(

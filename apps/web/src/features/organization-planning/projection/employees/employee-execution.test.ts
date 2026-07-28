@@ -207,15 +207,25 @@ test("EmployeeExecutor does not run an employee change set from another scenario
   assert.deepEqual(result.organization.employees, [])
 })
 
-test("EmployeeExecutor reports employee.terminate as unsupported (deferred)", () => {
+test("EmployeeExecutor recognizes employee.terminate but reports it as unsupported (deferred)", () => {
+  const changeSet = employeeChangeSet(
+    "change-1",
+    1,
+    "employee.terminate",
+    { employeeId: "employee-1" }
+  )
+
+  // O executor reconhece o tipo do contrato...
+  assert.equal(
+    new EmployeeExecutor().canExecute(changeSet),
+    true
+  )
+
+  // ...mas a operação falha de forma explícita e determinística.
   const result = ProjectionEngine.create().project({
     snapshot,
     scenario,
-    changeSets: [
-      employeeChangeSet("change-1", 1, "employee.terminate", {
-        employeeId: "employee-1",
-      }),
-    ],
+    changeSets: [changeSet],
   })
 
   assert.equal(result.isValid, false)
@@ -223,4 +233,5 @@ test("EmployeeExecutor reports employee.terminate as unsupported (deferred)", ()
     result.errors[0]?.code,
     "employee.change_set.unsupported"
   )
+  assert.deepEqual(result.organization.employees, [])
 })

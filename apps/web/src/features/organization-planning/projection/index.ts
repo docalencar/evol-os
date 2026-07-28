@@ -1,4 +1,5 @@
 export * from "./bootstrap"
+export * from "./comparison"
 export * from "./contracts"
 export * from "./context"
 export * from "./departments"

@@ -1,100 +1,167 @@
-# Evol OS — Documentação Oficial
+# Evol OS Documentation
 
-Este diretório contém a documentação oficial de produto, arquitetura, engenharia, domínio, experiências e evolução da plataforma Evol OS.
+> O sistema operacional para organizações.
 
-O Evol OS evolui como uma plataforma organizacional capaz de representar a empresa, preservar seu histórico, projetar cenários, produzir inteligência e apoiar decisões.
+---
 
-## Hierarquia de decisão
+# Visão Geral
 
-```text
-Vision
-    ↓
-Platform Blueprint
-    ↓
-Product and Experience Architecture
-    ↓
-Domain and Platform Architecture
-    ↓
-Architecture Decision Records
-    ↓
-Engineering Standards
-    ↓
-Playbooks
-    ↓
-Implementation
+O Evol OS é uma plataforma para compreender, planejar, simular, executar, monitorar e evoluir organizações.
+
+A documentação está organizada para servir quatro públicos:
+
+- Produto
+- Engenharia
+- Arquitetura
+- Inteligência Artificial
+
+Todo o projeto segue os princípios definidos na Constituição do Evol OS e na arquitetura baseada em Engines.
+
+---
+
+# Ordem recomendada de leitura
+
+## 1. Fundação
+
+- 01-constitution/EOSC-000-evol-os-constitution.md
+- VISION.md
+- PRODUCT_PRINCIPLES.md
+- ROADMAP.md
+
+---
+
+## 2. Arquitetura
+
+- architecture/ARCHITECTURE.md
+- architecture/organization-sync-engine.md
+- architecture/FRONTEND_ARCHITECTURE.md
+
+---
+
+## 3. Engenharia
+
+- engineering/ENGINEERING_GUIDE.md
+- engineering/EVOL_ENGINEERING_PRINCIPLES.md
+- engineering/development-workflow.md
+- engineering/backend-standards.md
+- engineering/frontend-standards.md
+- engineering/database-standards.md
+
+---
+
+## 4. Produto
+
+- Product/PRODUCT_VISION.md
+- Product/MANIFESTO.md
+- Product/UX_PHILOSOPHY.md
+- Product/DESIGN_PRINCIPLES.md
+- Product/USER_JOURNEYS.md
+
+---
+
+## 5. Domínios
+
+- domain/PERFORMANCE_DOMAIN.md
+
+Novos domínios deverão seguir o mesmo padrão arquitetural.
+
+---
+
+## 6. ADRs
+
+Todos os Architectural Decision Records encontram-se em:
+
+```
+docs/adr/
 ```
 
-Documentos inferiores devem respeitar as decisões estabelecidas nos documentos superiores.
+Eles registram decisões permanentes de arquitetura.
 
-## Documentos fundamentais
+---
 
-### Visão e princípios
+## 7. Playbooks
 
-- [Visão](./VISION.md)
-- [Visão de Produto](./Product/PRODUCT_VISION.md)
-- [Manifesto](./Product/MANIFESTO.md)
-- [Princípios de Produto](./PRODUCT_PRINCIPLES.md)
-- [Princípios de Design](./Product/DESIGN_PRINCIPLES.md)
-- [Glossário](./Product/GLOSSARY.md)
+Os playbooks documentam a forma oficial de implementar funcionalidades.
 
-### Fundação da plataforma
+```
+docs/playbooks/
+```
 
-- [Platform Blueprint](./PLATFORM_BLUEPRINT.md)
-- [Mapa da Documentação](./DOCUMENTATION_MAP.md)
-- [Fontes Canônicas](./CANONICAL_SOURCES.md)
-- [Evolução do Monorepo](./MONOREPO_EVOLUTION.md)
-- [Estratégia de ADRs](./ADR_STRATEGY.md)
+---
 
-### Arquitetura e execução
+## Arquitetura do Produto
 
-- [Arquitetura](./architecture/ARCHITECTURE.md)
-- [ADRs](./adr/README.md)
-- [Experiências](./experiences/README.md)
-- [Engineering](./engineering/)
-- [Playbooks](./playbooks/)
-- [Roadmap](./roadmap/)
+O Evol OS é estruturado em Engines independentes.
 
-## Tipos de documento
+Cada Engine possui:
 
-- **Vision:** direção de longo prazo.
-- **Platform Blueprint:** constituição estrutural.
-- **Product:** problemas, usuários e valor.
-- **Experience:** jornadas completas.
-- **Architecture:** fronteiras, dependências e responsabilidades.
-- **ADR:** decisão arquitetural específica.
-- **Engineering Standard:** regra recorrente de implementação.
-- **Playbook:** procedimento executável.
-- **Roadmap:** sequência planejada de evolução.
+- contratos canônicos;
+- regras determinísticas;
+- projeções;
+- análises;
+- decisões;
+- execução;
+- monitoramento.
 
-## Regras de manutenção
+A UI nunca contém regras de negócio.
 
-1. Verificar a fonte canônica antes de criar um documento.
-2. Não duplicar decisões.
-3. Documentos secundários devem apontar para a fonte oficial.
-4. Mudanças arquiteturais relevantes exigem ADR.
-5. Documentos incompletos devem declarar `Planned`.
-6. Código e documentação devem evoluir juntos quando contratos ou comportamentos mudarem.
-7. Arquivos dentro de aplicações não substituem a documentação global em `docs/`.
+---
 
-## Status documentais
+## Fluxo arquitetural
 
-- **Canonical**
-- **Accepted**
-- **Active**
-- **Draft**
-- **Planned**
-- **Deprecated**
-- **Superseded**
+```text
+Organização
+      │
+      ▼
+Modelagem
+      │
+      ▼
+Planning Engine
+      │
+      ▼
+Projection Engine
+      │
+      ▼
+Scenario Analysis
+      │
+      ▼
+Decision Engine
+      │
+      ▼
+Execution Engine
+      │
+      ▼
+Monitoring Engine
+      │
+      ▼
+Continuous Improvement
+```
 
-## Ordem recomendada de leitura
+---
 
-1. `VISION.md`
-2. `PLATFORM_BLUEPRINT.md`
-3. `Product/PRODUCT_VISION.md`
-4. `architecture/ARCHITECTURE.md`
-5. `DOCUMENTATION_MAP.md`
-6. `adr/README.md`
+## Princípios
 
-## Agentes de IA
+- Business First
+- Engine First
+- Canonical Contracts
+- ViewModels para UI
+- Determinismo
+- Baixo acoplamento
+- IA como copiloto
+- Zero treinamento sempre que possível
 
-Agentes devem ler fontes canônicas, preservar decisões aceitas, distinguir estado atual de direção futura e manter rastreabilidade entre visão, arquitetura, engenharia e código.
+---
+
+## Objetivo
+
+O Evol OS deve permitir que uma organização seja:
+
+- compreendida;
+- simulada;
+- analisada;
+- otimizada;
+- executada;
+- monitorada;
+- continuamente aprimorada.
+
+Toda evolução da plataforma deve preservar esses princípios.

@@ -1,152 +1,294 @@
-# Engineering Guide
+# Evol OS Engineering Guide
 
-## Objetivo
-
-Este documento define o padrão oficial de desenvolvimento do Evol OS.
-
-Ele descreve como novas funcionalidades devem ser projetadas, implementadas, testadas e entregues.
-
-Toda implementação deve seguir estas diretrizes.
-
----
-
-# Filosofia
-
-O Evol OS prioriza:
-
-- simplicidade;
-- previsibilidade;
-- baixo acoplamento;
-- alta coesão;
-- evolução incremental;
-- build sempre verde.
-
-Preferimos uma solução simples e consistente a uma solução extremamente sofisticada.
-
----
-
-# Fluxo oficial
-
-Toda funcionalidade segue obrigatoriamente a sequência:
-
-1. Modelagem do domínio
-2. Arquitetura (quando necessária)
-3. Persistência
-4. Interface
-5. Build
-6. Testes funcionais
-7. Documentação
-8. Commit
-9. Push
-
-Nenhuma etapa deve ser ignorada.
-
----
-
-# Estratégia de desenvolvimento
-
-- Trabalhar em PRs pequenas.
-- Evitar grandes refatorações junto com novas funcionalidades.
-- Manter o projeto compilando durante toda a implementação.
-- Fazer alterações incrementais.
-- Validar cada etapa antes de seguir para a próxima.
-
----
-
-# Arquitetura
-
-O projeto utiliza:
-
-- Vertical Slice Architecture
-- Feature First
-- Repository → Query → Action → UI
-- Services para regras de negócio
-
-A separação de responsabilidades está documentada nas ADRs.
-
----
-
-# Organização das Features
-
-Cada feature deve possuir, quando aplicável:
-
-```text
-feature/
-├── actions/
-├── components/
-├── constants/
-├── queries/
-├── repositories/
-├── schemas/
-├── services/
-├── types/
-└── index.ts
-```
-
-Nem toda feature precisa conter todas as pastas, mas a organização deve permanecer consistente.
-
----
-
-# Build
-
-Após qualquer alteração relevante:
-
-```bash
-npm run build
-```
-
-A implementação só é considerada concluída quando o build estiver verde.
-
----
-
-# Testes
-
-Sempre validar:
-
-- criação;
-- edição;
-- leitura;
-- exclusão ou arquivamento (quando existir);
-- persistência;
-- navegação;
-- estados vazios;
-- mensagens de erro.
-
----
-
-# Documentação
-
-Mudanças arquiteturais:
-
-→ ADR
-
-Mudanças operacionais:
-
-→ Engineering
-
-Fluxos reutilizáveis:
-
-→ Playbooks
-
----
-
-# Revisão de Código
-
-Antes do commit:
-
-- revisar o `git diff`;
-- remover código morto;
-- remover imports não utilizados;
-- conferir nomes;
-- validar mensagens;
-- confirmar ausência de arquivos temporários.
+> Guia oficial de engenharia do Evol OS.
 
 ---
 
 # Objetivo
 
-Este guia deve permanecer pequeno.
+Este documento define os padrões obrigatórios para desenvolvimento do Evol OS.
 
-Ele serve como referência principal para toda a engenharia do Evol OS.
+Todo código produzido deve preservar:
 
-Os detalhes ficam distribuídos nos documentos específicos da pasta `engineering`.
+- qualidade;
+- previsibilidade;
+- baixo acoplamento;
+- alta coesão;
+- facilidade de manutenção;
+- escalabilidade.
+
+---
+
+# Filosofia
+
+O Evol OS não é um conjunto de telas.
+
+É um conjunto de Engines capazes de representar e operar organizações.
+
+Toda implementação deve fortalecer essa visão.
+
+---
+
+# Princípios
+
+## Business First
+
+As regras pertencem ao domínio.
+
+Nunca à interface.
+
+---
+
+## Engine First
+
+Toda capacidade relevante deve existir em uma Engine.
+
+A UI apenas consome seus resultados.
+
+---
+
+## Canonical Contracts
+
+Toda comunicação ocorre através de contratos estáveis.
+
+Exemplos:
+
+- Organization
+- PlanningScenario
+- ProjectionContext
+- ChangeSet
+- ScenarioAnalysis
+- Decision
+- ExecutionResult
+
+---
+
+## UI Fina
+
+A interface:
+
+- não calcula;
+- não decide;
+- não valida regras complexas;
+- apenas apresenta informações.
+
+---
+
+# Arquitetura
+
+```text
+UI
+ ↓
+Actions / Queries
+ ↓
+Services
+ ↓
+Engines
+ ↓
+Domain
+ ↓
+Repositories
+ ↓
+Supabase
+```
+
+---
+
+# Organização do Código
+
+Cada feature deve possuir estrutura semelhante a:
+
+```text
+feature/
+    actions/
+    components/
+    queries/
+    repositories/
+    services/
+    presenters/
+    schemas/
+    types/
+    constants/
+```
+
+Cada pasta possui responsabilidade única.
+
+---
+
+# Engines
+
+As Engines:
+
+- não dependem da UI;
+- não conhecem React;
+- não conhecem componentes;
+- operam exclusivamente sobre contratos.
+
+---
+
+# Actions
+
+Actions executam operações.
+
+Exemplos:
+
+- criar
+- atualizar
+- arquivar
+- executar
+
+---
+
+# Queries
+
+Queries apenas consultam informações.
+
+Nunca modificam dados.
+
+---
+
+# Services
+
+Services concentram lógica reutilizável.
+
+Não executam persistência diretamente.
+
+---
+
+# Repositories
+
+Responsáveis exclusivamente pelo acesso aos dados.
+
+Não implementam regras de negócio.
+
+---
+
+# Presenters
+
+Transformam modelos internos em ViewModels para a interface.
+
+---
+
+# ViewModels
+
+A UI consome apenas ViewModels.
+
+Nunca entidades diretamente.
+
+---
+
+# Tipagem
+
+Todo objeto importante deve possuir:
+
+- TypeScript Type
+- Schema
+- Validação
+
+---
+
+# Nomeação
+
+Utilizar nomes explícitos.
+
+Preferir:
+
+- executeScenario()
+- createDepartment()
+- calculateSpan()
+
+Evitar:
+
+- doStuff()
+- process()
+- helper()
+
+---
+
+# Componentes
+
+Componentes devem ser pequenos.
+
+Cada componente deve possuir apenas uma responsabilidade.
+
+---
+
+# Testes
+
+Sempre que possível:
+
+- testar Engines;
+- testar Services;
+- testar regras determinísticas.
+
+Priorizar testes do domínio em vez da interface.
+
+---
+
+# Inteligência Artificial
+
+IA é utilizada para:
+
+- explicar;
+- resumir;
+- sugerir;
+- interpretar linguagem natural.
+
+Nunca para substituir regras determinísticas.
+
+---
+
+# Processo de Desenvolvimento
+
+Toda funcionalidade deve seguir:
+
+```text
+Problema
+      ↓
+Modelo de domínio
+      ↓
+Contrato
+      ↓
+Engine
+      ↓
+Service
+      ↓
+Repository
+      ↓
+Action / Query
+      ↓
+Presenter
+      ↓
+UI
+```
+
+---
+
+# Checklist
+
+Antes de concluir uma funcionalidade verificar:
+
+- domínio definido;
+- contratos claros;
+- Engine implementada;
+- UI sem regras de negócio;
+- tipagem consistente;
+- build executado;
+- lint sem erros críticos;
+- documentação atualizada.
+
+---
+
+# Objetivo Final
+
+Toda implementação deve contribuir para que o Evol OS seja capaz de:
+
+- compreender organizações;
+- simular mudanças;
+- analisar impactos;
+- apoiar decisões;
+- executar transformações;
+- monitorar resultados;
+- evoluir continuamente.
+
+Este guia deve orientar toda contribuição ao projeto.

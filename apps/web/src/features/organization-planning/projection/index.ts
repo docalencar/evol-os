@@ -1,4 +1,5 @@
 export * from "./contracts"
+export * from "./comparison"
 export * from "./context"
 export * from "./departments"
 export * from "./engine"

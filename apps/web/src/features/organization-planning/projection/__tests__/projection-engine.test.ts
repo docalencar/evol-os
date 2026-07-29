@@ -277,10 +277,6 @@ test("Pipeline reports an unsupported change set without mutating the state", ()
 })
 
 const unimplementedChangeTypes = [
-  "employee.create",
-  "employee.update",
-  "employee.transfer",
-  "employee.terminate",
   "vacancy.create",
   "vacancy.update",
   "vacancy.close",
@@ -337,13 +333,13 @@ for (const changeType of unimplementedChangeTypes) {
   })
 }
 
-test("default pipeline continues around an unhandled employee change set", () => {
+test("default pipeline continues around an unhandled vacancy change set", () => {
   const changeSets = [
     changeSet("change-department", 1, "department.create", {
       departmentId: "department-1",
       name: "Financeiro",
     }),
-    changeSet("change-employee", 2, "employee.create"),
+    changeSet("change-vacancy", 2, "vacancy.create"),
     changeSet("change-position", 3, "position.create", {
       positionId: "position-1",
       name: "Analista financeiro",
@@ -378,7 +374,7 @@ test("default pipeline continues around an unhandled employee change set", () =>
     projection.events
       .filter((event) => event.type === "change-set.unhandled")
       .map((event) => event.changeSetId),
-    ["change-employee"]
+    ["change-vacancy"]
   )
   assert.equal(
     projection.warnings[0]?.code,

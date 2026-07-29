@@ -16,6 +16,7 @@ import type {
 import {
   DEFAULT_CHANGE_SET_EXECUTORS,
   DepartmentExecutor,
+  EmployeeExecutor,
   PositionExecutor,
   TeamExecutor,
 } from "./entity-executors"
@@ -132,6 +133,7 @@ test("default registry contains only implemented executors", () => {
       new DepartmentExecutor().name,
       new TeamExecutor().name,
       new PositionExecutor().name,
+      new EmployeeExecutor().name,
     ]
   )
 })

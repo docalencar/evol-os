@@ -1,6 +1,7 @@
 import type {
   PositionMutableField,
   ProjectedDepartment,
+  ProjectedEmployee,
   ProjectedPosition,
   ProjectionInternalEvent,
   ProjectionIssue,
@@ -194,6 +195,7 @@ export function updateProjectedPosition(
 
 export function archiveProjectedPosition(
   positions: readonly ProjectedPosition[],
+  employees: readonly ProjectedEmployee[],
   changeSetId: string,
   payload: PositionArchivePayload
 ): PositionMutationResult {
@@ -220,6 +222,16 @@ export function archiveProjectedPosition(
         changeSetId,
       }),
     })
+  }
+
+  if (employees.some(
+    (employee) => employee.positionId === currentPosition.id && employee.status !== "archived"
+  )) {
+    return failure(
+      "position.archive.has_active_employees",
+      `O cargo ${currentPosition.id} possui colaboradores ativos vinculados.`,
+      changeSetId
+    )
   }
 
   const archivedPosition: ProjectedPosition =

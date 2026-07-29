@@ -22,7 +22,14 @@ export function createBaselineOrganization(
       ...position,
       status: active ? "active" as const : "archived" as const,
     })),
-    employees: source.employees.map((employee) => ({ ...employee })),
+    employees: source.employees.map((employee) => ({
+      ...employee,
+      departmentId:
+        source.positions.find(
+          (position) => position.id === employee.positionId
+        )?.departmentId ?? null,
+      status: "active" as const,
+    })),
     vacancies: [],
     metrics: createEmptyProjectedOrganization().metrics,
   })

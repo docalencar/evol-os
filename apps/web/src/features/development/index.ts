@@ -41,6 +41,7 @@ export {
 export {
   getDevelopmentPlans,
 } from "./queries/get-development-plans"
+export { getDevelopmentPlansByEmployee } from "./queries/get-development-plans-by-employee"
 
 export {
   getDevelopmentPlanById,

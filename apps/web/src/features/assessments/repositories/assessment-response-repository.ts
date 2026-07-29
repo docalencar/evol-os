@@ -38,6 +38,18 @@ export async function createAssessmentResponseRepository() {
         .order("created_at", { ascending: false })
     },
 
+    findByEmployee(
+      companyId: string,
+      employeeId: string
+    ) {
+      return supabase
+        .from("assessment_responses")
+        .select("*")
+        .eq("company_id", companyId)
+        .eq("employee_id", employeeId)
+        .order("created_at", { ascending: false })
+    },
+
     findByCycle(
       companyId: string,
       assessmentCycleId: string

@@ -275,6 +275,11 @@ export { calculateScoreDistribution } from "./services/calculate-score-distribut
 export { calculateAssessmentStatistics } from "./services/calculate-assessment-statistics"
 
 export { getAssessmentCycleStatistics } from "./queries/get-assessment-cycle-statistics"
+export {
+  getEmployeeAssessmentSummary,
+  summarizeEmployeeAssessments,
+  type EmployeeAssessmentSummary,
+} from "./queries/get-employee-assessment-summary"
 
 export { presentAssessmentStatistics } from "./presenters/present-assessment-statistics"
 

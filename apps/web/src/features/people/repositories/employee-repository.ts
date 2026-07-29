@@ -1,4 +1,5 @@
 import { createServerDatabase } from "@/lib/database/server-database"
+import { scopeCompany } from "@/lib/supabase/scoped-query"
 
 import type {
   CreateEmployeeInput,
@@ -35,7 +36,7 @@ export async function createEmployeeRepository() {
           teams!people_team_id_fkey(name),
           positions(name)
         `)
-        .eq("company_id", companyId)
+        .eq(...scopeCompany(companyId))
         .neq("status", "terminated")
         .order("full_name", { ascending: true })
     },
@@ -48,7 +49,7 @@ export async function createEmployeeRepository() {
           teams!people_team_id_fkey(name),
           positions(name)
         `)
-        .eq("company_id", companyId)
+        .eq(...scopeCompany(companyId))
         .eq("id", employeeId)
         .neq("status", "terminated")
         .single()
@@ -73,7 +74,7 @@ export async function createEmployeeRepository() {
       return supabase
         .from("people")
         .update(normalizeEmployeeInput(input))
-        .eq("company_id", companyId)
+        .eq(...scopeCompany(companyId))
         .eq("id", employeeId)
         .neq("status", "terminated")
     },
@@ -85,7 +86,7 @@ export async function createEmployeeRepository() {
           status: "terminated",
           updated_at: new Date().toISOString(),
         })
-        .eq("company_id", companyId)
+        .eq(...scopeCompany(companyId))
         .eq("id", employeeId)
         .neq("status", "terminated")
     },

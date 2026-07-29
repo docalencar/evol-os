@@ -27,6 +27,9 @@ export type ScenarioDTO = Readonly<{
   companyId: string
   workspaceId: string
   baseSnapshotId: string
+  parentScenarioId: string | null
+  branchDepth: number
+  branchPath: string
   name: string
   description: string | null
   status: PlanningScenarioStatus

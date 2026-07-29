@@ -20,6 +20,19 @@ export const createScenarioCommandSchema = z.object({
   occurredAt,
 })
 
+export const createScenarioBranchCommandSchema = z.object({
+  companyId: id,
+  sourceScenarioId: id,
+  scenarioId: id,
+  occurredAt,
+}).refine(
+  (input) => input.sourceScenarioId !== input.scenarioId,
+  {
+    message: "O novo cenário deve possuir um identificador diferente da origem.",
+    path: ["scenarioId"],
+  }
+)
+
 export const publishScenarioCommandSchema = z.object({
   companyId: id,
   scenarioId: id,

@@ -22,6 +22,14 @@ export interface ScenarioApplicationRepository {
   ): Promise<void>
 }
 
+export interface ScenarioBranchApplicationRepository {
+  findById(
+    companyId: string,
+    scenarioId: string
+  ): Promise<PlanningScenario | null>
+  createBranch(scenario: PlanningScenario): Promise<void>
+}
+
 export interface SnapshotApplicationRepository {
   findById(
     companyId: string,

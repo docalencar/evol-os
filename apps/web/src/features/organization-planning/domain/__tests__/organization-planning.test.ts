@@ -285,6 +285,37 @@ test("restore não recria eventos históricos", () => {
   assert.deepEqual(snapshot.domainEvents, [])
 })
 
+test("reconstrói eventos do domínio após publicação transacional", () => {
+  const publishedAt = new Date("2026-07-04T12:00:00Z")
+  const result = publishScenario(
+    newScenario()
+      .submit(new Date("2026-07-02T12:00:00Z"))
+      .approve(new Date("2026-07-03T12:00:00Z")),
+    {
+      snapshotId: publishedSnapshotId,
+      baseSnapshot: baseSnapshot(),
+      allocatedSnapshotVersion: 2,
+      occurredAt: publishedAt,
+    }
+  )
+
+  const scenario = PlanningScenario.restorePublished(
+    result.scenario.toContract()
+  )
+  const snapshot = PublishedSnapshot.restorePublished(
+    result.snapshot.toContract()
+  )
+
+  assert.deepEqual(
+    scenario.domainEvents.map((event) => event.type),
+    ["planning.scenario.published"]
+  )
+  assert.deepEqual(
+    snapshot.domainEvents.map((event) => event.type),
+    ["planning.snapshot.published"]
+  )
+})
+
 test("schemas rejeitam identificadores e nomes inválidos", () => {
   assert.throws(() =>
     createWorkspace({

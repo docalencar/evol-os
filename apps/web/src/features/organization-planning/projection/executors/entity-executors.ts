@@ -45,21 +45,16 @@ import {
   type ParsedTeamChangeSet,
 } from "../teams/team-change-set"
 import type { ChangeSetExecutor } from "./change-set-executor"
-
-const VACANCY_CHANGE_TYPES = [
-  "vacancy.create",
-  "vacancy.update",
-  "vacancy.close",
-] as const
-
-function supports(
-  supportedChangeTypes: readonly string[],
-  changeSet: ChangeSet
-) {
-  return supportedChangeTypes.includes(
-    changeSet.changeType
-  )
-}
+import {
+  closeProjectedVacancy,
+  createProjectedVacancy,
+  isVacancyChangeType,
+  parseVacancyChangeSet,
+  updateProjectedVacancy,
+  VACANCY_CHANGE_TYPES,
+  type ParsedVacancyChangeSet,
+  type VacancyMutationResult,
+} from "../vacancies"
 
 export class DepartmentExecutor
   implements ChangeSetExecutor
@@ -270,14 +265,22 @@ export class VacancyExecutor
   readonly name = "VacancyExecutor"
 
   canExecute(changeSet: ChangeSet) {
-    return supports(
-      VACANCY_CHANGE_TYPES,
-      changeSet
-    )
+    return isVacancyChangeType(changeSet.changeType)
   }
 
-  execute(context: ProjectionContext) {
-    return context
+  execute(context: ProjectionContext, changeSet: ChangeSet) {
+    const parsed = parseVacancyChangeSet(changeSet)
+    if (!parsed.success) return context.addError(parsed.issue)
+    const result = executeVacancyMutation(context, parsed.changeSet)
+    if (!result.success) return context.addError(result.issue)
+    let nextContext = context
+    if (result.vacancies !== context.organization.vacancies) {
+      nextContext = context.withOrganization({
+        ...context.organization,
+        vacancies: result.vacancies,
+      })
+    }
+    return result.warning ? nextContext.addWarning(result.warning) : nextContext
   }
 }
 
@@ -287,6 +290,7 @@ export const DEFAULT_CHANGE_SET_EXECUTORS =
     new TeamExecutor(),
     new PositionExecutor(),
     new EmployeeExecutor(),
+    new VacancyExecutor(),
   ])
 
 function executeDepartmentMutation(
@@ -314,8 +318,28 @@ function executeDepartmentMutation(
         context.organization.teams,
         context.organization.positions,
         changeSet.id,
-        changeSet.payload
+        changeSet.payload,
+        context.organization.vacancies
       )
+  }
+}
+
+function executeVacancyMutation(
+  context: ProjectionContext,
+  changeSet: ParsedVacancyChangeSet
+): VacancyMutationResult {
+  const references = {
+    departments: context.organization.departments,
+    teams: context.organization.teams,
+    positions: context.organization.positions,
+  }
+  switch (changeSet.changeType) {
+    case "vacancy.create":
+      return createProjectedVacancy(context.organization.vacancies, references, changeSet.id, changeSet.payload)
+    case "vacancy.update":
+      return updateProjectedVacancy(context.organization.vacancies, references, changeSet.id, changeSet.payload)
+    case "vacancy.close":
+      return closeProjectedVacancy(context.organization.vacancies, changeSet.id, changeSet.payload)
   }
 }
 
@@ -365,7 +389,8 @@ function executeTeamMutation(
       return archiveProjectedTeam(
         context.organization.teams,
         changeSet.id,
-        changeSet.payload
+        changeSet.payload,
+        context.organization.vacancies
       )
   }
 }
@@ -395,7 +420,8 @@ function executePositionMutation(
         context.organization.positions,
         context.organization.employees,
         changeSet.id,
-        changeSet.payload
+        changeSet.payload,
+        context.organization.vacancies
       )
 
     case "position.move":
@@ -413,4 +439,5 @@ export {
   EMPLOYEE_CHANGE_TYPES,
   POSITION_CHANGE_TYPES,
   TEAM_CHANGE_TYPES,
+  VACANCY_CHANGE_TYPES,
 }

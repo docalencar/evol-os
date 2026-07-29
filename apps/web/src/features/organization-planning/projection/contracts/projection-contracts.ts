@@ -76,6 +76,9 @@ export type ProjectedEmployee = Readonly<{
 export type ProjectedVacancy = Readonly<{
   id: string
   positionId: string | null
+  departmentId?: string | null
+  teamId?: string | null
+  status?: "active" | "archived"
 }>
 
 export type ProjectionMetrics = Readonly<{

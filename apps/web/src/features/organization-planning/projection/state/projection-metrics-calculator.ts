@@ -10,7 +10,9 @@ export class StructuralProjectionMetricsCalculator implements ProjectionMetricsC
       headcount: organization.employees.filter(
         (employee) => employee.status !== "archived"
       ).length,
-      vacancies: organization.vacancies.length,
+      vacancies: organization.vacancies.filter(
+        (vacancy) => vacancy.status !== "archived"
+      ).length,
       salaryMass: 0,
       departments: organization.departments.length,
       positions: organization.positions.length,

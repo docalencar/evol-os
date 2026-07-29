@@ -3,6 +3,7 @@ import type {
   ProjectedDepartment,
   ProjectedPosition,
   ProjectedTeam,
+  ProjectedVacancy,
   ProjectionInternalEvent,
   ProjectionIssue,
 } from "../contracts"
@@ -238,7 +239,8 @@ export function archiveProjectedDepartment(
   teams: readonly ProjectedTeam[],
   positions: readonly ProjectedPosition[],
   changeSetId: string,
-  payload: DepartmentArchivePayload
+  payload: DepartmentArchivePayload,
+  vacancies: readonly ProjectedVacancy[] = []
 ): DepartmentMutationResult {
   const currentDepartment = findDepartmentById(
     departments,
@@ -312,6 +314,16 @@ export function archiveProjectedDepartment(
     return failure(
       "department.archive.has_active_positions",
       `O departamento ${currentDepartment.id} possui cargos ativos vinculados: ${activePositions.join(", ")}.`,
+      changeSetId
+    )
+  }
+
+  if (vacancies.some(
+    (vacancy) => vacancy.departmentId === currentDepartment.id && vacancy.status !== "archived"
+  )) {
+    return failure(
+      "department.archive.has_active_vacancies",
+      `O departamento ${currentDepartment.id} possui vagas ativas vinculadas.`,
       changeSetId
     )
   }

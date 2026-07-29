@@ -89,6 +89,37 @@ test("strictly rejects invalid Employee fields in persisted organizations", () =
   }), /PLANNING_PROJECTED_ORGANIZATION_INVALID_DATA/)
 })
 
+test("round-trips persisted Vacancy history and rejects invalid status", () => {
+  const base = organizationWithEmployee("active")
+  const organization = {
+    ...base,
+    vacancies: [{
+      id: "vacancy-1",
+      positionId: null,
+      departmentId: null,
+      teamId: null,
+      status: "archived",
+    }],
+    metrics: { ...base.metrics, vacancies: 0 },
+  }
+  const snapshot = mapProjectionSnapshotRow({
+    ...legacySnapshotRow(),
+    source_scenario_id: "scenario-1",
+    version: 2,
+    kind: "projection",
+    organization,
+  })
+  assert.deepEqual(snapshot.organization?.vacancies, organization.vacancies)
+
+  assert.throws(() => mapProjectionSnapshotRow({
+    ...legacySnapshotRow(),
+    organization: {
+      ...organization,
+      vacancies: [{ ...organization.vacancies[0], status: "closed" }],
+    },
+  }), /PLANNING_PROJECTED_ORGANIZATION_INVALID_DATA/)
+})
+
 function organizationWithEmployee(status: "active" | "archived") {
   return {
     departments: [], teams: [], positions: [], vacancies: [],

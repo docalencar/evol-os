@@ -19,6 +19,7 @@ import {
   EmployeeExecutor,
   PositionExecutor,
   TeamExecutor,
+  VacancyExecutor,
 } from "./entity-executors"
 
 function snapshot(): PublishedSnapshotContract {
@@ -134,6 +135,7 @@ test("default registry contains only implemented executors", () => {
       new TeamExecutor().name,
       new PositionExecutor().name,
       new EmployeeExecutor().name,
+      new VacancyExecutor().name,
     ]
   )
 })

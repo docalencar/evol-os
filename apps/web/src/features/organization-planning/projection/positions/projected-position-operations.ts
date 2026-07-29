@@ -3,6 +3,7 @@ import type {
   ProjectedDepartment,
   ProjectedEmployee,
   ProjectedPosition,
+  ProjectedVacancy,
   ProjectionInternalEvent,
   ProjectionIssue,
 } from "../contracts"
@@ -197,7 +198,8 @@ export function archiveProjectedPosition(
   positions: readonly ProjectedPosition[],
   employees: readonly ProjectedEmployee[],
   changeSetId: string,
-  payload: PositionArchivePayload
+  payload: PositionArchivePayload,
+  vacancies: readonly ProjectedVacancy[] = []
 ): PositionMutationResult {
   const currentPosition = findPositionById(
     positions,
@@ -230,6 +232,16 @@ export function archiveProjectedPosition(
     return failure(
       "position.archive.has_active_employees",
       `O cargo ${currentPosition.id} possui colaboradores ativos vinculados.`,
+      changeSetId
+    )
+  }
+
+  if (vacancies.some(
+    (vacancy) => vacancy.positionId === currentPosition.id && vacancy.status !== "archived"
+  )) {
+    return failure(
+      "position.archive.has_active_vacancies",
+      `O cargo ${currentPosition.id} possui vagas ativas vinculadas.`,
       changeSetId
     )
   }

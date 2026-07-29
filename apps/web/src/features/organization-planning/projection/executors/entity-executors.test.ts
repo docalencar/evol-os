@@ -14,6 +14,8 @@ import type {
   ProjectedTeam,
 } from "../contracts"
 import {
+  DEFAULT_CHANGE_SET_EXECUTORS,
+  DepartmentExecutor,
   PositionExecutor,
   TeamExecutor,
 } from "./entity-executors"
@@ -120,6 +122,19 @@ function contextWithOrganization(
     ...overrides,
   })
 }
+
+test("default registry contains only implemented executors", () => {
+  assert.deepEqual(
+    DEFAULT_CHANGE_SET_EXECUTORS.map(
+      (executor) => executor.name
+    ),
+    [
+      new DepartmentExecutor().name,
+      new TeamExecutor().name,
+      new PositionExecutor().name,
+    ]
+  )
+})
 
 test("TeamExecutor identifies supported team change types", () => {
   const executor = new TeamExecutor()

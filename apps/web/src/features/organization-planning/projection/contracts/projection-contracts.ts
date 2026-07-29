@@ -92,6 +92,14 @@ export type ProjectedOrganization = Readonly<{
   metrics: ProjectionMetrics
 }>
 
+// Fronteira de entrada da Projection Engine. O snapshot de domínio permanece
+// compatível com o contrato atual, enquanto consumidores capazes de carregar o
+// estado organizacional publicado podem fornecê-lo para hidratar a projeção.
+export type ProjectionSnapshot = PublishedSnapshotContract &
+  Readonly<{
+    organization?: ProjectedOrganization
+  }>
+
 export type ProjectionIssue = Readonly<{
   code: string
   message: string
@@ -198,7 +206,7 @@ export type ProjectionInternalEvent =
     }>
 
 export type ProjectionInput = Readonly<{
-  snapshot: PublishedSnapshotContract
+  snapshot: ProjectionSnapshot
   scenario: PlanningScenarioContract
   changeSets: readonly ChangeSet[]
 }>

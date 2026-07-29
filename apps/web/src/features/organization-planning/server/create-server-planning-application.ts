@@ -3,6 +3,7 @@ import "server-only"
 import {
   ArchiveScenarioHandler,
   CreateScenarioHandler,
+  CreateScenarioBranchService,
   CreateWorkspaceHandler,
   PlanningDomainEventCollector,
   PublishScenarioHandler,
@@ -20,6 +21,7 @@ import { createPlanningOperationalOrganizationSource } from "../repositories/pla
 export type ServerPlanningApplication = Readonly<{
   createWorkspace: CreateWorkspaceHandler
   createScenario: CreateScenarioHandler
+  createScenarioBranch: CreateScenarioBranchService
   archiveScenario: ArchiveScenarioHandler
   publishScenario: PublishScenarioHandler
   eventCollector: PlanningDomainEventCollector
@@ -69,6 +71,11 @@ export async function createServerPlanningApplication(): Promise<ServerPlanningA
       scenarios,
       snapshots,
       createScenarioUnitOfWork,
+      eventCollector
+    ),
+
+    createScenarioBranch: new CreateScenarioBranchService(
+      scenarios,
       eventCollector
     ),
 

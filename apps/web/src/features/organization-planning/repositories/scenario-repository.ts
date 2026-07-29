@@ -10,6 +10,9 @@ type ScenarioRow = {
   company_id: string
   workspace_id: string
   base_snapshot_id: string
+  parent_scenario_id: string | null
+  branch_depth: number
+  branch_path: string
   name: string
   description: string | null
   status: PlanningScenarioStatus
@@ -24,6 +27,9 @@ function mapScenario(row: ScenarioRow) {
     companyId: row.company_id,
     workspaceId: row.workspace_id,
     baseSnapshotId: row.base_snapshot_id,
+    parentScenarioId: row.parent_scenario_id,
+    branchDepth: row.branch_depth,
+    branchPath: row.branch_path,
     name: row.name,
     description: row.description,
     status: row.status,
@@ -37,6 +43,7 @@ export async function createScenarioRepository() {
   const database = await createServerDatabase()
   const select = `
     id, company_id, workspace_id, base_snapshot_id,
+    parent_scenario_id, branch_depth, branch_path,
     name, description, status, version, created_at, updated_at
   `
 
@@ -67,23 +74,11 @@ export async function createScenarioRepository() {
     },
 
     async create(scenario: PlanningScenario) {
-      const value = scenario.toContract()
-      const { error } = await database
-        .from("organization_planning_scenarios")
-        .insert({
-          id: value.id,
-          company_id: value.companyId,
-          workspace_id: value.workspaceId,
-          base_snapshot_id: value.baseSnapshotId,
-          name: value.name,
-          description: value.description,
-          status: value.status,
-          version: value.version,
-          created_at: value.createdAt.toISOString(),
-          updated_at: value.updatedAt.toISOString(),
-        })
+      await insertScenario(database, scenario)
+    },
 
-      if (error) throw new Error(error.message)
+    async createBranch(scenario: PlanningScenario) {
+      await insertScenario(database, scenario)
     },
 
     async save(scenario: PlanningScenario, expectedVersion: number) {
@@ -110,4 +105,32 @@ export async function createScenarioRepository() {
       }
     },
   }
+}
+
+type ScenarioDatabase = Awaited<ReturnType<typeof createServerDatabase>>
+
+async function insertScenario(
+  database: ScenarioDatabase,
+  scenario: PlanningScenario
+): Promise<void> {
+  const value = scenario.toContract()
+  const { error } = await database
+    .from("organization_planning_scenarios")
+    .insert({
+      id: value.id,
+      company_id: value.companyId,
+      workspace_id: value.workspaceId,
+      base_snapshot_id: value.baseSnapshotId,
+      parent_scenario_id: value.parentScenarioId,
+      branch_depth: value.branchDepth,
+      branch_path: value.branchPath,
+      name: value.name,
+      description: value.description,
+      status: value.status,
+      version: value.version,
+      created_at: value.createdAt.toISOString(),
+      updated_at: value.updatedAt.toISOString(),
+    })
+
+  if (error) throw new Error(error.message)
 }

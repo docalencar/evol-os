@@ -18,9 +18,23 @@ type CreateScenarioInput = {
   createdAt: Date
 }
 
+type CreateScenarioBranchInput = Readonly<{
+  id: string
+  createdAt: Date
+}>
+
+type PlanningScenarioProps = Omit<
+  PlanningScenarioContract,
+  "parentScenarioId" | "branchDepth" | "branchPath"
+> & Readonly<{
+  parentScenarioId: string | null
+  branchDepth: number
+  branchPath: string
+}>
+
 export class PlanningScenario {
   private constructor(
-    private readonly props: PlanningScenarioContract,
+    private readonly props: PlanningScenarioProps,
     private readonly events: readonly PlanningDomainEvent[]
   ) {}
 
@@ -31,6 +45,9 @@ export class PlanningScenario {
       companyId: requireText(input.companyId, "companyId"),
       workspaceId: requireText(input.workspaceId, "workspaceId"),
       baseSnapshotId: requireText(input.baseSnapshotId, "baseSnapshotId"),
+      parentScenarioId: null,
+      branchDepth: 0,
+      branchPath: requireText(input.id, "scenarioId"),
       name: requireText(input.name, "name"),
       description: input.description?.trim() || null,
       status: "draft" as const,
@@ -65,13 +82,38 @@ export class PlanningScenario {
       "updatedAt não pode ser anterior a createdAt."
     )
 
+    const parentScenarioId = input.parentScenarioId
+      ? requireText(input.parentScenarioId, "parentScenarioId")
+      : null
+    const branchDepth = input.branchDepth ?? 0
+    const scenarioId = requireText(input.id, "scenarioId")
+    const branchPath = requireText(input.branchPath ?? scenarioId, "branchPath")
+    assertPlanningDomain(
+      Number.isInteger(branchDepth) && branchDepth >= 0,
+      "invalid_input",
+      "branchDepth deve ser um inteiro não negativo."
+    )
+    assertPlanningDomain(
+      (parentScenarioId === null && branchDepth === 0 && branchPath === scenarioId) ||
+        (parentScenarioId !== null &&
+          parentScenarioId !== scenarioId &&
+          branchDepth > 0 &&
+          branchPath.endsWith(`/${scenarioId}`) &&
+          branchPath.split("/").length === branchDepth + 1),
+      "invalid_input",
+      "A hierarquia da branch do cenário é inválida."
+    )
+
     return new PlanningScenario(
       Object.freeze({
         ...input,
-        id: requireText(input.id, "scenarioId"),
+        id: scenarioId,
         companyId: requireText(input.companyId, "companyId"),
         workspaceId: requireText(input.workspaceId, "workspaceId"),
         baseSnapshotId: requireText(input.baseSnapshotId, "baseSnapshotId"),
+        parentScenarioId,
+        branchDepth,
+        branchPath,
         name: requireText(input.name, "name"),
         description: input.description?.trim() || null,
         version: requireVersion(input.version),
@@ -110,6 +152,9 @@ export class PlanningScenario {
   get companyId() { return this.props.companyId }
   get workspaceId() { return this.props.workspaceId }
   get baseSnapshotId() { return this.props.baseSnapshotId }
+  get parentScenarioId() { return this.props.parentScenarioId }
+  get branchDepth() { return this.props.branchDepth }
+  get branchPath() { return this.props.branchPath }
   get name() { return this.props.name }
   get description() { return this.props.description }
   get status() { return this.props.status }
@@ -117,6 +162,42 @@ export class PlanningScenario {
   get createdAt() { return new Date(this.props.createdAt.getTime()) }
   get updatedAt() { return new Date(this.props.updatedAt.getTime()) }
   get domainEvents() { return [...this.events] }
+
+  createBranch(input: CreateScenarioBranchInput): PlanningScenario {
+    const createdAt = requireDate(input.createdAt, "createdAt")
+    const id = requireText(input.id, "scenarioId")
+    const props: PlanningScenarioProps = Object.freeze({
+      id,
+      companyId: this.companyId,
+      workspaceId: this.workspaceId,
+      baseSnapshotId: this.baseSnapshotId,
+      parentScenarioId: this.id,
+      branchDepth: this.branchDepth + 1,
+      branchPath: `${this.branchPath}/${id}`,
+      name: this.name,
+      description: this.description,
+      status: "draft",
+      version: 1,
+      createdAt,
+      updatedAt: new Date(createdAt.getTime()),
+    })
+
+    return new PlanningScenario(props, [
+      createPlanningDomainEvent({
+        type: "planning.scenario.created",
+        companyId: props.companyId,
+        aggregateId: props.id,
+        aggregateVersion: props.version,
+        occurredAt: createdAt,
+        payload: {
+          baseSnapshotId: props.baseSnapshotId,
+          parentScenarioId: props.parentScenarioId,
+          branchDepth: props.branchDepth,
+          branchPath: props.branchPath,
+        },
+      }),
+    ])
+  }
 
   updateDetails(name: string, description: string | null, occurredAt: Date) {
     assertPlanningDomain(
@@ -197,7 +278,7 @@ export class PlanningScenario {
   }
 
   private copy(
-    changes: Partial<PlanningScenarioContract>,
+    changes: Partial<PlanningScenarioProps>,
     event?: PlanningDomainEvent
   ) {
     return new PlanningScenario(

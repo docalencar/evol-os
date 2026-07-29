@@ -15,6 +15,13 @@ export type CreateScenarioCommand = Readonly<{
   occurredAt: Date
 }>
 
+export type CreateScenarioBranchCommand = Readonly<{
+  companyId: string
+  sourceScenarioId: string
+  scenarioId: string
+  occurredAt: Date
+}>
+
 export type PublishScenarioCommand = Readonly<{
   companyId: string
   scenarioId: string

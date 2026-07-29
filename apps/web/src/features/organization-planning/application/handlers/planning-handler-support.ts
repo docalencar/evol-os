@@ -13,6 +13,25 @@ export class PlanningApplicationError extends Error {
   }
 }
 
+export type PlanningScenarioProjectionFailure = Readonly<{
+  code: string
+  message: string
+  changeSetId?: string
+}>
+
+export class PlanningScenarioProjectionError extends Error {
+  readonly code = "PLANNING_SCENARIO_PROJECTION_FAILED"
+  readonly failures: readonly PlanningScenarioProjectionFailure[]
+
+  constructor(failures: readonly PlanningScenarioProjectionFailure[]) {
+    super("Não foi possível projetar o cenário para publicação.")
+    this.name = "PlanningScenarioProjectionError"
+    this.failures = Object.freeze(
+      failures.map((failure) => Object.freeze({ ...failure }))
+    )
+  }
+}
+
 export function requireApplicationEntity<T>(
   entity: T | null,
   message: string

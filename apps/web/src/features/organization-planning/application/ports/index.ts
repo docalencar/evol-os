@@ -18,3 +18,6 @@ export type {
   ListPlanningChangeSetsInput,
   PlanningChangeSetRepository,
 } from "./planning-change-set-repository"
+export type {
+  PlanningProjectionSnapshotRepository,
+} from "./planning-projection-snapshot-repository"

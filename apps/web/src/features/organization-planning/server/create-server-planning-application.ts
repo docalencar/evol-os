@@ -12,6 +12,7 @@ import {
 import { createScenarioRepository } from "../repositories/scenario-repository"
 import { createSnapshotRepository } from "../repositories/snapshot-repository"
 import { createWorkspaceRepository } from "../repositories/workspace-repository"
+import { createPlanningPublicationRepository } from "../repositories/planning-publication-repository"
 
 export type ServerPlanningApplication = Readonly<{
   createWorkspace: CreateWorkspaceHandler
@@ -26,10 +27,12 @@ export async function createServerPlanningApplication(): Promise<ServerPlanningA
     workspaces,
     scenarios,
     snapshots,
+    publication,
   ] = await Promise.all([
     createWorkspaceRepository(),
     createScenarioRepository(),
     createSnapshotRepository(),
+    createPlanningPublicationRepository(),
   ])
 
   const eventCollector = new PlanningDomainEventCollector()
@@ -46,8 +49,6 @@ export async function createServerPlanningApplication(): Promise<ServerPlanningA
   const createWorkspaceUnitOfWork = new SimplePlanningUnitOfWork()
   const createScenarioUnitOfWork = new SimplePlanningUnitOfWork()
   const archiveScenarioUnitOfWork = new SimplePlanningUnitOfWork()
-  const publishScenarioUnitOfWork = new SimplePlanningUnitOfWork()
-
   const snapshotVersionAllocator =
     new InMemorySnapshotVersionAllocator()
 
@@ -75,10 +76,7 @@ export async function createServerPlanningApplication(): Promise<ServerPlanningA
     ),
 
     publishScenario: new PublishScenarioHandler(
-      scenarios,
-      snapshots,
-      snapshotVersionAllocator,
-      publishScenarioUnitOfWork,
+      publication,
       eventCollector
     ),
 

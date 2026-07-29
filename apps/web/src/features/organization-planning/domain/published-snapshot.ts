@@ -107,6 +107,29 @@ export class PublishedSnapshot {
     )
   }
 
+  static restorePublished(input: PublishedSnapshotContract) {
+    const snapshot = PublishedSnapshot.restore(input)
+
+    assertPlanningDomain(
+      snapshot.sourceScenarioId !== null,
+      "invalid_input",
+      "A reconstrução da publicação exige um cenário de origem."
+    )
+
+    return new PublishedSnapshot(snapshot.props, [
+      createPlanningDomainEvent({
+        type: "planning.snapshot.published",
+        companyId: snapshot.companyId,
+        aggregateId: snapshot.id,
+        aggregateVersion: snapshot.version,
+        occurredAt: snapshot.publishedAt,
+        payload: {
+          sourceScenarioId: snapshot.sourceScenarioId,
+        },
+      }),
+    ])
+  }
+
   get id() { return this.props.id }
   get companyId() { return this.props.companyId }
   get workspaceId() { return this.props.workspaceId }

@@ -15,6 +15,11 @@ import type {
   SnapshotApplicationRepository,
   WorkspaceApplicationRepository,
 } from "../ports/planning-repository-ports"
+import type {
+  PlanningPublicationRepository,
+  PlanningPublicationResult,
+  PublishPlanningScenarioInput,
+} from "../ports/planning-publication-repository"
 import { InMemorySnapshotVersionAllocator } from "../ports/snapshot-version-allocator"
 import {
   SimplePlanningUnitOfWork,
@@ -84,6 +89,21 @@ class MemorySnapshotRepository
   async create(snapshot: PublishedSnapshot) {
     if (this.shouldFailCreate) throw new Error("snapshot failure")
     this.items.set(snapshot.id, snapshot)
+  }
+}
+
+class MemoryPlanningPublicationRepository
+  implements PlanningPublicationRepository
+{
+  inputs: PublishPlanningScenarioInput[] = []
+
+  constructor(
+    private readonly result: PlanningPublicationResult
+  ) {}
+
+  async publish(input: PublishPlanningScenarioInput) {
+    this.inputs.push(input)
+    return this.result
   }
 }
 
@@ -202,22 +222,24 @@ test("CreateScenarioHandler carrega relações, persiste e retorna ScenarioDTO",
   assert.equal(unitOfWork.commits, 1)
 })
 
-test("PublishScenarioHandler aloca versão, persiste ambos e retorna DTOs", async () => {
-  const scenarios = new MemoryScenarioRepository()
-  const snapshots = new MemorySnapshotRepository()
-  const foundation = bootstrap()
-  const scenario = approvedScenario()
-  scenarios.items.set(scenario.id, scenario)
-  snapshots.items.set(baseSnapshotId, foundation.initialSnapshot)
+test("PublishScenarioHandler delega publicação atômica e retorna DTOs", async () => {
+  const publishedAt = new Date("2026-07-13T12:00:00Z")
+  const scenario = approvedScenario().publish(publishedAt)
+  const snapshot = PublishedSnapshot.publish({
+    id: snapshotId,
+    companyId,
+    workspaceId,
+    sourceScenarioId: scenarioId,
+    version: 2,
+    publishedAt,
+  })
+  const publication = new MemoryPlanningPublicationRepository({
+    scenario,
+    snapshot,
+  })
   const collector = new RecordingEventCollector()
-  const unitOfWork = new RecordingUnitOfWork()
   const handler = new PublishScenarioHandler(
-    scenarios,
-    snapshots,
-    new InMemorySnapshotVersionAllocator(
-      new Map([[workspaceId, 1]])
-    ),
-    unitOfWork,
+    publication,
     collector
   )
 
@@ -226,18 +248,23 @@ test("PublishScenarioHandler aloca versão, persiste ambos e retorna DTOs", asyn
     scenarioId,
     snapshotId,
     expectedVersion: 3,
-    occurredAt: new Date("2026-07-13T12:00:00Z"),
+    occurredAt: publishedAt,
   })
 
   assert.equal(dto.scenario.status, "published")
   assert.equal(dto.snapshot.version, 2)
   assert.equal(dto.snapshot.sourceScenarioId, scenarioId)
-  assert.deepEqual(scenarios.saveExpectedVersions, [3])
+  assert.deepEqual(publication.inputs, [{
+    companyId,
+    scenarioId,
+    snapshotId,
+    expectedVersion: 3,
+    publishedAt,
+  }])
   assert.deepEqual(
     collector.events.map((event) => event.type),
     ["planning.scenario.published", "planning.snapshot.published"]
   )
-  assert.equal(unitOfWork.commits, 1)
 })
 
 test("ArchiveScenarioHandler persiste com optimistic version e retorna DTO", async () => {

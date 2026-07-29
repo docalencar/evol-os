@@ -4,7 +4,6 @@ import {
   ArchiveScenarioHandler,
   CreateScenarioHandler,
   CreateWorkspaceHandler,
-  InMemorySnapshotVersionAllocator,
   PlanningDomainEventCollector,
   PublishScenarioHandler,
   SimplePlanningUnitOfWork,
@@ -15,6 +14,8 @@ import { createSnapshotRepository } from "../repositories/snapshot-repository"
 import { createWorkspaceRepository } from "../repositories/workspace-repository"
 import { createPlanningPublicationRepository } from "../repositories/planning-publication-repository"
 import { createPlanningChangeSetRepository } from "../repositories/planning-change-set-repository"
+import { createPlanningBaselineRepository } from "../repositories/planning-baseline-repository"
+import { createPlanningOperationalOrganizationSource } from "../repositories/planning-operational-organization-source"
 
 export type ServerPlanningApplication = Readonly<{
   createWorkspace: CreateWorkspaceHandler
@@ -31,12 +32,16 @@ export async function createServerPlanningApplication(): Promise<ServerPlanningA
     snapshots,
     changeSets,
     publication,
+    baseline,
+    operationalOrganization,
   ] = await Promise.all([
     createWorkspaceRepository(),
     createScenarioRepository(),
     createSnapshotRepository(),
     createPlanningChangeSetRepository(),
     createPlanningPublicationRepository(),
+    createPlanningBaselineRepository(),
+    createPlanningOperationalOrganizationSource(),
   ])
 
   const eventCollector = new PlanningDomainEventCollector()
@@ -47,21 +52,15 @@ export async function createServerPlanningApplication(): Promise<ServerPlanningA
    * O UnitOfWork atual controla apenas o ciclo lógico da operação e ainda
    * não representa uma transação real no PostgreSQL.
    *
-   * O allocator em memória também será substituído por uma implementação
-   * persistente antes de o fluxo de publicação ser conectado à produção.
+   * O bootstrap do Workspace já usa a RPC transacional de Baseline; estes
+   * UnitOfWork permanecem apenas nos handlers ainda não migrados.
    */
-  const createWorkspaceUnitOfWork = new SimplePlanningUnitOfWork()
   const createScenarioUnitOfWork = new SimplePlanningUnitOfWork()
   const archiveScenarioUnitOfWork = new SimplePlanningUnitOfWork()
-  const snapshotVersionAllocator =
-    new InMemorySnapshotVersionAllocator()
-
   return Object.freeze({
     createWorkspace: new CreateWorkspaceHandler(
-      workspaces,
-      snapshots,
-      snapshotVersionAllocator,
-      createWorkspaceUnitOfWork,
+      baseline,
+      operationalOrganization,
       eventCollector
     ),
 

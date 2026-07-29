@@ -12,6 +12,14 @@ export type PlanningScenarioStatus =
 
 export type Version = number
 
+export const PLANNING_SNAPSHOT_KINDS = [
+  "baseline",
+  "projection",
+] as const
+
+export type PlanningSnapshotKind =
+  (typeof PLANNING_SNAPSHOT_KINDS)[number]
+
 export const INITIAL_PLANNING_SNAPSHOT_VERSION = 1
 
 export type Workspace = Readonly<{
@@ -42,6 +50,7 @@ export type PublishedSnapshotContract = Readonly<{
   sourceScenarioId: string | null
   version: Version
   publishedAt: Date
+  kind?: PlanningSnapshotKind | null
 }>
 
 export type WorkspaceBootstrap = Readonly<{

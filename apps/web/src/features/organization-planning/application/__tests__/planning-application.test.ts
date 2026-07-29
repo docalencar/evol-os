@@ -13,11 +13,18 @@ import { PlanningScenarioProjectionError } from "../handlers/planning-handler-su
 import { PlanningDomainEventCollector } from "../planning-domain-event-collector"
 import type {
   ScenarioApplicationRepository,
-  SnapshotApplicationRepository,
   WorkspaceApplicationRepository,
 } from "../ports/planning-repository-ports"
 import type { PlanningChangeSetRepository } from "../ports/planning-change-set-repository"
 import type { PlanningProjectionSnapshotRepository } from "../ports/planning-projection-snapshot-repository"
+import type {
+  CreatePlanningBaselineInput,
+  PlanningBaselineRepository,
+} from "../ports/planning-baseline-repository"
+import type {
+  PlanningOperationalOrganization,
+  PlanningOperationalOrganizationSource,
+} from "../ports/planning-operational-organization-source"
 import type {
   PlanningPublicationRepository,
   PlanningPublicationResult,
@@ -86,23 +93,6 @@ class MemoryScenarioRepository
   }
 }
 
-class MemorySnapshotRepository
-  implements SnapshotApplicationRepository
-{
-  readonly items = new Map<string, PublishedSnapshot>()
-  shouldFailCreate = false
-
-  async findById(company: string, id: string) {
-    const snapshot = this.items.get(id) ?? null
-    return snapshot?.companyId === company ? snapshot : null
-  }
-
-  async create(snapshot: PublishedSnapshot) {
-    if (this.shouldFailCreate) throw new Error("snapshot failure")
-    this.items.set(snapshot.id, snapshot)
-  }
-}
-
 class MemoryPlanningPublicationRepository
   implements PlanningPublicationRepository
 {
@@ -152,6 +142,37 @@ class MemoryChangeSetRepository
   }
 }
 
+class MemoryBaselineRepository
+  implements PlanningBaselineRepository
+{
+  exists = false
+  shouldFailCreate = false
+  inputs: CreatePlanningBaselineInput[] = []
+
+  async existsBaselineByCompany() {
+    return this.exists
+  }
+
+  async create(input: CreatePlanningBaselineInput) {
+    if (this.shouldFailCreate) throw new Error("baseline failure")
+    this.inputs.push(input)
+    this.exists = true
+  }
+}
+
+class StaticOperationalOrganizationSource
+  implements PlanningOperationalOrganizationSource
+{
+  constructor(
+    private readonly organization: PlanningOperationalOrganization =
+      operationalOrganization()
+  ) {}
+
+  async loadByCompany() {
+    return this.organization
+  }
+}
+
 class RecordingUnitOfWork implements PlanningUnitOfWork {
   begins = 0
   commits = 0
@@ -196,6 +217,41 @@ function approvedScenario() {
     .approve(new Date("2026-07-12T12:00:00Z"))
 
   return PlanningScenario.restore(scenario.toContract())
+}
+
+function operationalOrganization(): PlanningOperationalOrganization {
+  return Object.freeze({
+    departments: Object.freeze([{
+      id: "department-1",
+      name: "Operações",
+      code: "OPS",
+      description: null,
+      parentDepartmentId: null,
+    }]),
+    teams: Object.freeze([{
+      id: "team-1",
+      name: "Plataforma",
+      code: null,
+      description: null,
+      departmentId: "department-1",
+    }]),
+    positions: Object.freeze([{
+      id: "position-1",
+      name: "Analista",
+      description: null,
+      departmentId: "department-1",
+      hierarchicalLevel: "analyst",
+      weeklyWorkloadHours: 40,
+      workModel: "hybrid",
+      employmentType: "clt",
+      travelRequirement: "none",
+      active: true,
+    }]),
+    employees: Object.freeze([{
+      id: "employee-1",
+      positionId: "position-1",
+    }]),
+  })
 }
 
 function organizationWithDepartment(
@@ -336,16 +392,12 @@ function publicationDependencies(changeSetsInput: readonly ChangeSet[]) {
   }
 }
 
-test("CreateWorkspaceHandler persiste bootstrap, coleta evento e retorna DTO", async () => {
-  const workspaces = new MemoryWorkspaceRepository()
-  const snapshots = new MemorySnapshotRepository()
-  const unitOfWork = new RecordingUnitOfWork()
+test("CreateWorkspaceHandler persists the operational organization as the Baseline", async () => {
+  const baseline = new MemoryBaselineRepository()
   const collector = new RecordingEventCollector()
   const handler = new CreateWorkspaceHandler(
-    workspaces,
-    snapshots,
-    new InMemorySnapshotVersionAllocator(),
-    unitOfWork,
+    baseline,
+    new StaticOperationalOrganizationSource(),
     collector
   )
 
@@ -356,27 +408,58 @@ test("CreateWorkspaceHandler persiste bootstrap, coleta evento e retorna DTO", a
     occurredAt,
   })
 
-  assert.equal(workspaces.items.size, 1)
-  assert.equal(snapshots.items.size, 1)
+  assert.equal(baseline.inputs.length, 1)
   assert.equal(dto.initialSnapshot.version, 1)
   assert.equal(dto.initialSnapshot.sourceScenarioId, null)
+  assert.equal(dto.initialSnapshot.kind, "baseline")
+  assert.equal(
+    baseline.inputs[0]?.organization.departments[0]?.name,
+    "Operações"
+  )
+  assert.equal(baseline.inputs[0]?.organization.employees.length, 1)
+  assert.equal(baseline.inputs[0]?.organization.metrics.headcount, 1)
   assert.equal(typeof dto.createdAt, "string")
   assert.equal("toContract" in dto, false)
   assert.equal(Object.isFrozen(dto), true)
   assert.equal(collector.events[0]?.type, "planning.snapshot.published")
-  assert.deepEqual(
-    [unitOfWork.begins, unitOfWork.commits, unitOfWork.rollbacks],
-    [1, 1, 0]
+})
+
+test("CreateWorkspaceHandler rejects a second Workspace for the same Company before loading organization", async () => {
+  const baseline = new MemoryBaselineRepository()
+  baseline.exists = true
+  let loads = 0
+  const source: PlanningOperationalOrganizationSource = {
+    async loadByCompany() {
+      loads += 1
+      return operationalOrganization()
+    },
+  }
+  const handler = new CreateWorkspaceHandler(
+    baseline,
+    source,
+    new RecordingEventCollector()
   )
+
+  await assert.rejects(() => handler.execute({
+    companyId,
+    workspaceId: "00000000-0000-4000-8000-000000000099",
+    initialSnapshotId: "00000000-0000-4000-8000-000000000098",
+    occurredAt,
+  }))
+  assert.equal(loads, 0)
+  assert.equal(baseline.inputs.length, 0)
 })
 
 test("CreateScenarioHandler carrega relações, persiste e retorna ScenarioDTO", async () => {
   const workspaces = new MemoryWorkspaceRepository()
   const scenarios = new MemoryScenarioRepository()
-  const snapshots = new MemorySnapshotRepository()
+  const snapshots = new MemoryProjectionSnapshotRepository()
   const foundation = bootstrap()
   workspaces.items.set(workspaceId, foundation.workspace)
-  snapshots.items.set(baseSnapshotId, foundation.initialSnapshot)
+  snapshots.items.set(
+    baseSnapshotId,
+    projectionSnapshot(organizationWithDepartment("Operações"))
+  )
   const collector = new RecordingEventCollector()
   const unitOfWork = new RecordingUnitOfWork()
   const handler = new CreateScenarioHandler(
@@ -403,6 +486,37 @@ test("CreateScenarioHandler carrega relações, persiste e retorna ScenarioDTO",
   assert.equal("domainEvents" in dto, false)
   assert.equal(collector.events[0]?.type, "planning.scenario.created")
   assert.equal(unitOfWork.commits, 1)
+})
+
+test("CreateScenarioHandler rejects a Workspace without a Baseline tree", async () => {
+  const workspaces = new MemoryWorkspaceRepository()
+  const scenarios = new MemoryScenarioRepository()
+  const snapshots = new MemoryProjectionSnapshotRepository()
+  const foundation = bootstrap()
+  workspaces.items.set(workspaceId, foundation.workspace)
+  snapshots.items.set(baseSnapshotId, Object.freeze({
+    ...foundation.initialSnapshot.toContract(),
+    kind: null,
+  }))
+  const unitOfWork = new RecordingUnitOfWork()
+  const handler = new CreateScenarioHandler(
+    workspaces,
+    scenarios,
+    snapshots,
+    unitOfWork,
+    new RecordingEventCollector()
+  )
+
+  await assert.rejects(() => handler.execute({
+    companyId,
+    scenarioId,
+    workspaceId,
+    baseSnapshotId,
+    name: "Cenário sem baseline",
+    occurredAt,
+  }))
+  assert.equal(scenarios.items.size, 0)
+  assert.equal(unitOfWork.rollbacks, 1)
 })
 
 test("PublishScenarioHandler delega publicação atômica e retorna DTOs", async () => {
@@ -622,17 +736,14 @@ test("ArchiveScenarioHandler persiste com optimistic version e retorna DTO", asy
   assert.equal(collector.events[0]?.type, "planning.scenario.archived")
 })
 
-test("handler executa rollback e não commit quando repository falha", async () => {
-  const workspaces = new MemoryWorkspaceRepository()
-  const snapshots = new MemorySnapshotRepository()
-  snapshots.shouldFailCreate = true
-  const unitOfWork = new RecordingUnitOfWork()
+test("CreateWorkspaceHandler does not collect events when Baseline persistence fails", async () => {
+  const baseline = new MemoryBaselineRepository()
+  baseline.shouldFailCreate = true
+  const collector = new RecordingEventCollector()
   const handler = new CreateWorkspaceHandler(
-    workspaces,
-    snapshots,
-    new InMemorySnapshotVersionAllocator(),
-    unitOfWork,
-    new RecordingEventCollector()
+    baseline,
+    new StaticOperationalOrganizationSource(),
+    collector
   )
 
   await assert.rejects(() =>
@@ -643,10 +754,7 @@ test("handler executa rollback e não commit quando repository falha", async () 
       occurredAt,
     })
   )
-  assert.deepEqual(
-    [unitOfWork.begins, unitOfWork.commits, unitOfWork.rollbacks],
-    [1, 0, 1]
-  )
+  assert.deepEqual(collector.events, [])
 })
 
 test("validação do command ocorre antes de iniciar transação", async () => {

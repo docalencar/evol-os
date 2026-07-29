@@ -4,7 +4,7 @@ import { createScenarioCommandSchema } from "../commands/planning-command-schema
 import { toScenarioDTO } from "../dto/planning-dto-mappers"
 import type {
   ScenarioApplicationRepository,
-  SnapshotApplicationRepository,
+  PlanningProjectionSnapshotRepository,
   WorkspaceApplicationRepository,
 } from "../ports"
 import { PlanningDomainEventCollector } from "../planning-domain-event-collector"
@@ -19,7 +19,7 @@ export class CreateScenarioHandler {
   constructor(
     private readonly workspaces: WorkspaceApplicationRepository,
     private readonly scenarios: ScenarioApplicationRepository,
-    private readonly snapshots: SnapshotApplicationRepository,
+    private readonly snapshots: PlanningProjectionSnapshotRepository,
     private readonly unitOfWork: PlanningUnitOfWork,
     private readonly eventCollector: PlanningDomainEventCollector
   ) {}
@@ -30,7 +30,10 @@ export class CreateScenarioHandler {
     return executeInUnitOfWork(this.unitOfWork, async () => {
       const [workspace, baseSnapshot] = await Promise.all([
         this.workspaces.findById(input.companyId, input.workspaceId),
-        this.snapshots.findById(input.companyId, input.baseSnapshotId),
+        this.snapshots.findProjectionById(
+          input.companyId,
+          input.baseSnapshotId
+        ),
       ])
       requireApplicationEntity(workspace, "Workspace não encontrado.")
       const snapshot = requireApplicationEntity(
@@ -40,6 +43,12 @@ export class CreateScenarioHandler {
       assertApplicationRelation(
         snapshot.workspaceId === input.workspaceId,
         "O snapshot-base não pertence ao workspace informado."
+      )
+      assertApplicationRelation(
+        snapshot.kind !== null &&
+          snapshot.kind !== undefined &&
+          snapshot.organization !== undefined,
+        "O snapshot-base não pertence a uma árvore iniciada por Baseline."
       )
 
       const scenario = createScenario({

@@ -72,6 +72,7 @@ test("sends the projected organization to the transactional RPC", async () => {
   })
   assert.deepEqual(result.organization, organization)
   assert.equal(result.snapshot.id, "snapshot-2")
+  assert.equal(result.snapshot.kind, "projection")
 })
 
 test("rejects an invalid organization returned by the RPC", async () => {

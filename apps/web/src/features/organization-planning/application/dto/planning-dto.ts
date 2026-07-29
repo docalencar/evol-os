@@ -1,4 +1,5 @@
 import type {
+  PlanningSnapshotKind,
   PlanningScenarioStatus,
 } from "../../types/planning-contracts"
 
@@ -9,6 +10,7 @@ export type SnapshotDTO = Readonly<{
   sourceScenarioId: string | null
   version: number
   publishedAt: string
+  kind: PlanningSnapshotKind | null
 }>
 
 export type WorkspaceDTO = Readonly<{

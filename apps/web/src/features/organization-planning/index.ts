@@ -19,6 +19,7 @@ export type {
   ChangeSet,
   PlanningScenarioContract,
   PlanningScenarioStatus,
+  PlanningSnapshotKind,
   PublishedSnapshotContract,
   Version,
   Workspace,

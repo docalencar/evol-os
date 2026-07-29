@@ -3,12 +3,15 @@ import type { ReactNode } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 
+import { CreateScenarioDialog } from "./create-scenario-dialog"
+
 type ScenarioCardData = {
   id: string
   name: string
   description?: string | null
   status: string
   version: number
+  workspaceId: string
   baseSnapshotId: string
   updatedAt: Date
 }
@@ -73,7 +76,14 @@ export function ScenarioCard({
           <div className="flex shrink-0 flex-wrap items-center gap-2">
             {actions}
           </div>
-        ) : null}
+        ) : (
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <CreateScenarioDialog
+              workspaceId={scenario.workspaceId}
+              baseSnapshotId={scenario.baseSnapshotId}
+            />
+          </div>
+        )}
       </div>
 
       <dl className="mt-5 grid gap-3 border-t border-slate-100 pt-5 sm:grid-cols-3">

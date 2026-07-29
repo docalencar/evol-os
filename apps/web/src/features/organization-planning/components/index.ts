@@ -1,4 +1,12 @@
 export {
+  CreateScenarioDialog,
+} from "./create-scenario-dialog"
+
+export {
+  CreateWorkspaceDialog,
+} from "./create-workspace-dialog"
+
+export {
   ScenarioCard,
 } from "./scenario-card"
 

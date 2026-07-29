@@ -3,6 +3,8 @@ import type { ReactNode } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 
+import { CreateWorkspaceDialog } from "./create-workspace-dialog"
+
 type WorkspaceCardProps = {
   title?: string
   currentSnapshotVersion?: number | null
@@ -52,7 +54,11 @@ export function WorkspaceCard({
           <div className="shrink-0">
             {action}
           </div>
-        ) : null}
+        ) : (
+          <div className="shrink-0">
+            <CreateWorkspaceDialog />
+          </div>
+        )}
       </div>
 
       <dl className="mt-5 grid gap-3 border-t border-slate-100 pt-5 sm:grid-cols-2">

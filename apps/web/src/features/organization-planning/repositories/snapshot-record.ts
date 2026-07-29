@@ -12,6 +12,7 @@ export type SnapshotRow = Readonly<{
   version: unknown
   published_at: unknown
   organization?: unknown
+  kind?: unknown
 }>
 
 const snapshotRow = z.object({
@@ -22,6 +23,7 @@ const snapshotRow = z.object({
   version: z.number().int().positive(),
   published_at: z.string().datetime({ offset: true }),
   organization: z.unknown().optional(),
+  kind: z.enum(["baseline", "projection"]).nullable().optional(),
 })
 
 export function mapPublishedSnapshotRow(row: SnapshotRow) {
@@ -38,6 +40,7 @@ export function mapPublishedSnapshotRow(row: SnapshotRow) {
     sourceScenarioId: value.source_scenario_id,
     version: value.version,
     publishedAt: new Date(value.published_at),
+    kind: value.kind ?? null,
   })
 }
 

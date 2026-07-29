@@ -35,6 +35,7 @@ export class PublishedSnapshot {
       companyId: requireText(input.companyId, "companyId"),
       workspaceId: requireText(input.workspaceId, "workspaceId"),
       sourceScenarioId: null,
+      kind: "baseline" as const,
       version,
       publishedAt,
     })
@@ -64,6 +65,7 @@ export class PublishedSnapshot {
       companyId: requireText(input.companyId, "companyId"),
       workspaceId: requireText(input.workspaceId, "workspaceId"),
       sourceScenarioId: requireText(input.sourceScenarioId, "sourceScenarioId"),
+      kind: "projection" as const,
       version,
       publishedAt,
     })
@@ -90,6 +92,18 @@ export class PublishedSnapshot {
       "invalid_input",
       "Snapshot inicial não possui cenário de origem; snapshots derivados exigem origem."
     )
+    assertPlanningDomain(
+      input.kind === undefined ||
+        input.kind === null ||
+        (input.kind === "baseline" &&
+          version === INITIAL_PLANNING_SNAPSHOT_VERSION &&
+          input.sourceScenarioId === null) ||
+        (input.kind === "projection" &&
+          version > INITIAL_PLANNING_SNAPSHOT_VERSION &&
+          input.sourceScenarioId !== null),
+      "invalid_input",
+      "O tipo do snapshot não corresponde à sua origem e versão."
+    )
 
     return new PublishedSnapshot(
       Object.freeze({
@@ -100,6 +114,7 @@ export class PublishedSnapshot {
         sourceScenarioId: input.sourceScenarioId
           ? requireText(input.sourceScenarioId, "sourceScenarioId")
           : null,
+        kind: input.kind ?? null,
         version,
         publishedAt: requireDate(input.publishedAt, "publishedAt"),
       }),
@@ -136,6 +151,7 @@ export class PublishedSnapshot {
   get sourceScenarioId() { return this.props.sourceScenarioId }
   get version() { return this.props.version }
   get publishedAt() { return new Date(this.props.publishedAt.getTime()) }
+  get kind() { return this.props.kind ?? null }
   get domainEvents() { return [...this.events] }
 
   toContract(): PublishedSnapshotContract {

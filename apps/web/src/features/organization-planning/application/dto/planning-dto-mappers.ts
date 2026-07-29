@@ -17,6 +17,7 @@ export function toSnapshotDTO(
     sourceScenarioId: snapshot.sourceScenarioId,
     version: snapshot.version,
     publishedAt: snapshot.publishedAt.toISOString(),
+    kind: snapshot.kind,
   })
 }
 

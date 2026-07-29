@@ -13,7 +13,7 @@ export async function createSnapshotRepository() {
   const database = await createServerDatabase()
   const select = `
     id, company_id, workspace_id, source_scenario_id,
-    version, published_at, organization
+    version, published_at, organization, kind
   `
 
   return {
@@ -67,6 +67,7 @@ export async function createSnapshotRepository() {
           source_scenario_id: value.sourceScenarioId,
           version: value.version,
           published_at: value.publishedAt.toISOString(),
+          kind: value.kind,
         })
 
       if (error) throw new Error(error.message)

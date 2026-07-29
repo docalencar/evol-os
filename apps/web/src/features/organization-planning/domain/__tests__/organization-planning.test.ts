@@ -55,6 +55,8 @@ test("cria workspace e estratégia explícita de snapshot inicial", () => {
   assert.equal(bootstrap.initialSnapshot.id, baseSnapshotId)
   assert.equal(bootstrap.initialSnapshot.version, 1)
   assert.equal(bootstrap.initialSnapshot.sourceScenarioId, null)
+  assert.equal(bootstrap.initialSnapshot.kind, "baseline")
+  assert.equal(Object.isFrozen(bootstrap.initialSnapshot.toContract()), true)
   assert.equal(
     bootstrap.initialSnapshot.domainEvents[0]?.payload.bootstrap,
     true

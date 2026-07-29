@@ -48,7 +48,7 @@ export class PublishScenarioHandler {
       "Snapshot base não encontrado."
     )
 
-    if (!snapshot.organization) {
+    if (!snapshot.organization || !snapshot.kind) {
       throw new PlanningScenarioProjectionError([
         {
           code: "planning.snapshot.organization_missing",

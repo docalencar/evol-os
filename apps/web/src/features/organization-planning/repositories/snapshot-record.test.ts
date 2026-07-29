@@ -40,12 +40,14 @@ test("reads and defensively freezes a persisted organization", () => {
   }
   const snapshot = mapProjectionSnapshotRow({
     ...legacySnapshotRow(),
+    kind: "baseline",
     organization,
   })
 
   organization.departments[0]!.name = "Mutado"
 
   assert.equal(snapshot.organization?.departments[0]?.name, "Financeiro")
+  assert.equal(snapshot.kind, "baseline")
   assert.equal(Object.isFrozen(snapshot.organization), true)
   assert.equal(Object.isFrozen(snapshot.organization?.departments), true)
 })

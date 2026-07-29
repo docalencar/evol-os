@@ -83,6 +83,7 @@ export function mapPlanningPublicationRow(
       sourceScenarioId: value.snapshot_source_scenario_id,
       version: value.snapshot_version,
       publishedAt: new Date(value.snapshot_published_at),
+      kind: "projection",
     }),
     organization,
   })

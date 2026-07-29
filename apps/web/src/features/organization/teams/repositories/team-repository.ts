@@ -1,4 +1,5 @@
 import { createServerDatabase } from "@/lib/database/server-database"
+import { scopeCompany } from "@/lib/supabase/scoped-query"
 
 type CreateTeamData = {
   companyId: string
@@ -27,7 +28,7 @@ export async function createTeamRepository() {
       return supabase
         .from("teams")
         .select("*")
-        .eq("company_id", companyId)
+        .eq(...scopeCompany(companyId))
         .is("deleted_at", null)
         .order("name", { ascending: true })
     },
@@ -36,7 +37,7 @@ export async function createTeamRepository() {
       return supabase
         .from("teams")
         .select("*")
-        .eq("company_id", companyId)
+        .eq(...scopeCompany(companyId))
         .eq("id", teamId)
         .is("deleted_at", null)
         .single()
@@ -68,7 +69,7 @@ export async function createTeamRepository() {
           manager_id: data.leaderId ?? null,
           updated_at: new Date().toISOString(),
         })
-        .eq("company_id", data.companyId)
+        .eq(...scopeCompany(data.companyId))
         .eq("id", data.teamId)
         .is("deleted_at", null)
     },
@@ -80,7 +81,7 @@ export async function createTeamRepository() {
           deleted_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
-        .eq("company_id", companyId)
+        .eq(...scopeCompany(companyId))
         .eq("id", teamId)
         .is("deleted_at", null)
     },

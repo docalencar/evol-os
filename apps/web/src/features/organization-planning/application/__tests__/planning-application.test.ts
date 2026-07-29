@@ -9,12 +9,15 @@ import { ArchiveScenarioHandler } from "../handlers/archive-scenario-handler"
 import { CreateScenarioHandler } from "../handlers/create-scenario-handler"
 import { CreateWorkspaceHandler } from "../handlers/create-workspace-handler"
 import { PublishScenarioHandler } from "../handlers/publish-scenario-handler"
+import { PlanningScenarioProjectionError } from "../handlers/planning-handler-support"
 import { PlanningDomainEventCollector } from "../planning-domain-event-collector"
 import type {
   ScenarioApplicationRepository,
   SnapshotApplicationRepository,
   WorkspaceApplicationRepository,
 } from "../ports/planning-repository-ports"
+import type { PlanningChangeSetRepository } from "../ports/planning-change-set-repository"
+import type { PlanningProjectionSnapshotRepository } from "../ports/planning-projection-snapshot-repository"
 import type {
   PlanningPublicationRepository,
   PlanningPublicationResult,
@@ -27,6 +30,14 @@ import {
 } from "../transactions/planning-unit-of-work"
 import type { OrganizationPlanningWorkspace } from "../../domain/organization-planning-workspace"
 import type { PlanningDomainEvent } from "../../events/planning-domain-event"
+import {
+  ScenarioExecutor,
+  createEmptyProjectedOrganization,
+  freezeProjectedOrganization,
+  type ProjectionSnapshot,
+  type ProjectedOrganization,
+} from "../../projection"
+import type { ChangeSet } from "../../types/planning-contracts"
 
 const companyId = "00000000-0000-4000-8000-000000000001"
 const workspaceId = "00000000-0000-4000-8000-000000000002"
@@ -107,6 +118,40 @@ class MemoryPlanningPublicationRepository
   }
 }
 
+class MemoryProjectionSnapshotRepository
+  implements PlanningProjectionSnapshotRepository
+{
+  readonly items = new Map<string, ProjectionSnapshot>()
+
+  async findProjectionById(company: string, id: string) {
+    const snapshot = this.items.get(id) ?? null
+    return snapshot?.companyId === company ? snapshot : null
+  }
+}
+
+class MemoryChangeSetRepository
+  implements PlanningChangeSetRepository
+{
+  readonly items: ChangeSet[] = []
+  listInputs: { companyId: string; scenarioId: string }[] = []
+
+  async create(changeSet: ChangeSet) {
+    this.items.push(changeSet)
+  }
+
+  async listPublishableByScenario(input: {
+    companyId: string
+    scenarioId: string
+  }) {
+    this.listInputs.push(input)
+    return this.items.filter(
+      (changeSet) =>
+        changeSet.companyId === input.companyId &&
+        changeSet.scenarioId === input.scenarioId
+    )
+  }
+}
+
 class RecordingUnitOfWork implements PlanningUnitOfWork {
   begins = 0
   commits = 0
@@ -151,6 +196,144 @@ function approvedScenario() {
     .approve(new Date("2026-07-12T12:00:00Z"))
 
   return PlanningScenario.restore(scenario.toContract())
+}
+
+function organizationWithDepartment(
+  name: string
+): ProjectedOrganization {
+  return freezeProjectedOrganization({
+    ...createEmptyProjectedOrganization(),
+    departments: [{
+      id: "department-1",
+      name,
+      code: null,
+      description: null,
+      parentDepartmentId: null,
+      status: "active",
+    }],
+    metrics: {
+      ...createEmptyProjectedOrganization().metrics,
+      departments: 1,
+    },
+  })
+}
+
+function organizationWithPosition(): ProjectedOrganization {
+  return freezeProjectedOrganization({
+    ...createEmptyProjectedOrganization(),
+    departments: [
+      {
+        id: "department-1",
+        name: "Operações",
+        code: null,
+        description: null,
+        parentDepartmentId: null,
+        status: "active",
+      },
+      {
+        id: "department-2",
+        name: "Financeiro",
+        code: null,
+        description: null,
+        parentDepartmentId: null,
+        status: "active",
+      },
+    ],
+    positions: [{
+      id: "position-1",
+      name: "Analista",
+      description: null,
+      departmentId: "department-1",
+      hierarchicalLevel: "analyst",
+      weeklyWorkloadHours: 40,
+      workModel: "hybrid",
+      employmentType: "clt",
+      travelRequirement: "none",
+      status: "active",
+    }],
+    metrics: {
+      ...createEmptyProjectedOrganization().metrics,
+      departments: 2,
+      positions: 1,
+    },
+  })
+}
+
+function projectionSnapshot(
+  organization: ProjectedOrganization
+): ProjectionSnapshot {
+  return Object.freeze({
+    ...bootstrap().initialSnapshot.toContract(),
+    organization,
+  })
+}
+
+function changeSet(
+  id: string,
+  changeType: string,
+  payload: Readonly<Record<string, unknown>>,
+  version = 1
+): ChangeSet {
+  return Object.freeze({
+    id,
+    companyId,
+    scenarioId,
+    changeType,
+    payload: Object.freeze({ ...payload }),
+    version,
+  })
+}
+
+function publishCommand() {
+  return {
+    companyId,
+    scenarioId,
+    snapshotId,
+    expectedVersion: 3,
+    occurredAt,
+  }
+}
+
+function publicationDependencies(changeSetsInput: readonly ChangeSet[]) {
+  const scenarios = new MemoryScenarioRepository()
+  scenarios.items.set(scenarioId, approvedScenario())
+  const snapshots = new MemoryProjectionSnapshotRepository()
+  snapshots.items.set(
+    baseSnapshotId,
+    projectionSnapshot(organizationWithDepartment("Operações"))
+  )
+  const changeSets = new MemoryChangeSetRepository()
+  changeSets.items.push(...changeSetsInput)
+  const projectedOrganization = organizationWithDepartment("Operações")
+  const publishedAt = occurredAt
+  const publication = new MemoryPlanningPublicationRepository({
+    scenario: approvedScenario().publish(publishedAt),
+    snapshot: PublishedSnapshot.publish({
+      id: snapshotId,
+      companyId,
+      workspaceId,
+      sourceScenarioId: scenarioId,
+      version: 2,
+      publishedAt,
+    }),
+    organization: projectedOrganization,
+  })
+  const collector = new RecordingEventCollector()
+  const handler = new PublishScenarioHandler(
+    scenarios,
+    snapshots,
+    changeSets,
+    ScenarioExecutor.create(() => occurredAt.getTime()),
+    publication,
+    collector
+  )
+
+  return {
+    handler,
+    publication,
+    collector,
+    snapshots,
+  }
 }
 
 test("CreateWorkspaceHandler persiste bootstrap, coleta evento e retorna DTO", async () => {
@@ -236,9 +419,27 @@ test("PublishScenarioHandler delega publicação atômica e retorna DTOs", async
   const publication = new MemoryPlanningPublicationRepository({
     scenario,
     snapshot,
+    organization: organizationWithDepartment("Financeiro"),
   })
+  const scenarios = new MemoryScenarioRepository()
+  scenarios.items.set(scenarioId, approvedScenario())
+  const snapshots = new MemoryProjectionSnapshotRepository()
+  snapshots.items.set(
+    baseSnapshotId,
+    projectionSnapshot(organizationWithDepartment("Operações"))
+  )
+  const changeSets = new MemoryChangeSetRepository()
+  changeSets.items.push(changeSet(
+    "00000000-0000-4000-8000-000000000006",
+    "department.update",
+    { departmentId: "department-1", name: "Financeiro" }
+  ))
   const collector = new RecordingEventCollector()
   const handler = new PublishScenarioHandler(
+    scenarios,
+    snapshots,
+    changeSets,
+    ScenarioExecutor.create(() => occurredAt.getTime()),
     publication,
     collector
   )
@@ -254,16 +455,136 @@ test("PublishScenarioHandler delega publicação atômica e retorna DTOs", async
   assert.equal(dto.scenario.status, "published")
   assert.equal(dto.snapshot.version, 2)
   assert.equal(dto.snapshot.sourceScenarioId, scenarioId)
+  const canonicalChangeSets = [...changeSets.items]
   assert.deepEqual(publication.inputs, [{
     companyId,
     scenarioId,
     snapshotId,
     expectedVersion: 3,
     publishedAt,
+    organization: organizationWithDepartment("Financeiro"),
+    changeSets: canonicalChangeSets,
   }])
+  assert.deepEqual(changeSets.listInputs, [{ companyId, scenarioId }])
   assert.deepEqual(
     collector.events.map((event) => event.type),
     ["planning.scenario.published", "planning.snapshot.published"]
+  )
+})
+
+test("PublishScenarioHandler não publica projeção com Change Set unhandled", async () => {
+  const dependencies = publicationDependencies([
+    changeSet(
+      "00000000-0000-4000-8000-000000000006",
+      "employee.create",
+      { employeeId: "employee-1" }
+    ),
+  ])
+
+  await assert.rejects(
+    () => dependencies.handler.execute(publishCommand()),
+    (error) => {
+      assert.equal(error instanceof PlanningScenarioProjectionError, true)
+      assert.equal(
+        (error as PlanningScenarioProjectionError).failures[0]?.code,
+        "planning.change_set.not_executed"
+      )
+      return true
+    }
+  )
+  assert.equal(dependencies.publication.inputs.length, 0)
+  assert.deepEqual(dependencies.collector.events, [])
+})
+
+test("PublishScenarioHandler não publica quando a projeção falha", async () => {
+  const dependencies = publicationDependencies([
+    changeSet(
+      "00000000-0000-4000-8000-000000000006",
+      "department.update",
+      { departmentId: "missing", name: "Financeiro" }
+    ),
+  ])
+
+  await assert.rejects(
+    () => dependencies.handler.execute(publishCommand()),
+    PlanningScenarioProjectionError
+  )
+  assert.equal(dependencies.publication.inputs.length, 0)
+  assert.deepEqual(dependencies.collector.events, [])
+})
+
+test("PublishScenarioHandler rejeita snapshot legado sem organização", async () => {
+  const dependencies = publicationDependencies([])
+  dependencies.snapshots.items.set(baseSnapshotId, {
+    ...bootstrap().initialSnapshot.toContract(),
+  })
+
+  await assert.rejects(
+    () => dependencies.handler.execute(publishCommand()),
+    (error) => {
+      assert.equal(error instanceof PlanningScenarioProjectionError, true)
+      assert.equal(
+        (error as PlanningScenarioProjectionError).failures[0]?.code,
+        "planning.snapshot.organization_missing"
+      )
+      return true
+    }
+  )
+  assert.equal(dependencies.publication.inputs.length, 0)
+})
+
+test("PublishScenarioHandler projects hydrated changes canonically without mutating the snapshot", async () => {
+  const baseOrganization = organizationWithPosition()
+  const dependencies = publicationDependencies([
+    changeSet(
+      "00000000-0000-4000-8000-000000000007",
+      "department.update",
+      { departmentId: "department-1", name: "Operações Globais" },
+      2
+    ),
+    changeSet(
+      "00000000-0000-4000-8000-000000000006",
+      "position.move",
+      { positionId: "position-1", departmentId: "department-2" },
+      1
+    ),
+  ])
+  dependencies.snapshots.items.set(
+    baseSnapshotId,
+    projectionSnapshot(baseOrganization)
+  )
+  const original = structuredClone(baseOrganization)
+
+  await dependencies.handler.execute(publishCommand())
+
+  const persisted = dependencies.publication.inputs[0]?.organization
+  assert.equal(persisted?.positions[0]?.departmentId, "department-2")
+  assert.equal(persisted?.departments[0]?.name, "Operações Globais")
+  assert.deepEqual(baseOrganization, original)
+
+  const second = publicationDependencies([
+    changeSet(
+      "00000000-0000-4000-8000-000000000007",
+      "department.update",
+      { departmentId: "department-1", name: "Operações Globais" },
+      2
+    ),
+    changeSet(
+      "00000000-0000-4000-8000-000000000006",
+      "position.move",
+      { positionId: "position-1", departmentId: "department-2" },
+      1
+    ),
+  ])
+  second.snapshots.items.set(
+    baseSnapshotId,
+    projectionSnapshot(baseOrganization)
+  )
+  await second.handler.execute(publishCommand())
+
+  assert.deepEqual(
+    second.publication.inputs[0]?.organization,
+    persisted
   )
 })
 

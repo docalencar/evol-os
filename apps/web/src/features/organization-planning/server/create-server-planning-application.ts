@@ -9,10 +9,12 @@ import {
   PublishScenarioHandler,
   SimplePlanningUnitOfWork,
 } from "../application"
+import { ScenarioExecutor } from "../projection"
 import { createScenarioRepository } from "../repositories/scenario-repository"
 import { createSnapshotRepository } from "../repositories/snapshot-repository"
 import { createWorkspaceRepository } from "../repositories/workspace-repository"
 import { createPlanningPublicationRepository } from "../repositories/planning-publication-repository"
+import { createPlanningChangeSetRepository } from "../repositories/planning-change-set-repository"
 
 export type ServerPlanningApplication = Readonly<{
   createWorkspace: CreateWorkspaceHandler
@@ -27,11 +29,13 @@ export async function createServerPlanningApplication(): Promise<ServerPlanningA
     workspaces,
     scenarios,
     snapshots,
+    changeSets,
     publication,
   ] = await Promise.all([
     createWorkspaceRepository(),
     createScenarioRepository(),
     createSnapshotRepository(),
+    createPlanningChangeSetRepository(),
     createPlanningPublicationRepository(),
   ])
 
@@ -76,6 +80,10 @@ export async function createServerPlanningApplication(): Promise<ServerPlanningA
     ),
 
     publishScenario: new PublishScenarioHandler(
+      scenarios,
+      snapshots,
+      changeSets,
+      ScenarioExecutor.create(),
       publication,
       eventCollector
     ),

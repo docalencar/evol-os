@@ -3,10 +3,7 @@
 import { revalidatePath } from "next/cache"
 
 import type { ActionResult } from "@/lib/actions"
-import {
-  failureResult,
-  successResult,
-} from "@/lib/actions"
+import { successResult } from "@/lib/actions"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 import {
@@ -22,7 +19,7 @@ export type CreateWorkspaceActionInput = Readonly<{
 
 export async function createWorkspaceAction(
   input: CreateWorkspaceActionInput
-): Promise<ActionResult<WorkspaceDTO | void>> {
+): Promise<ActionResult<WorkspaceDTO>> {
   try {
     const { companyId } = await getCurrentCompanyContext()
     const command = createWorkspaceCommandSchema.safeParse({
@@ -32,10 +29,12 @@ export async function createWorkspaceAction(
     })
 
     if (!command.success) {
-      return failureResult(
-        command.error.issues[0]?.message ??
-          "Dados inválidos para criar o workspace."
-      )
+      return {
+        success: false,
+        message:
+          command.error.issues[0]?.message ??
+          "Dados inválidos para criar o workspace.",
+      }
     }
 
     const application = await createServerPlanningApplication()
@@ -52,10 +51,9 @@ export async function createWorkspaceAction(
   } catch (error) {
     console.error("Erro ao criar workspace de planejamento:", error)
 
-    return failureResult(
-      error instanceof Error
-        ? error.message
-        : "Não foi possível criar o workspace."
-    )
+    return {
+      success: false,
+      message: "Não foi possível criar o workspace.",
+    }
   }
 }

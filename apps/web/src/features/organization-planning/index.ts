@@ -3,8 +3,6 @@ export { createScenario } from "./services/create-scenario"
 export { archiveScenario } from "./services/archive-scenario"
 export { publishScenario } from "./services/publish-scenario"
 
-export * from "./actions"
-
 export { getScenario } from "./queries/get-scenario"
 export { listScenarios } from "./queries/list-scenarios"
 export { getSnapshot } from "./queries/get-snapshot"

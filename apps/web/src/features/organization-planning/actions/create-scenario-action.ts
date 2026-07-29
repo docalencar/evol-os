@@ -3,10 +3,7 @@
 import { revalidatePath } from "next/cache"
 
 import type { ActionResult } from "@/lib/actions"
-import {
-  failureResult,
-  successResult,
-} from "@/lib/actions"
+import { successResult } from "@/lib/actions"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 import {
@@ -25,7 +22,7 @@ export type CreateScenarioActionInput = Readonly<{
 
 export async function createScenarioAction(
   input: CreateScenarioActionInput
-): Promise<ActionResult<ScenarioDTO | void>> {
+): Promise<ActionResult<ScenarioDTO>> {
   try {
     const { companyId } = await getCurrentCompanyContext()
     const command = createScenarioCommandSchema.safeParse({
@@ -35,10 +32,12 @@ export async function createScenarioAction(
     })
 
     if (!command.success) {
-      return failureResult(
-        command.error.issues[0]?.message ??
-          "Dados inválidos para criar o cenário."
-      )
+      return {
+        success: false,
+        message:
+          command.error.issues[0]?.message ??
+          "Dados inválidos para criar o cenário.",
+      }
     }
 
     const application = await createServerPlanningApplication()
@@ -55,10 +54,9 @@ export async function createScenarioAction(
   } catch (error) {
     console.error("Erro ao criar cenário de planejamento:", error)
 
-    return failureResult(
-      error instanceof Error
-        ? error.message
-        : "Não foi possível criar o cenário."
-    )
+    return {
+      success: false,
+      message: "Não foi possível criar o cenário.",
+    }
   }
 }

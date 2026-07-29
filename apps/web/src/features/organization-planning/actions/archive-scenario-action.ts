@@ -3,10 +3,7 @@
 import { revalidatePath } from "next/cache"
 
 import type { ActionResult } from "@/lib/actions"
-import {
-  failureResult,
-  successResult,
-} from "@/lib/actions"
+import { successResult } from "@/lib/actions"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 import {
@@ -22,7 +19,7 @@ export type ArchiveScenarioActionInput = Readonly<{
 
 export async function archiveScenarioAction(
   input: ArchiveScenarioActionInput
-): Promise<ActionResult<ScenarioDTO | void>> {
+): Promise<ActionResult<ScenarioDTO>> {
   try {
     const { companyId } = await getCurrentCompanyContext()
     const command = archiveScenarioCommandSchema.safeParse({
@@ -32,10 +29,12 @@ export async function archiveScenarioAction(
     })
 
     if (!command.success) {
-      return failureResult(
-        command.error.issues[0]?.message ??
-          "Dados inválidos para arquivar o cenário."
-      )
+      return {
+        success: false,
+        message:
+          command.error.issues[0]?.message ??
+          "Dados inválidos para arquivar o cenário.",
+      }
     }
 
     const application = await createServerPlanningApplication()
@@ -52,10 +51,9 @@ export async function archiveScenarioAction(
   } catch (error) {
     console.error("Erro ao arquivar cenário de planejamento:", error)
 
-    return failureResult(
-      error instanceof Error
-        ? error.message
-        : "Não foi possível arquivar o cenário."
-    )
+    return {
+      success: false,
+      message: "Não foi possível arquivar o cenário.",
+    }
   }
 }

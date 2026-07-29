@@ -9,6 +9,8 @@ export { getSnapshot } from "./queries/get-snapshot"
 export { listSnapshots } from "./queries/list-snapshots"
 
 export * from "./planning-insights"
+export * from "./planning-dashboard"
+export * from "./presentation"
 export * from "./projection/comparison"
 
 export type { PlanningScenario } from "./domain/planning-scenario"

@@ -1,9 +1,9 @@
 import type { ScenarioComparisonResult } from "../../projection/comparison"
-import { calculateOrganizationalImpact, calculatePlanningInsightsKpis } from "../calculators"
-import type { PlanningInsights } from "../contracts"
-import { evaluatePlanningOpportunities, evaluatePlanningRecommendations } from "../rules"
-import { createPlanningInsightsSummary } from "../summary"
-import { evaluatePlanningWarnings } from "../warnings"
+import { calculateOrganizationalImpact, calculatePlanningInsightsKpis } from "../calculators/planning-insights-calculator"
+import type { PlanningInsights } from "../contracts/planning-insights-contracts"
+import { evaluatePlanningOpportunities, evaluatePlanningRecommendations } from "../rules/planning-insight-rules"
+import { createPlanningInsightsSummary } from "../summary/planning-insights-summary"
+import { evaluatePlanningWarnings } from "../warnings/planning-warning-rules"
 
 export class PlanningInsightsEngine {
   static create(): PlanningInsightsEngine {

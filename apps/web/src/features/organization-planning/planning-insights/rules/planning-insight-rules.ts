@@ -1,4 +1,4 @@
-import type { PlanningInsightItem, PlanningInsightsKpis, PlanningOrganizationalImpact, PlanningWarning } from "../contracts"
+import type { PlanningInsightItem, PlanningInsightsKpis, PlanningOrganizationalImpact, PlanningWarning } from "../contracts/planning-insights-contracts"
 
 export function evaluatePlanningOpportunities(kpis: PlanningInsightsKpis): readonly PlanningInsightItem[] {
   const opportunities: PlanningInsightItem[] = []

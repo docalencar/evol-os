@@ -1,5 +1,5 @@
 import type { ScenarioComparisonResult } from "../../projection/comparison"
-import type { PlanningInsightsKpis, PlanningOrganizationalImpact } from "../contracts"
+import type { PlanningInsightsKpis, PlanningOrganizationalImpact } from "../contracts/planning-insights-contracts"
 
 export function calculatePlanningInsightsKpis(comparison: ScenarioComparisonResult): PlanningInsightsKpis {
   return Object.freeze({

@@ -6,7 +6,7 @@ import { PublishedSnapshot } from "../published-snapshot"
 import { archiveScenario } from "../../services/archive-scenario"
 import { createScenario } from "../../services/create-scenario"
 import { createWorkspace } from "../../services/create-workspace"
-import { incrementVersion } from "../../services/increment-version"
+import { incrementVersion } from "../planning-domain-support"
 import { publishScenario } from "../../services/publish-scenario"
 
 const companyId = "00000000-0000-4000-8000-000000000001"

@@ -1,5 +1,5 @@
 import type { ScenarioComparisonResult } from "../../projection/comparison"
-import type { PlanningOrganizationalImpact, PlanningRiskIndicator, PlanningWarning } from "../contracts"
+import type { PlanningOrganizationalImpact, PlanningRiskIndicator, PlanningWarning } from "../contracts/planning-insights-contracts"
 
 const HEADCOUNT_REDUCTION_PERCENT = 25
 const TERMINATION_PERCENT = 10

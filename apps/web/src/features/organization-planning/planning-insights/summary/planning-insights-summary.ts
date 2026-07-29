@@ -1,5 +1,5 @@
 import type { ScenarioComparisonResult } from "../../projection/comparison"
-import type { PlanningInsightsSummary, PlanningInsightSeverity, PlanningWarning } from "../contracts"
+import type { PlanningInsightsSummary, PlanningInsightSeverity, PlanningWarning } from "../contracts/planning-insights-contracts"
 
 const SEVERITY_ORDER: Record<PlanningInsightSeverity, number> = {
   low: 0,

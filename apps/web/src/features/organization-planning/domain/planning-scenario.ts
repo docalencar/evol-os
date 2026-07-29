@@ -1,13 +1,12 @@
 import type { PlanningDomainEvent, PlanningDomainEventType } from "../events/planning-domain-event"
 import { createPlanningDomainEvent } from "../events/planning-domain-event"
-import { incrementVersion } from "../services/increment-version"
 import {
   PLANNING_SCENARIO_STATUSES,
   type PlanningScenarioContract,
   type PlanningScenarioStatus,
 } from "../types/planning-contracts"
 import { assertPlanningDomain } from "./planning-domain-error"
-import { requireDate, requireText, requireVersion } from "./planning-domain-support"
+import { incrementVersion, requireDate, requireText, requireVersion } from "./planning-domain-support"
 
 type CreateScenarioInput = {
   id: string

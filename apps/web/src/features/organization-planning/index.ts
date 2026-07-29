@@ -9,6 +9,7 @@ export { getSnapshot } from "./queries/get-snapshot"
 export { listSnapshots } from "./queries/list-snapshots"
 
 export * from "./application"
+export * from "./planning-insights"
 export * from "./projection"
 export * from "./server"
 

@@ -83,6 +83,30 @@ export class PlanningScenario {
     )
   }
 
+  static restorePublished(input: PlanningScenarioContract) {
+    const scenario = PlanningScenario.restore(input)
+
+    assertPlanningDomain(
+      scenario.status === "published",
+      "invalid_input",
+      "A reconstrução da publicação exige um cenário publicado."
+    )
+
+    return new PlanningScenario(scenario.props, [
+      createPlanningDomainEvent({
+        type: "planning.scenario.published",
+        companyId: scenario.companyId,
+        aggregateId: scenario.id,
+        aggregateVersion: scenario.version,
+        occurredAt: scenario.updatedAt,
+        payload: {
+          previousStatus: "approved",
+          status: "published",
+        },
+      }),
+    ])
+  }
+
   get id() { return this.props.id }
   get companyId() { return this.props.companyId }
   get workspaceId() { return this.props.workspaceId }

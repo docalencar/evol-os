@@ -9,3 +9,8 @@ export {
 export type {
   SnapshotVersionAllocator,
 } from "./snapshot-version-allocator"
+export type {
+  PlanningPublicationRepository,
+  PlanningPublicationResult,
+  PublishPlanningScenarioInput,
+} from "./planning-publication-repository"

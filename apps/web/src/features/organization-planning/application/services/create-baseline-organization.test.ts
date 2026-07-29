@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import test from "node:test"
 
 import { createBaselineOrganization } from "./create-baseline-organization"
+import { parseProjectedOrganization } from "../../repositories/projected-organization-record"
 
 test("creates a complete immutable Baseline organization", () => {
   const source = {
@@ -45,7 +46,11 @@ test("creates a complete immutable Baseline organization", () => {
         active: false,
       },
     ],
-    employees: [{ id: "employee-1", positionId: "position-1" }],
+    employees: [{
+      id: "employee-1",
+      positionId: "position-1",
+      teamId: "team-1",
+    }],
   }
 
   const result = createBaselineOrganization(source)
@@ -57,6 +62,13 @@ test("creates a complete immutable Baseline organization", () => {
     ["active", "archived"]
   )
   assert.deepEqual(result.vacancies, [])
+  assert.deepEqual(result.employees, [{
+    id: "employee-1",
+    positionId: "position-1",
+    teamId: "team-1",
+    departmentId: "department-1",
+    status: "active",
+  }])
   assert.deepEqual(result.metrics, {
     headcount: 1,
     vacancies: 0,
@@ -66,4 +78,5 @@ test("creates a complete immutable Baseline organization", () => {
   })
   assert.equal(Object.isFrozen(result), true)
   assert.equal(Object.isFrozen(result.departments), true)
+  assert.deepEqual(parseProjectedOrganization(result), result)
 })

@@ -32,6 +32,7 @@ export type PlanningOperationalPosition = Readonly<{
 export type PlanningOperationalEmployee = Readonly<{
   id: string
   positionId: string | null
+  teamId: string | null
 }>
 
 export type PlanningOperationalOrganization = Readonly<{

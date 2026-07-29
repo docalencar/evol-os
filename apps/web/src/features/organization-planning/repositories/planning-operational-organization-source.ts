@@ -55,6 +55,7 @@ const employeeRow = z.object({
   id,
   company_id: id,
   position_id: nullableId,
+  team_id: nullableId,
 })
 
 export async function createPlanningOperationalOrganizationSource(): Promise<PlanningOperationalOrganizationSource> {
@@ -145,6 +146,7 @@ function mapOperationalOrganization(
     return Object.freeze({
       id: value.id,
       positionId: value.position_id,
+      teamId: value.team_id,
     })
   })
 

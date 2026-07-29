@@ -9,6 +9,7 @@ import { ArchiveScenarioHandler } from "../handlers/archive-scenario-handler"
 import { CreateScenarioHandler } from "../handlers/create-scenario-handler"
 import { CreateWorkspaceHandler } from "../handlers/create-workspace-handler"
 import { PublishScenarioHandler } from "../handlers/publish-scenario-handler"
+import { createBaselineOrganization } from "../services/create-baseline-organization"
 import { PlanningScenarioProjectionError } from "../handlers/planning-handler-support"
 import { PlanningDomainEventCollector } from "../planning-domain-event-collector"
 import type {
@@ -250,6 +251,7 @@ function operationalOrganization(): PlanningOperationalOrganization {
     employees: Object.freeze([{
       id: "employee-1",
       positionId: "position-1",
+      teamId: "team-1",
     }]),
   })
 }
@@ -311,6 +313,46 @@ function organizationWithPosition(): ProjectedOrganization {
       ...createEmptyProjectedOrganization().metrics,
       departments: 2,
       positions: 1,
+    },
+  })
+}
+
+function baselineWithEmployee(): ProjectedOrganization {
+  const base = createBaselineOrganization(operationalOrganization())
+  return freezeProjectedOrganization({
+    ...base,
+    departments: [...base.departments, {
+      id: "department-2",
+      name: "Financeiro",
+      code: null,
+      description: null,
+      parentDepartmentId: null,
+      status: "active",
+    }],
+    teams: [...base.teams, {
+      id: "team-2",
+      name: "Controladoria",
+      code: null,
+      description: null,
+      departmentId: "department-2",
+      status: "active",
+    }],
+    positions: [...base.positions, {
+      id: "position-2",
+      name: "Controller",
+      description: null,
+      departmentId: "department-2",
+      hierarchicalLevel: "manager",
+      weeklyWorkloadHours: 40,
+      workModel: "hybrid",
+      employmentType: "clt",
+      travelRequirement: "none",
+      status: "active",
+    }],
+    metrics: {
+      ...base.metrics,
+      departments: 2,
+      positions: 2,
     },
   })
 }
@@ -456,9 +498,12 @@ test("CreateScenarioHandler carrega relações, persiste e retorna ScenarioDTO",
   const snapshots = new MemoryProjectionSnapshotRepository()
   const foundation = bootstrap()
   workspaces.items.set(workspaceId, foundation.workspace)
+  const baselineOrganization = createBaselineOrganization(
+    operationalOrganization()
+  )
   snapshots.items.set(
     baseSnapshotId,
-    projectionSnapshot(organizationWithDepartment("Operações"))
+    projectionSnapshot(baselineOrganization)
   )
   const collector = new RecordingEventCollector()
   const unitOfWork = new RecordingUnitOfWork()
@@ -486,6 +531,10 @@ test("CreateScenarioHandler carrega relações, persiste e retorna ScenarioDTO",
   assert.equal("domainEvents" in dto, false)
   assert.equal(collector.events[0]?.type, "planning.scenario.created")
   assert.equal(unitOfWork.commits, 1)
+  assert.deepEqual(
+    snapshots.items.get(baseSnapshotId)?.organization?.employees,
+    baselineOrganization.employees
+  )
 })
 
 test("CreateScenarioHandler rejects a Workspace without a Baseline tree", async () => {
@@ -590,8 +639,8 @@ test("PublishScenarioHandler não publica projeção com Change Set unhandled", 
   const dependencies = publicationDependencies([
     changeSet(
       "00000000-0000-4000-8000-000000000006",
-      "employee.create",
-      { employeeId: "employee-1" }
+      "vacancy.create",
+      { vacancyId: "vacancy-1" }
     ),
   ])
 
@@ -608,6 +657,106 @@ test("PublishScenarioHandler não publica projeção com Change Set unhandled", 
   )
   assert.equal(dependencies.publication.inputs.length, 0)
   assert.deepEqual(dependencies.collector.events, [])
+})
+
+test("PublishScenarioHandler persists an Employee projection from the hydrated Snapshot", async () => {
+  const dependencies = publicationDependencies([
+    changeSet(
+      "00000000-0000-4000-8000-000000000006",
+      "employee.create",
+      {
+        employeeId: "employee-1",
+        positionId: "position-1",
+        departmentId: "department-1",
+      }
+    ),
+  ])
+  const baseOrganization = organizationWithPosition()
+  dependencies.snapshots.items.set(
+    baseSnapshotId,
+    projectionSnapshot(baseOrganization)
+  )
+
+  await dependencies.handler.execute(publishCommand())
+
+  assert.deepEqual(
+    dependencies.publication.inputs[0]?.organization.employees,
+    [{
+      id: "employee-1",
+      positionId: "position-1",
+      departmentId: "department-1",
+      teamId: null,
+      status: "active",
+    }]
+  )
+  assert.equal(
+    dependencies.publication.inputs[0]?.organization.metrics.headcount,
+    1
+  )
+  assert.deepEqual(baseOrganization.employees, [])
+})
+
+test("PublishScenarioHandler transfers an operational Baseline Employee", async () => {
+  const dependencies = publicationDependencies([
+    changeSet(
+      "00000000-0000-4000-8000-000000000006",
+      "employee.transfer",
+      {
+        employeeId: "employee-1",
+        positionId: "position-2",
+        departmentId: "department-2",
+        teamId: "team-2",
+      }
+    ),
+  ])
+  const baseline = baselineWithEmployee()
+  const original = structuredClone(baseline)
+  dependencies.snapshots.items.set(
+    baseSnapshotId,
+    projectionSnapshot(baseline)
+  )
+
+  await dependencies.handler.execute(publishCommand())
+
+  assert.deepEqual(
+    dependencies.publication.inputs[0]?.organization.employees,
+    [{
+      id: "employee-1",
+      positionId: "position-2",
+      teamId: "team-2",
+      departmentId: "department-2",
+      status: "active",
+    }]
+  )
+  assert.equal(
+    dependencies.publication.inputs[0]?.organization.metrics.headcount,
+    1
+  )
+  assert.deepEqual(baseline, original)
+})
+
+test("PublishScenarioHandler terminates a Baseline Employee without losing history", async () => {
+  const dependencies = publicationDependencies([
+    changeSet(
+      "00000000-0000-4000-8000-000000000006",
+      "employee.terminate",
+      { employeeId: "employee-1" }
+    ),
+  ])
+  const baseline = baselineWithEmployee()
+  dependencies.snapshots.items.set(
+    baseSnapshotId,
+    projectionSnapshot(baseline)
+  )
+
+  const result = await dependencies.handler.execute(publishCommand())
+
+  const projected = dependencies.publication.inputs[0]?.organization
+  assert.equal(projected?.employees.length, 1)
+  assert.equal(projected?.employees[0]?.status, "archived")
+  assert.equal(projected?.metrics.headcount, 0)
+  assert.equal(result.snapshot.kind, "projection")
+  assert.equal(baseline.employees[0]?.status, "active")
 })
 
 test("PublishScenarioHandler não publica quando a projeção falha", async () => {

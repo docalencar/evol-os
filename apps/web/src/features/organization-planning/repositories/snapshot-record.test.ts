@@ -62,6 +62,53 @@ test("rejects an invalid persisted organization", () => {
   )
 })
 
+test("round-trips a projected Snapshot with an archived Employee", () => {
+  const organization = organizationWithEmployee("archived")
+  const snapshot = mapProjectionSnapshotRow({
+    ...legacySnapshotRow(),
+    source_scenario_id: "scenario-1",
+    version: 2,
+    kind: "projection",
+    organization,
+  })
+
+  assert.equal(snapshot.kind, "projection")
+  assert.deepEqual(snapshot.organization?.employees, organization.employees)
+  assert.equal(snapshot.organization?.metrics.headcount, 0)
+  assert.notEqual(snapshot.organization, organization)
+})
+
+test("strictly rejects invalid Employee fields in persisted organizations", () => {
+  const organization = organizationWithEmployee("active")
+  assert.throws(() => mapProjectionSnapshotRow({
+    ...legacySnapshotRow(),
+    organization: {
+      ...organization,
+      employees: [{ ...organization.employees[0], status: "terminated" }],
+    },
+  }), /PLANNING_PROJECTED_ORGANIZATION_INVALID_DATA/)
+})
+
+function organizationWithEmployee(status: "active" | "archived") {
+  return {
+    departments: [], teams: [], positions: [], vacancies: [],
+    employees: [{
+      id: "employee-1",
+      positionId: null,
+      departmentId: null,
+      teamId: null,
+      status,
+    }],
+    metrics: {
+      headcount: status === "active" ? 1 : 0,
+      vacancies: 0,
+      salaryMass: 0,
+      departments: 0,
+      positions: 0,
+    },
+  }
+}
+
 function legacySnapshotRow() {
   return {
     id: "snapshot-1",

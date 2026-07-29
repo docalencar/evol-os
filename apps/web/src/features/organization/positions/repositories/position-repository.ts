@@ -1,4 +1,5 @@
 import { createServerDatabase } from "@/lib/database/server-database"
+import { scopeCompany } from "@/lib/supabase/scoped-query"
 
 import type {
   PositionEmploymentType,
@@ -43,7 +44,7 @@ export async function createPositionRepository() {
       return supabase
         .from("positions")
         .select("*")
-        .eq("company_id", companyId)
+        .eq(...scopeCompany(companyId))
         .is("deleted_at", null)
         .order("name", { ascending: true })
     },
@@ -52,7 +53,7 @@ export async function createPositionRepository() {
       return supabase
         .from("positions")
         .select("*")
-        .eq("company_id", companyId)
+        .eq(...scopeCompany(companyId))
         .eq("id", positionId)
         .is("deleted_at", null)
         .single()
@@ -92,7 +93,7 @@ export async function createPositionRepository() {
           travel_requirement: data.travelRequirement,
           updated_at: new Date().toISOString(),
         })
-        .eq("company_id", data.companyId)
+        .eq(...scopeCompany(data.companyId))
         .eq("id", data.positionId)
         .is("deleted_at", null)
     },
@@ -104,7 +105,7 @@ export async function createPositionRepository() {
           deleted_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
-        .eq("company_id", companyId)
+        .eq(...scopeCompany(companyId))
         .eq("id", positionId)
         .is("deleted_at", null)
     },

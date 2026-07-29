@@ -3,6 +3,8 @@ export type EmployeeNextActionType =
   | "schedule-one-on-one"
   | "request-feedback"
   | "start-assessment"
+  | "develop-competency"
+  | "review-development-plan"
 
 export type EmployeeNextAction = {
   id: string

@@ -7,6 +7,7 @@ export type EmployeeProfileSummary = {
 
 export type EmployeeAssessmentSummary = {
   completedAssessments: number
+  pendingAssessments: number
   averageScore: number | null
   latestAssessmentAt: string | null
 }
@@ -14,6 +15,8 @@ export type EmployeeAssessmentSummary = {
 export type EmployeeDevelopmentSummary = {
   activePlans: number
   completedPlans: number
+  priorityPlan: string | null
+  nextDueDate: string | null
 }
 
 export type EmployeeCompetencySummary = {
@@ -28,7 +31,7 @@ export type EmployeeTimelineSummary = {
 export type EmployeeInsightSummary = {
   strengths: string[]
   opportunities: string[]
-  nextActions: string[]
+  nextActions: import("./employee-next-action").EmployeeNextAction[]
 }
 
 export type EmployeeIntelligence = {

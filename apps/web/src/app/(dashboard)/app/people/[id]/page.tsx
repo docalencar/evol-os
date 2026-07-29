@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation"
 
 import {
-  DashboardCard,
   DashboardSection,
   InfoCard,
 } from "@/components/dashboard"
+
+import { getEmployeeAssessmentSummary } from "@/features/assessments"
 
 import {
   getCompetencies,
@@ -18,6 +19,7 @@ import {
 import {
   DevelopmentPlanAiSuggestionDialog,
   getDevelopmentPlanAiContext,
+  getDevelopmentPlansByEmployee,
 } from "@/features/development"
 
 import {
@@ -31,6 +33,12 @@ import {
 import {
   getEmployeeById,
   getEmployees,
+  createEmployeeIntelligence,
+  presentEmployeeIntelligence,
+  EmployeeAssessmentsSummaryCard,
+  EmployeeCompetenciesSummaryCard,
+  EmployeeDevelopmentSummaryCard,
+  EmployeeNextActionsCard,
   presentEmployeeWorkspace,
   type Employee,
 } from "@/features/people"
@@ -116,6 +124,8 @@ export default async function EmployeeProfilePage({
     positions,
     employees,
     employeeTimeline,
+    assessmentSummary,
+    developmentPlans,
   ] = await Promise.all([
     getEmployeeById(
       companyId,
@@ -153,6 +163,10 @@ export default async function EmployeeProfilePage({
       employeeId: id,
       limit: 20,
     }),
+
+    getEmployeeAssessmentSummary(companyId, id),
+
+    getDevelopmentPlansByEmployee(companyId, id),
   ])
 
   if (!employee) {
@@ -208,6 +222,16 @@ export default async function EmployeeProfilePage({
     createEmployeeInsights(
       competencyGaps
     )
+
+  const employeeIntelligence = presentEmployeeIntelligence(
+    createEmployeeIntelligence(employee, {
+      assessments: assessmentSummary,
+      developmentPlans,
+      employeeCompetencies: employeeCompetencies ?? [],
+      competencies,
+      competencyGaps,
+    })
+  )
 
   const developmentPlanAiContext =
     getDevelopmentPlanAiContext({
@@ -306,6 +330,23 @@ export default async function EmployeeProfilePage({
         />
       </DashboardSection>
 
+      <DashboardSection title="Acompanhamento do colaborador">
+        <div className="grid gap-4 xl:grid-cols-2">
+          <EmployeeAssessmentsSummaryCard
+            {...employeeIntelligence.assessments}
+          />
+          <EmployeeDevelopmentSummaryCard
+            {...employeeIntelligence.development}
+          />
+          <EmployeeCompetenciesSummaryCard
+            {...employeeIntelligence.competencies}
+          />
+          <EmployeeNextActionsCard
+            actions={employeeIntelligence.insights.nextActions}
+          />
+        </div>
+      </DashboardSection>
+
       <DashboardSection title="Informações principais">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <InfoCard
@@ -387,21 +428,6 @@ export default async function EmployeeProfilePage({
         }
       />
 
-      <DashboardSection title="Próximos módulos">
-        <DashboardCard>
-          <div className="space-y-3 text-sm text-slate-600">
-            <p>
-              ⏳ Avaliações serão
-              adicionadas em breve.
-            </p>
-
-            <p>
-              ⏳ Feedbacks serão
-              adicionados em breve.
-            </p>
-          </div>
-        </DashboardCard>
-      </DashboardSection>
     </EmployeeProfileLayout>
   )
 }

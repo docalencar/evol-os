@@ -20,6 +20,11 @@ export function EmployeeNextActionsCard({
       </div>
 
       <div className="space-y-3">
+        {actions.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Nenhuma ação prioritária identificada neste momento.
+          </p>
+        ) : null}
         {actions.map((action) => (
           <div
             key={action.id}

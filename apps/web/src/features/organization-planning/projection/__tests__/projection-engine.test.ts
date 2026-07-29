@@ -13,6 +13,13 @@ import type {
   PlanningScenarioContract,
   PublishedSnapshotContract,
 } from "../../types/planning-contracts"
+import type {
+  ProjectedDepartment,
+  ProjectedOrganization,
+  ProjectedPosition,
+  ProjectedTeam,
+  ProjectionSnapshot,
+} from "../contracts"
 
 const snapshot: PublishedSnapshotContract = Object.freeze({
   id: "snapshot-1",
@@ -64,6 +71,176 @@ test("ProjectionContext starts with an immutable empty organization", () => {
   assert.throws(() => {
     ;(context.organization.departments as { id: string }[]).push({ id: "department-1" })
   }, TypeError)
+})
+
+test("ProjectionContext hydrates every collection from the snapshot without mutating it", () => {
+  const organization = snapshotOrganization({
+    departments: [projectedDepartment()],
+    teams: [projectedTeam()],
+    positions: [projectedPosition()],
+    employees: [{ id: "employee-1", positionId: "position-1" }],
+    vacancies: [{ id: "vacancy-1", positionId: "position-1" }],
+  })
+  const sourceDepartments = organization.departments
+  const hydratedSnapshot = projectionSnapshot(organization)
+  const context = ProjectionContext.create(
+    hydratedSnapshot,
+    scenario,
+    []
+  )
+
+  assert.deepEqual(context.organization, organization)
+  assert.notEqual(
+    context.organization.departments,
+    sourceDepartments
+  )
+  assert.equal(Object.isFrozen(context.organization), true)
+  assert.equal(
+    Object.isFrozen(context.organization.employees[0]),
+    true
+  )
+  assert.deepEqual(hydratedSnapshot.organization, organization)
+})
+
+test("ProjectionEngine updates a department hydrated from the snapshot", () => {
+  const hydratedSnapshot = projectionSnapshot(
+    snapshotOrganization({
+      departments: [projectedDepartment()],
+    })
+  )
+  const result = ProjectionEngine.create().project({
+    snapshot: hydratedSnapshot,
+    scenario,
+    changeSets: [
+      changeSet("change-department-update", 1, "department.update", {
+        departmentId: "department-1",
+        name: "Finanças",
+      }),
+    ],
+  })
+
+  assert.equal(result.isValid, true)
+  assert.equal(result.organization.departments[0]?.name, "Finanças")
+  assert.equal(
+    hydratedSnapshot.organization?.departments[0]?.name,
+    "Financeiro"
+  )
+})
+
+test("ProjectionEngine archives a department hydrated from the snapshot", () => {
+  const hydratedSnapshot = projectionSnapshot(
+    snapshotOrganization({
+      departments: [projectedDepartment()],
+    })
+  )
+  const result = ProjectionEngine.create().project({
+    snapshot: hydratedSnapshot,
+    scenario,
+    changeSets: [
+      changeSet("change-department-archive", 1, "department.archive", {
+        departmentId: "department-1",
+      }),
+    ],
+  })
+
+  assert.equal(result.isValid, true)
+  assert.equal(
+    result.organization.departments[0]?.status,
+    "archived"
+  )
+  assert.equal(
+    hydratedSnapshot.organization?.departments[0]?.status,
+    "active"
+  )
+})
+
+test("ProjectionEngine updates a team hydrated from the snapshot", () => {
+  const hydratedSnapshot = projectionSnapshot(
+    snapshotOrganization({
+      departments: [projectedDepartment()],
+      teams: [projectedTeam()],
+    })
+  )
+  const result = ProjectionEngine.create().project({
+    snapshot: hydratedSnapshot,
+    scenario,
+    changeSets: [
+      changeSet("change-team-update", 1, "team.update", {
+        teamId: "team-1",
+        name: "Controladoria",
+      }),
+    ],
+  })
+
+  assert.equal(result.isValid, true)
+  assert.equal(result.organization.teams[0]?.name, "Controladoria")
+  assert.equal(
+    hydratedSnapshot.organization?.teams[0]?.name,
+    "Contas a pagar"
+  )
+})
+
+test("ProjectionEngine updates a position hydrated from the snapshot", () => {
+  const hydratedSnapshot = projectionSnapshot(
+    snapshotOrganization({
+      departments: [projectedDepartment()],
+      positions: [projectedPosition()],
+    })
+  )
+  const result = ProjectionEngine.create().project({
+    snapshot: hydratedSnapshot,
+    scenario,
+    changeSets: [
+      changeSet("change-position-update", 1, "position.update", {
+        positionId: "position-1",
+        name: "Especialista financeiro",
+      }),
+    ],
+  })
+
+  assert.equal(result.isValid, true)
+  assert.equal(
+    result.organization.positions[0]?.name,
+    "Especialista financeiro"
+  )
+  assert.equal(
+    hydratedSnapshot.organization?.positions[0]?.name,
+    "Analista financeiro"
+  )
+})
+
+test("ProjectionEngine combines hydrated and newly created entities deterministically", () => {
+  const hydratedSnapshot = projectionSnapshot(
+    snapshotOrganization({
+      departments: [projectedDepartment()],
+    })
+  )
+  const input = {
+    snapshot: hydratedSnapshot,
+    scenario,
+    changeSets: [
+      changeSet("change-new-department", 1, "department.create", {
+        departmentId: "department-2",
+        name: "Pessoas",
+      }),
+    ],
+  }
+
+  const first = ProjectionEngine.create().project(input)
+  const second = ProjectionEngine.create().project(input)
+
+  assert.deepEqual(first, second)
+  assert.deepEqual(
+    first.organization.departments.map((department) => department.id),
+    ["department-1", "department-2"]
+  )
+  assert.equal(Object.isFrozen(first.organization), true)
+  assert.deepEqual(
+    hydratedSnapshot.organization?.departments.map(
+      (department) => department.id
+    ),
+    ["department-1"]
+  )
 })
 
 test("Pipeline discovers the executor and records its execution", () => {
@@ -904,4 +1081,79 @@ function organizationalChangeSet(
     payload: Object.freeze({ ...payload }),
     version,
   })
+}
+
+function projectionSnapshot(
+  organization: ProjectedOrganization
+): ProjectionSnapshot {
+  return {
+    ...snapshot,
+    organization,
+  }
+}
+
+function snapshotOrganization(
+  overrides: Partial<ProjectedOrganization> = {}
+): ProjectedOrganization {
+  return {
+    departments: [],
+    teams: [],
+    positions: [],
+    employees: [],
+    vacancies: [],
+    metrics: {
+      headcount: 0,
+      vacancies: 0,
+      salaryMass: 0,
+      departments: 0,
+      positions: 0,
+    },
+    ...overrides,
+  }
+}
+
+function projectedDepartment(
+  overrides: Partial<ProjectedDepartment> = {}
+): ProjectedDepartment {
+  return {
+    id: "department-1",
+    name: "Financeiro",
+    code: "FIN",
+    description: null,
+    parentDepartmentId: null,
+    status: "active",
+    ...overrides,
+  }
+}
+
+function projectedTeam(
+  overrides: Partial<ProjectedTeam> = {}
+): ProjectedTeam {
+  return {
+    id: "team-1",
+    name: "Contas a pagar",
+    code: "CAP",
+    description: null,
+    departmentId: "department-1",
+    status: "active",
+    ...overrides,
+  }
+}
+
+function projectedPosition(
+  overrides: Partial<ProjectedPosition> = {}
+): ProjectedPosition {
+  return {
+    id: "position-1",
+    name: "Analista financeiro",
+    description: null,
+    departmentId: "department-1",
+    hierarchicalLevel: "analyst",
+    weeklyWorkloadHours: 40,
+    workModel: "hybrid",
+    employmentType: "clt",
+    travelRequirement: "none",
+    status: "active",
+    ...overrides,
+  }
 }

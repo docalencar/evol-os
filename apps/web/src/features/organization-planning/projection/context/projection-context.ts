@@ -1,19 +1,19 @@
 import type {
   ChangeSet,
   PlanningScenarioContract,
-  PublishedSnapshotContract,
 } from "../../types/planning-contracts"
 import {
   createEmptyProjectedOrganization,
   freezeProjectedOrganization,
   type ProjectedOrganization,
+  type ProjectionSnapshot,
   type ProjectionInternalEvent,
   type ProjectionIssue,
   type ProjectionMetrics,
 } from "../contracts"
 
 type ProjectionContextProps = Readonly<{
-  snapshot: PublishedSnapshotContract
+  snapshot: ProjectionSnapshot
   scenario: PlanningScenarioContract
   changeSets: readonly ChangeSet[]
   organization: ProjectedOrganization
@@ -29,11 +29,13 @@ export class ProjectionContext {
   ) {}
 
   static create(
-    snapshot: PublishedSnapshotContract,
+    snapshot: ProjectionSnapshot,
     scenario: PlanningScenarioContract,
     changeSets: readonly ChangeSet[]
   ) {
-    const organization = createEmptyProjectedOrganization()
+    const organization = snapshot.organization
+      ? freezeProjectedOrganization(snapshot.organization)
+      : createEmptyProjectedOrganization()
 
     return new ProjectionContext(
       Object.freeze({

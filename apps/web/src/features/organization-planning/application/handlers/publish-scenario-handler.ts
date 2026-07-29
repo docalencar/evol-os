@@ -14,6 +14,7 @@ import { PlanningDomainEventCollector } from "../planning-domain-event-collector
 import type { PublishedScenarioDTO } from "../dto"
 import { ScenarioExecutor } from "../../projection"
 import {
+  findUnexecutedChangeSetFailures,
   PlanningScenarioProjectionError,
   requireApplicationEntity,
 } from "./planning-handler-support"
@@ -101,21 +102,4 @@ export class PublishScenarioHandler {
       snapshot: toSnapshotDTO(result.snapshot),
     })
   }
-}
-
-function findUnexecutedChangeSetFailures(
-  changeSets: readonly { id: string }[],
-  executedChangeSets: readonly { id: string }[]
-) {
-  const executedIds = new Set(
-    executedChangeSets.map((changeSet) => changeSet.id)
-  )
-
-  return changeSets
-    .filter((changeSet) => !executedIds.has(changeSet.id))
-    .map((changeSet) => Object.freeze({
-      code: "planning.change_set.not_executed",
-      message: `O change set ${changeSet.id} não foi executado.`,
-      changeSetId: changeSet.id,
-    }))
 }

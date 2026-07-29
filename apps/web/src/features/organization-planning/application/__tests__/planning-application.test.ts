@@ -639,8 +639,8 @@ test("PublishScenarioHandler não publica projeção com Change Set unhandled", 
   const dependencies = publicationDependencies([
     changeSet(
       "00000000-0000-4000-8000-000000000006",
-      "vacancy.create",
-      { vacancyId: "vacancy-1" }
+      "unknown.change",
+      { entityId: "unknown-1" }
     ),
   ])
 
@@ -757,6 +757,46 @@ test("PublishScenarioHandler terminates a Baseline Employee without losing histo
   assert.equal(projected?.metrics.headcount, 0)
   assert.equal(result.snapshot.kind, "projection")
   assert.equal(baseline.employees[0]?.status, "active")
+})
+
+test("PublishScenarioHandler persists a Vacancy projected from the Baseline", async () => {
+  const dependencies = publicationDependencies([
+    changeSet(
+      "00000000-0000-4000-8000-000000000006",
+      "vacancy.create",
+      {
+        vacancyId: "vacancy-1",
+        positionId: "position-1",
+        departmentId: "department-1",
+        teamId: "team-1",
+      }
+    ),
+  ])
+  const baseline = baselineWithEmployee()
+  const original = structuredClone(baseline)
+  dependencies.snapshots.items.set(
+    baseSnapshotId,
+    projectionSnapshot(baseline)
+  )
+
+  const result = await dependencies.handler.execute(publishCommand())
+
+  assert.deepEqual(
+    dependencies.publication.inputs[0]?.organization.vacancies,
+    [{
+      id: "vacancy-1",
+      positionId: "position-1",
+      departmentId: "department-1",
+      teamId: "team-1",
+      status: "active",
+    }]
+  )
+  assert.equal(
+    dependencies.publication.inputs[0]?.organization.metrics.vacancies,
+    1
+  )
+  assert.equal(result.snapshot.kind, "projection")
+  assert.deepEqual(baseline, original)
 })
 
 test("PublishScenarioHandler não publica quando a projeção falha", async () => {

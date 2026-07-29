@@ -1,6 +1,7 @@
 import type {
   ProjectedDepartment,
   ProjectedTeam,
+  ProjectedVacancy,
   ProjectionInternalEvent,
   ProjectionIssue,
   TeamMutableField,
@@ -219,7 +220,8 @@ export function updateProjectedTeam(
 export function archiveProjectedTeam(
   teams: readonly ProjectedTeam[],
   changeSetId: string,
-  payload: TeamArchivePayload
+  payload: TeamArchivePayload,
+  vacancies: readonly ProjectedVacancy[] = []
 ): TeamMutationResult {
   const currentTeam = findTeamById(teams, payload.teamId)
 
@@ -241,6 +243,16 @@ export function archiveProjectedTeam(
         changeSetId,
       }),
     })
+  }
+
+  if (vacancies.some(
+    (vacancy) => vacancy.teamId === currentTeam.id && vacancy.status !== "archived"
+  )) {
+    return failure(
+      "team.archive.has_active_vacancies",
+      `O time ${currentTeam.id} possui vagas ativas vinculadas.`,
+      changeSetId
+    )
   }
 
   const archivedTeam: ProjectedTeam = Object.freeze({

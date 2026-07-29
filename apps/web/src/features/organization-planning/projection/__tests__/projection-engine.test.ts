@@ -276,70 +276,13 @@ test("Pipeline reports an unsupported change set without mutating the state", ()
   assert.equal(projected.events[0]?.type, "change-set.unhandled")
 })
 
-const unimplementedChangeTypes = [
-  "vacancy.create",
-  "vacancy.update",
-  "vacancy.close",
-] as const
-
-for (const changeType of unimplementedChangeTypes) {
-  test(`${changeType} is unhandled by the default registry`, () => {
-    const unsupportedChangeSet = changeSet(
-      `change-${changeType}`,
-      1,
-      changeType
-    )
-    const projection = ProjectionEngine.create().project({
-      snapshot,
-      scenario,
-      changeSets: [unsupportedChangeSet],
-    })
-    const execution = ScenarioExecutor.create(
-      () => Date.parse("2026-01-03T00:00:00.000Z")
-    ).execute({
-      snapshot,
-      scenario,
-      changeSets: [unsupportedChangeSet],
-    })
-
-    assert.deepEqual(
-      projection.organization,
-      ProjectionContext.create(
-        snapshot,
-        scenario,
-        []
-      ).organization
-    )
-    assert.deepEqual(projection.warnings, [
-      {
-        code: "unhandled_change_set",
-        message: `Nenhum executor atende ao change set change-${changeType}.`,
-        changeSetId: `change-${changeType}`,
-      },
-    ])
-    assert.deepEqual(projection.events, [
-      {
-        type: "change-set.unhandled",
-        changeSetId: `change-${changeType}`,
-      },
-    ])
-    assert.equal(
-      projection.events.some(
-        (event) => event.type === "change-set.executed"
-      ),
-      false
-    )
-    assert.deepEqual(execution.executedChangeSets, [])
-  })
-}
-
-test("default pipeline continues around an unhandled vacancy change set", () => {
+test("default pipeline continues around an unknown change set", () => {
   const changeSets = [
     changeSet("change-department", 1, "department.create", {
       departmentId: "department-1",
       name: "Financeiro",
     }),
-    changeSet("change-vacancy", 2, "vacancy.create"),
+    changeSet("change-unknown", 2, "unknown.change"),
     changeSet("change-position", 3, "position.create", {
       positionId: "position-1",
       name: "Analista financeiro",
@@ -374,7 +317,7 @@ test("default pipeline continues around an unhandled vacancy change set", () => 
     projection.events
       .filter((event) => event.type === "change-set.unhandled")
       .map((event) => event.changeSetId),
-    ["change-vacancy"]
+    ["change-unknown"]
   )
   assert.equal(
     projection.warnings[0]?.code,

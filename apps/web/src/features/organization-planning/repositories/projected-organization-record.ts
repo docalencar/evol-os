@@ -56,6 +56,9 @@ const employee = z.object({
 const vacancy = z.object({
   id: z.string().min(1),
   positionId: nullableId,
+  departmentId: nullableId.optional(),
+  teamId: nullableId.optional(),
+  status: status.optional(),
 }).strict()
 
 const metrics = z.object({

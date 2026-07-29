@@ -8,9 +8,8 @@ export { listScenarios } from "./queries/list-scenarios"
 export { getSnapshot } from "./queries/get-snapshot"
 export { listSnapshots } from "./queries/list-snapshots"
 
-export * from "./application"
-export * from "./projection"
-export * from "./server"
+export * from "./planning-insights"
+export * from "./projection/comparison"
 
 export type { PlanningScenario } from "./domain/planning-scenario"
 export type { PublishedSnapshot } from "./domain/published-snapshot"

@@ -22,6 +22,10 @@ export function requireVersion(value: number) {
   return value
 }
 
+export function incrementVersion(version: number) {
+  return requireVersion(version) + 1
+}
+
 export function requireDate(value: Date, field: string) {
   assertPlanningDomain(
     Number.isFinite(value.getTime()),

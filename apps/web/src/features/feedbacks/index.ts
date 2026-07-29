@@ -135,8 +135,12 @@ export * from "./actions"
 
 export {
   FeedbackDashboardKpiCards,
+  FeedbackMessageList,
   FeedbackPriorityBadge,
+  FeedbackReplyForm,
   FeedbackStatusBadge,
+  FeedbackThreadHeader,
+  FeedbackThreadSidebar,
   FeedbackThreadTable,
 } from "./components"
 

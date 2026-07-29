@@ -10,6 +10,7 @@ type ScenarioListItem = {
   description?: string | null
   status: string
   version: number
+  workspaceId: string
   baseSnapshotId: string
   updatedAt: Date
 }

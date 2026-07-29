@@ -12,6 +12,7 @@ export * from "./planning-insights"
 export * from "./planning-dashboard"
 export * from "./presentation"
 export * from "./projection/comparison"
+export * from "./timeline"
 
 export type { PlanningScenario } from "./domain/planning-scenario"
 export type { PublishedSnapshot } from "./domain/published-snapshot"

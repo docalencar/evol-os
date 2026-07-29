@@ -9,30 +9,19 @@ import {
 
 import {
   FeedbackMessageList,
-} from "@/features/feedbacks/components/feedback-message-list"
-import {
   FeedbackReplyForm,
-} from "@/features/feedbacks/components/feedback-reply-form"
-import {
   FeedbackThreadHeader,
-} from "@/features/feedbacks/components/feedback-thread-header"
-import {
   FeedbackThreadSidebar,
-} from "@/features/feedbacks/components/feedback-thread-sidebar"
+  FeedbackThreadTable,
+  getFeedbackMessages,
+  getFeedbackThreadById,
+  getFeedbackThreads,
+  presentFeedbackThread,
+} from "@/features/feedbacks"
 
 import {
   FeedbackAiAnalysisCard,
 } from "@/features/feedbacks/intelligence"
-
-import {
-  getFeedbackMessages,
-} from "@/features/feedbacks/queries/get-feedback-messages"
-import {
-  getFeedbackThreadById,
-} from "@/features/feedbacks/queries/get-feedback-thread-by-id"
-import {
-  presentFeedbackThread,
-} from "@/features/feedbacks/thread"
 
 import {
   getEmployees,
@@ -76,6 +65,7 @@ export default async function FeedbackThreadPage({
     thread,
     messages,
     employeesData,
+    threads,
   ] = await Promise.all([
     getFeedbackThreadById({
       companyId,
@@ -88,6 +78,11 @@ export default async function FeedbackThreadPage({
     }),
 
     getEmployees(companyId),
+
+    getFeedbackThreads({
+      companyId,
+      employeeId: personId,
+    }),
   ])
 
   if (!thread) {
@@ -113,6 +108,13 @@ export default async function FeedbackThreadPage({
       currentEmployeeId: personId,
     })
 
+  const employeeNameById = new Map(
+    employees.map((employee) => [
+      employee.id,
+      employee.full_name,
+    ])
+  )
+
   return (
     <div className="space-y-6">
       <Link
@@ -129,12 +131,20 @@ export default async function FeedbackThreadPage({
         description="Acompanhe as mensagens, confirmações e ações relacionadas a este feedback."
       />
 
-      <FeedbackThreadHeader
-        thread={viewModel}
-      />
+      <div className="grid gap-6 xl:grid-cols-[minmax(280px,0.9fr)_minmax(0,1.5fr)_320px]">
+        <aside className="min-w-0">
+          <FeedbackThreadTable
+            threads={threads}
+            currentEmployeeId={personId}
+            employeeNameById={employeeNameById}
+          />
+        </aside>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <main className="min-w-0 space-y-6">
+          <FeedbackThreadHeader
+            thread={viewModel}
+          />
+
           <FeedbackAiAnalysisCard
             threadId={viewModel.id}
           />

@@ -273,8 +273,6 @@ export const DEFAULT_CHANGE_SET_EXECUTORS =
     new DepartmentExecutor(),
     new TeamExecutor(),
     new PositionExecutor(),
-    new EmployeeExecutor(),
-    new VacancyExecutor(),
   ])
 
 function executeDepartmentMutation(

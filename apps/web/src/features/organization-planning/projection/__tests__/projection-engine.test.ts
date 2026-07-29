@@ -6,6 +6,7 @@ import { ProjectionEngine } from "../engine"
 import { DepartmentExecutor } from "../executors"
 import { ProjectionPipeline } from "../pipeline"
 import { ProjectionResult } from "../result"
+import { ScenarioExecutor } from "../execution"
 import { ProjectionContractValidator } from "../validators"
 import type {
   ChangeSet,
@@ -96,6 +97,122 @@ test("Pipeline reports an unsupported change set without mutating the state", ()
   assert.equal(projected.organization, context.organization)
   assert.equal(projected.warnings[0]?.code, "unhandled_change_set")
   assert.equal(projected.events[0]?.type, "change-set.unhandled")
+})
+
+const unimplementedChangeTypes = [
+  "employee.create",
+  "employee.update",
+  "employee.transfer",
+  "employee.terminate",
+  "vacancy.create",
+  "vacancy.update",
+  "vacancy.close",
+] as const
+
+for (const changeType of unimplementedChangeTypes) {
+  test(`${changeType} is unhandled by the default registry`, () => {
+    const unsupportedChangeSet = changeSet(
+      `change-${changeType}`,
+      1,
+      changeType
+    )
+    const projection = ProjectionEngine.create().project({
+      snapshot,
+      scenario,
+      changeSets: [unsupportedChangeSet],
+    })
+    const execution = ScenarioExecutor.create(
+      () => Date.parse("2026-01-03T00:00:00.000Z")
+    ).execute({
+      snapshot,
+      scenario,
+      changeSets: [unsupportedChangeSet],
+    })
+
+    assert.deepEqual(
+      projection.organization,
+      ProjectionContext.create(
+        snapshot,
+        scenario,
+        []
+      ).organization
+    )
+    assert.deepEqual(projection.warnings, [
+      {
+        code: "unhandled_change_set",
+        message: `Nenhum executor atende ao change set change-${changeType}.`,
+        changeSetId: `change-${changeType}`,
+      },
+    ])
+    assert.deepEqual(projection.events, [
+      {
+        type: "change-set.unhandled",
+        changeSetId: `change-${changeType}`,
+      },
+    ])
+    assert.equal(
+      projection.events.some(
+        (event) => event.type === "change-set.executed"
+      ),
+      false
+    )
+    assert.deepEqual(execution.executedChangeSets, [])
+  })
+}
+
+test("default pipeline continues around an unhandled employee change set", () => {
+  const changeSets = [
+    changeSet("change-department", 1, "department.create", {
+      departmentId: "department-1",
+      name: "Financeiro",
+    }),
+    changeSet("change-employee", 2, "employee.create"),
+    changeSet("change-position", 3, "position.create", {
+      positionId: "position-1",
+      name: "Analista financeiro",
+      departmentId: "department-1",
+      hierarchicalLevel: "analyst",
+      weeklyWorkloadHours: 40,
+      workModel: "hybrid",
+      employmentType: "clt",
+      travelRequirement: "none",
+    }),
+  ]
+  const projection = ProjectionEngine.create().project({
+    snapshot,
+    scenario,
+    changeSets,
+  })
+  const execution = ScenarioExecutor.create(
+    () => Date.parse("2026-01-03T00:00:00.000Z")
+  ).execute({
+    snapshot,
+    scenario,
+    changeSets,
+  })
+
+  assert.deepEqual(
+    projection.events
+      .filter((event) => event.type === "change-set.executed")
+      .map((event) => event.changeSetId),
+    ["change-department", "change-position"]
+  )
+  assert.deepEqual(
+    projection.events
+      .filter((event) => event.type === "change-set.unhandled")
+      .map((event) => event.changeSetId),
+    ["change-employee"]
+  )
+  assert.equal(
+    projection.warnings[0]?.code,
+    "unhandled_change_set"
+  )
+  assert.equal(projection.organization.departments.length, 1)
+  assert.equal(projection.organization.positions.length, 1)
+  assert.deepEqual(
+    execution.executedChangeSets.map((current) => current.id),
+    ["change-department", "change-position"]
+  )
 })
 
 test("Pipeline continues after a failed change set and records only completed executions", () => {

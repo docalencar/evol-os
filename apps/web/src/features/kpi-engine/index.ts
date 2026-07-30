@@ -7,6 +7,11 @@ export {
   type ListKPIEvaluationsInput,
 } from "./application/kpi-evaluation-application-service"
 export { KPIEvaluationApplicationError } from "./application/kpi-evaluation-application-error"
+export { KPIHistoryQueryService } from "./application/kpi-history-query-service"
+export {
+  toKPIHistoryEntryDTO,
+  type KPIHistoryEntryDTO,
+} from "./application/kpi-history-dto"
 export type {
   KPIEvaluationContextDTO,
   KPIEvaluationDTO,

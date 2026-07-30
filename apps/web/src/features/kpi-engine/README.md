@@ -13,7 +13,7 @@ Ele não contém KPIs reais dos módulos do produto.
 - `calculators`, `sla`, `trends`, `benchmarks`, `alerts`, `forecast`: engines puras.
 - `application/kpi-engine.ts`: composição das engines da PR-101.
 - `evaluations`: valida contexto, resolve a definição e constrói a avaliação.
-- `repositories`: portas de persistência e referências in-memory.
+- `repositories`: portas, referências in-memory e adapters Supabase.
 - `application/kpi-evaluation-application-service.ts`: persiste e consulta avaliações.
 - `presenters` e `view-models`: formatação para consumidores de apresentação.
 
@@ -76,8 +76,33 @@ como se fossem produção.
 
 ## Evolução futura
 
-PRs futuras poderão adicionar repositories Supabase, histórico e séries temporais,
-integrações reais com Planning e Recruitment, benchmarks externos e forecast mais
-avançado. A factory padrão atual registra apenas `system.health`, `system.latency`,
+PRs futuras poderão adicionar séries temporais agregadas, integrações reais com
+Planning e Recruitment, benchmarks externos e forecast mais avançado. A factory
+padrão atual registra apenas `system.health`, `system.latency`,
 `example.percentage` e `example.count`; são definições demonstrativas, não KPIs
 oficiais do Evol OS.
+
+## Persistência e histórico
+
+A persistência real usa quatro tabelas company-scoped:
+
+- `kpi_definitions`: identidade estável da definição;
+- `kpi_definition_versions`: metadados versionados e vigência temporal;
+- `kpi_evaluations`: contexto, resultado numérico e dados de consulta;
+- `kpi_evaluation_snapshots`: snapshot serializável e imutável da definição.
+
+`createSupabaseKPIDefinitionRepository` recebe `companyId` e um resolver de
+calculator. Calculators não são serializados: o banco preserva os metadados e o
+resolver reidrata a função registrada em runtime. Isso mantém o Port original da
+PR-102 e o isolamento por empresa.
+
+`createSupabaseKPIEvaluationRepository` persiste avaliação e snapshot numa única
+RPC `security invoker`, portanto uma falha nunca deixa metade do histórico gravado.
+As consultas por empresa, definição e escopo continuam disponíveis pelo Port.
+O adapter também oferece consultas por período e últimas avaliações, consumidas
+por `KPIHistoryQueryService` como `KPIHistoryEntryDTO`.
+
+Snapshots não podem ser atualizados ou excluídos. Avaliações antigas continuam
+reproduzíveis mesmo que uma nova versão da definição seja registrada. Todas as
+tabelas possuem RLS por `company_id`; membros ativos leem e `owner/admin/hr`
+gerenciam definições e criam avaliações.

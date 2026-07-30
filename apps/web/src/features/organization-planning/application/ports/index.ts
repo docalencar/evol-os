@@ -1,6 +1,7 @@
 export type {
   ScenarioApplicationRepository,
   ScenarioBranchApplicationRepository,
+  ScenarioOperationsApplicationRepository,
   SnapshotApplicationRepository,
   WorkspaceApplicationRepository,
 } from "./planning-repository-ports"

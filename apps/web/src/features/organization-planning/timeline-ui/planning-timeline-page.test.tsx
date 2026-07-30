@@ -86,12 +86,14 @@ test("exibe badges, datas, resumo e baseline diretamente do ViewModel", () => {
   assert.match(html, /Não publicado/)
 })
 
-test("mantém todas as ações futuras desabilitadas", () => {
+test("mantém ações futuras desabilitadas e expõe operações de cenário", () => {
   const html = renderToStaticMarkup(<PlanningTimelinePage timeline={timeline} />)
 
-  for (const action of ["Visualizar", "Comparar", "Duplicar", "Publicar"]) {
+  for (const action of ["Visualizar", "Comparar", "Publicar"]) {
     assert.match(html, new RegExp(`disabled=""[^>]*>${action}</button>`))
   }
+  assert.match(html, /Operações de Expansão Nordeste/)
+  assert.match(html, /Operações de Reorganização Comercial/)
 })
 
 test("renderiza a Timeline vazia", () => {

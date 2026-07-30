@@ -30,6 +30,7 @@ export class PlanningTimelineService {
     ])
     const scenarios = companyScenarios
       .filter((scenario) => scenario.workspaceId === input.workspaceId)
+      .filter((scenario) => input.includeArchived || scenario.status !== "archived")
       .sort(compareScenarios)
     const snapshots = companySnapshots.filter(
       (snapshot) => snapshot.workspaceId === input.workspaceId

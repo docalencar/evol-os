@@ -30,6 +30,13 @@ export interface ScenarioBranchApplicationRepository {
   createBranch(scenario: PlanningScenario): Promise<void>
 }
 
+export interface ScenarioOperationsApplicationRepository
+  extends ScenarioApplicationRepository {
+  hasChildren(companyId: string, scenarioId: string): Promise<boolean>
+  hasPublishedSnapshot(companyId: string, scenarioId: string): Promise<boolean>
+  deleteDraft(companyId: string, scenarioId: string, expectedVersion: number): Promise<void>
+}
+
 export interface SnapshotApplicationRepository {
   findById(
     companyId: string,

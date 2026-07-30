@@ -1,10 +1,14 @@
 import { GitBranch } from "lucide-react"
+import Link from "next/link"
+
+import { Button } from "@/components/ui/button"
 
 type TimelineHeaderProps = {
   workspaceId: string
+  includeArchived?: boolean
 }
 
-export function TimelineHeader({ workspaceId }: TimelineHeaderProps) {
+export function TimelineHeader({ workspaceId, includeArchived = false }: TimelineHeaderProps) {
   return (
     <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div>
@@ -18,6 +22,10 @@ export function TimelineHeader({ workspaceId }: TimelineHeaderProps) {
         </p>
       </div>
 
+      <div className="flex items-center gap-3">
+      <Button variant="outline" render={<Link href={`/app/organization/planning/timeline?workspaceId=${workspaceId}${includeArchived ? "" : "&includeArchived=true"}`} />}>
+        {includeArchived ? "Ocultar arquivados" : "Ver arquivados"}
+      </Button>
       <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm">
         <span className="block text-xs font-medium uppercase tracking-wide text-slate-400">
           Workspace
@@ -25,6 +33,7 @@ export function TimelineHeader({ workspaceId }: TimelineHeaderProps) {
         <span className="mt-1 block max-w-60 truncate font-medium text-slate-700" title={workspaceId}>
           {workspaceId}
         </span>
+      </div>
       </div>
     </header>
   )

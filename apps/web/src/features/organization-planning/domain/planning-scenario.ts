@@ -214,6 +214,10 @@ export class PlanningScenario {
     })
   }
 
+  rename(name: string, occurredAt: Date) {
+    return this.updateDetails(name, this.description, occurredAt)
+  }
+
   submit(occurredAt: Date) {
     return this.transition("submitted", "planning.scenario.submitted", occurredAt, ["draft"])
   }
@@ -236,6 +240,10 @@ export class PlanningScenario {
     return this.transition("archived", "planning.scenario.archived", occurredAt, [
       "draft", "submitted", "approved", "rejected",
     ])
+  }
+
+  restoreArchive(occurredAt: Date) {
+    return this.transition("draft", "planning.scenario.restored", occurredAt, ["archived"])
   }
 
   publish(occurredAt: Date) {

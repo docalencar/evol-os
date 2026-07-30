@@ -8,6 +8,7 @@ import {
   PlanningDomainEventCollector,
   PublishScenarioHandler,
   SimplePlanningUnitOfWork,
+  ScenarioOperationsService,
 } from "../application"
 import { ScenarioExecutor } from "../projection"
 import { createScenarioRepository } from "../repositories/scenario-repository"
@@ -24,6 +25,7 @@ export type ServerPlanningApplication = Readonly<{
   createScenarioBranch: CreateScenarioBranchService
   archiveScenario: ArchiveScenarioHandler
   publishScenario: PublishScenarioHandler
+  scenarioOperations: ScenarioOperationsService
   eventCollector: PlanningDomainEventCollector
 }>
 
@@ -93,6 +95,7 @@ export async function createServerPlanningApplication(): Promise<ServerPlanningA
       publication,
       eventCollector
     ),
+    scenarioOperations: new ScenarioOperationsService(scenarios, eventCollector),
 
     eventCollector,
   })

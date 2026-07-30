@@ -24,7 +24,7 @@ export async function createScenarioAction(
   input: CreateScenarioActionInput
 ): Promise<ActionResult<ScenarioDTO>> {
   try {
-    const { companyId } = await getCurrentCompanyContext()
+    const { companyId, currentUser } = await getCurrentCompanyContext()
     const command = createScenarioCommandSchema.safeParse({
       ...input,
       companyId,
@@ -40,7 +40,7 @@ export async function createScenarioAction(
       }
     }
 
-    const application = await createServerPlanningApplication()
+    const application = await createServerPlanningApplication(currentUser)
     const scenario = await application.createScenario.execute(
       command.data
     )

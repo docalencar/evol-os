@@ -21,7 +21,7 @@ export async function createWorkspaceAction(
   input: CreateWorkspaceActionInput
 ): Promise<ActionResult<WorkspaceDTO>> {
   try {
-    const { companyId } = await getCurrentCompanyContext()
+    const { companyId, currentUser } = await getCurrentCompanyContext()
     const command = createWorkspaceCommandSchema.safeParse({
       ...input,
       companyId,
@@ -37,7 +37,7 @@ export async function createWorkspaceAction(
       }
     }
 
-    const application = await createServerPlanningApplication()
+    const application = await createServerPlanningApplication(currentUser)
     const workspace = await application.createWorkspace.execute(
       command.data
     )

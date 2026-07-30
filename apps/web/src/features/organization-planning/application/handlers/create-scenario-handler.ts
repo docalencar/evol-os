@@ -1,3 +1,8 @@
+import {
+  PERMISSION_CATALOG,
+  type AuthorizationGuard,
+} from "@/features/authorization"
+
 import { createScenario } from "../../services/create-scenario"
 import type { CreateScenarioCommand } from "../commands"
 import { createScenarioCommandSchema } from "../commands/planning-command-schemas"
@@ -21,11 +26,16 @@ export class CreateScenarioHandler {
     private readonly scenarios: ScenarioApplicationRepository,
     private readonly snapshots: PlanningProjectionSnapshotRepository,
     private readonly unitOfWork: PlanningUnitOfWork,
-    private readonly eventCollector: PlanningDomainEventCollector
+    private readonly eventCollector: PlanningDomainEventCollector,
+    private readonly authorization: AuthorizationGuard
   ) {}
 
   async execute(command: CreateScenarioCommand) {
     const input = createScenarioCommandSchema.parse(command)
+    await this.authorization.requirePermission(
+      PERMISSION_CATALOG.ORGANIZATION_PLANNING_MANAGE,
+      input.companyId
+    )
 
     return executeInUnitOfWork(this.unitOfWork, async () => {
       const [workspace, baseSnapshot] = await Promise.all([

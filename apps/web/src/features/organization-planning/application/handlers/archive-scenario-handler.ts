@@ -1,3 +1,8 @@
+import {
+  PERMISSION_CATALOG,
+  type AuthorizationGuard,
+} from "@/features/authorization"
+
 import { archiveScenario } from "../../services/archive-scenario"
 import type { ArchiveScenarioCommand } from "../commands"
 import { archiveScenarioCommandSchema } from "../commands/planning-command-schemas"
@@ -15,11 +20,16 @@ export class ArchiveScenarioHandler {
   constructor(
     private readonly scenarios: ScenarioApplicationRepository,
     private readonly unitOfWork: PlanningUnitOfWork,
-    private readonly eventCollector: PlanningDomainEventCollector
+    private readonly eventCollector: PlanningDomainEventCollector,
+    private readonly authorization: AuthorizationGuard
   ) {}
 
   async execute(command: ArchiveScenarioCommand) {
     const input = archiveScenarioCommandSchema.parse(command)
+    await this.authorization.requirePermission(
+      PERMISSION_CATALOG.ORGANIZATION_PLANNING_MANAGE,
+      input.companyId
+    )
 
     return executeInUnitOfWork(this.unitOfWork, async () => {
       const scenario = requireApplicationEntity(

@@ -25,7 +25,7 @@ export type ExecutiveImpactViewModel = Readonly<{
 }>
 
 export type ExecutiveDashboardViewModel = Readonly<{
-  scenario: Readonly<{ id: string; name: string; status: string; version: number }>
+  scenario: Readonly<{ id: string; workspaceId: string; name: string; status: string; version: number }>
   summary: Readonly<{ headline: string; riskLabel: string; color: string; icon: string }>
   headcount: ExecutiveMetricViewModel | null
   metrics: readonly ExecutiveMetricViewModel[]

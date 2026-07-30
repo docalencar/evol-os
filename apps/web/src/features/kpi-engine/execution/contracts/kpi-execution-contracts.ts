@@ -2,6 +2,10 @@ import type { EvaluateKPIInput, KPIEvaluationDTO } from "../.."
 
 export type KPIExecutionContext = Readonly<{
   executionId: string
+  attemptId?: string
+  companyId?: string
+  providerKey?: string
+  correlationId?: string
   requestedAt: Date
   idempotencyKey: string
   attempt: number
@@ -11,6 +15,7 @@ export type KPIExecutionRequest = Readonly<{
   providerKey: string
   idempotencyKey: string
   evaluation: EvaluateKPIInput
+  correlationId?: string
   allowReexecution?: boolean
 }>
 
@@ -24,6 +29,7 @@ export type KPIExecutionResult = Readonly<{
 export type KPIBatchExecutionRequest = Readonly<{
   idempotencyKey: string
   requests: readonly KPIExecutionRequest[]
+  correlationId?: string
   stopOnFailure?: boolean
   allowReexecution?: boolean
 }>
@@ -43,7 +49,7 @@ export interface KPIExecutionExecutor {
 }
 
 export type KPIExecutionPolicyDecision =
-  | Readonly<{ allowed: true; reason: "allowed" }>
+  | Readonly<{ allowed: true; reason: "allowed"; attemptId?: string; attempt?: number }>
   | Readonly<{
     allowed: false
     reason: "duplicate" | "in-progress" | "interrupted"
@@ -51,14 +57,22 @@ export type KPIExecutionPolicyDecision =
   }>
 
 export interface KPIExecutionPolicy {
-  begin(key: string, allowReexecution: boolean): KPIExecutionPolicyDecision
-  complete(key: string, result: KPIExecutionResult | KPIBatchExecutionResult): void
-  fail(key: string): void
-  interrupt(key: string): void
+  begin(key: string, allowReexecution: boolean,
+    request?: KPIExecutionRequest | KPIBatchExecutionRequest,
+    context?: KPIExecutionContext): KPIExecutionPolicyDecision | Promise<KPIExecutionPolicyDecision>
+  complete(key: string, result: KPIExecutionResult | KPIBatchExecutionResult): void | Promise<void>
+  fail(key: string, result?: KPIExecutionResult | KPIBatchExecutionResult): void | Promise<void>
+  interrupt(key: string): void | Promise<void>
 }
 
 export type KPIExecutionTelemetryEvent = Readonly<{
   executionId: string
+  attemptId?: string
+  companyId?: string
+  providerKey?: string
+  correlationId?: string
+  idempotencyKey?: string
+  status?: string
   kind: "started" | "completed" | "failed" | "duplicate" | "interrupted"
   startedAt: Date
   finishedAt: Date

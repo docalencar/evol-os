@@ -219,3 +219,36 @@ transporte. Um adapter operacional externo ainda é responsável por receber o
 evento real e chamar `schedule()` com contexto observado; persistência do estado
 de rate limit/deduplicação e coordenação entre instâncias ficam para evoluções
 futuras.
+
+## Operational Adapters
+
+`execution/operational/` é a fronteira entre eventos externos e a plataforma de
+execução. Adapters manual, cron, queue, webhook e API apenas normalizam payloads
+para `KPITriggerRequest`; não conhecem KPIs, providers concretos ou o Worker
+Runtime. O adapter manual funcional encaminha ao `OperationalGateway`.
+
+O Gateway é a única entrada operacional e oferece `schedule`, `scheduleMany`,
+`cancel`, `health` e `metrics`. Agendamentos são delegados exclusivamente ao
+Scheduler. `OperationalCoordinator` limita concorrência, isola empresa/provider e
+mantém cancelamentos através de portas de store, com implementações in-memory e
+Supabase, sem eleição de líder ou cluster.
+
+Deduplicação e rate limit persistentes usam `Clock` e janelas por empresa/provider.
+A migration `0061_create_kpi_operational_stores.sql` cria somente suas duas
+tabelas, com RLS e RPCs `SECURITY INVOKER`. Claims de coordenação reutilizam o
+store operacional, sem tabela de runtime, fila ou scheduler.
+
+Métricas podem ser exportadas como snapshot, JSON ou texto determinístico. A
+factory server-only compõe Gateway, Scheduler, Worker Runtime, Coordinator e
+stores Supabase. A arquitetura final é:
+
+```text
+External Event → Operational Adapter → Operational Gateway
+  → Scheduler → Runtime Invoker → Worker Runtime
+  → Execution Platform → KPI Engine → Persistence
+```
+
+Não existem endpoint HTTP, cron real, consumidor de fila, processo background,
+timer, loop ou integração de observabilidade externa. Adapters de transporte
+reais, limpeza de janelas e coordenação multi-instância avançada são próximos
+passos.

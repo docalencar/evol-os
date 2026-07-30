@@ -69,7 +69,7 @@ export class SupabaseKPIExecutionRepository implements KPIExecutionRepository, D
       .range(input.page.offset, input.page.offset + Math.max(0, input.page.limit - 1))
     if (error) throw new Error(error.message)
     if (!Array.isArray(data)) throw new Error("KPI_EXECUTION_DATA_INVALID")
-    return Object.freeze(data.map(mapExecution))
+    return Object.freeze(data.map(mapPersistedKPIExecution))
   }
   async startAttempt(execution: KPIExecution, attempt: KPIExecutionAttempt): Promise<void> {
     await this.call("start_kpi_execution_attempt", { p_company_id: execution.companyId,
@@ -93,7 +93,7 @@ export class SupabaseKPIExecutionRepository implements KPIExecutionRepository, D
   private base(companyId: string) { return this.database.from("kpi_executions").select("*").eq("company_id", companyId) }
   private async one(query: KPIExecutionDatabaseQuery) {
     const { data, error } = await query.maybeSingle(); if (error) throw new Error(error.message)
-    return data ? mapExecution(data) : null
+    return data ? mapPersistedKPIExecution(data) : null
   }
   private async call(name: string, parameters: Readonly<Record<string, unknown>>): Promise<void> {
     const { error } = await this.database.rpc(name, parameters); if (error) throw new Error(error.message)
@@ -133,7 +133,7 @@ function executionRecord(item: KPIExecution, camel: boolean): Readonly<Record<st
     result_snapshot: item.resultSnapshot, error_snapshot: item.errorSnapshot, attempt_count: item.attemptCount,
     created_at: item.createdAt.toISOString(), updated_at: item.updatedAt.toISOString() }
 }
-function mapExecution(value: unknown): KPIExecution {
+export function mapPersistedKPIExecution(value: unknown): KPIExecution {
   const row = executionSchema.parse(value)
   return Object.freeze({ id: row.id, companyId: row.company_id, providerKey: row.provider_key,
     idempotencyKey: row.idempotency_key, correlationId: row.correlation_id, executionType: row.execution_type,

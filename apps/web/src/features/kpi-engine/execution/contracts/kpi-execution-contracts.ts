@@ -73,7 +73,10 @@ export type KPIExecutionTelemetryEvent = Readonly<{
   correlationId?: string
   idempotencyKey?: string
   status?: string
-  kind: "started" | "completed" | "failed" | "duplicate" | "interrupted"
+  kind: "started" | "completed" | "failed" | "duplicate" | "interrupted" |
+    "lease_acquired" | "lease_renewed" | "lease_released" | "lease_expired" |
+    "recovery_started" | "recovery_completed" | "recovery_failed" |
+    "dispatcher_started" | "dispatcher_completed"
   startedAt: Date
   finishedAt: Date
   durationMs: number

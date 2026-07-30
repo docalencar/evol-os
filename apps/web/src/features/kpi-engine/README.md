@@ -144,3 +144,23 @@ Retry é apenas decisão: `DefaultKPIRetryPolicy` classifica erros, respeita
 factory server-only compõe client, repositories, durable policy, executores,
 telemetria, `Clock` e `IdGenerator`. Esta PR não agenda nem transporta execuções;
 cron, filas, recovery worker e observabilidade externa permanecem fora do escopo.
+
+## Leases, coordenação e recovery
+
+A migration `0059_add_kpi_execution_recovery_leases.sql` adiciona owner, ID,
+expiração e renovação de lease às execuções. RPCs `security invoker` fazem
+aquisição exclusiva, renovação, liberação e recuperação de forma transacional,
+mantendo RLS e revogando acesso de `PUBLIC`.
+
+`ExecutionCoordinator` administra o ciclo do lease e permite que workers futuros
+disputem execuções sem processamento paralelo. Leases expiradas podem ser roubadas
+somente depois da expiração. `RecoveryCoordinator` consulta execuções `running`
+abandonadas, aplica a retry policy, resolve novamente o request pelo contrato do
+módulo proprietário e delega ao `ExecutionDispatcher`, que reutiliza a plataforma
+e os executores existentes.
+
+Telemetria inclui aquisição, renovação, liberação, expiração, recovery e dispatch.
+`KPIExecutionOperationalHistoryService` separa esses eventos para consulta. A
+implementação não executa polling: não há scheduler, cron, worker, heartbeat
+automático ou fila externa. O chamador futuro é responsável por acionar recovery
+e renovação nos momentos apropriados.

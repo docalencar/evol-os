@@ -189,3 +189,33 @@ A migration `0060_allow_worker_lease_reservation.sql` permite reservar via lease
 trabalho `pending`, `failed` e `running` antes do dispatch, ainda com
 `SECURITY INVOKER`, RLS e execução revogada de `PUBLIC`. Scheduler, cron, filas,
 daemon, endpoint HTTP e liderança distribuída permanecem para evoluções futuras.
+
+## Scheduler e Trigger Adapters
+
+`execution/scheduler/` decide exclusivamente quando e por que solicitar um ciclo.
+Fontes manuais, agendadas, retry, recovery, provider, company, scenario e eventos
+futuros produzem `KPITriggerRequest`; elas nunca conhecem nem executam o runtime.
+O registry tipado registra, habilita, desabilita e resolve triggers por ID, tipo,
+empresa e provider, rejeitando identificadores duplicados.
+
+`DefaultKPITriggerScheduler` resolve o trigger, avalia `DefaultSchedulePolicy` e
+delega somente decisões `execute`, `ignore`, `retry_later` ou `cancel` ao
+`KPIRuntimeInvoker`. O adapter `WorkerKPIRuntimeInvoker` é a única peça desta
+camada que conhece o contrato do Worker Runtime, iniciando-o quando necessário e
+executando no máximo um ciclo por chamada.
+
+As políticas cobrem concorrência máxima, janela mínima, isolamento por empresa e
+provider, supressão de retry, precedência de recovery, backpressure, rate limit e
+deduplicação. Backpressure considera estado, fila, leases e falhas e retorna
+continue, delay ou reject. Rate limit e deduplicação mantêm estado encapsulado por
+instância, usam `Clock` e não criam timer ou cache global. A prioridade padrão é
+recovery, retry, manual, scheduled, scenario, provider, future event e company,
+com override por trigger.
+
+Métricas e telemetria oferecem implementações no-op e em memória. A composição
+server-only conecta Scheduler, Registry, Policies, Runtime Invoker e Worker
+Runtime sem criar cron, processo background, loop, endpoint HTTP ou mecanismo de
+transporte. Um adapter operacional externo ainda é responsável por receber o
+evento real e chamar `schedule()` com contexto observado; persistência do estado
+de rate limit/deduplicação e coordenação entre instâncias ficam para evoluções
+futuras.

@@ -119,3 +119,28 @@ duplicidade, reexecução e interrupção sem conhecer banco. Telemetria registr
 duração usando `Clock`, quantidade, sucessos, falhas e avaliações persistidas. A
 factory aceita executores, policy e telemetria injetáveis e não configura cron,
 fila ou provedor externo.
+
+## Durable Execution
+
+`KPIExecution` persiste o ciclo `pending → running → succeeded | partially_succeeded
+| failed | interrupted`. Apenas falhas podem voltar a `running` para retry; toda
+transição é validada pelo domínio. Cada aquisição cria um
+`KPIExecutionAttempt` sequencial e imutavelmente identificado.
+
+A migration `0058_create_durable_kpi_execution.sql` cria `kpi_executions` e
+`kpi_execution_attempts`, isoladas por empresa via RLS. A reserva usa unicidade de
+empresa, provider e chave de idempotência. RPCs `security invoker` adquirem a
+execução e tentativa e finalizam ambas atomicamente; execução por `PUBLIC` é
+revogada.
+
+`DurableKPIExecutionPolicy` substitui a policy em memória somente quando injetada.
+Ela persiste snapshots JSON seguros de request, resultado e erro, propaga
+`correlationId` e impede uma segunda avaliação para requests idempotentes.
+Repositories Supabase e em memória implementam histórico paginado por empresa,
+provider, status, período e correlation ID, além das tentativas.
+
+Retry é apenas decisão: `DefaultKPIRetryPolicy` classifica erros, respeita
+`maxAttempts` e calcula backoff exponencial limitado, sem timer ou worker. A
+factory server-only compõe client, repositories, durable policy, executores,
+telemetria, `Clock` e `IdGenerator`. Esta PR não agenda nem transporta execuções;
+cron, filas, recovery worker e observabilidade externa permanecem fora do escopo.

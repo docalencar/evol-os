@@ -21,7 +21,7 @@ export async function archiveScenarioAction(
   input: ArchiveScenarioActionInput
 ): Promise<ActionResult<ScenarioDTO>> {
   try {
-    const { companyId } = await getCurrentCompanyContext()
+    const { companyId, currentUser } = await getCurrentCompanyContext()
     const command = archiveScenarioCommandSchema.safeParse({
       ...input,
       companyId,
@@ -37,7 +37,7 @@ export async function archiveScenarioAction(
       }
     }
 
-    const application = await createServerPlanningApplication()
+    const application = await createServerPlanningApplication(currentUser)
     const scenario = await application.archiveScenario.execute(
       command.data
     )

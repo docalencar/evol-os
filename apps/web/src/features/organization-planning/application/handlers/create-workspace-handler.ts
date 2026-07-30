@@ -1,3 +1,8 @@
+import {
+  PERMISSION_CATALOG,
+  type AuthorizationGuard,
+} from "@/features/authorization"
+
 import { createWorkspace } from "../../services/create-workspace"
 import { INITIAL_PLANNING_SNAPSHOT_VERSION } from "../../types/planning-contracts"
 import { createBaselineOrganization } from "../services"
@@ -15,11 +20,16 @@ export class CreateWorkspaceHandler {
   constructor(
     private readonly baseline: PlanningBaselineRepository,
     private readonly operationalOrganization: PlanningOperationalOrganizationSource,
-    private readonly eventCollector: PlanningDomainEventCollector
+    private readonly eventCollector: PlanningDomainEventCollector,
+    private readonly authorization: AuthorizationGuard
   ) {}
 
   async execute(command: CreateWorkspaceCommand) {
     const input = createWorkspaceCommandSchema.parse(command)
+    await this.authorization.requirePermission(
+      PERMISSION_CATALOG.ORGANIZATION_PLANNING_MANAGE,
+      input.companyId
+    )
 
     if (await this.baseline.existsBaselineByCompany(input.companyId)) {
       throw new PlanningApplicationError(

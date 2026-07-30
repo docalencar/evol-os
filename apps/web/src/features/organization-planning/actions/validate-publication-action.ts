@@ -5,6 +5,7 @@ import { z } from "zod"
 import type { ActionResult } from "@/lib/actions"
 import { successResult } from "@/lib/actions"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
+import { AuthorizationService, PERMISSION_CATALOG } from "@/features/authorization"
 
 import type { PublicationValidationResult } from "../application"
 import { createServerPlanningApplication } from "../server"
@@ -22,8 +23,9 @@ export async function validatePublicationAction(
     if (!parsed.success) {
       return { success: false, message: parsed.error.issues[0]?.message ?? "Dados inválidos para validar a publicação." }
     }
-    const { companyId } = await getCurrentCompanyContext()
-    const application = await createServerPlanningApplication()
+    const { companyId, currentUser } = await getCurrentCompanyContext()
+    await new AuthorizationService(currentUser).requirePermission(PERMISSION_CATALOG.ORGANIZATION_PLANNING_PUBLISH, companyId)
+    const application = await createServerPlanningApplication(currentUser)
     const validation = await application.validatePublication.execute({ ...parsed.data, companyId })
     return successResult(
       validation.valid ? "Cenário pronto para publicação." : "O cenário possui impedimentos para publicação.",

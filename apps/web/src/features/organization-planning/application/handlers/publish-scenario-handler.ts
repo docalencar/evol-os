@@ -1,3 +1,8 @@
+import {
+  PERMISSION_CATALOG,
+  type AuthorizationGuard,
+} from "@/features/authorization"
+
 import type { PublishScenarioCommand } from "../commands"
 import { publishScenarioCommandSchema } from "../commands/planning-command-schemas"
 import {
@@ -26,13 +31,18 @@ export class PublishScenarioHandler {
     private readonly changeSets: PlanningChangeSetRepository,
     private readonly executor: ScenarioExecutor,
     private readonly publication: PlanningPublicationRepository,
-    private readonly eventCollector: PlanningDomainEventCollector
+    private readonly eventCollector: PlanningDomainEventCollector,
+    private readonly authorization: AuthorizationGuard
   ) {}
 
   async execute(
     command: PublishScenarioCommand
   ): Promise<PublishedScenarioDTO> {
     const input = publishScenarioCommandSchema.parse(command)
+    await this.authorization.requirePermission(
+      PERMISSION_CATALOG.ORGANIZATION_PLANNING_PUBLISH,
+      input.companyId
+    )
 
     const scenario = requireApplicationEntity(
       await this.scenarios.findById(

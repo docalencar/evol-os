@@ -1,6 +1,11 @@
 import "server-only"
 
 import {
+  AuthorizationService,
+  type CurrentUserContext,
+} from "@/features/authorization"
+
+import {
   ArchiveScenarioHandler,
   CreateScenarioHandler,
   CreateScenarioBranchService,
@@ -31,7 +36,9 @@ export type ServerPlanningApplication = Readonly<{
   eventCollector: PlanningDomainEventCollector
 }>
 
-export async function createServerPlanningApplication(): Promise<ServerPlanningApplication> {
+export async function createServerPlanningApplication(
+  currentUser: CurrentUserContext
+): Promise<ServerPlanningApplication> {
   const [
     workspaces,
     scenarios,
@@ -51,6 +58,7 @@ export async function createServerPlanningApplication(): Promise<ServerPlanningA
   ])
 
   const eventCollector = new PlanningDomainEventCollector()
+  const authorization = new AuthorizationService(currentUser)
 
   /*
    * Implementações temporárias da camada de aplicação.
@@ -67,7 +75,8 @@ export async function createServerPlanningApplication(): Promise<ServerPlanningA
     createWorkspace: new CreateWorkspaceHandler(
       baseline,
       operationalOrganization,
-      eventCollector
+      eventCollector,
+      authorization
     ),
 
     createScenario: new CreateScenarioHandler(
@@ -75,7 +84,8 @@ export async function createServerPlanningApplication(): Promise<ServerPlanningA
       scenarios,
       snapshots,
       createScenarioUnitOfWork,
-      eventCollector
+      eventCollector,
+      authorization
     ),
 
     createScenarioBranch: new CreateScenarioBranchService(
@@ -86,7 +96,8 @@ export async function createServerPlanningApplication(): Promise<ServerPlanningA
     archiveScenario: new ArchiveScenarioHandler(
       scenarios,
       archiveScenarioUnitOfWork,
-      eventCollector
+      eventCollector,
+      authorization
     ),
 
     publishScenario: new PublishScenarioHandler(
@@ -95,7 +106,8 @@ export async function createServerPlanningApplication(): Promise<ServerPlanningA
       changeSets,
       ScenarioExecutor.create(),
       publication,
-      eventCollector
+      eventCollector,
+      authorization
     ),
     scenarioOperations: new ScenarioOperationsService(scenarios, eventCollector),
     validatePublication: new ScenarioPublicationValidationService({

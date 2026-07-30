@@ -1,6 +1,8 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
+import { AuthorizationService } from "@/features/authorization"
+
 import { PlanningScenario } from "../../domain/planning-scenario"
 import { PublishedSnapshot } from "../../domain/published-snapshot"
 import { createScenario } from "../../services/create-scenario"
@@ -53,6 +55,11 @@ const baseSnapshotId = "00000000-0000-4000-8000-000000000003"
 const scenarioId = "00000000-0000-4000-8000-000000000004"
 const snapshotId = "00000000-0000-4000-8000-000000000005"
 const occurredAt = new Date("2026-07-10T12:00:00.000Z")
+const authorization = new AuthorizationService({
+  userId: "00000000-0000-4000-8000-000000000099",
+  companyId,
+  role: "owner",
+})
 
 class MemoryWorkspaceRepository
   implements WorkspaceApplicationRepository
@@ -423,7 +430,8 @@ function publicationDependencies(changeSetsInput: readonly ChangeSet[]) {
     changeSets,
     ScenarioExecutor.create(() => occurredAt.getTime()),
     publication,
-    collector
+    collector,
+    authorization
   )
 
   return {
@@ -440,7 +448,8 @@ test("CreateWorkspaceHandler persists the operational organization as the Baseli
   const handler = new CreateWorkspaceHandler(
     baseline,
     new StaticOperationalOrganizationSource(),
-    collector
+    collector,
+    authorization
   )
 
   const dto = await handler.execute({
@@ -479,7 +488,8 @@ test("CreateWorkspaceHandler rejects a second Workspace for the same Company bef
   const handler = new CreateWorkspaceHandler(
     baseline,
     source,
-    new RecordingEventCollector()
+    new RecordingEventCollector(),
+    authorization
   )
 
   await assert.rejects(() => handler.execute({
@@ -512,7 +522,8 @@ test("CreateScenarioHandler carrega relações, persiste e retorna ScenarioDTO",
     scenarios,
     snapshots,
     unitOfWork,
-    collector
+    collector,
+    authorization
   )
 
   const dto = await handler.execute({
@@ -553,7 +564,8 @@ test("CreateScenarioHandler rejects a Workspace without a Baseline tree", async 
     scenarios,
     snapshots,
     unitOfWork,
-    new RecordingEventCollector()
+    new RecordingEventCollector(),
+    authorization
   )
 
   await assert.rejects(() => handler.execute({
@@ -604,7 +616,8 @@ test("PublishScenarioHandler delega publicação atômica e retorna DTOs", async
     changeSets,
     ScenarioExecutor.create(() => occurredAt.getTime()),
     publication,
-    collector
+    collector,
+    authorization
   )
 
   const dto = await handler.execute({
@@ -909,7 +922,8 @@ test("ArchiveScenarioHandler persiste com optimistic version e retorna DTO", asy
   const handler = new ArchiveScenarioHandler(
     scenarios,
     unitOfWork,
-    collector
+    collector,
+    authorization
   )
 
   const dto = await handler.execute({
@@ -932,7 +946,8 @@ test("CreateWorkspaceHandler does not collect events when Baseline persistence f
   const handler = new CreateWorkspaceHandler(
     baseline,
     new StaticOperationalOrganizationSource(),
-    collector
+    collector,
+    authorization
   )
 
   await assert.rejects(() =>
@@ -951,12 +966,38 @@ test("validação do command ocorre antes de iniciar transação", async () => {
   const handler = new ArchiveScenarioHandler(
     new MemoryScenarioRepository(),
     unitOfWork,
-    new RecordingEventCollector()
+    new RecordingEventCollector(),
+    authorization
   )
 
   await assert.rejects(() =>
     handler.execute({
       companyId: "inválido",
+      scenarioId,
+      expectedVersion: 1,
+      occurredAt,
+    })
+  )
+  assert.equal(unitOfWork.begins, 0)
+})
+
+test("ArchiveScenarioHandler nega operação sem permissão antes da transação", async () => {
+  const unitOfWork = new RecordingUnitOfWork()
+  const restrictedAuthorization = new AuthorizationService({
+    userId: "00000000-0000-4000-8000-000000000098",
+    companyId,
+    role: "manager",
+  })
+  const handler = new ArchiveScenarioHandler(
+    new MemoryScenarioRepository(),
+    unitOfWork,
+    new RecordingEventCollector(),
+    restrictedAuthorization
+  )
+
+  await assert.rejects(() =>
+    handler.execute({
+      companyId,
       scenarioId,
       expectedVersion: 1,
       occurredAt,

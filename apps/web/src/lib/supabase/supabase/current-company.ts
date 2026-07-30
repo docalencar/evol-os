@@ -1,5 +1,10 @@
 import { redirect } from "next/navigation"
 
+import {
+  CurrentUserContextError,
+  loadCurrentUserContext,
+} from "@/features/authorization"
+
 import { createClient } from "./server"
 
 export async function getCurrentCompanyContext() {
@@ -13,28 +18,20 @@ export async function getCurrentCompanyContext() {
     redirect("/login")
   }
 
-  const {
-    data: membership,
-    error: membershipError,
-  } = await supabase
-    .from("company_members")
-    .select("company_id")
-    .eq("user_id", user.id)
-    .eq("status", "active")
-    .limit(1)
-    .maybeSingle()
-
-  if (membershipError) {
-    throw new Error(
-      "Não foi possível identificar a empresa do usuário."
-    )
+  let currentUser
+  try {
+    currentUser = await loadCurrentUserContext(supabase, user)
+  } catch (error) {
+    if (
+      error instanceof CurrentUserContextError &&
+      error.code === "membership_not_found"
+    ) {
+      redirect("/onboarding")
+    }
+    throw error
   }
 
-  const companyId = membership?.company_id
-
-  if (!companyId) {
-    redirect("/onboarding")
-  }
+  const companyId = currentUser.companyId
 
   const {
     data: company,
@@ -77,6 +74,7 @@ export async function getCurrentCompanyContext() {
     user,
     companyId: company.id,
     companyName: company.name,
+    currentUser,
     person,
     personId: person?.id ?? null,
   }

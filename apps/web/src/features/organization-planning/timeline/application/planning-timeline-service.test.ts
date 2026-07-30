@@ -24,6 +24,15 @@ test("returns an immutable empty timeline", async () => {
   assertDeepFrozen(result)
 })
 
+test("hides archived scenarios by default and includes them when requested", async () => {
+  const active = createScenario({ id: "active", name: "Ativo", status: "draft", version: 1, createdAt: "2026-07-01T10:00:00.000Z" })
+  const archived = createScenario({ id: "archived", name: "Arquivado", status: "archived", version: 2, createdAt: "2026-07-02T10:00:00.000Z" })
+  const service = createService([active, archived], [createBaselineSnapshot()])
+
+  assert.deepEqual((await service.execute({ workspaceId })).items.map((item) => item.id), ["active"])
+  assert.deepEqual((await service.execute({ workspaceId, includeArchived: true })).items.map((item) => item.id), ["active", "archived"])
+})
+
 test("presents one scenario as the current timeline item", async () => {
   const scenario = createScenario({
     id: "scenario-1",

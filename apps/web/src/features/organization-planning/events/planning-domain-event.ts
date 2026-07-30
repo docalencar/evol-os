@@ -5,6 +5,7 @@ export const PLANNING_DOMAIN_EVENT_TYPES = [
   "planning.scenario.rejected",
   "planning.scenario.published",
   "planning.scenario.archived",
+  "planning.scenario.restored",
   "planning.snapshot.published",
 ] as const
 
@@ -42,5 +43,7 @@ export type PlanningScenarioPublished = PlanningDomainEvent &
   Readonly<{ type: "planning.scenario.published" }>
 export type PlanningScenarioArchived = PlanningDomainEvent &
   Readonly<{ type: "planning.scenario.archived" }>
+export type PlanningScenarioRestored = PlanningDomainEvent &
+  Readonly<{ type: "planning.scenario.restored" }>
 export type SnapshotPublished = PlanningDomainEvent &
   Readonly<{ type: "planning.snapshot.published" }>

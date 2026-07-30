@@ -4,6 +4,7 @@ import type { PlanningScenarioStatus } from "../../types/planning-contracts"
 
 export type PlanningTimelineInput = Readonly<{
   workspaceId: string
+  includeArchived?: boolean
 }>
 
 export type PlanningTimelineEntry = Readonly<{

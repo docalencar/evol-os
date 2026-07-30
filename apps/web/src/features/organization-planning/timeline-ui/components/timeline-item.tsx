@@ -6,13 +6,14 @@ import { Card } from "@/components/ui/card"
 import type { PlanningTimelineItemViewModel } from "../../timeline"
 import { TimelineBadge } from "./timeline-badge"
 import { TimelineConnector } from "./timeline-connector"
+import { ScenarioOperationsMenu } from "./scenario-operations-menu"
 
 type TimelineItemProps = {
   item: PlanningTimelineItemViewModel
   showConnector: boolean
 }
 
-const actions = ["Visualizar", "Comparar", "Duplicar", "Publicar"] as const
+const actions = ["Visualizar", "Comparar", "Publicar"] as const
 
 export function TimelineItem({ item, showConnector }: TimelineItemProps) {
   return (
@@ -75,6 +76,7 @@ export function TimelineItem({ item, showConnector }: TimelineItemProps) {
               {action}
             </Button>
           ))}
+          <ScenarioOperationsMenu item={item} />
         </div>
       </Card>
     </li>

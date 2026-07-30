@@ -43,6 +43,7 @@ export async function archiveScenarioAction(
     )
 
     revalidatePath("/app/organization")
+    revalidatePath("/app/organization/planning/timeline")
 
     return successResult(
       "Cenário arquivado com sucesso.",

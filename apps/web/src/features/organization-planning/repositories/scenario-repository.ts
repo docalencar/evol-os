@@ -104,6 +104,29 @@ export async function createScenarioRepository() {
         throw new Error("PLANNING_VERSION_CONFLICT")
       }
     },
+
+    async hasChildren(companyId: string, scenarioId: string) {
+      const { count, error } = await database.from("organization_planning_scenarios")
+        .select("id", { count: "exact", head: true })
+        .eq("company_id", companyId).eq("parent_scenario_id", scenarioId)
+      if (error) throw new Error(error.message)
+      return (count ?? 0) > 0
+    },
+
+    async hasPublishedSnapshot(companyId: string, scenarioId: string) {
+      const { count, error } = await database.from("organization_planning_snapshots")
+        .select("id", { count: "exact", head: true })
+        .eq("company_id", companyId).eq("source_scenario_id", scenarioId)
+      if (error) throw new Error(error.message)
+      return (count ?? 0) > 0
+    },
+
+    async deleteDraft(companyId: string, scenarioId: string, expectedVersion: number) {
+      const { error } = await database.rpc("delete_planning_scenario", {
+        p_company_id: companyId, p_scenario_id: scenarioId, p_expected_version: expectedVersion,
+      })
+      if (error) throw new Error(error.message)
+    },
   }
 }
 

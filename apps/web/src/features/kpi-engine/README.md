@@ -164,3 +164,28 @@ Telemetria inclui aquisição, renovação, liberação, expiração, recovery e
 implementação não executa polling: não há scheduler, cron, worker, heartbeat
 automático ou fila externa. O chamador futuro é responsável por acionar recovery
 e renovação nos momentos apropriados.
+
+## Worker Runtime
+
+`execution/runtime/` mantém o ciclo operacional como operações explícitas:
+`start()`, `runCycle()`, `stop()`, `fail()`, `getState()` e `getHealth()`. Ele não
+cria loop infinito, não agenda a si mesmo e não espera delays. Um trigger externo
+decide quando chamar o próximo ciclo usando a decisão retornada pelo polling.
+
+Cada ciclo valida estado e cancelamento, descobre trabalho paginado, prioriza
+recovery sobre retries e pendências, processa recovery, despacha os demais itens,
+renova leases próximas da expiração, agrega métricas, emite telemetria e calcula a
+próxima decisão. Cancelamento é cooperativo e nunca interrompe uma operação
+atômica no meio; graceful shutdown impede novos itens e libera leases conhecidos.
+
+`AdaptiveKPIWorkerPollingStrategy` retorna execução imediata, espera, backoff ou
+stop sem usar timers. Health considera lifecycle, falhas, cancelamento e leases.
+Métricas e telemetria possuem implementações no-op e em memória. A factory
+server-only compõe repositories Supabase, discovery, coordination, recovery,
+dispatcher, heartbeat e runtime, mantendo o cast do client confinado à fronteira
+de infraestrutura até a regeneração dos tipos Supabase.
+
+A migration `0060_allow_worker_lease_reservation.sql` permite reservar via lease
+trabalho `pending`, `failed` e `running` antes do dispatch, ainda com
+`SECURITY INVOKER`, RLS e execução revogada de `PUBLIC`. Scheduler, cron, filas,
+daemon, endpoint HTTP e liderança distribuída permanecem para evoluções futuras.

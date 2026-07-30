@@ -78,15 +78,14 @@ test("renderiza o dashboard com resumo, KPIs e impacto estrutural", () => {
   assert.match(html, /Transferido: employee-1/)
 })
 
-test("renderiza riscos, recomendações, oportunidades e prontidão somente leitura", () => {
+test("renderiza riscos, recomendações, oportunidades e workflow de publicação", () => {
   const html = renderToStaticMarkup(<PlanningDashboardPage dashboard={dashboard} />)
 
   assert.match(html, /Volume de transferências/)
   assert.match(html, /Revisar capacidade gerencial/)
   assert.match(html, /Crescimento organizacional/)
-  assert.match(html, /Somente leitura/)
+  assert.match(html, /Pronto para validar/)
   assert.match(html, /Publicar Cenário/)
-  assert.match(html, /disabled=""/)
   assert.match(html, />4</)
 })
 

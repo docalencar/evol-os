@@ -1,12 +1,14 @@
-import { CalendarClock, LockKeyhole } from "lucide-react"
+import { CalendarClock } from "lucide-react"
 
 import { DashboardCard } from "@/components/dashboard"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import type { ScenarioDTO } from "../../application"
+import { PublicationWizard } from "../../publication-workflow"
 
 type PublicationReadinessCardProps = {
   generatedAt: string
   version: number
+  scenario: ScenarioDTO
 }
 
 const generatedAtFormatter = new Intl.DateTimeFormat("pt-BR", {
@@ -14,12 +16,12 @@ const generatedAtFormatter = new Intl.DateTimeFormat("pt-BR", {
   timeStyle: "short",
 })
 
-export function PublicationReadinessCard({ generatedAt, version }: PublicationReadinessCardProps) {
+export function PublicationReadinessCard({ generatedAt, version, scenario }: PublicationReadinessCardProps) {
   return (
     <DashboardCard
       title="Prontidão para publicação"
-      description="A publicação será habilitada em uma evolução futura."
-      actions={<Badge className="gap-1"><LockKeyhole className="size-3.5" /> Somente leitura</Badge>}
+      description="Valide a projeção e publique cenários aprovados."
+      actions={<Badge>{scenario.status === "approved" ? "Pronto para validar" : "Aguardando aprovação"}</Badge>}
     >
       <dl className="grid gap-4 sm:grid-cols-2">
         <div>
@@ -35,9 +37,7 @@ export function PublicationReadinessCard({ generatedAt, version }: PublicationRe
         </div>
       </dl>
 
-      <Button type="button" disabled className="mt-6 w-full sm:w-auto">
-        Publicar Cenário
-      </Button>
+      <div className="mt-6"><PublicationWizard scenarioId={scenario.id} name={scenario.name} status={scenario.status} version={scenario.version} /></div>
     </DashboardCard>
   )
 }

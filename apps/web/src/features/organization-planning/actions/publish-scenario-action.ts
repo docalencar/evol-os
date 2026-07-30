@@ -11,6 +11,7 @@ import {
   type PublishedScenarioDTO,
 } from "../application"
 import { createServerPlanningApplication } from "../server"
+import { getPublicationRevalidationPaths } from "./publication-revalidation"
 
 export type PublishScenarioActionInput = Readonly<{
   scenarioId: string
@@ -43,7 +44,9 @@ export async function publishScenarioAction(
       command.data
     )
 
-    revalidatePath("/app/organization")
+    for (const path of getPublicationRevalidationPaths(input.scenarioId)) {
+      revalidatePath(path)
+    }
 
     return successResult(
       "Cenário publicado com sucesso.",

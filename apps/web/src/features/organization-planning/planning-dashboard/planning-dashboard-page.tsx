@@ -40,7 +40,7 @@ export function PlanningDashboardPage({ dashboard }: PlanningDashboardPageProps)
         <PlanningRisksCard risks={dashboard.insights.warnings} />
         <PlanningRecommendationsCard recommendations={dashboard.insights.recommendations} />
         <PlanningOpportunitiesCard opportunities={dashboard.insights.opportunities} />
-        <PublicationReadinessCard generatedAt={dashboard.generatedAt} version={dashboard.version} />
+        <PublicationReadinessCard generatedAt={dashboard.generatedAt} version={dashboard.version} scenario={dashboard.scenario} />
       </div>
     </div>
   )

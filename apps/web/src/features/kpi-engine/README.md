@@ -106,3 +106,16 @@ Snapshots não podem ser atualizados ou excluídos. Avaliações antigas continu
 reproduzíveis mesmo que uma nova versão da definição seja registrada. Todas as
 tabelas possuem RLS por `company_id`; membros ativos leem e `owner/admin/hr`
 gerenciam definições e criam avaliações.
+
+## Execution Platform
+
+`execution/` é a entrada oficial para disparos automáticos. A plataforma recebe
+requests idempotentes, valida-os, resolve um executor por `providerKey`, delega a
+avaliação ao `KPIEvaluationApplicationService` e registra telemetria desacoplada.
+
+`SingleExecutionExecutor` processa um KPI; `BatchExecutionExecutor` processa
+múltiplos KPIs, com opção de interrupção após falha. A policy em memória controla
+duplicidade, reexecução e interrupção sem conhecer banco. Telemetria registra
+duração usando `Clock`, quantidade, sucessos, falhas e avaliações persistidas. A
+factory aceita executores, policy e telemetria injetáveis e não configura cron,
+fila ou provedor externo.

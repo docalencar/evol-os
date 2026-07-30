@@ -38,6 +38,7 @@ export type {
 } from "./contracts/kpi-result"
 export { KPIForecastEngine, type KPIForecastOptions } from "./forecast/forecast-engine"
 export * from "./evaluations"
+export * from "./execution"
 export { createDefaultKPIRegistry } from "./factories"
 export { KPIPresenter, type KPIPresenterOptions } from "./presenters/kpi-presenter"
 export { KPISLAEngine, type KPISLARule } from "./sla/sla-engine"

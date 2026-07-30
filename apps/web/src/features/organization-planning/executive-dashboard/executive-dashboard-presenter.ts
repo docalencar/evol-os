@@ -29,7 +29,7 @@ export class ExecutiveDashboardPresenter {
     const summary = source.insights.summary
 
     return Object.freeze({
-      scenario: Object.freeze({ id: source.scenario.id, name: source.scenario.name, status: source.scenario.status, version: source.version }),
+      scenario: Object.freeze({ id: source.scenario.id, workspaceId: source.scenario.workspaceId, name: source.scenario.name, status: source.scenario.status, version: source.version }),
       summary: Object.freeze({
         headline: source.comparison.summary.isEmpty
           ? "O cenário não possui alterações organizacionais."

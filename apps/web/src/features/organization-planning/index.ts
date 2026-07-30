@@ -9,6 +9,7 @@ export { getSnapshot } from "./queries/get-snapshot"
 export { listSnapshots } from "./queries/list-snapshots"
 
 export * from "./planning-insights"
+export * from "./kpi"
 export * from "./planning-dashboard"
 export * from "./presentation"
 export * from "./projection/comparison"

@@ -69,7 +69,9 @@ test("ProjectionContext starts with an immutable empty organization", () => {
   assert.equal(Object.isFrozen(context.organization), true)
   assert.equal(Object.isFrozen(context.organization.departments), true)
   assert.throws(() => {
-    ;(context.organization.departments as { id: string }[]).push({ id: "department-1" })
+    ;(context.organization.departments as unknown as { id: string }[]).push({
+      id: "department-1",
+    })
   }, TypeError)
 })
 

@@ -1,61 +1,58 @@
+import {
+  DecisionFeedPresenter,
+  mapKPIDashboardToDecisionFeed,
+} from "../decision-feed"
+
 import type {
   ExecutiveHealthStatus,
   ExecutiveHomeDTO,
   ExecutiveHomeViewModel,
+  ExecutiveNarrativeViewModel,
 } from "../types"
 
-const statusLabels = {
-  healthy: "Saudável",
-  attention: "Atenção",
-  critical: "Crítico",
-} satisfies Record<ExecutiveHealthStatus, string>
-
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
-  dateStyle: "short",
+  dateStyle: "medium",
   timeStyle: "short",
 })
 
-const numberFormatter = new Intl.NumberFormat("pt-BR")
-
 export class ExecutivePresenter {
   present(
-    dto: ExecutiveHomeDTO
+    dto: ExecutiveHomeDTO,
   ): ExecutiveHomeViewModel {
     const status = resolveStatus(dto)
 
-    const alertCount =
-      dto.overview.organizationalRisks +
-      dto.dashboard.alerts.length
+    const alertCount = dto.dashboard.alerts.length
+
+    const decisionFeed = new DecisionFeedPresenter().present(
+      mapKPIDashboardToDecisionFeed(
+        dto.dashboard,
+        dto.generatedAt,
+      ),
+    )
 
     return Object.freeze({
       brief: Object.freeze({
         title: "Centro Executivo",
         description:
-          "Visão consolidada da organização, indicadores estratégicos e pontos que exigem atenção.",
+          "Resumo consolidado dos principais indicadores da organização.",
         status,
-        statusLabel: statusLabels[status],
+        statusLabel: statusLabel(status),
         generatedAtLabel: formatDate(dto.generatedAt),
-        totalEmployeesLabel: numberFormatter.format(
-          dto.overview.totalEmployees
+        totalEmployeesLabel: dto.overview.totalEmployees.toLocaleString(
+          "pt-BR",
         ),
-        criticalEmployeesLabel: numberFormatter.format(
-          dto.overview.criticalEmployees
-        ),
-        organizationalRisksLabel: numberFormatter.format(
-          dto.overview.organizationalRisks
-        ),
-        aiSuggestionsLabel: numberFormatter.format(
-          dto.overview.aiSuggestions
-        ),
-        alertCountLabel: numberFormatter.format(alertCount),
+        criticalEmployeesLabel:
+          dto.overview.criticalEmployees.toLocaleString("pt-BR"),
+        organizationalRisksLabel:
+          dto.overview.organizationalRisks.toLocaleString("pt-BR"),
+        aiSuggestionsLabel:
+          dto.overview.aiSuggestions.toLocaleString("pt-BR"),
+        alertCountLabel: alertCount.toLocaleString("pt-BR"),
       }),
 
-      narrative: Object.freeze({
-        title: "Resumo executivo",
-        body: createNarrative(dto),
-        status,
-        statusLabel: statusLabels[status],
-      }),
+      narrative: createNarrative(dto, status),
+
+      decisionFeed,
 
       dashboard: dto.dashboard,
 
@@ -69,78 +66,65 @@ export class ExecutivePresenter {
   }
 }
 
+function createNarrative(
+  dto: ExecutiveHomeDTO,
+  status: ExecutiveHealthStatus,
+): ExecutiveNarrativeViewModel {
+  const alerts = dto.dashboard.alerts.length
+
+  return Object.freeze({
+    title: "Resumo executivo",
+    status,
+    statusLabel: statusLabel(status),
+    body: [
+      `A organização possui ${dto.overview.totalEmployees} colaboradores.`,
+      `${dto.overview.criticalEmployees} colaborador(es) exigem atenção imediata.`,
+      `${dto.overview.organizationalRisks} risco(s) organizacional(is) foram identificados.`,
+      `${alerts} alerta(s) executivo(s) ativo(s).`,
+      status === "healthy"
+        ? "Nenhum ponto crítico exige ação imediata."
+        : "Priorize os itens destacados no Decision Feed.",
+    ].join(" "),
+  })
+}
+
 function resolveStatus(
-  dto: ExecutiveHomeDTO
+  dto: ExecutiveHomeDTO,
 ): ExecutiveHealthStatus {
-  if (dto.overview.criticalEmployees > 0) {
+  if (
+    dto.overview.criticalEmployees > 0 ||
+    dto.overview.organizationalRisks > 0
+  ) {
     return "critical"
   }
 
-  if (
-    dto.overview.organizationalRisks > 0 ||
-    dto.dashboard.alerts.length > 0
-  ) {
+  if (dto.dashboard.alerts.length > 0) {
     return "attention"
   }
 
   return "healthy"
 }
 
-function createNarrative(
-  dto: ExecutiveHomeDTO
+function statusLabel(
+  status: ExecutiveHealthStatus,
 ): string {
-  const parts: string[] = []
+  switch (status) {
+    case "healthy":
+      return "Saudável"
 
-  parts.push(
-    `A organização possui ${numberFormatter.format(
-      dto.overview.totalEmployees
-    )} colaboradores.`
-  )
+    case "attention":
+      return "Atenção"
 
-  if (dto.overview.criticalEmployees > 0) {
-    parts.push(
-      `${numberFormatter.format(
-        dto.overview.criticalEmployees
-      )} colaborador(es) exigem atenção imediata.`
-    )
+    case "critical":
+      return "Crítico"
   }
-
-  if (dto.overview.organizationalRisks > 0) {
-    parts.push(
-      `${numberFormatter.format(
-        dto.overview.organizationalRisks
-      )} risco(s) organizacional(is) foram identificados.`
-    )
-  }
-
-  if (dto.dashboard.alerts.length > 0) {
-    parts.push(
-      `Existem ${numberFormatter.format(
-        dto.dashboard.alerts.length
-      )} alerta(s) executivo(s) ativo(s).`
-    )
-  }
-
-  if (
-    dto.overview.criticalEmployees === 0 &&
-    dto.overview.organizationalRisks === 0 &&
-    dto.dashboard.alerts.length === 0
-  ) {
-    parts.push(
-      "Nenhum ponto crítico exige ação imediata neste momento."
-    )
-  }
-
-  return parts.join(" ")
 }
 
-function formatDate(
-  value: string
-): string {
+function formatDate(value: string): string {
   const date = new Date(value)
 
   if (Number.isNaN(date.getTime())) {
-    return "Indisponível"
+    return "Data indisponível"
   }
 
   return dateFormatter.format(date)

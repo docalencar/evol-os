@@ -1,4 +1,5 @@
 import type { KPIDashboardViewModel } from "@/features/kpi-dashboard"
+import type { DecisionFeedViewModel } from "../decision-feed"
 
 import type { ExecutiveOverview } from "./executive-overview"
 
@@ -36,6 +37,7 @@ export type ExecutiveNarrativeViewModel = Readonly<{
 export type ExecutiveHomeViewModel = Readonly<{
   brief: ExecutiveBriefViewModel
   narrative: ExecutiveNarrativeViewModel
+  decisionFeed: DecisionFeedViewModel
   dashboard: KPIDashboardViewModel
   isEmpty: boolean
 }>

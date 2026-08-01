@@ -1,2 +1,5 @@
-import { KPIDashboardLoadingState } from "@/features/kpi-dashboard"
-export default function ExecutiveDashboardLoading() { return <KPIDashboardLoadingState /> }
+import { ExecutiveLoadingState } from "@/features/executive"
+
+export default function ExecutiveLoading() {
+  return <ExecutiveLoadingState />
+}

@@ -4,6 +4,7 @@ import { getExecutiveKPIDashboard } from "@/features/kpi-dashboard"
 import {
   createPlanningTimelineService,
 } from "@/features/organization-planning/timeline"
+import { getJobOpenings } from "@/features/recruitment/job-openings/queries/get-job-openings"
 
 import { ExecutiveApplicationService } from "../application"
 import {
@@ -13,6 +14,7 @@ import {
   DecisionFeedAggregator,
   KPIDashboardDecisionFeedProvider,
   PlanningTimelineDecisionFeedProvider,
+  RecruitmentDecisionFeedProvider,
   type DecisionFeedProvider,
 } from "../decision-feed"
 import { ExecutivePresenter } from "../presenters"
@@ -23,24 +25,41 @@ import {
 } from "./executive-query-service"
 import { getExecutiveOverview } from "./get-executive-overview"
 
-class CurrentExecutiveHomeSource implements ExecutiveHomeSource {
+class CurrentExecutiveHomeSource
+  implements ExecutiveHomeSource
+{
   async load(): Promise<ExecutiveHomeDTO> {
     const contextService =
       await createServerExecutiveContextService()
 
-    const [contextResolution, overview, dashboard] =
-      await Promise.all([
-        contextService.resolve(),
-        getExecutiveOverview(),
-        getExecutiveKPIDashboard(),
-      ])
+    const contextResolution =
+      await contextService.resolve()
 
     const { context } = contextResolution
+
+    const [
+      overview,
+      dashboard,
+      jobOpenings,
+    ] = await Promise.all([
+      getExecutiveOverview(),
+      getExecutiveKPIDashboard(),
+      getJobOpenings(context.companyId),
+    ])
 
     const providers: DecisionFeedProvider[] = [
       new KPIDashboardDecisionFeedProvider(
         dashboard,
         context.generatedAt,
+      ),
+
+      new RecruitmentDecisionFeedProvider(
+        context.generatedAt,
+        {
+          async load() {
+            return jobOpenings
+          },
+        },
       ),
     ]
 

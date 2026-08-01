@@ -13,3 +13,10 @@ export {
 export type {
   PlanningTimelineSource,
 } from "./planning-timeline-decision-feed-provider"
+export {
+  RecruitmentDecisionFeedProvider,
+} from "./recruitment-decision-feed-provider"
+
+export type {
+  JobOpeningSource,
+} from "./recruitment-decision-feed-provider"

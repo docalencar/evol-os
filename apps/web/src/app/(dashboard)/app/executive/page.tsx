@@ -1,6 +1,10 @@
-import { getExecutiveKPIDashboard, KPIDashboardPage } from "@/features/kpi-dashboard"
+import {
+  ExecutiveHome,
+  getExecutiveHome,
+} from "@/features/executive"
 
 export default async function ExecutivePage() {
-  const dashboard = await getExecutiveKPIDashboard()
-  return <KPIDashboardPage dashboard={dashboard} />
+  const executive = await getExecutiveHome()
+
+  return <ExecutiveHome data={executive} />
 }

@@ -5,3 +5,11 @@ export {
 export {
   mapKPIDashboardToDecisionFeed,
 } from "./map-kpi-dashboard-to-decision-feed"
+
+export {
+  PlanningTimelineDecisionFeedProvider,
+} from "./planning-timeline-decision-feed-provider"
+
+export type {
+  PlanningTimelineSource,
+} from "./planning-timeline-decision-feed-provider"

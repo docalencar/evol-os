@@ -65,7 +65,14 @@ test("Presenter cria resumo executivo crítico", () => {
   assert.equal(executive.brief.criticalEmployeesLabel, "3")
   assert.equal(executive.brief.organizationalRisksLabel, "2")
   assert.equal(executive.brief.aiSuggestionsLabel, "4")
-  assert.equal(executive.brief.alertCountLabel, "3")
+  assert.equal(executive.brief.alertCountLabel, "1")
+
+  assert.equal(executive.decisionFeed.isEmpty, false)
+  assert.equal(executive.decisionFeed.items.length, 1)
+  assert.equal(
+    executive.decisionFeed.items[0]?.description,
+    "Três colaboradores estão em condição crítica.",
+  )
 })
 
 test("Presenter produz narrativa usando apenas informações disponíveis", () => {
@@ -124,6 +131,7 @@ test("Application Service coordena Query Service e Presenter", async () => {
 
   assert.equal(result.brief.title, "Centro Executivo")
   assert.equal(result.dashboard, dto.dashboard)
+  assert.equal(result.decisionFeed.items.length, 1)
 })
 
 test("Executive Summary renderiza estado e indicadores", () => {
@@ -195,6 +203,7 @@ test("Presenter identifica estado vazio sem inventar informações", () => {
 
   assert.equal(executive.isEmpty, true)
   assert.equal(executive.brief.status, "healthy")
+  assert.equal(executive.decisionFeed.isEmpty, true)
 
   assert.match(
     executive.narrative.body,

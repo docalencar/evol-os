@@ -27,7 +27,7 @@ export function ExecutiveHome({
         <ExecutiveEmptyState />
       ) : (
         <>
-          <ExecutiveDecisionFeed alerts={data.dashboard.alerts} />
+          <ExecutiveDecisionFeed feed={data.decisionFeed} />
 
           <ExecutiveInsights brief={data.brief} />
 

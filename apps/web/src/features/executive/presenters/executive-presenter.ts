@@ -1,7 +1,4 @@
-import {
-  DecisionFeedPresenter,
-  mapKPIDashboardToDecisionFeed,
-} from "../decision-feed"
+import { DecisionFeedPresenter } from "../decision-feed"
 
 import type {
   ExecutiveHealthStatus,
@@ -20,15 +17,10 @@ export class ExecutivePresenter {
     dto: ExecutiveHomeDTO,
   ): ExecutiveHomeViewModel {
     const status = resolveStatus(dto)
-
     const alertCount = dto.dashboard.alerts.length
 
-    const decisionFeed = new DecisionFeedPresenter().present(
-      mapKPIDashboardToDecisionFeed(
-        dto.dashboard,
-        dto.generatedAt,
-      ),
-    )
+    const decisionFeed =
+      new DecisionFeedPresenter().present(dto.decisionFeed)
 
     return Object.freeze({
       brief: Object.freeze({
@@ -38,16 +30,16 @@ export class ExecutivePresenter {
         status,
         statusLabel: statusLabel(status),
         generatedAtLabel: formatDate(dto.generatedAt),
-        totalEmployeesLabel: dto.overview.totalEmployees.toLocaleString(
-          "pt-BR",
-        ),
+        totalEmployeesLabel:
+          dto.overview.totalEmployees.toLocaleString("pt-BR"),
         criticalEmployeesLabel:
           dto.overview.criticalEmployees.toLocaleString("pt-BR"),
         organizationalRisksLabel:
           dto.overview.organizationalRisks.toLocaleString("pt-BR"),
         aiSuggestionsLabel:
           dto.overview.aiSuggestions.toLocaleString("pt-BR"),
-        alertCountLabel: alertCount.toLocaleString("pt-BR"),
+        alertCountLabel:
+          alertCount.toLocaleString("pt-BR"),
       }),
 
       narrative: createNarrative(dto, status),
@@ -61,7 +53,8 @@ export class ExecutivePresenter {
         dto.overview.criticalEmployees === 0 &&
         dto.overview.organizationalRisks === 0 &&
         dto.overview.aiSuggestions === 0 &&
-        dto.dashboard.isEmpty,
+        dto.dashboard.isEmpty &&
+        decisionFeed.isEmpty,
     })
   }
 }

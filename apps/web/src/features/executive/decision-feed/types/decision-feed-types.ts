@@ -8,15 +8,16 @@ export type DecisionFeedSource =
   | "feedback"
   | "organization"
   | "system"
+  | "people"
 
 export type DecisionFeedCategory =
   | "alert"
   | "scenario"
   | "execution"
   | "organization"
-  | "people"
   | "approval"
   | "recommendation"
+  | "people"
 
 export type DecisionFeedPriority =
   | "critical"

@@ -13,3 +13,12 @@ export {
 export type {
   FeedbackExecutiveDashboardSource,
 } from "./adapters/feedback-decision-feed-provider"
+
+
+export {
+  PeopleDecisionFeedProvider,
+} from "./adapters/people-decision-feed-provider"
+
+export type {
+  PeopleExecutiveSource,
+} from "./adapters/people-decision-feed-provider"

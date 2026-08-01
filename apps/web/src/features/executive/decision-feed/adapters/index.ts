@@ -43,3 +43,12 @@ export {
 export type {
   FeedbackExecutiveDashboardSource,
 } from "./feedback-decision-feed-provider"
+
+
+export {
+  PeopleDecisionFeedProvider,
+} from "./people-decision-feed-provider"
+
+export type {
+  PeopleExecutiveSource,
+} from "./people-decision-feed-provider"

@@ -3,6 +3,8 @@ import "server-only"
 import { getAssessmentExecutiveDashboard } from "@/features/assessments/services/get-assessment-executive-dashboard"
 import { getDevelopmentExecutiveDashboard } from "@/features/development/services/get-development-executive-dashboard"
 import { getExecutiveKPIDashboard } from "@/features/kpi-dashboard"
+import { getEmployees } from "@/features/people"
+import { getPeopleSummary } from "@/features/people/dashboard/queries/get-people-summary"
 import { getFeedbackExecutiveDashboard } from "@/features/feedbacks/services/get-feedback-executive-dashboard"
 import {
   createPlanningTimelineService,
@@ -20,6 +22,7 @@ import {
   FeedbackDecisionFeedProvider,
   KPIDashboardDecisionFeedProvider,
   PlanningTimelineDecisionFeedProvider,
+  PeopleDecisionFeedProvider,
   RecruitmentDecisionFeedProvider,
   type DecisionFeedProvider,
 } from "../decision-feed"
@@ -50,6 +53,8 @@ class CurrentExecutiveHomeSource
       developmentDashboard,
       assessmentDashboard,
       feedbackDashboard,
+      peopleSummary,
+      employees,
     ] = await Promise.all([
       getExecutiveOverview(),
       getExecutiveKPIDashboard(),
@@ -61,6 +66,12 @@ class CurrentExecutiveHomeSource
         context.companyId,
       ),
       getFeedbackExecutiveDashboard(
+        context.companyId,
+      ),
+      getPeopleSummary(
+        context.companyId,
+      ),
+      getEmployees(
         context.companyId,
       ),
     ])
@@ -102,6 +113,17 @@ class CurrentExecutiveHomeSource
         {
           async load() {
             return feedbackDashboard
+          },
+        },
+      ),
+      new PeopleDecisionFeedProvider(
+        context.generatedAt,
+        {
+          async load() {
+            return {
+              summary: peopleSummary,
+              employees,
+            }
           },
         },
       ),

@@ -22,3 +22,16 @@ export {
 export type {
   PeopleExecutiveSource,
 } from "./adapters/people-decision-feed-provider"
+
+
+export {
+  OrganizationDecisionFeedProvider,
+} from "./adapters/organization-decision-feed-provider"
+
+export type {
+  OrganizationExecutiveDepartment,
+  OrganizationExecutiveEmployee,
+  OrganizationExecutivePosition,
+  OrganizationExecutiveSource,
+  OrganizationExecutiveTeam,
+} from "./adapters/organization-decision-feed-provider"

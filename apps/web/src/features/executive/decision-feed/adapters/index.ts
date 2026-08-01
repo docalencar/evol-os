@@ -52,3 +52,16 @@ export {
 export type {
   PeopleExecutiveSource,
 } from "./people-decision-feed-provider"
+
+
+export {
+  OrganizationDecisionFeedProvider,
+} from "./organization-decision-feed-provider"
+
+export type {
+  OrganizationExecutiveDepartment,
+  OrganizationExecutiveEmployee,
+  OrganizationExecutivePosition,
+  OrganizationExecutiveSource,
+  OrganizationExecutiveTeam,
+} from "./organization-decision-feed-provider"

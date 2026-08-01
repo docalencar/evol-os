@@ -16,6 +16,7 @@ const sourceLabels = {
   feedback: "Feedback",
   organization: "Organização",
   system: "Sistema",
+  people: "Pessoas",
 } satisfies Record<DecisionFeedSource, string>
 
 const categoryLabels = {
@@ -23,9 +24,9 @@ const categoryLabels = {
   scenario: "Cenário",
   execution: "Execução",
   organization: "Organização",
-  people: "Pessoas",
   approval: "Aprovação",
   recommendation: "Recomendação",
+  people: "Pessoas",
 } satisfies Record<DecisionFeedCategory, string>
 
 const priorityLabels = {
@@ -56,7 +57,9 @@ export class DecisionFeedPresenter {
           title: item.title,
           description: item.description,
           occurredAt: item.occurredAt,
-          occurredAtLabel: formatDate(item.occurredAt),
+          occurredAtLabel: item.occurredAt
+            ? dateFormatter.format(new Date(item.occurredAt))
+            : "Data indisponível",
           href: item.href,
           badges: Object.freeze(
             item.badges.map((label, index) =>
@@ -72,8 +75,10 @@ export class DecisionFeedPresenter {
     return Object.freeze({
       title: "Decision Feed",
       description:
-        "Eventos executivos priorizados por relevância e ordem cronológica.",
-      generatedAtLabel: formatDate(dto.generatedAt),
+        "Eventos que exigem acompanhamento ou decisão da liderança.",
+      generatedAtLabel: dateFormatter.format(
+        new Date(dto.generatedAt),
+      ),
       isEmpty: items.length === 0,
       items: Object.freeze(items),
     })
@@ -84,42 +89,46 @@ function compareItems(
   left: DecisionFeedDTO["items"][number],
   right: DecisionFeedDTO["items"][number],
 ): number {
-  const priorityDelta =
-    priorityRank(left.priority) - priorityRank(right.priority)
+  const priorityDifference =
+    getPriorityWeight(right.priority) -
+    getPriorityWeight(left.priority)
 
-  if (priorityDelta !== 0) {
-    return priorityDelta
+  if (priorityDifference !== 0) {
+    return priorityDifference
   }
 
-  const leftDate = left.occurredAt ?? ""
-  const rightDate = right.occurredAt ?? ""
-
-  return rightDate.localeCompare(leftDate) || left.id.localeCompare(right.id)
+  return (
+    getTimestamp(right.occurredAt) -
+      getTimestamp(left.occurredAt) ||
+    left.id.localeCompare(right.id)
+  )
 }
 
-function priorityRank(priority: DecisionFeedPriority): number {
+function getPriorityWeight(
+  priority: DecisionFeedPriority,
+): number {
   switch (priority) {
     case "critical":
-      return 0
+      return 4
     case "high":
-      return 1
+      return 3
     case "medium":
       return 2
     case "low":
-      return 3
+      return 1
   }
 }
 
-function formatDate(value: string | null): string {
-  if (!value) {
-    return "Data indisponível"
+function getTimestamp(
+  occurredAt: string | null,
+): number {
+  if (!occurredAt) {
+    return Number.NEGATIVE_INFINITY
   }
 
-  const date = new Date(value)
+  const timestamp = new Date(occurredAt).getTime()
 
-  if (Number.isNaN(date.getTime())) {
-    return "Data indisponível"
-  }
-
-  return dateFormatter.format(date)
+  return Number.isNaN(timestamp)
+    ? Number.NEGATIVE_INFINITY
+    : timestamp
 }

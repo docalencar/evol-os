@@ -34,3 +34,12 @@ export {
 export type {
   AssessmentExecutiveDashboardSource,
 } from "./assessment-decision-feed-provider"
+
+
+export {
+  FeedbackDecisionFeedProvider,
+} from "./feedback-decision-feed-provider"
+
+export type {
+  FeedbackExecutiveDashboardSource,
+} from "./feedback-decision-feed-provider"

@@ -3,6 +3,7 @@ import "server-only"
 import { getAssessmentExecutiveDashboard } from "@/features/assessments/services/get-assessment-executive-dashboard"
 import { getDevelopmentExecutiveDashboard } from "@/features/development/services/get-development-executive-dashboard"
 import { getExecutiveKPIDashboard } from "@/features/kpi-dashboard"
+import { getFeedbackExecutiveDashboard } from "@/features/feedbacks/services/get-feedback-executive-dashboard"
 import {
   createPlanningTimelineService,
 } from "@/features/organization-planning/timeline"
@@ -16,6 +17,7 @@ import {
   AssessmentDecisionFeedProvider,
   DecisionFeedAggregator,
   DevelopmentDecisionFeedProvider,
+  FeedbackDecisionFeedProvider,
   KPIDashboardDecisionFeedProvider,
   PlanningTimelineDecisionFeedProvider,
   RecruitmentDecisionFeedProvider,
@@ -47,6 +49,7 @@ class CurrentExecutiveHomeSource
       jobOpenings,
       developmentDashboard,
       assessmentDashboard,
+      feedbackDashboard,
     ] = await Promise.all([
       getExecutiveOverview(),
       getExecutiveKPIDashboard(),
@@ -55,6 +58,9 @@ class CurrentExecutiveHomeSource
         context.companyId,
       ),
       getAssessmentExecutiveDashboard(
+        context.companyId,
+      ),
+      getFeedbackExecutiveDashboard(
         context.companyId,
       ),
     ])
@@ -88,6 +94,14 @@ class CurrentExecutiveHomeSource
         {
           async load() {
             return assessmentDashboard
+          },
+        },
+      ),
+      new FeedbackDecisionFeedProvider(
+        context.generatedAt,
+        {
+          async load() {
+            return feedbackDashboard
           },
         },
       ),

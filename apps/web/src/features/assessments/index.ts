@@ -286,3 +286,11 @@ export { presentAssessmentStatistics } from "./presenters/present-assessment-sta
 export { AssessmentStatisticsCard } from "./components/assessment-cycle/assessment-statistics-card"
 
 export { AssessmentScoreDistributionCard } from "./components/assessment-cycle/assessment-score-distribution-card"
+
+export type {
+  AssessmentExecutiveDashboard,
+} from "./types/assessment-executive-dashboard"
+
+export {
+  getAssessmentExecutiveDashboard,
+} from "./services/get-assessment-executive-dashboard"

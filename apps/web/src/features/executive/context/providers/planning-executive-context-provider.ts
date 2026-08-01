@@ -1,5 +1,7 @@
-import type { PlanningScenario } from "@/features/organization-planning"
-import type { OrganizationPlanningWorkspace } from "@/features/organization-planning"
+import type {
+  OrganizationPlanningWorkspace,
+  PlanningScenario,
+} from "@/features/organization-planning"
 
 import type {
   ExecutiveContextProvider,
@@ -28,12 +30,26 @@ export class PlanningExecutiveContextProvider
   ) {}
 
   async load(): Promise<ExecutiveContextProviderResult> {
-    const [workspaces, scenarios] = await Promise.all([
+    const [
+      workspaceResult,
+      scenarioResult,
+    ] = await Promise.allSettled([
       this.workspaces.list(this.companyId),
       this.scenarios.list(this.companyId),
     ])
 
-    const workspaceId = resolveWorkspaceId(workspaces)
+    const workspaces =
+      workspaceResult.status === "fulfilled"
+        ? workspaceResult.value
+        : []
+
+    const scenarios =
+      scenarioResult.status === "fulfilled"
+        ? scenarioResult.value
+        : []
+
+    const workspaceId =
+      resolveWorkspaceId(workspaces)
 
     return Object.freeze({
       companyId: this.companyId,
@@ -65,7 +81,8 @@ function resolveScenarioId(
   }
 
   const workspaceScenarios = scenarios.filter(
-    (scenario) => scenario.workspaceId === workspaceId,
+    (scenario) =>
+      scenario.workspaceId === workspaceId,
   )
 
   if (workspaceScenarios.length !== 1) {

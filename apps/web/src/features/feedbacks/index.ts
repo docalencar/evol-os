@@ -182,3 +182,12 @@ export type {
   GenerateFeedbackAiAnalysisActionData,
   GenerateFeedbackAiAnalysisActionInput,
 } from "./intelligence"
+
+
+export type {
+  FeedbackExecutiveDashboard,
+} from "./types/feedback-executive-dashboard"
+
+export {
+  getFeedbackExecutiveDashboard,
+} from "./services/get-feedback-executive-dashboard"

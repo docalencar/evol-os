@@ -13,6 +13,7 @@ const sourceLabels = {
   recruitment: "Recrutamento",
   development: "Desenvolvimento",
   assessment: "Avaliações",
+  feedback: "Feedback",
   organization: "Organização",
   system: "Sistema",
 } satisfies Record<DecisionFeedSource, string>

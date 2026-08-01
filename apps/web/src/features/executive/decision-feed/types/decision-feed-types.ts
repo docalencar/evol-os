@@ -5,6 +5,7 @@ export type DecisionFeedSource =
   | "recruitment"
   | "development"
   | "assessment"
+  | "feedback"
   | "organization"
   | "system"
 

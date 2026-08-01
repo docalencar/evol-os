@@ -1,11 +1,19 @@
 import "server-only"
 
 import { getExecutiveKPIDashboard } from "@/features/kpi-dashboard"
+import {
+  createPlanningTimelineService,
+} from "@/features/organization-planning/timeline"
 
 import { ExecutiveApplicationService } from "../application"
 import {
+  createServerExecutiveContextService,
+} from "../context/server"
+import {
   DecisionFeedAggregator,
   KPIDashboardDecisionFeedProvider,
+  PlanningTimelineDecisionFeedProvider,
+  type DecisionFeedProvider,
 } from "../decision-feed"
 import { ExecutivePresenter } from "../presenters"
 import type { ExecutiveHomeDTO } from "../types"
@@ -17,24 +25,48 @@ import { getExecutiveOverview } from "./get-executive-overview"
 
 class CurrentExecutiveHomeSource implements ExecutiveHomeSource {
   async load(): Promise<ExecutiveHomeDTO> {
-    const generatedAt = new Date().toISOString()
+    const contextService =
+      await createServerExecutiveContextService()
 
-    const [overview, dashboard] = await Promise.all([
-      getExecutiveOverview(),
-      getExecutiveKPIDashboard(),
-    ])
+    const [contextResolution, overview, dashboard] =
+      await Promise.all([
+        contextService.resolve(),
+        getExecutiveOverview(),
+        getExecutiveKPIDashboard(),
+      ])
 
-    const aggregator = new DecisionFeedAggregator([
+    const { context } = contextResolution
+
+    const providers: DecisionFeedProvider[] = [
       new KPIDashboardDecisionFeedProvider(
         dashboard,
-        generatedAt,
+        context.generatedAt,
       ),
-    ])
+    ]
 
-    const aggregation = await aggregator.aggregate(generatedAt)
+    if (context.workspaceId) {
+      const planningTimeline =
+        await createPlanningTimelineService(
+          context.companyId,
+        )
+
+      providers.push(
+        new PlanningTimelineDecisionFeedProvider(
+          context,
+          planningTimeline,
+        ),
+      )
+    }
+
+    const aggregator =
+      new DecisionFeedAggregator(providers)
+
+    const aggregation = await aggregator.aggregate(
+      context.generatedAt,
+    )
 
     return Object.freeze({
-      generatedAt,
+      generatedAt: context.generatedAt,
       overview,
       dashboard,
       decisionFeed: aggregation.feed,

@@ -1,4 +1,5 @@
 export * from "./adapters"
+export * from "./aggregators"
 export * from "./application"
 export * from "./presenters"
 export * from "./queries"

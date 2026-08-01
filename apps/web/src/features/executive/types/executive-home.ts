@@ -1,6 +1,9 @@
 import type { KPIDashboardViewModel } from "@/features/kpi-dashboard"
-import type { DecisionFeedViewModel } from "../decision-feed"
 
+import type {
+  DecisionFeedDTO,
+  DecisionFeedViewModel,
+} from "../decision-feed"
 import type { ExecutiveOverview } from "./executive-overview"
 
 export type ExecutiveHealthStatus =
@@ -12,6 +15,7 @@ export type ExecutiveHomeDTO = Readonly<{
   generatedAt: string
   overview: ExecutiveOverview
   dashboard: KPIDashboardViewModel
+  decisionFeed: DecisionFeedDTO
 }>
 
 export type ExecutiveBriefViewModel = Readonly<{

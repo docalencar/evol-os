@@ -15,6 +15,7 @@ import {
   KPIDashboardDecisionFeedProvider,
   PlanningTimelineDecisionFeedProvider,
   RecruitmentDecisionFeedProvider,
+  DevelopmentDecisionFeedProvider,
   type DecisionFeedProvider,
 } from "../decision-feed"
 import { ExecutivePresenter } from "../presenters"
@@ -24,6 +25,7 @@ import {
   type ExecutiveHomeSource,
 } from "./executive-query-service"
 import { getExecutiveOverview } from "./get-executive-overview"
+import { getDevelopmentExecutiveDashboard } from "@/features/development/services/get-development-executive-dashboard"
 
 class CurrentExecutiveHomeSource
   implements ExecutiveHomeSource
@@ -41,10 +43,12 @@ class CurrentExecutiveHomeSource
       overview,
       dashboard,
       jobOpenings,
+      developmentDashboard,
     ] = await Promise.all([
       getExecutiveOverview(),
       getExecutiveKPIDashboard(),
       getJobOpenings(context.companyId),
+      getDevelopmentExecutiveDashboard(context.companyId),
     ])
 
     const providers: DecisionFeedProvider[] = [
@@ -58,6 +62,15 @@ class CurrentExecutiveHomeSource
         {
           async load() {
             return jobOpenings
+          },
+        },
+      ),
+
+      new DevelopmentDecisionFeedProvider(
+        context.generatedAt,
+        {
+          async load() {
+            return developmentDashboard
           },
         },
       ),

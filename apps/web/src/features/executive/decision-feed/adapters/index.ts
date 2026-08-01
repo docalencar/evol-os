@@ -20,3 +20,10 @@ export {
 export type {
   JobOpeningSource,
 } from "./recruitment-decision-feed-provider"
+export {
+  DevelopmentDecisionFeedProvider,
+} from "./development-decision-feed-provider"
+
+export type {
+  DevelopmentExecutiveDashboardSource,
+} from "./development-decision-feed-provider"

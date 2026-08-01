@@ -3,6 +3,7 @@ export type DecisionFeedSource =
   | "planning"
   | "activity"
   | "recruitment"
+  | "development"
   | "organization"
   | "system"
 

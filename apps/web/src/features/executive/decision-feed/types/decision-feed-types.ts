@@ -4,6 +4,7 @@ export type DecisionFeedSource =
   | "activity"
   | "recruitment"
   | "development"
+  | "assessment"
   | "organization"
   | "system"
 

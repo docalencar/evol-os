@@ -27,3 +27,10 @@ export {
 export type {
   DevelopmentExecutiveDashboardSource,
 } from "./development-decision-feed-provider"
+export {
+  AssessmentDecisionFeedProvider,
+} from "./assessment-decision-feed-provider"
+
+export type {
+  AssessmentExecutiveDashboardSource,
+} from "./assessment-decision-feed-provider"

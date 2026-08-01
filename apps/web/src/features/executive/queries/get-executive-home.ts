@@ -1,5 +1,7 @@
 import "server-only"
 
+import { getAssessmentExecutiveDashboard } from "@/features/assessments/services/get-assessment-executive-dashboard"
+import { getDevelopmentExecutiveDashboard } from "@/features/development/services/get-development-executive-dashboard"
 import { getExecutiveKPIDashboard } from "@/features/kpi-dashboard"
 import {
   createPlanningTimelineService,
@@ -11,11 +13,12 @@ import {
   createServerExecutiveContextService,
 } from "../context/server"
 import {
+  AssessmentDecisionFeedProvider,
   DecisionFeedAggregator,
+  DevelopmentDecisionFeedProvider,
   KPIDashboardDecisionFeedProvider,
   PlanningTimelineDecisionFeedProvider,
   RecruitmentDecisionFeedProvider,
-  DevelopmentDecisionFeedProvider,
   type DecisionFeedProvider,
 } from "../decision-feed"
 import { ExecutivePresenter } from "../presenters"
@@ -25,7 +28,6 @@ import {
   type ExecutiveHomeSource,
 } from "./executive-query-service"
 import { getExecutiveOverview } from "./get-executive-overview"
-import { getDevelopmentExecutiveDashboard } from "@/features/development/services/get-development-executive-dashboard"
 
 class CurrentExecutiveHomeSource
   implements ExecutiveHomeSource
@@ -44,11 +46,17 @@ class CurrentExecutiveHomeSource
       dashboard,
       jobOpenings,
       developmentDashboard,
+      assessmentDashboard,
     ] = await Promise.all([
       getExecutiveOverview(),
       getExecutiveKPIDashboard(),
       getJobOpenings(context.companyId),
-      getDevelopmentExecutiveDashboard(context.companyId),
+      getDevelopmentExecutiveDashboard(
+        context.companyId,
+      ),
+      getAssessmentExecutiveDashboard(
+        context.companyId,
+      ),
     ])
 
     const providers: DecisionFeedProvider[] = [
@@ -71,6 +79,15 @@ class CurrentExecutiveHomeSource
         {
           async load() {
             return developmentDashboard
+          },
+        },
+      ),
+
+      new AssessmentDecisionFeedProvider(
+        context.generatedAt,
+        {
+          async load() {
+            return assessmentDashboard
           },
         },
       ),

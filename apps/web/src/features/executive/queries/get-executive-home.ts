@@ -3,6 +3,9 @@ import "server-only"
 import { getAssessmentExecutiveDashboard } from "@/features/assessments/services/get-assessment-executive-dashboard"
 import { getDevelopmentExecutiveDashboard } from "@/features/development/services/get-development-executive-dashboard"
 import { getExecutiveKPIDashboard } from "@/features/kpi-dashboard"
+import { getDepartments } from "@/features/organization/departments"
+import { getPositions } from "@/features/organization/positions"
+import { getTeams } from "@/features/organization/teams"
 import { getEmployees } from "@/features/people"
 import { getPeopleSummary } from "@/features/people/dashboard/queries/get-people-summary"
 import { getFeedbackExecutiveDashboard } from "@/features/feedbacks/services/get-feedback-executive-dashboard"
@@ -23,6 +26,7 @@ import {
   KPIDashboardDecisionFeedProvider,
   PlanningTimelineDecisionFeedProvider,
   PeopleDecisionFeedProvider,
+  OrganizationDecisionFeedProvider,
   RecruitmentDecisionFeedProvider,
   type DecisionFeedProvider,
 } from "../decision-feed"
@@ -55,6 +59,9 @@ class CurrentExecutiveHomeSource
       feedbackDashboard,
       peopleSummary,
       employees,
+      departments,
+      positions,
+      teams,
     ] = await Promise.all([
       getExecutiveOverview(),
       getExecutiveKPIDashboard(),
@@ -72,6 +79,15 @@ class CurrentExecutiveHomeSource
         context.companyId,
       ),
       getEmployees(
+        context.companyId,
+      ),
+      getDepartments(
+        context.companyId,
+      ),
+      getPositions(
+        context.companyId,
+      ),
+      getTeams(
         context.companyId,
       ),
     ])
@@ -122,6 +138,19 @@ class CurrentExecutiveHomeSource
           async load() {
             return {
               summary: peopleSummary,
+              employees,
+            }
+          },
+        },
+      ),
+      new OrganizationDecisionFeedProvider(
+        context.generatedAt,
+        {
+          async load() {
+            return {
+              departments,
+              positions,
+              teams,
               employees,
             }
           },

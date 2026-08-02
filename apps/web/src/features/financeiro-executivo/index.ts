@@ -6,6 +6,14 @@ export {
   apresentarPainelFinanceiroExecutivo,
 } from "./presenters/apresentar-painel-financeiro-executivo"
 
+export {
+  ConsultaFinanceiraExecutivaService,
+} from "./application/services/consulta-financeira-executiva-service"
+
+export type {
+  LeitorProjecaoFinanceira,
+} from "./application/services/consulta-financeira-executiva-service"
+
 export type {
   EntradaPainelFinanceiroExecutivo,
   PainelFinanceiroExecutivo,

@@ -1,174 +1,209 @@
-# Evol OS — Product Epics
+# Evol OS — Épicos do Produto
 
-## Objetivo
+## Estados
 
-Este documento organiza o desenvolvimento do Evol OS em Épicos orientados a valor de negócio.
+- **Concluído** — a capacidade descrita está incorporada à `main`.
+- **Parcial** — existe uma fundação utilizável, mas permanecem jornadas explícitas.
+- **Planejado** — não há implementação suficiente para considerar a capacidade disponível.
+- **Absorvido** — o objetivo foi entregue por uma capacidade posterior e não exige trabalho próprio.
+- **Cancelado** — deixou de fazer parte da direção do produto.
 
-Cada épico representa uma capacidade completa do produto e é composto por jornadas.
+Este documento detalha o estado das capacidades. A ordem de execução pertence ao
+`ROADMAP.md`; a fila operacional pertence ao `NEXT_STEPS.md`.
 
----
+## Épico 1 — Organização e Pessoas
 
-# ÉPICO 01 — Avaliações
+**Estado: Parcial**
 
-## Problema
+Concluído:
 
-Aplicar avaliações ainda é um processo complexo em muitas empresas.
+- autenticação, empresa, contexto e isolamento por tenant;
+- CRUD e workspaces de pessoas, departamentos, times e cargos;
+- competências de cargos e colaboradores;
+- importação e sincronização organizacional;
+- estrutura profissional do cargo, incluindo departamento, jornada, modalidade,
+  regime contratual e exigência de viagens.
 
-## Objetivo
+Planejado:
 
-Permitir que um RH crie e acompanhe uma avaliação em poucos minutos.
+- faixa salarial;
+- responsabilidades e perfil ideal do cargo;
+- trilha de carreira;
+- organograma avançado.
 
-## Jornadas
+Dependências: é a base para Planning, KPI, Talent Intelligence e Executive.
 
-- [ ] Home de Avaliações
-- [ ] Nova Avaliação (Wizard)
-- [ ] Workspace do Colaborador
-- [ ] Dashboard do Gestor
-- [ ] Resultados
-- [ ] Insights com IA
+## Épico 2 — Avaliações e Performance
 
-## Status
+**Estado: Parcial**
 
-🟡 Em desenvolvimento
+Concluído:
 
----
+- home de avaliações;
+- templates, seções e perguntas;
+- wizard de ciclos;
+- participantes, execução e respostas;
+- resultados e estatísticas do ciclo;
+- integração com analytics e Executive Decision Feed.
 
-# ÉPICO 02 — Feedback Contínuo
+Planejado:
 
-## Problema
+- acompanhamento operacional em tempo real;
+- OKRs.
 
-Feedbacks são informais, pouco registrados e difíceis de acompanhar.
+Dependências: pessoas e organização. Alimenta desenvolvimento, talentos e
+decisões executivas.
 
-## Objetivo
+## Épico 3 — Feedback e Liderança
 
-Criar uma cultura de feedback contínuo.
+**Estado: Parcial**
 
-## Jornadas
+Concluído:
 
-- [ ] Registrar feedback
-- [ ] Histórico
-- [ ] Solicitação de feedback
-- [ ] IA para qualidade do feedback
+- registro e histórico de feedbacks;
+- experiência de conversa;
+- análise estruturada por IA;
+- integração com Executive Decision Feed;
+- tipos de feedback para check-in e one-on-one.
 
-## Status
+Planejado:
 
-⚪ Não iniciado
+- solicitação dedicada de feedback;
+- workspace próprio de one-on-one;
+- jornada acompanhável de check-ins;
+- reconhecimentos;
+- plano de ação e desenvolvimento da liderança.
 
----
+Dependências: pessoas, timeline e notificações.
 
-# ÉPICO 03 — Desenvolvimento (PDI)
+## Épico 4 — Desenvolvimento
 
-## Problema
+**Estado: Concluído na fundação**
 
-Os PDIs normalmente são criados, mas não acompanhados.
+Concluído:
 
-## Objetivo
+- dashboard de desenvolvimento;
+- planos individuais e ações;
+- templates reutilizáveis;
+- aplicação transacional de templates;
+- acompanhamento de estado e recomendações contextuais;
+- integração com analytics e Executive Decision Feed.
 
-Transformar o PDI em uma jornada contínua de desenvolvimento.
+Evoluções futuras dependem das prioridades de Talent Intelligence e Liderança.
 
-## Jornadas
+## Épico 5 — Recrutamento e Aprovações
 
-- [ ] Dashboard
-- [ ] Plano Individual
-- [ ] Acompanhamento
-- [ ] Recomendações da IA
+**Estado: Concluído na fundação**
 
-## Status
+Concluído:
 
-🟡 Fundação concluída
+- workspace e wizard de vagas;
+- persistência e ciclo de status da vaga;
+- detalhes e timeline de atividade;
+- domínio, aplicação, persistência e outbox de Approval;
+- integração da aprovação com recrutamento;
+- integração com Executive Decision Feed.
 
----
+## Épico 6 — Organization Planning
 
-# ÉPICO 04 — Pessoas
+**Estado: Concluído**
 
-## Problema
+Concluído:
 
-Gestores precisam entender rapidamente a situação de suas equipes.
+- workspaces, cenários, snapshots e change sets;
+- baseline e projeção determinística da organização;
+- mudanças de departamentos, times, cargos, pessoas e vagas;
+- comparação, insights e apresentação;
+- dashboard, timeline, branching e operações de cenário;
+- validação e publicação transacional;
+- dashboard e experiência executiva;
+- autorização e isolamento.
 
-## Objetivo
+Dependências: organização e pessoas. Sustenta KPI, Financeiro Executivo e
+Executive Decision Feed.
 
-Transformar dados de colaboradores em recomendações.
+## Épico 7 — KPI e Inteligência Executiva
 
-## Jornadas
+**Estado: Concluído na fundação**
 
-- [ ] Home de Pessoas
-- [ ] Perfil Inteligente
-- [ ] Timeline
-- [ ] Promoções sugeridas
-- [ ] Risco de desligamento
+Concluído:
 
-## Status
+- KPI Engine determinístico;
+- registry, avaliação, SLA, tendências, benchmark e forecast;
+- persistência e histórico;
+- execução durável, recovery, worker, scheduler e triggers;
+- adapters operacionais;
+- dashboard executivo de KPIs;
+- Executive Context e Decision Feed agregável;
+- providers de planejamento, recrutamento, desenvolvimento, avaliações,
+  feedback, pessoas, organização e financeiro;
+- fundação do painel e da consulta financeira executiva.
 
-🟡 Fundação concluída
+Planejado:
 
----
+- ampliar projeções financeiras após a disponibilidade dos dados de custo;
+- adicionar KPIs somente quando houver pergunta de negócio e fonte de dados reais.
 
-# ÉPICO 05 — Liderança
+## Épico 8 — Talent Intelligence
 
-## Objetivo
+**Estado: Parcial**
 
-Apoiar líderes na gestão contínua de pessoas.
+Concluído:
 
-## Jornadas
+- gaps de competências;
+- insights de pessoas;
+- visão agregada de prontidão para promoção;
+- recomendações contextuais existentes em pessoas e desenvolvimento.
 
-- [ ] 1:1
-- [ ] Check-ins
-- [ ] Reconhecimentos
-- [ ] Plano de ação
+Planejado:
 
-## Status
+- risco de desligamento determinístico;
+- Nine Box;
+- sucessão;
+- Talent Review;
+- recomendações explicativas sobre essas engines.
 
-⚪ Não iniciado
+Dependências: pessoas, competências, avaliações e desenvolvimento.
 
----
+## Épico 9 — Copilot e IA
 
-# ÉPICO 06 — People Intelligence
+**Estado: Parcial**
 
-## Objetivo
+Concluído:
 
-Transformar o Evol OS em um copiloto para RH e líderes.
+- providers e services de IA;
+- copilots contextuais;
+- skills e prompts por contexto;
+- conversas persistentes;
+- uso de IA em feedback e desenvolvimento.
 
-## Jornadas
+Planejado:
 
-- [ ] Insights
-- [ ] Alertas
-- [ ] Recomendações
-- [ ] IA Conversacional
-- [ ] People Analytics
+- predições baseadas em sinais determinísticos;
+- benchmark organizacional interno;
+- expansão de recomendações estratégicas.
 
-## Status
+Dependências: engines e contratos determinísticos dos demais épicos.
 
-⚪ Não iniciado
+## Épico 10 — Enterprise
 
----
+**Estado: Planejado**
 
-# Fluxo oficial de desenvolvimento
+- API pública;
+- integrações externas;
+- white label;
+- marketplace.
 
-Todo desenvolvimento seguirá a sequência:
+Auditoria básica já é atendida por activities, timelines, histórico de execução e
+eventos de domínio; uma capacidade enterprise de auditoria só deve ser criada
+quando houver requisitos adicionais comprovados.
 
-ÉPICO
+## Trabalho absorvido
 
-↓
+- PR-079A — absorvida pela organização atual do `PositionForm`;
+- PR-079B — absorvida pela estrutura profissional de cargos já incorporada;
+- PR-080 — absorvida pela Engineering Foundation e pelo sistema de colaboração;
+- antigas entregas genéricas de dashboard, avaliações, feedback e analytics —
+  absorvidas pelos épicos e implementações descritos acima.
 
-Jornada
-
-↓
-
-UX
-
-↓
-
-Arquitetura
-
-↓
-
-PR
-
-↓
-
-Build Verde
-
-↓
-
-Validação
-
+Não há épicos cancelados registrados na direção atual.

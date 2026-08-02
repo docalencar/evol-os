@@ -3,6 +3,17 @@
 Este changelog registra somente grandes entregas incorporadas à `main`. Commits
 locais e branches abertas não entram aqui.
 
+## 2026-08-02 — Global Concepts and Tenant Mappings
+
+- catálogo global versionado de conceitos e aliases com publicação imutável;
+- autoridade global capability-based, delegações revogáveis e trusted execution;
+- Tenant Mappings confirmados por papéis humanos autorizados e auditados;
+- Development Template Goals preparados para caminhos global e company-owned;
+- RLS, integridade física, preflight e fronteiras server-only implementados;
+- aplicação de templates e Application Snapshots permanecem inalterados.
+
+Migration: 0067. Decisões: PD-018, ADR-0012 e ADR-0013.
+
 ## 2026-08-02 — Autoridade global e execução técnica confiável
 
 - autoridade humana global vinculada a `auth.users`;

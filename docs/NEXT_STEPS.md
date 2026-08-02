@@ -1,65 +1,48 @@
 # Evol OS — Próxima entrega
 
-## PR 3B — Global Concepts and Tenant Mappings
+## Validação e decisão do próximo recorte do Slice 3
 
 ### Objetivo
 
-Implementar a infraestrutura administrativa da PD-018 para conceitos globais,
-versões, aliases e mappings tenant-owned, além de preparar os dois caminhos
-exclusivos de Development Template Goals. A forma de aplicar templates permanece
-inalterada.
+Validar a entrega da PR 3B materializada pela migration 0067 e obter decisão
+explícita do Product Architect sobre o recorte seguinte. A PR 3C permanece
+planejada, dependente e não autorizada; nenhuma implementação começa por
+continuidade automática.
 
 ### Vínculo
 
 - Roadmap: Fundação confiável, item 1, ainda em andamento.
 - MVP Plan: Fundação, operação segura dos dados.
 - Épicos: Fundação e Governança de Dados; Desenvolvimento.
-- Dependências concluídas: PD-018 aprovada; ADR-0012 e ADR-0013 aceitas; PR 3A
-  concluída no commit `fe3d8914ce4da54e85f94794b367582971403ffa`.
+- Dependências concluídas: PD-018 aprovada; ADR-0012 e ADR-0013 aceitas; PRs 3A e
+  3B concluídas tecnicamente.
 - Plano: `Execution/ADR-0012-SLICE-3-DEVELOPMENT-IMPLEMENTATION-PLAN.md`.
 - Produto: PD-018.
 - Arquitetura: ADR-0003, ADR-0012, ADR-0013 e o padrão tenant-owned.
 
 ### Critérios objetivos de aceite
 
-- conceitos, versões publicadas imutáveis, aliases e auditoria global obedecem à
-  PD-018;
-- mappings pertencem a uma empresa, resolvem somente competência do mesmo tenant
-  e exigem confirmação humana por `owner`, `admin` ou `hr`;
-- Development Template Goals possuem exatamente um caminho: conceito versionado
-  global ou competência company-owned;
-- conteúdo publicado e drafts respeitam a visibilidade prevista; nenhuma policy
-  permite cross-tenant;
-- preflight não infere nem corrige legado ambíguo;
-- contracts administrativos, testes unitários e pgTAP são entregues sem alterar
-  o contrato público de aplicação de templates;
-- todos os gates técnicos do Implementation Plan são executados.
-- autoridade global usa delegações capability-based revogáveis, contexto
-  server-only e auditoria que separa ator humano, delegação e executor técnico;
-- papéis tenant-owned não obtêm autoridade global e `service_role` não comprova
-  aprovação humana.
+- evidências de migration, testes, RLS, catálogo e Application Layer da PR 3B são
+  revisadas;
+- ausência de Application Snapshot e de mudança em `apply_development_template`
+  é confirmada;
+- o Product Architect aprova ou redefine explicitamente o próximo recorte;
+- documentação não autoriza PR 3C apenas pela conclusão técnica da PR 3B.
 
 ### Fora de escopo
 
-- Application Snapshot;
-- cutover ou alteração de `apply_development_template`;
-- PR 3C;
-- IA confirmando mapping;
-- inferência automática por nome ou alias;
-- correção automática de legado ambíguo;
-- funcionalidade não autorizada pela PD-018.
+- implementar PR 3C, Application Snapshot ou cutover;
+- alterar `apply_development_template`;
+- inferir prioridade ou iniciar nova migration.
 
 ### Regra de parada
 
-Interromper a implementação se o preflight encontrar legado ambíguo, se o schema
-divergir da PD-018 ou do Implementation Plan, ou se a integridade exigir nova
-decisão funcional ou arquitetural. Não inferir, reparar ou ampliar escopo.
+Interromper se a revisão encontrar divergência entre migration 0067, PD-018,
+ADR-0013 e Implementation Plan. Não corrigir ou iniciar a PR 3C sem novo recorte
+aprovado.
 
 ### Gates técnicos
 
-- migration autorizada e inspeção do catálogo;
-- pgTAP isolado e completo;
-- db lint;
-- TypeScript, build e lint;
-- `git diff --check`;
-- compatibilidade dos contratos existentes comprovada.
+- relatório técnico completo da PR 3B;
+- aprovação explícita do Product Architect;
+- definição documental do próximo recorte.

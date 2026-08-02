@@ -6,9 +6,11 @@ import type {
 } from "../schemas/development-template-goal-schema"
 
 function normalizeCreateInput(
-  input: CreateDevelopmentTemplateGoalInput
+  input: CreateDevelopmentTemplateGoalInput,
+  companyId: string
 ) {
   return {
+    company_id: companyId,
     template_id: input.templateId,
     competency_id: input.competencyId,
     description: input.description || null,
@@ -80,11 +82,12 @@ export async function createDevelopmentTemplateGoalRepository() {
     },
 
     async create(
+      companyId: string,
       input: CreateDevelopmentTemplateGoalInput
     ) {
       return supabase
         .from("development_template_goals")
-        .insert(normalizeCreateInput(input))
+        .insert(normalizeCreateInput(input, companyId))
         .select("*")
         .single()
     },

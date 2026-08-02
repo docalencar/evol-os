@@ -18,11 +18,10 @@ cinco relações entre `development_plans`, `development_goals` e
 templates globais permanece separado e sujeito à PD-018.
 A PD-018 está aprovada e o Implementation Plan do Slice 3 está versionado em
 `Execution/ADR-0012-SLICE-3-DEVELOPMENT-IMPLEMENTATION-PLAN.md`. O próximo
-recorte explicitamente aprovado é a PR 3B — Global Concepts and Tenant Mappings.
-A ADR-0013 conclui sua dependência arquitetural de autoridade global e execução
-técnica confiável, sem alterar a prioridade.
-A PR 3C — Deterministic Template Application and Snapshots depende da conclusão
-e aprovação da PR 3B e não está autorizada nesta etapa.
+recorte PR 3B — Global Concepts and Tenant Mappings está concluído pela migration
+0067, incluindo a fundação de autoridade global definida pela ADR-0013. A PR 3C —
+Deterministic Template Application and Snapshots depende de aprovação explícita
+do Product Architect e não é iniciada automaticamente.
 
 Somente depois desse gate o produto volta a expandir capacidades funcionais,
 começando pelo enriquecimento do modelo de cargos.

@@ -84,7 +84,7 @@ export async function createDevelopmentTemplateGoal({
           ...goals.map((goal) => goal.order_index)
         ) + 1
 
-  const { data, error } = await repository.create({
+  const { data, error } = await repository.create(companyId, {
     templateId,
     competencyId,
     description: "",

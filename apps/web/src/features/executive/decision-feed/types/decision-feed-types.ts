@@ -9,6 +9,7 @@ export type DecisionFeedSource =
   | "organization"
   | "system"
   | "people"
+  | "financeiro"
 
 export type DecisionFeedCategory =
   | "alert"

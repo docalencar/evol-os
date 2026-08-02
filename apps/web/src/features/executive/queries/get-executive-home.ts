@@ -3,6 +3,7 @@ import "server-only"
 import { getAssessmentExecutiveDashboard } from "@/features/assessments/services/get-assessment-executive-dashboard"
 import { getDevelopmentExecutiveDashboard } from "@/features/development/services/get-development-executive-dashboard"
 import { getExecutiveKPIDashboard } from "@/features/kpi-dashboard"
+import { criarConsultaFinanceiraExecutiva } from "@/features/financeiro-executivo/server"
 import { getDepartments } from "@/features/organization/departments"
 import { getPositions } from "@/features/organization/positions"
 import { getTeams } from "@/features/organization/teams"
@@ -23,6 +24,7 @@ import {
   DecisionFeedAggregator,
   DevelopmentDecisionFeedProvider,
   FeedbackDecisionFeedProvider,
+  FinanceiroDecisionFeedProvider,
   KPIDashboardDecisionFeedProvider,
   PlanningTimelineDecisionFeedProvider,
   PeopleDecisionFeedProvider,
@@ -157,6 +159,32 @@ class CurrentExecutiveHomeSource
         },
       ),
     ]
+
+    if (context.scenarioId) {
+      const consultaFinanceira =
+        await criarConsultaFinanceiraExecutiva(
+          context.companyId,
+        )
+
+      const painelFinanceiro =
+        await consultaFinanceira.executar(
+          context.scenarioId,
+        )
+
+      providers.push(
+        new FinanceiroDecisionFeedProvider(
+          context.generatedAt,
+          {
+            async load() {
+              return {
+                scenarioId: context.scenarioId!,
+                painel: painelFinanceiro,
+              }
+            },
+          },
+        ),
+      )
+    }
 
     if (context.workspaceId) {
       const planningTimeline =

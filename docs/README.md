@@ -13,6 +13,7 @@
 | Plano do Slice 3 de Development | [`Execution/ADR-0012-SLICE-3-DEVELOPMENT-IMPLEMENTATION-PLAN.md`](./Execution/ADR-0012-SLICE-3-DEVELOPMENT-IMPLEMENTATION-PLAN.md) |
 | Grandes entregas incorporadas | [`CHANGELOG.md`](./CHANGELOG.md) |
 | Arquitetura | [`../ARCHITECTURE.md`](../ARCHITECTURE.md) e [`adr/`](./adr/) |
+| Autoridade global da plataforma | [`adr/0013-platform-global-authority-and-trusted-execution.md`](./adr/0013-platform-global-authority-and-trusted-execution.md) |
 | Integridade tenant-owned | [`Architecture/patterns/tenant-owned-referential-integrity.md`](./Architecture/patterns/tenant-owned-referential-integrity.md) |
 | Engenharia | [`engineering/`](./engineering/) |
 | Produto | [`Product/`](./Product/) |

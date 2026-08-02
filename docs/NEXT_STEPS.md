@@ -14,11 +14,11 @@ inalterada.
 - Roadmap: Fundação confiável, item 1, ainda em andamento.
 - MVP Plan: Fundação, operação segura dos dados.
 - Épicos: Fundação e Governança de Dados; Desenvolvimento.
-- Dependências concluídas: PD-018 aprovada; ADR-0012 aceita; PR 3A concluída no
-  commit `fe3d8914ce4da54e85f94794b367582971403ffa`.
+- Dependências concluídas: PD-018 aprovada; ADR-0012 e ADR-0013 aceitas; PR 3A
+  concluída no commit `fe3d8914ce4da54e85f94794b367582971403ffa`.
 - Plano: `Execution/ADR-0012-SLICE-3-DEVELOPMENT-IMPLEMENTATION-PLAN.md`.
 - Produto: PD-018.
-- Arquitetura: ADR-0003, ADR-0012 e o padrão tenant-owned.
+- Arquitetura: ADR-0003, ADR-0012, ADR-0013 e o padrão tenant-owned.
 
 ### Critérios objetivos de aceite
 
@@ -34,6 +34,10 @@ inalterada.
 - contracts administrativos, testes unitários e pgTAP são entregues sem alterar
   o contrato público de aplicação de templates;
 - todos os gates técnicos do Implementation Plan são executados.
+- autoridade global usa delegações capability-based revogáveis, contexto
+  server-only e auditoria que separa ator humano, delegação e executor técnico;
+- papéis tenant-owned não obtêm autoridade global e `service_role` não comprova
+  aprovação humana.
 
 ### Fora de escopo
 

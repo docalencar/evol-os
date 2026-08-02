@@ -3,6 +3,16 @@
 Este changelog registra somente grandes entregas incorporadas à `main`. Commits
 locais e branches abertas não entram aqui.
 
+## 2026-08-02 — Autoridade global e execução técnica confiável
+
+- autoridade humana global vinculada a `auth.users`;
+- delegações capability-based explícitas, revogáveis e auditáveis;
+- papéis tenant-owned separados da autoridade da plataforma;
+- `service_role` definido exclusivamente como executor técnico;
+- escrita global restrita à fronteira server-only com auditoria atômica.
+
+Decisão: ADR-0013.
+
 ## 2026-08-02 — Integridade tenant-owned do Development operacional
 
 - PR 3A do terceiro slice da ADR-0012 aplicado exclusivamente a

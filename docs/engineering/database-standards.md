@@ -170,6 +170,11 @@ As políticas devem seguir os papéis oficiais do Evol OS:
 
 Evitar acesso público.
 
+Papéis corporativos são exclusivamente tenant-owned. Autoridade global segue a
+ADR-0013: delegação capability-based ligada a `auth.users`, validada em fronteira
+server-only. `service_role` é executor técnico, não ator humano nem prova de
+aprovação, e permanece submetido às constraints físicas.
+
 Mudanças em RLS, grants ou funções de autorização devem incluir testes pgTAP em
 `supabase/tests/`. Os testes exercitam usuários e papéis reais, operações
 permitidas e negadas, isolamento entre empresas e efeitos de auditoria quando

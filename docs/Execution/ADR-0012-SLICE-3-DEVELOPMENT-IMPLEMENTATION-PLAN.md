@@ -3,8 +3,9 @@
 ## Autoridade e vínculo
 
 Este plano executa a ADR-0012 no domínio Development e detalha a infraestrutura
-necessária para refletir a PD-018. A PD-018 governa a semântica funcional; a
-ADR-0012 governa integridade tenant-owned. Em caso de divergência, a implementação
+necessária para refletir a PD-018. A ADR-0013 governa a autoridade global e a
+execução técnica confiável. A PD-018 governa a semântica funcional; a ADR-0012
+governa integridade tenant-owned. Em caso de divergência, a implementação
 para e a documentação é reconciliada antes de qualquer migration ou código.
 
 ## Estratégia de entrega
@@ -12,7 +13,7 @@ para e a documentação é reconciliada antes de qualquer migration ou código.
 | PR | Entrega | Status | Dependência |
 | --- | --- | --- | --- |
 | 3A | Operational Development Integrity | Concluída no commit `fe3d8914ce4da54e85f94794b367582971403ffa` | ADR-0012 |
-| 3B | Global Concepts and Tenant Mappings | Próxima entrega | PR 3A e PD-018 aprovadas |
+| 3B | Global Concepts and Tenant Mappings | Próxima entrega | PR 3A, PD-018 e ADR-0013 concluídas |
 | 3C | Deterministic Template Application and Snapshots | Planejada | PR 3B concluída |
 
 As três PRs são sequenciais. A conclusão de uma não autoriza automaticamente a
@@ -25,6 +26,26 @@ globais, suas versões e aliases, mappings tenant-owned e respectivas auditorias
 Evoluir Development Template Goals para representar, de forma exclusiva, o
 caminho global por conceito versionado ou o caminho company-owned por competência
 operacional, sem alterar ainda a aplicação de templates.
+
+## Global Authority Foundation
+
+A PR 3B materializa cadastro interno de autoridades e delegações globais,
+capabilities fechadas e versionadas, estados ativo, expirado e revogado,
+concedente e beneficiário humanos, motivo, validade temporal, auditoria
+append-only, identidade técnica separada, bootstrap operacional controlado e
+contexto global server-only. Owner/admin/hr continuam tenant-owned: administram
+Tenant Mappings da própria empresa, mas não conceitos globais. Curadoria global
+não concede autoridade tenant; as duas autorizações são avaliadas separadamente.
+
+`service_role` somente executa operação já autorizada, nunca comprova aprovação
+humana, nunca é ator humano ou credencial de cliente, permanece submetido às
+constraints e é registrado separadamente na auditoria.
+
+O catálogo distingue leitura, edição de drafts, publicação, descontinuação,
+aliases, publicação de templates e administração de curadores. Esta última não é
+consequência da curadoria de conteúdo. O bootstrap identifica o primeiro ator,
+usa executor técnico, audita a operação e não deriva autoridade de email, domínio
+ou membership.
 
 ## Escopo
 
@@ -191,6 +212,17 @@ transições e invariantes. Queries não expõem drafts globais a tenants. Actio
 resolvem contexto e ator, autorizam o papel e chamam o contrato da aplicação.
 Nenhum desses contratos chama ou altera `apply_development_template` na PR 3B.
 
+### Contexto global de autorização
+
+O contexto global é separado do `CurrentUserContext` tenant-owned. Resolve o ator
+por `auth.users.id`, carrega delegações ativas, exige a capability específica e
+valida expiração/revogação antes do executor técnico. Ator, capability e delegação
+do cliente são ignorados; erros não revelam curadores existentes.
+
+Auditoria registra ator humano, executor, delegação, capability, operação, alvo,
+motivo, timestamp, correlação, resultado e estados anterior/posterior quando
+aplicável. Secrets, tokens e chaves nunca são persistidos.
+
 ### Componentes mínimos de resolução
 
 A experiência administrativa expõe o conceito publicado, a versão exigida, o
@@ -245,6 +277,15 @@ snapshots e não transforma similaridade de nome em resolução.
 - `service_role` submetido à integridade física;
 - todos os gates do preflight;
 - regressão do fluxo company-owned existente, sem executar cutover global.
+- usuário sem delegação e papéis tenant sem autoridade global;
+- capability permitida, não delegada, expirada e revogada;
+- curador sem administração de curadores tentando delegar;
+- escrita global direta pelo cliente negada;
+- `service_role` incapaz de simular autoria humana;
+- auditoria separando ator, delegação e executor;
+- bootstrap e automação técnica auditados;
+- IA/identidade técnica incapaz de publicar;
+- escalonamento cross-tenant/global negado e revogação com efeito imediato.
 
 ### Gates técnicos
 

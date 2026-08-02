@@ -17,6 +17,7 @@ const sourceLabels = {
   organization: "Organização",
   system: "Sistema",
   people: "Pessoas",
+  financeiro: "Financeiro",
 } satisfies Record<DecisionFeedSource, string>
 
 const categoryLabels = {

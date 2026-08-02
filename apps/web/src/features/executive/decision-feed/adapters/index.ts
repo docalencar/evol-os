@@ -65,3 +65,12 @@ export type {
   OrganizationExecutiveSource,
   OrganizationExecutiveTeam,
 } from "./organization-decision-feed-provider"
+
+
+export {
+  FinanceiroDecisionFeedProvider,
+} from "./financeiro-decision-feed-provider"
+
+export type {
+  FonteFinanceiraExecutiva,
+} from "./financeiro-decision-feed-provider"

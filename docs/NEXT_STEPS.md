@@ -1,38 +1,47 @@
 # Evol OS — Próxima entrega
 
-## Hardening de acesso às notificações
+## Integridade relacional cross-tenant
 
 ### Objetivo
 
-Definir policies para as tabelas de Notifications e corrigir o diretório de
-destinatários para usar a entidade `people` existente.
+Endurecer as relações company-owned para impedir referências entre tenants nos
+domínios organizacionais que usam pessoas, cargos, times, departamentos e
+competências.
 
 ### Vínculo
 
 - Roadmap: Fundação confiável, item 1.
 - MVP Plan: Fundação, operação segura dos dados.
 - Épico: Fundação e Governança de Dados.
-- Evidência: `HCOS_DOMAIN_AUDIT.md` (HCOS-009), migration
-  `0034_create_notifications_foundation.sql` e recipient directory atual.
+- Evidência: `HCOS_DOMAIN_AUDIT.md` (HCOS-029) e
+  `docs/database/database_blueprint.md`.
 
 ### Critérios objetivos de aceite
 
-- matriz de acesso de Notifications definida antes da migration;
-- todas as tabelas de Notifications possuem policies explícitas;
-- isolamento por `company_id` é obrigatório;
-- o destinatário acessa somente as próprias notificações e preferências;
-- operações administrativas recebem apenas o acesso aprovado pelo produto;
-- recipient directory usa `people` e não consulta entidade inexistente;
-- testes adversariais cobrem acesso permitido e negado;
+- todas as relações company-owned do recorte são inventariadas antes da migration;
+- FKs compostas ou validação equivalente impedem referências cross-tenant;
+- preflight identifica registros incompatíveis sem corrigi-los silenciosamente;
+- constraints preservam os contratos e dados válidos existentes;
+- pgTAP comprova referências permitidas no mesmo tenant e nega referências entre
+  tenants;
 - migration, testes, TypeScript, lint e build passam;
-- documentação de segurança e do domínio é atualizada.
+- documentação registra o recorte efetivamente endurecido e o backlog restante.
 
 ### Fora de escopo
 
-- criar novos canais ou tipos de notificação;
-- alterar Activity ou outbox;
-- alterar outros domínios sensíveis;
-- adicionar novas funcionalidades.
+- alterar comportamento funcional dos módulos;
+- ampliar papéis, policies ou contratos públicos;
+- corrigir dados inválidos automaticamente;
+- refatorar application code sem necessidade para a integridade relacional;
+- antecipar capacidades funcionais posteriores ao gate de Fundação confiável.
+
+### Estratégia de rollout
+
+1. inventário resolve o recorte exato e as dependências entre migrations;
+2. preflight interrompe a aplicação quando houver referências incompatíveis;
+3. constraints são adicionadas incrementalmente e validadas no banco local;
+4. pgTAP adversarial comprova isolamento antes da aplicação humana;
+5. falha exige migration compensatória; migrations aplicadas não são editadas.
 
 ## Débito técnico conhecido — validação global
 

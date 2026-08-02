@@ -1,10 +1,14 @@
 import "server-only"
 
 import {
-  createNotificationFromRule,
-  defaultNotificationRule,
-  resolveNotificationRecipients,
-} from "@/features/notifications"
+  loadCurrentUserContext,
+} from "@/features/authorization"
+import {
+  createActivityNotificationProcessor,
+} from "@/features/notifications/server"
+import {
+  createServerDatabase,
+} from "@/lib/database/server-database"
 
 import {
   presentActivity,
@@ -22,98 +26,25 @@ import type {
   ActivityViewModel,
 } from "../view-models/activity-view-model"
 
-async function createActivityNotifications(
-  activity: ActivityViewModel
-): Promise<void> {
-  try {
-    const recipients =
-      await resolveNotificationRecipients({
-        companyId: activity.companyId,
-        activityType: activity.activityType,
-        activityEventId: activity.id,
-        module: activity.module,
-        actorId: activity.actorId,
-        entityType: activity.entityType,
-        entityId: activity.entityId,
-        subjectType: activity.subjectType,
-        subjectId: activity.subjectId,
-        metadata: activity.metadata,
-      })
-
-    if (recipients.length === 0) {
-      return
-    }
-
-    const message =
-      activity.description ??
-      activity.title
-
-    const results =
-      await Promise.all(
-        recipients.map(({ recipientId }) =>
-          createNotificationFromRule(
-            defaultNotificationRule,
-            {
-              companyId:
-                activity.companyId,
-              recipientId,
-              activityType:
-                activity.activityType,
-              activityEventId:
-                activity.id,
-              entityType:
-                activity.entityType,
-              entityId:
-                activity.entityId,
-              title:
-                activity.title,
-              message,
-              metadata:
-                activity.metadata,
-            }
-          )
-        )
-      )
-
-    const errors =
-      results
-        .map((result) =>
-          result.error?.message
-        )
-        .filter(
-          (
-            message
-          ): message is string =>
-            Boolean(message)
-        )
-
-    if (errors.length > 0) {
-      console.error(
-        "Não foi possível criar todas as notificações da atividade:",
-        {
-          activityEventId:
-            activity.id,
-          errors,
-        }
-      )
-    }
-  } catch (error) {
-    console.error(
-      "Erro ao processar notificações da atividade:",
-      {
-        activityEventId:
-          activity.id,
-        error,
-      }
-    )
-  }
-}
-
 export async function recordActivity(
   input: RecordActivityInput
 ): Promise<ActivityViewModel> {
-  const validatedInput =
+  const parsedInput =
     recordActivitySchema.parse(input)
+
+  const currentUser = await loadCurrentUserContext(
+    await createServerDatabase()
+  )
+  if (currentUser.companyId !== parsedInput.companyId) {
+    throw new Error("A atividade não pertence à empresa do usuário atual.")
+  }
+
+  const validatedInput = {
+    ...parsedInput,
+    actorId: parsedInput.actorType === "user"
+      ? currentUser.userId
+      : parsedInput.actorId,
+  }
 
   const repository =
     await createActivityRepository()
@@ -130,9 +61,30 @@ export async function recordActivity(
   const activity =
     presentActivity(data)
 
-  await createActivityNotifications(
-    activity
-  )
+  try {
+    const processor = await createActivityNotificationProcessor()
+    await processor.execute({
+      id: activity.id,
+      companyId: activity.companyId,
+      activityType: activity.activityType,
+      module: activity.module,
+      title: activity.title,
+      description: activity.description,
+      actorId: activity.actorId,
+      entityType: activity.entityType,
+      entityId: activity.entityId,
+      subjectType: activity.subjectType,
+      subjectId: activity.subjectId,
+      visibility: activity.visibility,
+      metadata: activity.metadata,
+      occurredAt: activity.occurredAt,
+    })
+  } catch (error) {
+    console.error("Erro ao persistir o Notification Event da atividade:", {
+      activityEventId: activity.id,
+      error,
+    })
+  }
 
   return activity
 }

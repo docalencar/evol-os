@@ -13,6 +13,7 @@ reservados antecipadamente.
 - [0008 — Deterministic Planning Projection](./0008-deterministic-planning-projection.md)
 - [0009 — Planning Comparison, Insights and AI Boundary](./0009-planning-comparison-insights-ai-boundary.md)
 - [0010 — Assessment Authorization](./0010-assessment-authorization.md)
+- [0011 — Notification Domain Architecture](./0011-notification-domain-architecture.md)
 - [ADR-001 — Organization Sync Engine](./ADR-001-organization-sync-engine.md)
 
 A numeração paralela de ADR-001 é histórica. Novas decisões devem seguir a série

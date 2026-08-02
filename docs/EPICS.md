@@ -14,8 +14,14 @@ Entrega uma base reproduzível e segura para todos os módulos.
 - atividades, notificações e outbox são rastreáveis e idempotentes;
 - validações automatizadas comprovam os contratos.
 
-Pendências comprovadas: policies de Notifications, recipient directory e
-integridade relacional entre tenants.
+Pendência comprovada: integridade relacional ampla entre tenants. O hardening de
+Notifications está concluído conforme PD-017, ADR-0011 e
+`docs/domain/NOTIFICATION_DOMAIN.md`.
+
+Notifications implementa usuário autenticável como recipient, Producers registrados,
+resolução por `people`, Delivery Policy determinística, persistência confiável,
+self access e administração apenas sobre metadados auditados. O hardening inicial
+é exclusivamente in-app.
 
 A autorização de Assessments segue PD-016 e ADR-0010: participação explícita,
 defesa em profundidade, imutabilidade após envio e leitura administrativa

@@ -3,6 +3,20 @@
 Este changelog registra somente grandes entregas incorporadas à `main`. Commits
 locais e branches abertas não entram aqui.
 
+## 2026-08-02 — Notification Domain in-app
+
+- política completa de identidade, produção, resolução, visibilidade,
+  administração, preferências e retenção;
+- arquitetura Producer → Event → Resolver → Delivery Policy → Persistence → Read
+  Model;
+- catálogo inicial in-app e limites explícitos para canais futuros;
+- persistência confiável, idempotência, self access, preferências e operações
+  administrativas sobre metadados com auditoria;
+- recipient directory reconciliado com `people` e integridade local protegida por
+  FKs e validação cross-tenant.
+
+Decisões: PD-017 e ADR-0011.
+
 ## 2026-08-01 — Autorização de Assessments
 
 - política de produto para evaluator, evaluatee e papéis administrativos;

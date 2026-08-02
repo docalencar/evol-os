@@ -13,10 +13,11 @@ import type {
 import type {
   NotificationViewModel,
 } from "../view-models/notification-view-model"
+import { loadNotificationActor } from "../application/load-notification-actor"
 
 export type GetNotificationsInput = {
-  companyId: string
-  recipientId: string
+  companyId?: string
+  recipientId?: string
   status?: NotificationStatus
   limit?: number
   offset?: number
@@ -41,19 +42,6 @@ export async function getNotifications(
   input: GetNotificationsInput
 ): Promise<GetNotificationsResult> {
   if (
-    !input.companyId ||
-    !input.recipientId
-  ) {
-    return {
-      data: [],
-      error: {
-        message:
-          "Empresa e destinatário são obrigatórios.",
-      },
-    }
-  }
-
-  if (
     input.status &&
     !isNotificationStatus(
       input.status
@@ -70,12 +58,12 @@ export async function getNotifications(
 
   const repository =
     await createNotificationRepository()
+  const actor = await loadNotificationActor()
 
   const { data, error } =
     await repository.findAllByRecipient({
-      companyId: input.companyId,
-      recipientId:
-        input.recipientId,
+      companyId: actor.companyId,
+      recipientId: actor.userId,
       status: input.status,
       limit: input.limit,
       offset: input.offset,

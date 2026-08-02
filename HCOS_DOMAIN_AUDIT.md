@@ -6,6 +6,13 @@
 > achados de Planning e schema. Riscos ainda comprovados foram incorporados ao
 > `docs/MVP_PLAN.md`, `docs/ROADMAP.md` e `docs/NEXT_STEPS.md`.
 
+> **Reconciliação de Notifications — 2026-08-02.** PD-017, ADR-0011,
+> `docs/domain/NOTIFICATION_DOMAIN.md` e migration 0063 concluíram HCOS-009. As
+> FKs e a idempotência locais registradas em HCOS-029 foram absorvidas pelo mesmo
+> hardening; a sequência histórica da seção 22 não define mais prioridade.
+> O estado operacional corrente está exclusivamente em `docs/ROADMAP.md` e
+> `docs/NEXT_STEPS.md`.
+
 **Data da auditoria:** 2026-07-29  
 **Método:** inspeção estática do repositório, migrations e documentação; nenhum banco foi iniciado e nenhum fluxo foi executado.  
 **Escopo:** árvore local completa no estado observado.  

@@ -10,11 +10,12 @@ import {
 import {
   createNotificationCommandRepository,
 } from "../repositories/notification-command-repository"
+import { loadNotificationActor } from "../application/load-notification-actor"
 
 const markNotificationAsReadSchema =
   z.object({
-    companyId: z.string().uuid(),
-    recipientId: z.string().uuid(),
+    companyId: z.string().uuid().optional(),
+    recipientId: z.string().uuid().optional(),
     notificationId: z.string().uuid(),
   })
 
@@ -46,12 +47,17 @@ export async function markNotificationAsReadAction(
 
   const repository =
     await createNotificationCommandRepository()
+  const actor = await loadNotificationActor()
 
   const {
     data,
     error,
   } = await repository.markAsRead(
-    parsed.data
+    {
+      companyId: actor.companyId,
+      recipientId: actor.userId,
+      notificationId: parsed.data.notificationId,
+    }
   )
 
   if (error) {

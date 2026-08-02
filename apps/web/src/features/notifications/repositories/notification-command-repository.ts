@@ -36,7 +36,7 @@ export async function createNotificationCommandRepository() {
         .eq("id", notificationId)
         .eq("company_id", companyId)
         .eq("recipient_id", recipientId)
-        .neq("status", "archived")
+        .eq("status", "unread")
         .is("archived_at", null)
         .select("id")
         .maybeSingle()
@@ -80,23 +80,8 @@ export async function createNotificationCommandRepository() {
         .eq("id", notificationId)
         .eq("company_id", companyId)
         .eq("recipient_id", recipientId)
-        .neq("status", "archived")
+        .in("status", ["unread", "read"])
         .is("archived_at", null)
-        .select("id")
-        .maybeSingle()
-    },
-
-    async delete({
-      companyId,
-      recipientId,
-      notificationId,
-    }: NotificationCommandTarget) {
-      return supabase
-        .from("notifications")
-        .delete()
-        .eq("id", notificationId)
-        .eq("company_id", companyId)
-        .eq("recipient_id", recipientId)
         .select("id")
         .maybeSingle()
     },

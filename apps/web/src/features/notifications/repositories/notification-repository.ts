@@ -7,9 +7,6 @@ import type {
   NotificationStatus,
   NotificationType,
 } from "../types/notification"
-import type {
-  ValidatedCreateNotificationInput,
-} from "../schemas/notification-schema"
 
 type NotificationRow = {
   id: string
@@ -71,40 +68,6 @@ export async function createNotificationRepository() {
     await createServerDatabase()
 
   return {
-    async create(
-      input: ValidatedCreateNotificationInput
-    ) {
-      const result = await supabase
-        .from("notifications")
-        .insert({
-          company_id: input.companyId,
-          recipient_id: input.recipientId,
-          activity_event_id:
-            input.activityEventId ?? null,
-          type: input.type,
-          priority: input.priority,
-          status: "unread",
-          title: input.title,
-          message: input.message,
-          entity_type:
-            input.entityType ?? null,
-          entity_id:
-            input.entityId ?? null,
-          metadata: input.metadata,
-        })
-        .select("*")
-        .single()
-
-      return {
-        data: result.data
-          ? mapNotificationRow(
-              result.data as NotificationRow
-            )
-          : null,
-        error: result.error,
-      }
-    },
-
     async findAllByRecipient(
       input: FindNotificationsByRecipientInput
     ) {

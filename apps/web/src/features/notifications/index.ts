@@ -17,50 +17,13 @@ export type {
   NotificationType,
 } from "./types/notification"
 
-export {
-  createNotificationSchema,
-  updateNotificationStatusSchema,
-} from "./schemas/notification-schema"
+export { updateNotificationStatusSchema } from "./schemas/notification-schema"
 
-export type {
-  CreateNotificationInput,
-  UpdateNotificationStatusInput,
-  ValidatedCreateNotificationInput,
-} from "./schemas/notification-schema"
+export type { UpdateNotificationStatusInput } from "./schemas/notification-schema"
 
 export {
   createNotificationRepository,
 } from "./repositories/notification-repository"
-
-export {
-  createNotificationPayload,
-} from "./factories/notification-factory"
-
-export type {
-  NotificationFactoryInput,
-} from "./factories/notification-factory"
-
-export type {
-  NotificationRule,
-  NotificationRuleContext,
-  NotificationRuleResult,
-} from "./rules/notification-rule"
-
-export {
-  defaultNotificationRule,
-} from "./rules/default-notification-rule"
-
-export {
-  createNotification,
-} from "./services/create-notification"
-
-export type {
-  CreateNotificationResult,
-} from "./services/create-notification"
-
-export {
-  createNotificationFromRule,
-} from "./services/create-notification-from-rule"
 
 export type {
   FindNotificationsByRecipientInput,
@@ -116,18 +79,8 @@ export type {
   NotificationActionResult,
 } from "./actions"
 
-export {
-  defaultNotificationRecipientResolver,
-  employeeNotificationRecipientResolver,
-  organizationNotificationRecipientResolver,
-  resolveNotificationRecipients,
-} from "./recipients"
-
 export type {
   NotificationRecipient,
-  NotificationRecipientContext,
-  NotificationRecipientResolver,
-  ResolveNotificationRecipientsOptions,
 } from "./recipients"
 
 export {
@@ -139,3 +92,15 @@ export {
 export type {
   NotificationRecipientDirectory,
 } from "./directory"
+
+export {
+  NotificationDeliveryPolicy,
+} from "./domain/delivery-policy"
+export {
+  createDefaultNotificationProducerRegistry,
+  NotificationProducerRegistry,
+} from "./domain/notification-producer-registry"
+export type {
+  NotificationEvent,
+  NotificationProducerKey,
+} from "./domain/notification-event"

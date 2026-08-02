@@ -4,12 +4,12 @@ import {
   createServerDatabase,
 } from "@/lib/database/server-database"
 
-type EmployeeUserRow = {
+type PersonUserRow = {
   id: string
   user_id: string | null
 }
 
-type EmployeeManagerRow = {
+type PersonManagerRow = {
   id: string
   manager_id: string | null
 }
@@ -29,14 +29,14 @@ export async function createNotificationRecipientDirectoryRepository() {
       employeeId: string
     ) {
       return supabase
-        .from("employees")
+        .from("people")
         .select(`
           id,
           user_id
         `)
         .eq("company_id", companyId)
         .eq("id", employeeId)
-        .maybeSingle<EmployeeUserRow>()
+        .maybeSingle<PersonUserRow>()
     },
 
     async findEmployeeManager(
@@ -44,14 +44,14 @@ export async function createNotificationRecipientDirectoryRepository() {
       employeeId: string
     ) {
       return supabase
-        .from("employees")
+        .from("people")
         .select(`
           id,
           manager_id
         `)
         .eq("company_id", companyId)
         .eq("id", employeeId)
-        .maybeSingle<EmployeeManagerRow>()
+        .maybeSingle<PersonManagerRow>()
     },
 
     async findManagerUser(
@@ -59,14 +59,14 @@ export async function createNotificationRecipientDirectoryRepository() {
       managerEmployeeId: string
     ) {
       return supabase
-        .from("employees")
+        .from("people")
         .select(`
           id,
           user_id
         `)
         .eq("company_id", companyId)
         .eq("id", managerEmployeeId)
-        .maybeSingle<EmployeeUserRow>()
+        .maybeSingle<PersonUserRow>()
     },
 
     async findTeamLeader(

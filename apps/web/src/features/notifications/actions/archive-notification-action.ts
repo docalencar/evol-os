@@ -10,14 +10,15 @@ import {
 import {
   createNotificationCommandRepository,
 } from "../repositories/notification-command-repository"
+import { loadNotificationActor } from "../application/load-notification-actor"
 import type {
   NotificationActionResult,
 } from "./mark-notification-as-read-action"
 
 const archiveNotificationSchema =
   z.object({
-    companyId: z.string().uuid(),
-    recipientId: z.string().uuid(),
+    companyId: z.string().uuid().optional(),
+    recipientId: z.string().uuid().optional(),
     notificationId: z.string().uuid(),
   })
 
@@ -44,12 +45,17 @@ export async function archiveNotificationAction(
 
   const repository =
     await createNotificationCommandRepository()
+  const actor = await loadNotificationActor()
 
   const {
     data,
     error,
   } = await repository.archive(
-    parsed.data
+    {
+      companyId: actor.companyId,
+      recipientId: actor.userId,
+      notificationId: parsed.data.notificationId,
+    }
   )
 
   if (error) {

@@ -1,23 +1,17 @@
 "use server"
 
 import {
-  revalidatePath,
-} from "next/cache"
-import {
   z,
 } from "zod"
 
-import {
-  createNotificationCommandRepository,
-} from "../repositories/notification-command-repository"
 import type {
   NotificationActionResult,
 } from "./mark-notification-as-read-action"
 
 const deleteNotificationSchema =
   z.object({
-    companyId: z.string().uuid(),
-    recipientId: z.string().uuid(),
+    companyId: z.string().uuid().optional(),
+    recipientId: z.string().uuid().optional(),
     notificationId: z.string().uuid(),
   })
 
@@ -42,38 +36,9 @@ export async function deleteNotificationAction(
     }
   }
 
-  const repository =
-    await createNotificationCommandRepository()
-
-  const {
-    data,
-    error,
-  } = await repository.delete(
-    parsed.data
-  )
-
-  if (error) {
-    return {
-      success: false,
-      message:
-        "Não foi possível excluir a notificação.",
-    }
-  }
-
-  if (!data) {
-    return {
-      success: false,
-      message:
-        "A notificação não foi encontrada.",
-    }
-  }
-
-  revalidatePath("/app")
-  revalidatePath("/app/notifications")
-
   return {
-    success: true,
+    success: false,
     message:
-      "Notificação excluída com sucesso.",
+      "Notificações podem ser arquivadas, mas não excluídas.",
   }
 }

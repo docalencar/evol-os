@@ -14,7 +14,8 @@
 | Arquitetura | [`../ARCHITECTURE.md`](../ARCHITECTURE.md) e [`adr/`](./adr/) |
 | Engenharia | [`engineering/`](./engineering/) |
 | Produto | [`Product/`](./Product/) |
-| Prompt padrão para agentes | [`Prompts/MASTER_PROMPT.md`](./Prompts/MASTER_PROMPT.md) |
+| Domínio de Notifications | [`domain/NOTIFICATION_DOMAIN.md`](./domain/NOTIFICATION_DOMAIN.md) |
+| Prompt padrão para agentes | [`prompts/MASTER_PROMPT.md`](./prompts/MASTER_PROMPT.md) |
 
 ## Regra de precedência
 

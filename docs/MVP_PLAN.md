@@ -26,10 +26,11 @@ decisões humanas.
   empresas é testado; dados sensíveis têm matriz de acesso e RLS; CI e validação
   local executam os gates documentados.
 - **Documentação:** `CLAUDE.md`, `docs/engineering/`,
-  `HCOS_DOMAIN_AUDIT.md`, `docs/database/database_blueprint.md`, PD-016 e
-  ADR-0010.
+  `HCOS_DOMAIN_AUDIT.md`, `docs/database/database_blueprint.md`, PD-016,
+  ADR-0010, PD-017, ADR-0011 e `docs/domain/NOTIFICATION_DOMAIN.md`.
 - **PRs relacionadas:** #6 e #45; hardening de Assessments pela migration 0062;
-  hardenings restantes ainda sem PR incorporada.
+  hardening de Notifications pela migration 0063; integridade relacional ampla
+  ainda sem PR incorporada.
 
 ### Organização
 

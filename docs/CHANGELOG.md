@@ -3,6 +3,18 @@
 Este changelog registra somente grandes entregas incorporadas à `main`. Commits
 locais e branches abertas não entram aqui.
 
+## 2026-08-02 — Integridade tenant-owned de Recruitment
+
+- segundo slice da ADR-0012 aplicado exclusivamente a
+  `recruitment_job_openings`;
+- seis relações com People, Departments e Positions convertidas para FKs
+  compostas usando as candidate keys existentes;
+- preflight read-only, constraints validadas e cobertura pgTAP para isolamento,
+  nulabilidade, `RESTRICT`, `SET NULL`, service role e regressão de RLS;
+- optionalidade, RLS e comportamento funcional preservados.
+
+Migration: 0065.
+
 ## 2026-08-02 — Integridade tenant-owned do núcleo organizacional
 
 - primeira fatia da ADR-0012 aplicada a Organization, People e Competencies;

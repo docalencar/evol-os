@@ -1,13 +1,14 @@
 # Evol OS — Próxima entrega
 
-## Definição do segundo slice de integridade tenant-owned
+## Definição do terceiro slice de integridade tenant-owned
 
 ### Objetivo
 
 Revalidar as relações tenant-owned ainda simples e obter do Product Architect um
 recorte único e explícito para a próxima implementação. O primeiro slice de
-Organization, People e Competencies foi concluído pela migration 0064; a
-ADR-0012 classifica os demais domínios, mas não prioriza automaticamente um deles.
+Organization, People e Competencies foi concluído pela migration 0064, e o
+segundo slice de Recruitment foi concluído pela migration 0065; a ADR-0012
+classifica os domínios restantes, mas não prioriza automaticamente um deles.
 
 ### Vínculo
 
@@ -20,8 +21,8 @@ ADR-0012 classifica os demais domínios, mas não prioriza automaticamente um de
 ### Critérios objetivos de aceite
 
 - o inventário remanescente é revalidado contra o schema posterior à migration
-  0064;
-- relações já compostas não retornam ao backlog;
+  0065;
+- relações já compostas pelas migrations 0064 e 0065 não retornam ao backlog;
 - relações Derived, híbridas ou polimórficas são classificadas antes de qualquer
   proposta de constraint;
 - a proposta identifica um único agregado, relações exatas, preflight,
@@ -32,7 +33,7 @@ ADR-0012 classifica os demais domínios, mas não prioriza automaticamente um de
 ### Fora de escopo
 
 - criar migration ou alterar código;
-- escolher automaticamente Assessment, Development, Feedback, Recruitment ou
+- escolher automaticamente Assessment, Development, Feedback, Activity ou
   qualquer outro consumidor;
 - alterar RLS, papéis, optionalidade ou comportamento funcional;
 - transformar relações polimórficas sem decisão específica;
@@ -41,7 +42,8 @@ ADR-0012 classifica os demais domínios, mas não prioriza automaticamente um de
 ### Estratégia de rollout
 
 1. consultar o schema e as migrations incorporadas;
-2. excluir do inventário as 14 relações concluídas na migration 0064;
+2. excluir do inventário as 14 relações concluídas na migration 0064 e as seis
+   relações de Recruitment concluídas na migration 0065;
 3. classificar ownership e dependências das relações restantes conforme ADR-0012;
 4. propor um recorte pequeno, sem implementação;
 5. aguardar aprovação explícita do Product Architect.

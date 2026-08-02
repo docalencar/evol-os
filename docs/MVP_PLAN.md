@@ -114,7 +114,7 @@ decisões humanas.
 - **Critérios de conclusão:** planos, objetivos, ações e templates funcionais;
   acesso protegido; acompanhamento periódico; recomendações apenas sobre dados
   autorizados.
-- **Documentação:** ADR-0002, ADR-0003 e
+- **Documentação:** ADR-0002, ADR-0003, PD-018 e
   `docs/Product/RH_BEST_PRACTICES.md`.
 - **PRs relacionadas:** #65 e entregas históricas do módulo Development.
 

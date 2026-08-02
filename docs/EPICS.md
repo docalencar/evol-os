@@ -67,8 +67,15 @@ one-on-one, check-ins, reconhecimentos e planos de ação.
 Entrega planos, objetivos, ações, templates, acompanhamento de estado e
 recomendações contextuais.
 
+PD-018 define que templates globais representam competências por Global
+Competency Concepts versionados, resolvidos por Tenant Mappings confirmados por
+humanos e preservados por Application Snapshots. Competências operacionais
+continuam estritamente tenant-owned; templates company-owned referenciam somente
+competências da própria empresa; IA pode sugerir mappings, mas nunca confirmá-los.
+
 Restante: comprovar autorização e fechar a jornada periódica com Feedback e
-Liderança.
+Liderança, além de implementar o hardening relacional de Development conforme
+ADR-0012 e PD-018.
 
 ## Recrutamento e Aprovações — parcial
 

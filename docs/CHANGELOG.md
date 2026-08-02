@@ -16,6 +16,17 @@ locais e branches abertas não entram aqui.
 
 Migration: 0066.
 
+## 2026-08-02 — Global Competency Concepts and Tenant Mapping
+
+- PD-018 aprovada como política funcional para competências em templates globais
+  de Development;
+- conceitos globais separados das competências operacionais tenant-owned;
+- resolução por Tenant Mapping humano e determinístico;
+- Application Snapshot definido como garantia de rastreabilidade histórica;
+- IA limitada a sugestões, sem autoridade para confirmar mappings.
+
+Decisão: PD-018.
+
 ## 2026-08-02 — Integridade tenant-owned de Recruitment
 
 - segundo slice da ADR-0012 aplicado exclusivamente a

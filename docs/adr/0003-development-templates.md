@@ -41,4 +41,11 @@ DevelopmentTemplate
         1
         ↓
         N DevelopmentTemplateAction
-        
+```
+
+## Referência de produto
+
+A representação funcional de competências em templates globais é definida pela
+PD-018 — Global Competency Concepts and Tenant Mapping, em
+`../Product/PRODUCT_DECISIONS.md`. Essa decisão complementa a semântica do
+produto sem alterar a arquitetura deste ADR.

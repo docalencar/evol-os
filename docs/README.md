@@ -10,6 +10,7 @@
 | Jornada completa até o MVP | [`MVP_PLAN.md`](./MVP_PLAN.md) |
 | Estado funcional das capacidades | [`EPICS.md`](./EPICS.md) |
 | Próxima entrega operacional | [`NEXT_STEPS.md`](./NEXT_STEPS.md) |
+| Plano do Slice 3 de Development | [`Execution/ADR-0012-SLICE-3-DEVELOPMENT-IMPLEMENTATION-PLAN.md`](./Execution/ADR-0012-SLICE-3-DEVELOPMENT-IMPLEMENTATION-PLAN.md) |
 | Grandes entregas incorporadas | [`CHANGELOG.md`](./CHANGELOG.md) |
 | Arquitetura | [`../ARCHITECTURE.md`](../ARCHITECTURE.md) e [`adr/`](./adr/) |
 | Integridade tenant-owned | [`Architecture/patterns/tenant-owned-referential-integrity.md`](./Architecture/patterns/tenant-owned-referential-integrity.md) |

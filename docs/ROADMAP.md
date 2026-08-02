@@ -16,9 +16,11 @@ O recorte operacional do terceiro slice está concluído pela migration 0066: as
 cinco relações entre `development_plans`, `development_goals` e
 `development_actions` agora preservam fisicamente o tenant. O recorte de
 templates globais permanece separado e sujeito à PD-018.
-O gate permanece aberto para os domínios consumidores ainda não endurecidos. Cada
-novo recorte deve ser explicitamente priorizado pelo Product Architect a partir
-do inventário remanescente; a ADR-0012 não define uma ordem automática entre eles.
+A PD-018 está aprovada e o Implementation Plan do Slice 3 está versionado em
+`Execution/ADR-0012-SLICE-3-DEVELOPMENT-IMPLEMENTATION-PLAN.md`. O próximo
+recorte explicitamente aprovado é a PR 3B — Global Concepts and Tenant Mappings.
+A PR 3C — Deterministic Template Application and Snapshots depende da conclusão
+e aprovação da PR 3B e não está autorizada nesta etapa.
 
 Somente depois desse gate o produto volta a expandir capacidades funcionais,
 começando pelo enriquecimento do modelo de cargos.
@@ -31,6 +33,8 @@ começando pelo enriquecimento do modelo de cargos.
   agregado; as migrations 0064, 0065 e 0066 concluem, respectivamente, o núcleo
   Organization, People e Competencies, o consumidor Recruitment e o agregado
   operacional de Development.
+- PD-018 define a separação entre conceitos globais e competências operacionais,
+  e o Implementation Plan aprovado recorta sua entrega em PRs 3B e 3C.
 
 Este documento é a fonte oficial de priorização. O plano completo está em
 `MVP_PLAN.md`; `NEXT_STEPS.md` contém somente a primeira entrega acima.

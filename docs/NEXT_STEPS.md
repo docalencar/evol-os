@@ -1,61 +1,61 @@
 # Evol OS — Próxima entrega
 
-## Definição do próximo recorte de integridade tenant-owned
+## PR 3B — Global Concepts and Tenant Mappings
 
 ### Objetivo
 
-Revalidar o inventário remanescente da ADR-0012 após a migration 0066 e obter do
-Product Architect um único recorte explícito para a próxima entrega. O PR 3A
-concluiu exclusivamente o agregado operacional de Development; Global Competency
-Concepts, Tenant Mapping e Application Snapshot permanecem fora desse recorte.
+Implementar a infraestrutura administrativa da PD-018 para conceitos globais,
+versões, aliases e mappings tenant-owned, além de preparar os dois caminhos
+exclusivos de Development Template Goals. A forma de aplicar templates permanece
+inalterada.
 
 ### Vínculo
 
 - Roadmap: Fundação confiável, item 1, ainda em andamento.
 - MVP Plan: Fundação, operação segura dos dados.
 - Épicos: Fundação e Governança de Dados; Desenvolvimento.
-- Evidência: `HCOS_DOMAIN_AUDIT.md` (HCOS-002 parcialmente mitigado).
-- Produto: PD-018, quando o recorte envolver templates globais.
-- Arquitetura: ADR-0012 e o padrão tenant-owned.
+- Dependências concluídas: PD-018 aprovada; ADR-0012 aceita; PR 3A concluída no
+  commit `fe3d8914ce4da54e85f94794b367582971403ffa`.
+- Plano: `Execution/ADR-0012-SLICE-3-DEVELOPMENT-IMPLEMENTATION-PLAN.md`.
+- Produto: PD-018.
+- Arquitetura: ADR-0003, ADR-0012 e o padrão tenant-owned.
 
 ### Critérios objetivos de aceite
 
-- as relações concluídas pelas migrations 0064, 0065 e 0066 são excluídas do
-  inventário;
-- relações restantes são classificadas por ownership, agregado e estratégia da
-  ADR-0012;
-- a proposta contém um único recorte, relações exatas, dependências, preflight,
-  riscos e validações;
-- nenhum trabalho de templates globais é iniciado sem respeitar a PD-018;
-- o Product Architect aprova explicitamente o recorte antes de migration ou
-  código.
+- conceitos, versões publicadas imutáveis, aliases e auditoria global obedecem à
+  PD-018;
+- mappings pertencem a uma empresa, resolvem somente competência do mesmo tenant
+  e exigem confirmação humana por `owner`, `admin` ou `hr`;
+- Development Template Goals possuem exatamente um caminho: conceito versionado
+  global ou competência company-owned;
+- conteúdo publicado e drafts respeitam a visibilidade prevista; nenhuma policy
+  permite cross-tenant;
+- preflight não infere nem corrige legado ambíguo;
+- contracts administrativos, testes unitários e pgTAP são entregues sem alterar
+  o contrato público de aplicação de templates;
+- todos os gates técnicos do Implementation Plan são executados.
 
 ### Fora de escopo
 
-- criar migration, código, testes ou schema;
-- escolher automaticamente o próximo agregado ou antecipar o recorte de
-  templates globais;
-- redefinir PD-018 ou ADR-0012;
-- inventar mapping para conteúdo legado;
-- alterar RLS, papéis ou regras funcionais.
+- Application Snapshot;
+- cutover ou alteração de `apply_development_template`;
+- PR 3C;
+- IA confirmando mapping;
+- inferência automática por nome ou alias;
+- correção automática de legado ambíguo;
+- funcionalidade não autorizada pela PD-018.
 
-### Estratégia de rollout
+### Regra de parada
 
-1. consultar o schema após a migration 0066;
-2. excluir do inventário os agregados já concluídos;
-3. classificar as relações tenant-owned restantes conforme ADR-0012;
-4. propor um único recorte com dependências e riscos de rollout;
-5. aguardar aprovação explícita do Product Architect.
+Interromper a implementação se o preflight encontrar legado ambíguo, se o schema
+divergir da PD-018 ou do Implementation Plan, ou se a integridade exigir nova
+decisão funcional ou arquitetural. Não inferir, reparar ou ampliar escopo.
 
-## Débito técnico conhecido — validação global
+### Gates técnicos
 
-Este registro não altera a prioridade operacional acima.
-
-- desacoplar o teste `create-employee-intelligence.test.ts` dos barrels que
-  carregam `server-only`, preservando a execução pelo runner `tsx`;
-- corrigir a resolução de `digest` em `save_approval_request`, definida na
-  migration `0046_create_approval_foundation.sql`, e tornar
-  `supabase db lint --local` integralmente limpo.
-
-Critério de conclusão: a suíte TypeScript completa e o lint local do banco passam
-sem dispensas.
+- migration autorizada e inspeção do catálogo;
+- pgTAP isolado e completo;
+- db lint;
+- TypeScript, build e lint;
+- `git diff --check`;
+- compatibilidade dos contratos existentes comprovada.

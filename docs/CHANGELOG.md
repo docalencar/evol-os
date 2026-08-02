@@ -3,6 +3,19 @@
 Este changelog registra somente grandes entregas incorporadas à `main`. Commits
 locais e branches abertas não entram aqui.
 
+## 2026-08-02 — Integridade tenant-owned do Development operacional
+
+- PR 3A do terceiro slice da ADR-0012 aplicado exclusivamente a
+  `development_plans`, `development_goals` e `development_actions`;
+- cinco relações convertidas para FKs compostas e três candidate keys
+  tenant-owned adicionadas;
+- joins técnicos dos triggers de planos fechados passaram a validar o tenant;
+- preflight read-only e pgTAP cobrem isolamento, nulabilidade, `CASCADE`,
+  `RESTRICT`, service role, triggers e regressão de RLS;
+- semânticas funcionais, RLS e contratos públicos preservados.
+
+Migration: 0066.
+
 ## 2026-08-02 — Integridade tenant-owned de Recruitment
 
 - segundo slice da ADR-0012 aplicado exclusivamente a

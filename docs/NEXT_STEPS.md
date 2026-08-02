@@ -1,51 +1,50 @@
 # Evol OS — Próxima entrega
 
-## Definição do terceiro slice de integridade tenant-owned
+## Definição do próximo recorte de integridade tenant-owned
 
 ### Objetivo
 
-Revalidar as relações tenant-owned ainda simples e obter do Product Architect um
-recorte único e explícito para a próxima implementação. O primeiro slice de
-Organization, People e Competencies foi concluído pela migration 0064, e o
-segundo slice de Recruitment foi concluído pela migration 0065; a ADR-0012
-classifica os domínios restantes, mas não prioriza automaticamente um deles.
+Revalidar o inventário remanescente da ADR-0012 após a migration 0066 e obter do
+Product Architect um único recorte explícito para a próxima entrega. O PR 3A
+concluiu exclusivamente o agregado operacional de Development; Global Competency
+Concepts, Tenant Mapping e Application Snapshot permanecem fora desse recorte.
 
 ### Vínculo
 
 - Roadmap: Fundação confiável, item 1, ainda em andamento.
 - MVP Plan: Fundação, operação segura dos dados.
-- Épico: Fundação e Governança de Dados.
+- Épicos: Fundação e Governança de Dados; Desenvolvimento.
 - Evidência: `HCOS_DOMAIN_AUDIT.md` (HCOS-002 parcialmente mitigado).
+- Produto: PD-018, quando o recorte envolver templates globais.
 - Arquitetura: ADR-0012 e o padrão tenant-owned.
 
 ### Critérios objetivos de aceite
 
-- o inventário remanescente é revalidado contra o schema posterior à migration
-  0065;
-- relações já compostas pelas migrations 0064 e 0065 não retornam ao backlog;
-- relações Derived, híbridas ou polimórficas são classificadas antes de qualquer
-  proposta de constraint;
-- a proposta identifica um único agregado, relações exatas, preflight,
-  dependências e riscos de rollout;
-- o Product Architect aprova explicitamente o próximo recorte antes de migration
-  ou código.
+- as relações concluídas pelas migrations 0064, 0065 e 0066 são excluídas do
+  inventário;
+- relações restantes são classificadas por ownership, agregado e estratégia da
+  ADR-0012;
+- a proposta contém um único recorte, relações exatas, dependências, preflight,
+  riscos e validações;
+- nenhum trabalho de templates globais é iniciado sem respeitar a PD-018;
+- o Product Architect aprova explicitamente o recorte antes de migration ou
+  código.
 
 ### Fora de escopo
 
-- criar migration ou alterar código;
-- escolher automaticamente Assessment, Development, Feedback, Activity ou
-  qualquer outro consumidor;
-- alterar RLS, papéis, optionalidade ou comportamento funcional;
-- transformar relações polimórficas sem decisão específica;
-- corrigir dados inválidos automaticamente.
+- criar migration, código, testes ou schema;
+- escolher automaticamente o próximo agregado ou antecipar o recorte de
+  templates globais;
+- redefinir PD-018 ou ADR-0012;
+- inventar mapping para conteúdo legado;
+- alterar RLS, papéis ou regras funcionais.
 
 ### Estratégia de rollout
 
-1. consultar o schema e as migrations incorporadas;
-2. excluir do inventário as 14 relações concluídas na migration 0064 e as seis
-   relações de Recruitment concluídas na migration 0065;
-3. classificar ownership e dependências das relações restantes conforme ADR-0012;
-4. propor um recorte pequeno, sem implementação;
+1. consultar o schema após a migration 0066;
+2. excluir do inventário os agregados já concluídos;
+3. classificar as relações tenant-owned restantes conforme ADR-0012;
+4. propor um único recorte com dependências e riscos de rollout;
 5. aguardar aprovação explícita do Product Architect.
 
 ## Débito técnico conhecido — validação global

@@ -1,8 +1,4 @@
 export {
-  getExecutiveHome,
-} from "./get-executive-home"
-
-export {
   getExecutiveOverview,
 } from "./get-executive-overview"
 

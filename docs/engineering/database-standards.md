@@ -164,6 +164,12 @@ As políticas devem seguir os papéis oficiais do Evol OS:
 
 Evitar acesso público.
 
+Mudanças em RLS, grants ou funções de autorização devem incluir testes pgTAP em
+`supabase/tests/`. Os testes exercitam usuários e papéis reais, operações
+permitidas e negadas, isolamento entre empresas e efeitos de auditoria quando
+aplicáveis. A validação oficial é `supabase test db`; inspeção estática da
+migration não substitui a execução desses cenários.
+
 ---
 
 # Seeds

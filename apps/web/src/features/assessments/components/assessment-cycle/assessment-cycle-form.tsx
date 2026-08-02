@@ -22,11 +22,13 @@ import { updateAssessmentCycleAction } from "../../actions/update-assessment-cyc
 import {
   assessmentCycleStatusOptions,
   assessmentCycleTypeOptions,
+  assessmentVisibilityOptions,
 } from "../../constants/assessment-cycle-options"
 import type {
   AssessmentCycle,
   AssessmentCycleStatus,
   AssessmentCycleType,
+  AssessmentVisibility,
 } from "../../types/assessment-cycle"
 import type { AssessmentTemplate } from "../../types/assessment-template"
 import {
@@ -155,6 +157,10 @@ export function AssessmentCycleForm({
   )
   const [anonymous, setAnonymous] =
     useState(cycle?.anonymous ?? false)
+  const [assessmentVisibility, setAssessmentVisibility] =
+    useState<AssessmentVisibility>(
+      cycle?.assessment_visibility ?? "none"
+    )
 
   const activeTemplates = templates.filter(
     (template) =>
@@ -186,6 +192,11 @@ export function AssessmentCycleForm({
     assessmentCycleStatusOptions.find(
       (option) => option.value === status
     )?.label ?? status
+
+  const assessmentVisibilityLabel =
+    assessmentVisibilityOptions.find(
+      (option) => option.value === assessmentVisibility
+    )?.label ?? assessmentVisibility
 
   function handleStartDateChange(
     value: string
@@ -285,6 +296,11 @@ export function AssessmentCycleForm({
         type="hidden"
         name="closeDate"
         value={closeDate}
+      />
+      <input
+        type="hidden"
+        name="assessmentVisibility"
+        value={assessmentVisibility}
       />
 
       {allowSelfAssessment ? (
@@ -443,12 +459,15 @@ export function AssessmentCycleForm({
             summary={
               <AssessmentPrivacySummary
                 anonymous={anonymous}
+                assessmentVisibilityLabel={assessmentVisibilityLabel}
               />
             }
           >
             <AssessmentPrivacyStep
               anonymous={anonymous}
               onAnonymousChange={setAnonymous}
+              assessmentVisibility={assessmentVisibility}
+              onAssessmentVisibilityChange={setAssessmentVisibility}
             />
           </ProductWizardStep>
 

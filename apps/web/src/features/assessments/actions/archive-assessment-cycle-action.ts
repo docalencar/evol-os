@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache"
 
+import { requireAssessmentAdministrator } from "../application/assessment-authorization"
+import { loadAssessmentActor } from "../application/load-assessment-actor"
 import { createAssessmentCycleRepository } from "../repositories/assessment-cycle-repository"
 
 type ArchiveAssessmentCycleActionState = {
@@ -13,6 +15,16 @@ export async function archiveAssessmentCycleAction(
   companyId: string,
   assessmentCycleId: string
 ): Promise<ArchiveAssessmentCycleActionState> {
+  try {
+    const actor = await loadAssessmentActor()
+    requireAssessmentAdministrator(actor, companyId)
+  } catch {
+    return {
+      success: false,
+      message: "Você não possui permissão para arquivar ciclos de avaliação.",
+    }
+  }
+
   const repository = await createAssessmentCycleRepository()
 
   const { error } = await repository.archive(

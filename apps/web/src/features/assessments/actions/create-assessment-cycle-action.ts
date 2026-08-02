@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache"
 
+import { requireAssessmentAdministrator } from "../application/assessment-authorization"
+import { loadAssessmentActor } from "../application/load-assessment-actor"
 import { createAssessmentCycleRepository } from "../repositories/assessment-cycle-repository"
 import { assessmentCycleSchema } from "../schemas/assessment-cycle-schema"
 
@@ -33,6 +35,7 @@ export async function createAssessmentCycleAction(
     allowDirectReportAssessment:
       formData.get("allowDirectReportAssessment") === "on",
     anonymous: formData.get("anonymous") === "on",
+    assessmentVisibility: formData.get("assessmentVisibility"),
   })
 
   if (!parsed.success) {
@@ -41,6 +44,16 @@ export async function createAssessmentCycleAction(
       message:
         parsed.error.issues[0]?.message ??
         "Dados inválidos para criar o ciclo.",
+    }
+  }
+
+  try {
+    const actor = await loadAssessmentActor()
+    requireAssessmentAdministrator(actor, companyId)
+  } catch {
+    return {
+      success: false,
+      message: "Você não possui permissão para criar ciclos de avaliação.",
     }
   }
 

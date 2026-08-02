@@ -183,6 +183,10 @@ Scores geram feedbacks.
 
 Feedbacks podem gerar PDIs.
 
+Autorização de responses, answers e resultados segue PD-016 e ADR-0010. Papel
+administrativo, evaluator e evaluatee são relações distintas; respostas enviadas
+ou concluídas são imutáveis.
+
 ---
 
 # Fora do escopo do MVP

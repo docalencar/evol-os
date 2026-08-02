@@ -3,6 +3,25 @@
 Este changelog registra somente grandes entregas incorporadas à `main`. Commits
 locais e branches abertas não entram aqui.
 
+## 2026-08-01 — Autorização de Assessments
+
+- política de produto para evaluator, evaluatee e papéis administrativos;
+- arquitetura de defesa em profundidade entre Application Layer e RLS;
+- visibilidade configurável do avaliado e auditoria de leituras administrativas.
+- policies evaluator-only para respostas brutas;
+- Secure Administrative Read Pattern e RPCs protegidas;
+- testes unitários e suíte pgTAP adversarial.
+
+Decisões: PD-016 e ADR-0010.
+
+Limitações conhecidas, anteriores a esta entrega:
+
+- a suíte TypeScript completa não carrega
+  `create-employee-intelligence.test.ts` no runner `tsx`, porque o barrel de
+  People alcança um módulo marcado com `server-only`;
+- `supabase db lint --local` reporta em `save_approval_request`, criada pela
+  migration 0046, a resolução inválida de `digest(text, unknown)`.
+
 ## 2026-08-01 — Executive Decision Center e Financeiro Executivo
 
 - Executive Context e Decision Feed agregável;

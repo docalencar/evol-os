@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache"
 
+import { requireAssessmentAdministrator } from "../application/assessment-authorization"
+import { loadAssessmentActor } from "../application/load-assessment-actor"
 import { createAssessmentCycleParticipantRepository } from "../repositories/assessment-cycle-participant-repository"
 import { createAssessmentResponseRepository } from "../repositories/assessment-response-repository"
 
@@ -16,6 +18,16 @@ export async function generateCycleAssessmentsAction({
   assessmentCycleId,
   assessmentTemplateId,
 }: GenerateCycleAssessmentsInput) {
+  try {
+    const actor = await loadAssessmentActor()
+    requireAssessmentAdministrator(actor, companyId)
+  } catch {
+    return {
+      success: false,
+      message: "Você não possui permissão para gerar avaliações.",
+    }
+  }
+
   const participantRepository =
     await createAssessmentCycleParticipantRepository()
 

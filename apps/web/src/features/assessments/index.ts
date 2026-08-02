@@ -1,12 +1,14 @@
 export {
   ASSESSMENT_CYCLE_STATUSES,
   ASSESSMENT_CYCLE_TYPES,
+  ASSESSMENT_VISIBILITIES,
 } from "./types/assessment-cycle"
 
 export type {
   AssessmentCycle,
   AssessmentCycleStatus,
   AssessmentCycleType,
+  AssessmentVisibility,
 } from "./types/assessment-cycle"
 
 export {
@@ -25,6 +27,8 @@ export {
   ASSESSMENT_CYCLE_TYPE_LABELS,
   assessmentCycleStatusOptions,
   assessmentCycleTypeOptions,
+  ASSESSMENT_VISIBILITY_LABELS,
+  assessmentVisibilityOptions,
 } from "./constants/assessment-cycle-options"
 
 export {
@@ -144,6 +148,15 @@ export {
 export {
   getAssessmentAnswers,
 } from "./queries/get-assessment-answers"
+
+export {
+  getAssessmentResultForEvaluatee,
+} from "./queries/get-assessment-result-for-evaluatee"
+
+export type {
+  AssessmentAdministrativeRead,
+  AssessmentEvaluateeResult,
+} from "./types/assessment-secure-read"
 
 export {
   startAssessmentResponseAction,

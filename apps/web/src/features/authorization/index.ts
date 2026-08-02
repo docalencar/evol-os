@@ -21,3 +21,9 @@ export {
 } from "./permission-catalog"
 export { resolvePermissions, roleHasPermission } from "./permission-resolver"
 export { CORPORATE_ROLES, isCorporateRole, type CorporateRole } from "./roles"
+export {
+  SecureAdministrativeReadService,
+  isAdministrativeRole,
+  type AdministrativeReadGateway,
+  type AdministrativeReadRequest,
+} from "./secure-administrative-read-service"

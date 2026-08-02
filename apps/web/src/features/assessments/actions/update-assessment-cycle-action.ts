@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache"
 
+import { requireAssessmentAdministrator } from "../application/assessment-authorization"
+import { loadAssessmentActor } from "../application/load-assessment-actor"
 import { createAssessmentCycleRepository } from "../repositories/assessment-cycle-repository"
 import { assessmentCycleSchema } from "../schemas/assessment-cycle-schema"
 
@@ -34,6 +36,7 @@ export async function updateAssessmentCycleAction(
     allowDirectReportAssessment:
       formData.get("allowDirectReportAssessment") === "on",
     anonymous: formData.get("anonymous") === "on",
+    assessmentVisibility: formData.get("assessmentVisibility"),
   })
 
   if (!parsed.success) {
@@ -42,6 +45,16 @@ export async function updateAssessmentCycleAction(
       message:
         parsed.error.issues[0]?.message ??
         "Dados inválidos para atualizar o ciclo.",
+    }
+  }
+
+  try {
+    const actor = await loadAssessmentActor()
+    requireAssessmentAdministrator(actor, companyId)
+  } catch {
+    return {
+      success: false,
+      message: "Você não possui permissão para alterar ciclos de avaliação.",
     }
   }
 

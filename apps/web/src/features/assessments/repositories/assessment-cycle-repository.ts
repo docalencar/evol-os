@@ -3,6 +3,7 @@ import { createServerDatabase } from "@/lib/database/server-database"
 import type {
   AssessmentCycleStatus,
   AssessmentCycleType,
+  AssessmentVisibility,
 } from "../types/assessment-cycle"
 
 type CreateAssessmentCycleData = {
@@ -20,6 +21,7 @@ type CreateAssessmentCycleData = {
   allowPeerAssessment: boolean
   allowDirectReportAssessment: boolean
   anonymous: boolean
+  assessmentVisibility: AssessmentVisibility
 }
 
 type UpdateAssessmentCycleData = CreateAssessmentCycleData & {
@@ -76,6 +78,7 @@ export async function createAssessmentCycleRepository() {
           allow_direct_report_assessment:
             data.allowDirectReportAssessment,
           anonymous: data.anonymous,
+          assessment_visibility: data.assessmentVisibility,
         })
     },
 
@@ -101,6 +104,7 @@ export async function createAssessmentCycleRepository() {
           allow_direct_report_assessment:
             data.allowDirectReportAssessment,
           anonymous: data.anonymous,
+          assessment_visibility: data.assessmentVisibility,
           updated_at: new Date().toISOString(),
         })
         .eq("company_id", data.companyId)

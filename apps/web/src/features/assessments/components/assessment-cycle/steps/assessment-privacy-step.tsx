@@ -2,15 +2,23 @@ import {
   ProductWizardHelp,
   ProductWizardSummary,
 } from "@/components/product"
+import { Label } from "@/components/ui/label"
+
+import { assessmentVisibilityOptions } from "../../../constants/assessment-cycle-options"
+import type { AssessmentVisibility } from "../../../types/assessment-cycle"
 
 type AssessmentPrivacyStepProps = {
   anonymous: boolean
   onAnonymousChange: (value: boolean) => void
+  assessmentVisibility: AssessmentVisibility
+  onAssessmentVisibilityChange: (value: AssessmentVisibility) => void
 }
 
 export function AssessmentPrivacyStep({
   anonymous,
   onAnonymousChange,
+  assessmentVisibility,
+  onAssessmentVisibilityChange,
 }: AssessmentPrivacyStepProps) {
   return (
     <div className="space-y-4">
@@ -36,6 +44,34 @@ export function AssessmentPrivacyStep({
         </span>
       </label>
 
+      <div className="space-y-2 rounded-lg border p-4">
+        <Label htmlFor="assessment-visibility">
+          O que o avaliado poderá ver?
+        </Label>
+
+        <select
+          id="assessment-visibility"
+          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          value={assessmentVisibility}
+          onChange={(event) =>
+            onAssessmentVisibilityChange(
+              event.target.value as AssessmentVisibility
+            )
+          }
+        >
+          {assessmentVisibilityOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+
+        <p className="text-sm leading-5 text-muted-foreground">
+          Essa configuração controla o resultado apresentado ao avaliado depois
+          do envio. Ela nunca concede acesso às respostas em elaboração.
+        </p>
+      </div>
+
       <ProductWizardHelp label="Como funciona a privacidade?">
         A proteção da identidade pode incentivar respostas mais
         sinceras, principalmente nas avaliações por pares e liderados.
@@ -46,16 +82,17 @@ export function AssessmentPrivacyStep({
 
 type AssessmentPrivacySummaryProps = {
   anonymous: boolean
+  assessmentVisibilityLabel: string
 }
 
 export function AssessmentPrivacySummary({
   anonymous,
+  assessmentVisibilityLabel,
 }: AssessmentPrivacySummaryProps) {
   return (
     <ProductWizardSummary>
-      {anonymous
-        ? "Identidade dos avaliadores protegida"
-        : "Identidade dos avaliadores visível"}
+      {anonymous ? "Identidade protegida" : "Identidade visível"}
+      {` · ${assessmentVisibilityLabel}`}
     </ProductWizardSummary>
   )
 }

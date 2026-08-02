@@ -26,8 +26,10 @@ decisões humanas.
   empresas é testado; dados sensíveis têm matriz de acesso e RLS; CI e validação
   local executam os gates documentados.
 - **Documentação:** `CLAUDE.md`, `docs/engineering/`,
-  `HCOS_DOMAIN_AUDIT.md`, `docs/database/database_blueprint.md`.
-- **PRs relacionadas:** #6 e #45; hardenings restantes ainda sem PR incorporada.
+  `HCOS_DOMAIN_AUDIT.md`, `docs/database/database_blueprint.md`, PD-016 e
+  ADR-0010.
+- **PRs relacionadas:** #6 e #45; hardening de Assessments pela migration 0062;
+  hardenings restantes ainda sem PR incorporada.
 
 ### Organização
 
@@ -79,14 +81,15 @@ decisões humanas.
 
 - **Objetivo:** criar ciclos, coletar respostas e produzir resultados de
   performance com acesso seguro.
-- **Status:** Bloqueada.
+- **Status:** Parcial; subordinada ao gate de Fundação.
 - **Dependências:** Fundação, Pessoas e Competências.
 - **Critérios de conclusão:** templates, ciclos, participantes, execução e
   resultados funcionais; autorização por ator; visibilidade e eventual anonimato
   definidos e testados.
-- **Documentação:** ADR-0006, `docs/experiences/assessments.md` e
-  `docs/domain/PERFORMANCE_DOMAIN.md`.
-- **PRs relacionadas:** fundação histórica e integrações executivas #66.
+- **Documentação:** ADR-0006, ADR-0010, PD-016,
+  `docs/experiences/assessments.md` e `docs/domain/PERFORMANCE_DOMAIN.md`.
+- **PRs relacionadas:** fundação histórica, integrações executivas #66 e
+  hardening de autorização pela migration 0062.
 
 ### Feedback
 

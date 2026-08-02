@@ -21,6 +21,17 @@ export const ASSESSMENT_CYCLE_STATUSES = [
 export type AssessmentCycleStatus =
   (typeof ASSESSMENT_CYCLE_STATUSES)[number]
 
+export const ASSESSMENT_VISIBILITIES = [
+  "none",
+  "score",
+  "score_and_competencies",
+  "score_and_comments",
+  "full",
+] as const
+
+export type AssessmentVisibility =
+  (typeof ASSESSMENT_VISIBILITIES)[number]
+
 export type AssessmentCycle = {
   id: string
   company_id: string
@@ -43,6 +54,7 @@ export type AssessmentCycle = {
   allow_direct_report_assessment: boolean
 
   anonymous: boolean
+  assessment_visibility: AssessmentVisibility
 
   created_at: string
   updated_at: string

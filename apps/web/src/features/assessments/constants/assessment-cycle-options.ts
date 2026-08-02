@@ -1,6 +1,7 @@
 import type {
   AssessmentCycleStatus,
   AssessmentCycleType,
+  AssessmentVisibility,
 } from "../types/assessment-cycle"
 
 export const ASSESSMENT_CYCLE_TYPE_LABELS: Record<
@@ -37,5 +38,23 @@ export const assessmentCycleStatusOptions = Object.entries(
   ASSESSMENT_CYCLE_STATUS_LABELS
 ).map(([value, label]) => ({
   value: value as AssessmentCycleStatus,
+  label,
+}))
+
+export const ASSESSMENT_VISIBILITY_LABELS: Record<
+  AssessmentVisibility,
+  string
+> = {
+  none: "Sem acesso aos resultados",
+  score: "Somente nota geral",
+  score_and_competencies: "Nota e competências",
+  score_and_comments: "Nota e comentários",
+  full: "Resultado completo",
+}
+
+export const assessmentVisibilityOptions = Object.entries(
+  ASSESSMENT_VISIBILITY_LABELS
+).map(([value, label]) => ({
+  value: value as AssessmentVisibility,
   label,
 }))

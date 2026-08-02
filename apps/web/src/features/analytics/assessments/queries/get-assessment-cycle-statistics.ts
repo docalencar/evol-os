@@ -1,37 +1,19 @@
-import { createAssessmentAnswerRepository } from "@/features/assessments/repositories/assessment-answer-repository"
-import type { AssessmentAnswer } from "@/features/assessments/types/assessment-answer"
+import { readAssessmentAdministratively } from "@/features/assessments/application/assessment-administrative-read-service"
 
 import { calculateAssessmentStatistics } from "../services/calculate-assessment-statistics"
-import { getAssessmentResponsesByCycle } from "@/features/assessments/queries/get-assessment-responses-by-cycle"
 
 export async function getAssessmentCycleStatistics(
   companyId: string,
   assessmentCycleId: string
 ) {
-  const responses =
-    await getAssessmentResponsesByCycle(
-      companyId,
-      assessmentCycleId
-    )
-
-  const responseIds = responses.map(
-    (response) => response.id
+  const result = await readAssessmentAdministratively(
+    companyId,
+    "cycle",
+    assessmentCycleId,
+    "calculate_assessment_cycle_statistics"
   )
 
-  const repository =
-    await createAssessmentAnswerRepository()
-
-  const { data, error } =
-    await repository.findAllByResponses(
-      companyId,
-      responseIds
-    )
-
-  if (error) {
-    throw new Error(error.message)
-  }
-
   return calculateAssessmentStatistics(
-    (data ?? []) as AssessmentAnswer[]
+    result.answers
   )
 }

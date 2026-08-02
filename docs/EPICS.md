@@ -14,8 +14,12 @@ Entrega uma base reproduzível e segura para todos os módulos.
 - atividades, notificações e outbox são rastreáveis e idempotentes;
 - validações automatizadas comprovam os contratos.
 
-Pendências comprovadas: autorização de Assessments, policies de Notifications,
-recipient directory e integridade relacional entre tenants.
+Pendências comprovadas: policies de Notifications, recipient directory e
+integridade relacional entre tenants.
+
+A autorização de Assessments segue PD-016 e ADR-0010: participação explícita,
+defesa em profundidade, imutabilidade após envio e leitura administrativa
+auditável.
 
 ## Organização e Pessoas — parcial
 
@@ -28,13 +32,15 @@ workspaces, importação e Sync Engine.
 Restante: hardening das invariantes e enriquecimento de cargos após o gate de
 Fundação.
 
-## Avaliações e Performance — bloqueado
+## Avaliações e Performance — parcial
 
 Entrega templates, ciclos, participantes, execução, respostas, resultados e
 estatísticas.
 
-A jornada funcional existe, mas a capacidade não pode ser concluída enquanto o
-acesso a responses e answers depender apenas de membership da empresa.
+A autorização de responses e answers implementa PD-016 e ADR-0010, incluindo
+self access do evaluator, leitura administrativa auditável, imutabilidade após
+envio e os recortes de `Assessment Visibility` para o avaliado. A capacidade
+continua subordinada ao gate de Fundação e às jornadas restantes do MVP Plan.
 
 ## Feedback e Liderança — parcial
 

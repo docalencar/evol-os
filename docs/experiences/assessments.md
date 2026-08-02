@@ -10,6 +10,13 @@ Permitir que colaboradores e gestores realizem avaliações de forma simples, es
 - Gestores
 - Colaboradores
 
+## Autorização e visibilidade
+
+A política oficial é PD-016. Sua aplicação arquitetural está em ADR-0010.
+Managers não recebem privilégio por hierarquia; o acesso decorre de participação
+como evaluator. O resultado apresentado ao avaliado respeita `Assessment
+Visibility` configurado no ciclo.
+
 ## Jornada
 
 Template

@@ -3,6 +3,7 @@ import { z } from "zod"
 import {
   ASSESSMENT_CYCLE_STATUSES,
   ASSESSMENT_CYCLE_TYPES,
+  ASSESSMENT_VISIBILITIES,
 } from "../types/assessment-cycle"
 
 const optionalDateSchema = z
@@ -56,6 +57,8 @@ export const assessmentCycleSchema = z
     allowDirectReportAssessment: z.boolean(),
 
     anonymous: z.boolean(),
+
+    assessmentVisibility: z.enum(ASSESSMENT_VISIBILITIES),
   })
   .superRefine((data, context) => {
     const startDate = new Date(`${data.startDate}T00:00:00`)

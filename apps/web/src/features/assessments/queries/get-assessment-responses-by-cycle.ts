@@ -1,21 +1,15 @@
-import { createAssessmentResponseRepository } from "../repositories/assessment-response-repository"
+import { readAssessmentAdministratively } from "../application/assessment-administrative-read-service"
 
 export async function getAssessmentResponsesByCycle(
   companyId: string,
   assessmentCycleId: string
 ) {
-  const repository =
-    await createAssessmentResponseRepository()
+  const result = await readAssessmentAdministratively(
+    companyId,
+    "cycle",
+    assessmentCycleId,
+    "monitor_assessment_cycle"
+  )
 
-  const { data, error } =
-    await repository.findByCycle(
-      companyId,
-      assessmentCycleId
-    )
-
-  if (error) {
-    throw new Error(error.message)
-  }
-
-  return data ?? []
+  return result.responses
 }

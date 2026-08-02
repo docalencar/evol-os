@@ -141,3 +141,59 @@ Toda nova funcionalidade deverá considerar três públicos:
 • Colaborador
 
 Nenhuma funcionalidade será desenhada pensando apenas em um deles.
+
+---
+
+# PD-016 — Assessment Authorization Policy
+
+**Status:** Approved
+
+**Owner:** Product Architect
+
+O módulo de Avaliações adota autorização por papel organizacional e por
+participação explícita na `assessment_response`.
+
+## Papéis e criação
+
+- `owner`, `admin` e `hr` podem criar ciclos, avaliações e atribuições;
+- `manager` não é papel administrativo e só recebe acesso quando participa como
+  `evaluator`;
+- `evaluator` e `evaluatee` são relações da avaliação, não papéis administrativos.
+
+## Respostas
+
+- somente o `evaluator` associado pode visualizar, editar, salvar e enviar sua
+  resposta enquanto ela estiver em `draft` ou `in_progress`;
+- depois de `submitted` ou `completed`, o `evaluator` continua podendo visualizar,
+  mas não pode alterar;
+- responses submetidas ou concluídas são imutáveis e não podem ser reabertas sem
+  uma funcionalidade oficial futura;
+- `owner`, `admin` e `hr` podem ler todas as `assessment_responses` e
+  `assessment_answers` da empresa, mas nunca alterá-las;
+- toda leitura administrativa deve ser auditável;
+- nenhum outro usuário pode alterar respostas.
+
+## Visibilidade do avaliado
+
+Cada ciclo possui uma configuração `Assessment Visibility` com um dos valores:
+
+- `none`;
+- `score`;
+- `score_and_competencies`;
+- `score_and_comments`;
+- `full`.
+
+O acesso do `evaluatee` deve respeitar essa configuração. Ela não concede ao
+avaliado permissão para alterar a resposta de outro evaluator.
+
+## Exportação e defesa em profundidade
+
+- somente `owner`, `admin` e `hr` podem exportar avaliações;
+- toda autorização é validada pela Application Layer e igualmente protegida no
+  banco por RLS;
+- nunca se confia apenas na aplicação;
+- operações administrativas, especialmente leitura, exportação, encerramento e
+  uma eventual reabertura futura, devem ser auditáveis.
+
+Esta decisão é a referência para Assessment, Assessment 360, Calibration,
+Succession, Performance Review e futuras capacidades derivadas de Assessment.

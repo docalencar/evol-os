@@ -12,6 +12,7 @@ reservados antecipadamente.
 - [0007 — Planning Snapshot Lineage](./0007-planning-snapshot-lineage.md)
 - [0008 — Deterministic Planning Projection](./0008-deterministic-planning-projection.md)
 - [0009 — Planning Comparison, Insights and AI Boundary](./0009-planning-comparison-insights-ai-boundary.md)
+- [0010 — Assessment Authorization](./0010-assessment-authorization.md)
 - [ADR-001 — Organization Sync Engine](./ADR-001-organization-sync-engine.md)
 
 A numeração paralela de ADR-001 é histórica. Novas decisões devem seguir a série

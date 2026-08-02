@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache"
 
+import { requireAssessmentAdministrator } from "../application/assessment-authorization"
+import { loadAssessmentActor } from "../application/load-assessment-actor"
 import { createAssessmentCycleParticipantRepository } from "../repositories/assessment-cycle-participant-repository"
 
 type Input = {
@@ -19,6 +21,16 @@ export async function addCycleParticipantsAction({
     return {
       success: false,
       message: "Nenhum colaborador selecionado.",
+    }
+  }
+
+  try {
+    const actor = await loadAssessmentActor()
+    requireAssessmentAdministrator(actor, companyId)
+  } catch {
+    return {
+      success: false,
+      message: "Você não possui permissão para alterar participantes.",
     }
   }
 

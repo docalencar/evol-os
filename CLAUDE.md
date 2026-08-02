@@ -218,7 +218,8 @@ arquivos de config — não os replique aqui.
 O build e o lint fazem parte da definição de pronto. Hoje não existe script
 agregado `check` nem script geral `test`: execute `npm run build`, `npm run lint`,
 `npx tsc --noEmit` no workspace web e os testes aplicáveis com o runner usado pelo
-projeto. Declare no handoff exatamente quais comandos foram executados.
+projeto. Mudanças em RLS ou funções de autorização do banco também executam
+`supabase test db`. Declare no handoff exatamente quais comandos foram executados.
 
 Testes acompanham **domínio e lógica determinística**, que têm prioridade sobre a
 interface. Deve existir teste correspondente sempre que houver **engine, regra de

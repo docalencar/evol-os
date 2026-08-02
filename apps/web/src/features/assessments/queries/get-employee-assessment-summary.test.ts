@@ -3,7 +3,7 @@ import test from "node:test"
 
 import type { AssessmentAnswer } from "../types/assessment-answer"
 import type { AssessmentResponse } from "../types/assessment-response"
-import { summarizeEmployeeAssessments } from "./get-employee-assessment-summary"
+import { summarizeEmployeeAssessments } from "../services/summarize-employee-assessments"
 
 function response(
   id: string,

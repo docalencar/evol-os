@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache"
 
+import { requireAssessmentAdministrator } from "../application/assessment-authorization"
+import { loadAssessmentActor } from "../application/load-assessment-actor"
 import { createAssessmentResponseRepository } from "../repositories/assessment-response-repository"
 import {
   startAssessmentResponseSchema,
@@ -26,6 +28,16 @@ export async function startAssessmentResponseAction(
       message:
         parsed.error.issues[0]?.message ??
         "Dados inválidos para iniciar a avaliação.",
+    }
+  }
+
+  try {
+    const actor = await loadAssessmentActor()
+    requireAssessmentAdministrator(actor, companyId)
+  } catch {
+    return {
+      success: false,
+      message: "Você não possui permissão para criar avaliações.",
     }
   }
 

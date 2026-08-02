@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache"
 
+import { requireAssessmentEvaluator } from "../application/assessment-authorization"
+import { loadAssessmentActor } from "../application/load-assessment-actor"
 import { createAssessmentAnswerRepository } from "../repositories/assessment-answer-repository"
 import { createAssessmentResponseRepository } from "../repositories/assessment-response-repository"
 import {
@@ -50,6 +52,16 @@ export async function saveAssessmentAnswerAction(
 
   const response =
     responseData as AssessmentResponse
+
+  try {
+    const actor = await loadAssessmentActor()
+    requireAssessmentEvaluator(actor, response, "write")
+  } catch {
+    return {
+      success: false,
+      message: "Você não possui permissão para alterar esta avaliação.",
+    }
+  }
 
   if (
     response.status === "submitted" ||

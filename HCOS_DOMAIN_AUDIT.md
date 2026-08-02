@@ -13,6 +13,13 @@
 > O estado operacional corrente está exclusivamente em `docs/ROADMAP.md` e
 > `docs/NEXT_STEPS.md`.
 
+> **Reconciliação de integridade tenant-owned — 2026-08-02.** A Discovery
+> revalidou HCOS-002 no schema atual: 64 FKs entre tabelas company-owned ainda
+> usam somente o ID, das quais 39 referenciam diretamente People, Position, Team,
+> Department ou Competency. ADR-0012 oficializa a estratégia transversal e o
+> padrão operacional. A execução passa a ocorrer em slices por agregado; a
+> primeira está definida exclusivamente em `docs/NEXT_STEPS.md`.
+
 > **Primeiro slice tenant-owned — 2026-08-02.** A migration 0064 mitigou
 > parcialmente HCOS-002 ao converter as 14 relações de Organization, People e
 > Competencies para FKs compostas validadas. People, Departments, Teams,

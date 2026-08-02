@@ -14,6 +14,7 @@ reservados antecipadamente.
 - [0009 — Planning Comparison, Insights and AI Boundary](./0009-planning-comparison-insights-ai-boundary.md)
 - [0010 — Assessment Authorization](./0010-assessment-authorization.md)
 - [0011 — Notification Domain Architecture](./0011-notification-domain-architecture.md)
+- [0012 — Tenant-Owned Referential Integrity Strategy](./0012-tenant-owned-referential-integrity-strategy.md)
 - [ADR-001 — Organization Sync Engine](./ADR-001-organization-sync-engine.md)
 
 A numeração paralela de ADR-001 é histórica. Novas decisões devem seguir a série

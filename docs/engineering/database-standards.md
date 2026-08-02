@@ -83,6 +83,12 @@ position_id
 
 Sempre criar a foreign key correspondente.
 
+Relações entre entidades pertencentes a uma empresa seguem obrigatoriamente a
+ADR-0012 e o padrão
+`../Architecture/patterns/tenant-owned-referential-integrity.md`. A identidade
+relacional canônica usa `unique (id, company_id)` no destino e FK
+`(related_id, company_id)` na origem. RLS não substitui essa garantia.
+
 ---
 
 # Auditoria
@@ -216,5 +222,6 @@ Evitar:
 Este documento complementa:
 
 - Database Blueprint
+- ADR-0012 — Tenant-Owned Referential Integrity Strategy
 - ENGINEERING_GUIDE.md
 - ADRs de Arquitetura

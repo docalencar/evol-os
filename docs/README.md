@@ -12,6 +12,7 @@
 | Próxima entrega operacional | [`NEXT_STEPS.md`](./NEXT_STEPS.md) |
 | Grandes entregas incorporadas | [`CHANGELOG.md`](./CHANGELOG.md) |
 | Arquitetura | [`../ARCHITECTURE.md`](../ARCHITECTURE.md) e [`adr/`](./adr/) |
+| Integridade tenant-owned | [`Architecture/patterns/tenant-owned-referential-integrity.md`](./Architecture/patterns/tenant-owned-referential-integrity.md) |
 | Engenharia | [`engineering/`](./engineering/) |
 | Produto | [`Product/`](./Product/) |
 | Domínio de Notifications | [`domain/NOTIFICATION_DOMAIN.md`](./domain/NOTIFICATION_DOMAIN.md) |

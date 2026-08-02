@@ -26,11 +26,14 @@ decisões humanas.
   empresas é testado; dados sensíveis têm matriz de acesso e RLS; CI e validação
   local executam os gates documentados.
 - **Documentação:** `CLAUDE.md`, `docs/engineering/`,
-  `HCOS_DOMAIN_AUDIT.md`, `docs/database/database_blueprint.md`, PD-016,
-  ADR-0010, PD-017, ADR-0011 e `docs/domain/NOTIFICATION_DOMAIN.md`.
+  `HCOS_DOMAIN_AUDIT.md`, `docs/Database/database_blueprint.md`, PD-016,
+  ADR-0010, PD-017, ADR-0011, ADR-0012,
+  `docs/Architecture/patterns/tenant-owned-referential-integrity.md` e
+  `docs/domain/NOTIFICATION_DOMAIN.md`.
 - **PRs relacionadas:** #6 e #45; hardening de Assessments pela migration 0062;
-  hardening de Notifications pela migration 0063; integridade relacional ampla
-  ainda sem PR incorporada.
+  hardening de Notifications pela migration 0063; primeiro slice da ADR-0012
+  implementado pela migration 0064 no commit `7271f49`; integridade relacional
+  dos domínios consumidores ainda pendente.
 
 ### Organização
 

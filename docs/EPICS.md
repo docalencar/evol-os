@@ -18,6 +18,12 @@ Pendência comprovada: integridade relacional ampla entre tenants. O hardening d
 Notifications está concluído conforme PD-017, ADR-0011 e
 `docs/domain/NOTIFICATION_DOMAIN.md`.
 
+ADR-0012 define a estratégia de ownership, chaves candidatas, FKs compostas,
+derivação, polimorfismo e rollout. O primeiro slice foi implementado no núcleo
+Organization, People e Competencies pela migration 0064 e pelo commit `7271f49`.
+O hardening continua incrementalmente nos domínios consumidores, em recortes
+explicitamente aprovados.
+
 Notifications implementa usuário autenticável como recipient, Producers registrados,
 resolução por `people`, Delivery Policy determinística, persistência confiável,
 self access e administração apenas sobre metadados auditados. O hardening inicial

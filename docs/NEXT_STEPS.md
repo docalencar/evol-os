@@ -1,47 +1,50 @@
 # Evol OS — Próxima entrega
 
-## Integridade relacional cross-tenant
+## Definição do segundo slice de integridade tenant-owned
 
 ### Objetivo
 
-Endurecer as relações company-owned para impedir referências entre tenants nos
-domínios organizacionais que usam pessoas, cargos, times, departamentos e
-competências.
+Revalidar as relações tenant-owned ainda simples e obter do Product Architect um
+recorte único e explícito para a próxima implementação. O primeiro slice de
+Organization, People e Competencies foi concluído pela migration 0064; a
+ADR-0012 classifica os demais domínios, mas não prioriza automaticamente um deles.
 
 ### Vínculo
 
-- Roadmap: Fundação confiável, item 1.
+- Roadmap: Fundação confiável, item 1, ainda em andamento.
 - MVP Plan: Fundação, operação segura dos dados.
 - Épico: Fundação e Governança de Dados.
-- Evidência: `HCOS_DOMAIN_AUDIT.md` (HCOS-029) e
-  `docs/database/database_blueprint.md`.
+- Evidência: `HCOS_DOMAIN_AUDIT.md` (HCOS-002 parcialmente mitigado).
+- Arquitetura: ADR-0012 e o padrão tenant-owned.
 
 ### Critérios objetivos de aceite
 
-- todas as relações company-owned do recorte são inventariadas antes da migration;
-- FKs compostas ou validação equivalente impedem referências cross-tenant;
-- preflight identifica registros incompatíveis sem corrigi-los silenciosamente;
-- constraints preservam os contratos e dados válidos existentes;
-- pgTAP comprova referências permitidas no mesmo tenant e nega referências entre
-  tenants;
-- migration, testes, TypeScript, lint e build passam;
-- documentação registra o recorte efetivamente endurecido e o backlog restante.
+- o inventário remanescente é revalidado contra o schema posterior à migration
+  0064;
+- relações já compostas não retornam ao backlog;
+- relações Derived, híbridas ou polimórficas são classificadas antes de qualquer
+  proposta de constraint;
+- a proposta identifica um único agregado, relações exatas, preflight,
+  dependências e riscos de rollout;
+- o Product Architect aprova explicitamente o próximo recorte antes de migration
+  ou código.
 
 ### Fora de escopo
 
-- alterar comportamento funcional dos módulos;
-- ampliar papéis, policies ou contratos públicos;
-- corrigir dados inválidos automaticamente;
-- refatorar application code sem necessidade para a integridade relacional;
-- antecipar capacidades funcionais posteriores ao gate de Fundação confiável.
+- criar migration ou alterar código;
+- escolher automaticamente Assessment, Development, Feedback, Recruitment ou
+  qualquer outro consumidor;
+- alterar RLS, papéis, optionalidade ou comportamento funcional;
+- transformar relações polimórficas sem decisão específica;
+- corrigir dados inválidos automaticamente.
 
 ### Estratégia de rollout
 
-1. inventário resolve o recorte exato e as dependências entre migrations;
-2. preflight interrompe a aplicação quando houver referências incompatíveis;
-3. constraints são adicionadas incrementalmente e validadas no banco local;
-4. pgTAP adversarial comprova isolamento antes da aplicação humana;
-5. falha exige migration compensatória; migrations aplicadas não são editadas.
+1. consultar o schema e as migrations incorporadas;
+2. excluir do inventário as 14 relações concluídas na migration 0064;
+3. classificar ownership e dependências das relações restantes conforme ADR-0012;
+4. propor um recorte pequeno, sem implementação;
+5. aguardar aprovação explícita do Product Architect.
 
 ## Débito técnico conhecido — validação global
 

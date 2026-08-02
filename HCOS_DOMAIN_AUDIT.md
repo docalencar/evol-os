@@ -13,6 +13,13 @@
 > O estado operacional corrente está exclusivamente em `docs/ROADMAP.md` e
 > `docs/NEXT_STEPS.md`.
 
+> **Primeiro slice tenant-owned — 2026-08-02.** A migration 0064 mitigou
+> parcialmente HCOS-002 ao converter as 14 relações de Organization, People e
+> Competencies para FKs compostas validadas. People, Departments, Teams,
+> Positions e Competencies receberam `unique (id, company_id)`; preflight e
+> pgTAP comprovam rejeição cross-tenant sem alterar RLS, optionalidade ou
+> `ON DELETE`. HCOS-002 permanece aberto para os domínios consumidores.
+
 **Data da auditoria:** 2026-07-29  
 **Método:** inspeção estática do repositório, migrations e documentação; nenhum banco foi iniciado e nenhum fluxo foi executado.  
 **Escopo:** árvore local completa no estado observado.  
@@ -577,7 +584,7 @@ Coberturas ausentes de maior risco:
 | ID | Sev. | Problema e evidência | Impacto / prob. | Correção mínima | Dependências / regressão / esforço |
 |---|:---:|---|---|---|---|
 | HCOS-001 | P0 | Department sem CREATE TABLE (`0018`, `0041`, seed) | deploy limpo falha / alta | baseline migration compatível e teste clean DB | auditar produção / alta / M |
-| HCOS-002 | P0 | FKs simples entre tenants (`0001`, `0005`–`0008`, `0045`) | vazamento/corrupção / média | uniques+FKs compostas e repair preflight | quase todos domínios / alta / XL |
+| HCOS-002 | P0 | FKs simples ainda existem em domínios consumidores; as 14 relações do núcleo foram endurecidas pela migration 0064 | vazamento/corrupção / média | continuar uniques+FKs compostas em slices aprovados, sempre com preflight | quase todos domínios / alta / XL |
 | HCOS-003 | P0 | Assessment RLS permite read/update a membros (`0028`) | confidencialidade e fraude / alta | policies por participante/capability | matriz de acesso / alta / L |
 | HCOS-004 | P0 | Team repository/schema drift | CRUD falha / alta em clean DB | migration de alinhamento após inventário real | HCOS-001 / média / M |
 | HCOS-005 | P1 | snapshot não contém organização; contexto vazio | projeção não representa realidade / certa | contrato/persistência de baseline completo | ADR snapshot / alta / XL |

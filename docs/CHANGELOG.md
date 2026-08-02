@@ -3,6 +3,18 @@
 Este changelog registra somente grandes entregas incorporadas à `main`. Commits
 locais e branches abertas não entram aqui.
 
+## 2026-08-02 — Integridade tenant-owned do núcleo organizacional
+
+- primeira fatia da ADR-0012 aplicada a Organization, People e Competencies;
+- candidate keys `unique (id, company_id)` em People, Departments, Teams,
+  Positions e Competencies;
+- 14 relações convertidas para FKs compostas, incluindo manager, hierarquias de
+  Department e Team, vínculos de Position e associações de competências;
+- preflight read-only, constraints validadas e cobertura pgTAP adversarial;
+- optionalidade e semânticas existentes de `CASCADE` e `SET NULL` preservadas.
+
+Migration: 0064.
+
 ## 2026-08-02 — Notification Domain in-app
 
 - política completa de identidade, produção, resolução, visibilidade,

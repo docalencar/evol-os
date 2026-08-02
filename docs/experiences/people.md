@@ -1,3 +1,0 @@
-# Experience — People
-
-Em construção.

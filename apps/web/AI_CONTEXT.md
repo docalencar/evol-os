@@ -1,28 +1,4 @@
-## PR-079B — Position Work Structure
+# Contexto da aplicação web
 
-Concluída.
-
-Entregas:
-
-- Departamento responsável
-- Nível hierárquico
-- Status
-- Jornada semanal
-- Modalidade de trabalho
-- Regime contratual
-- Exigência de viagens
-
-Também foram atualizados:
-
-- Position Overview Card
-- Página de detalhes do Cargo
-
-Fluxo completo validado:
-
-- criação
-- edição
-- persistência
-- visualização
-
-Status:
-✅ Build verde
+Use o contexto canônico do repositório em [`../../CLAUDE.md`](../../CLAUDE.md) e
+o mapa documental em [`../../docs/README.md`](../../docs/README.md).

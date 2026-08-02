@@ -1,3 +1,0 @@
-# Experience — AI
-
-Em construção.

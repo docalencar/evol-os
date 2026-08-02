@@ -24,10 +24,11 @@ Especificação da mudança: docs/engineering/pr-template.md
 
 ## Validações executadas
 <!-- Marque apenas o que REALMENTE executou. -->
-- [ ] `npm run check` (testes + build)
-- [ ] `npm run test`
 - [ ] `npm run build`
 - [ ] `npm run lint`
+- [ ] `npx tsc --noEmit` (em `apps/web`)
+- [ ] Testes aplicáveis (comando e escopo no resultado)
+- [ ] `git diff --check`
 
 ### Comandos NÃO executados
 <!-- OBRIGATÓRIO declarar. Liste cada validação não executada e o motivo.

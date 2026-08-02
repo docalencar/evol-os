@@ -144,7 +144,7 @@ código e na documentação), **perguntar** (a quem detém o contexto) ou **esca
 
 ## 8. Definition of Done
 
-Uma PR só está pronta quando **build e testes passam** (`npm run check`),
+Uma PR só está pronta quando **build, lint, tipagem e testes aplicáveis passam**,
 **arquitetura e contratos foram preservados**, a **documentação foi atualizada
 quando relevante** e a **revisão foi concluída**. A checklist marcável é a do
 `CLAUDE.md` (§8), que é a fonte única — este documento não a duplica.

@@ -81,10 +81,13 @@ A IA interpreta os indicadores produzidos pelo domínio, gerando:
 
 A IA não substitui os cálculos determinísticos do sistema.
 
-## Próximas experiências
+## Evoluções funcionais
 
 - Feedback Inteligente
 - Consolidação do Ciclo
 - Evolução do Colaborador
 - Heatmap da Organização
 - Recomendações de IA
+
+O estado e a prioridade dessas evoluções pertencem a `../MVP_PLAN.md`,
+`../EPICS.md` e `../ROADMAP.md`.

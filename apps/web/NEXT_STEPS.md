@@ -1,22 +1,4 @@
-# PR-080
+# Próxima entrega
 
-Engineering Foundation
-
-Criar:
-
-docs/engineering/
-
-- ENGINEERING_GUIDE.md
-- EVOL_ENGINEERING_PRINCIPLES.md
-- development-workflow.md
-- frontend-standards.md
-- backend-standards.md
-- database-standards.md
-- testing-checklist.md
-- pull-request-checklist.md
-
-Criar também:
-
-docs/playbooks/
-
-com playbooks para desenvolvimento de novas funcionalidades.
+A única fila operacional vigente está em
+[`../../docs/NEXT_STEPS.md`](../../docs/NEXT_STEPS.md).

@@ -143,3 +143,40 @@ Tecnologia que ensina.
 IA que orienta.
 
 RH que evolui.
+
+---
+
+# Público do MVP
+
+- pequenas e médias empresas em crescimento;
+- profissionais de RH;
+- gestores e líderes;
+- colaboradores;
+- direção executiva.
+
+O produto deve continuar utilizável por pessoas com pouca familiaridade com
+tecnologia e por empresas que ainda estão construindo maturidade de RH.
+
+# Limites do MVP
+
+O MVP organiza a empresa e suas pessoas, executa jornadas de competências,
+avaliações, feedback e desenvolvimento, permite planejar cenários organizacionais
+e apresenta indicadores e prioridades para decisão humana.
+
+A jornada completa, os estados e os critérios de conclusão estão exclusivamente
+em `../MVP_PLAN.md`.
+
+Não fazem parte do MVP atual:
+
+- folha de pagamento;
+- controle de ponto;
+- benefícios;
+- medicina ocupacional;
+- recrutamento completo além da fundação de vagas existente;
+- OKRs;
+- pesquisa de clima;
+- LMS completo;
+- API pública, white label e marketplace.
+
+Princípios permanentes e decisões de produto não são repetidos aqui: vivem em
+`PRODUCT_DECISIONS.md`, `DESIGN_PRINCIPLES.md` e `IA_PHILOSOPHY.md`.

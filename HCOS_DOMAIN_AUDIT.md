@@ -1,5 +1,11 @@
 # Evol OS — Auditoria Funcional e Técnica HCOS
 
+> **Documento histórico.** Esta auditoria registra o estado observado em
+> 2026-07-29. Achados não são automaticamente o estado atual: devem ser
+> revalidados contra a `main`. Migrations posteriores já absorveram parte dos
+> achados de Planning e schema. Riscos ainda comprovados foram incorporados ao
+> `docs/MVP_PLAN.md`, `docs/ROADMAP.md` e `docs/NEXT_STEPS.md`.
+
 **Data da auditoria:** 2026-07-29  
 **Método:** inspeção estática do repositório, migrations e documentação; nenhum banco foi iniciado e nenhum fluxo foi executado.  
 **Escopo:** árvore local completa no estado observado.  

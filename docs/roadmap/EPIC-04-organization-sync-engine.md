@@ -1,25 +1,10 @@
-# EPIC-04 — Organization Sync Engine
+# EPIC-04 — Organization Sync Engine — histórico
 
-## Status
+O backlog original foi absorvido pela implementação atual do Sync Engine.
 
-Em desenvolvimento.
+Fontes vigentes:
 
-## Concluído
-
-- [x] PR-102 — Contratos e fundação.
-- [x] PR-103 — Documentação arquitetural.
-
-## Próximas entregas
-
-- [ ] Compare Departments
-- [ ] Compare Teams
-- [ ] Compare Positions
-- [ ] Identity Resolver
-- [ ] Compare Employees
-- [ ] Classification Engine
-- [ ] Sync Plan
-- [ ] Review Workspace
-- [ ] Apply Engine
-- [ ] Timeline
-- [ ] Insights
-- [ ] Integração XLSX/CSV
+- estado funcional: [`../EPICS.md`](../EPICS.md);
+- plano do MVP: [`../MVP_PLAN.md`](../MVP_PLAN.md);
+- arquitetura: [`../Architecture/organization-sync-engine.md`](../Architecture/organization-sync-engine.md);
+- decisão: [`../adr/ADR-001-organization-sync-engine.md`](../adr/ADR-001-organization-sync-engine.md).

@@ -1,9 +1,18 @@
 # Architecture Decision Records
 
-Cada ADR registra contexto, problema, decisão, alternativas, consequências e próximos passos.
+ADRs registram decisões arquiteturais permanentes. Arquivos sem decisão não são
+reservados antecipadamente.
 
-## Organization Planning
+- [0001 — Feature Architecture](./0001-feature-architecture.md)
+- [0002 — Development Domain](./0002-development-domain.md)
+- [0003 — Development Templates](./0003-development-templates.md)
+- [0004 — Layer Responsibilities](./0004-layer-responsibilities.md)
+- [0005 — Component Organization](./0005-component-organization.md)
+- [0006 — Assessment Domain](./0006-assessment-domain.md)
+- [0007 — Planning Snapshot Lineage](./0007-planning-snapshot-lineage.md)
+- [0008 — Deterministic Planning Projection](./0008-deterministic-planning-projection.md)
+- [0009 — Planning Comparison, Insights and AI Boundary](./0009-planning-comparison-insights-ai-boundary.md)
+- [ADR-001 — Organization Sync Engine](./ADR-001-organization-sync-engine.md)
 
-- [ADR 0007 — Planning Snapshot Lineage](./0007-planning-snapshot-lineage.md)
-- [ADR 0008 — Deterministic Planning Projection](./0008-deterministic-planning-projection.md)
-- [ADR 0009 — Planning Comparison, Insights and AI Boundary](./0009-planning-comparison-insights-ai-boundary.md)
+A numeração paralela de ADR-001 é histórica. Novas decisões devem seguir a série
+numérica `000x` sem renomear registros aceitos.

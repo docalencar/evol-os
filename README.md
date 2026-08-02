@@ -1,10 +1,11 @@
-# evol-os
+# Evol OS
 
-Repositório inicial da Evol People / Evol Performance MVP.
+Organization Operating System para representar, planejar e operar organizações.
 
 ## Objetivo
 
-Criar um SaaS B2B para desenvolvimento de liderança e performance, começando pela capability Gestão de Pessoas.
+Transformar dados organizacionais em contexto, projeções determinísticas,
+inteligência e decisões humanas melhores.
 
 ## Stack
 
@@ -32,6 +33,15 @@ cp .env.example .env.local
 npm install
 npm run dev
 ```
+
+## Documentação
+
+Antes de implementar, comece por [CLAUDE.md](./CLAUDE.md) e siga a ordem de
+leitura definida nele. O mapa completo de fontes oficiais está em
+[docs/README.md](./docs/README.md).
+
+Prioridade atual: [docs/ROADMAP.md](./docs/ROADMAP.md). Próxima entrega:
+[docs/NEXT_STEPS.md](./docs/NEXT_STEPS.md).
 
 ## Supabase
 

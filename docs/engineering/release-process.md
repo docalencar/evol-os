@@ -37,16 +37,15 @@ Pull Request e em push para a branch principal. Ele executa, em ambiente limpo,
 **instalação de dependências, lint e build**.
 
 > **Importante:** a suíte de testes **não** roda no CI atualmente — o CI cobre lint
-> e build. A execução de testes é responsabilidade local do autor, por meio das
-> validações do projeto (atualmente `npm run check`, que roda testes + build). Ver
-> Lacunas.
+> e build. A execução dos testes aplicáveis é responsabilidade local do autor. O
+> projeto ainda não possui scripts agregados `check` ou `test`. Ver Lacunas.
 
 ### 2. Validação local (antes de pedir revisão)
 
-O autor executa as validações locais do projeto — atualmente `npm run check`, que
-roda **testes e build**. É o gate que garante o que o CI ainda não cobre (testes).
-O resultado é declarado no handoff da PR (`agent-protocol.md` §4) e no template de
-PR do GitHub.
+O autor executa `npm run build`, `npm run lint`, `npx tsc --noEmit` no workspace
+web e os testes aplicáveis com o runner usado pelo projeto. O comando e o escopo
+dos testes são declarados no handoff da PR (`agent-protocol.md` §4) e no template
+de PR do GitHub.
 
 ### 3. Aprovação e merge
 
@@ -89,9 +88,9 @@ caminho **devem ser registradas** como ADR (`docs/adr/`), conforme o
 Os itens abaixo **ainda não existem** no repositório e não devem ser descritos como
 se existissem. Ficam registrados como evolução futura:
 
-- **Testes no CI.** Hoje o CI roda lint + build; a suíte de testes depende de
-  execução local. Evolução natural: incluir `npm run test` (ou `npm run check`) no
-  workflow.
+- **Scripts e testes no CI.** Hoje o CI roda lint + build; não existem scripts
+  agregados `test`/`check`, e os testes dependem de execução local. A evolução
+  deve primeiro definir um runner geral confiável e depois incluí-lo no workflow.
 - **Pipeline de deploy.** A stack prevê hospedagem (ver `README.md`), mas não há
   workflow/configuração de deploy versionada no repositório. Enquanto não houver,
   o deploy não é um passo automatizado deste processo.

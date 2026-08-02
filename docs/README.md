@@ -1,16 +1,26 @@
-# Evol OS — Documentação
+# Evol OS — Mapa da documentação
 
-Documentação oficial da arquitetura, decisões e evolução do produto.
+## Governança
 
-## Estrutura
+| Assunto | Fonte oficial |
+| --- | --- |
+| Como trabalhar | [`../CLAUDE.md`](../CLAUDE.md) |
+| Visão do produto e limites do MVP | [`Product/PRODUCT_VISION.md`](./Product/PRODUCT_VISION.md) |
+| Próxima prioridade | [`ROADMAP.md`](./ROADMAP.md) |
+| Jornada completa até o MVP | [`MVP_PLAN.md`](./MVP_PLAN.md) |
+| Estado funcional das capacidades | [`EPICS.md`](./EPICS.md) |
+| Próxima entrega operacional | [`NEXT_STEPS.md`](./NEXT_STEPS.md) |
+| Grandes entregas incorporadas | [`CHANGELOG.md`](./CHANGELOG.md) |
+| Arquitetura | [`../ARCHITECTURE.md`](../ARCHITECTURE.md) e [`adr/`](./adr/) |
+| Engenharia | [`engineering/`](./engineering/) |
+| Produto | [`Product/`](./Product/) |
+| Prompt padrão para agentes | [`Prompts/MASTER_PROMPT.md`](./Prompts/MASTER_PROMPT.md) |
 
-- `adr/`: decisões arquiteturais.
-- `Architecture/`: arquitetura técnica e domínio.
-- `roadmap/`: planejamento das EPICs.
-- `decisions/`: decisões de produto.
-- `diagrams/`: diagramas.
+## Regra de precedência
 
-## Organization Planning
+Código incorporado à `main` comprova o estado implementado. Documentação oficial
+governa intenção, prioridade, processo e contratos. Quando os dois divergirem, a
+implementação para até que a documentação seja reconciliada com evidências.
 
-- [Arquitetura do Organization Planning](./Architecture/organization-planning.md)
-- [Decisões arquiteturais](./adr/README.md)
+Documentos históricos e auditorias preservam contexto, mas não substituem as
+fontes oficiais da tabela acima.

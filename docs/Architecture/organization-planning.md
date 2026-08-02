@@ -27,7 +27,7 @@ flowchart TD
   Baseline --> Comparison[Scenario Comparison]
   Snapshot --> Comparison
   Comparison --> Insights[Planning Insights]
-  Insights --> Presentation[Presentation futura]
+  Insights --> Presentation[Presentation]
   Insights -. contrato determinístico .-> AI[Future AI Adapter]
 ```
 
@@ -62,7 +62,7 @@ flowchart LR
   Application --> Projection
   Comparison --> Contracts[Projection contracts]
   Insights[Planning Insights] --> Comparison
-  FuturePresentation[Future Presentation] --> Insights
+  Presentation[Presentation] --> Insights
   FutureAI[Future AI Adapter] --> Insights
 ```
 
@@ -106,7 +106,7 @@ internos aos respectivos módulos.
 
 - `SimplePlanningUnitOfWork` ainda representa apenas o ciclo lógico dos handlers
   que não foram migrados para RPC transacional.
-- A UI atual cobre criação e listagem; Presentation específica para Comparison e
-  Insights é uma evolução posterior.
+- Presentation transforma Comparison e Insights em contratos de leitura; a UI
+  permanece consumidora desses resultados.
 - Company e Workspace são validados na fronteira que ainda possui esses dados;
   `ScenarioComparisonResult` não repete metadados de escopo.

@@ -1,3 +1,0 @@
-# Experience — Development
-
-Em construção.

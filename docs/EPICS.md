@@ -1,209 +1,108 @@
-# Evol OS — Épicos do Produto
+# Evol OS — Épicos funcionais
 
-## Estados
+Este documento detalha o comportamento funcional das capacidades. Não define
+prioridade (`ROADMAP.md`), plano completo (`MVP_PLAN.md`) nem próxima entrega
+(`NEXT_STEPS.md`).
 
-- **Concluído** — a capacidade descrita está incorporada à `main`.
-- **Parcial** — existe uma fundação utilizável, mas permanecem jornadas explícitas.
-- **Planejado** — não há implementação suficiente para considerar a capacidade disponível.
-- **Absorvido** — o objetivo foi entregue por uma capacidade posterior e não exige trabalho próprio.
-- **Cancelado** — deixou de fazer parte da direção do produto.
+## Fundação e Governança de Dados — bloqueado
 
-Este documento detalha o estado das capacidades. A ordem de execução pertence ao
-`ROADMAP.md`; a fila operacional pertence ao `NEXT_STEPS.md`.
+Entrega uma base reproduzível e segura para todos os módulos.
 
-## Épico 1 — Organização e Pessoas
+- migrations são a definição versionada do banco;
+- relações entre entidades preservam o tenant;
+- dados sensíveis possuem matriz de acesso, RLS e validação na aplicação;
+- atividades, notificações e outbox são rastreáveis e idempotentes;
+- validações automatizadas comprovam os contratos.
 
-**Estado: Parcial**
+Pendências comprovadas: autorização de Assessments, policies de Notifications,
+recipient directory e integridade relacional entre tenants.
 
-Concluído:
+## Organização e Pessoas — parcial
 
-- autenticação, empresa, contexto e isolamento por tenant;
-- CRUD e workspaces de pessoas, departamentos, times e cargos;
-- competências de cargos e colaboradores;
-- importação e sincronização organizacional;
-- estrutura profissional do cargo, incluindo departamento, jornada, modalidade,
-  regime contratual e exigência de viagens.
+Entrega implantação da empresa, estrutura, cadastros, workspaces, importação e
+sincronização revisável.
 
-Planejado:
+Concluído: departamentos, times, cargos, pessoas, competências, perfis,
+workspaces, importação e Sync Engine.
 
-- faixa salarial;
-- responsabilidades e perfil ideal do cargo;
-- trilha de carreira;
-- organograma avançado.
+Restante: hardening das invariantes e enriquecimento de cargos após o gate de
+Fundação.
 
-Dependências: é a base para Planning, KPI, Talent Intelligence e Executive.
+## Avaliações e Performance — bloqueado
 
-## Épico 2 — Avaliações e Performance
+Entrega templates, ciclos, participantes, execução, respostas, resultados e
+estatísticas.
 
-**Estado: Parcial**
+A jornada funcional existe, mas a capacidade não pode ser concluída enquanto o
+acesso a responses e answers depender apenas de membership da empresa.
 
-Concluído:
+## Feedback e Liderança — parcial
 
-- home de avaliações;
-- templates, seções e perguntas;
-- wizard de ciclos;
-- participantes, execução e respostas;
-- resultados e estatísticas do ciclo;
-- integração com analytics e Executive Decision Feed.
-
-Planejado:
-
-- acompanhamento operacional em tempo real;
-- OKRs.
-
-Dependências: pessoas e organização. Alimenta desenvolvimento, talentos e
+Entrega registro, histórico, conversas, análise estruturada e integração com
 decisões executivas.
 
-## Épico 3 — Feedback e Liderança
+Restante: autorização explícita de conteúdo sensível e jornadas próprias de
+one-on-one, check-ins, reconhecimentos e planos de ação.
 
-**Estado: Parcial**
+## Desenvolvimento — parcial
 
-Concluído:
+Entrega planos, objetivos, ações, templates, acompanhamento de estado e
+recomendações contextuais.
 
-- registro e histórico de feedbacks;
-- experiência de conversa;
-- análise estruturada por IA;
-- integração com Executive Decision Feed;
-- tipos de feedback para check-in e one-on-one.
+Restante: comprovar autorização e fechar a jornada periódica com Feedback e
+Liderança.
 
-Planejado:
+## Recrutamento e Aprovações — parcial
 
-- solicitação dedicada de feedback;
-- workspace próprio de one-on-one;
-- jornada acompanhável de check-ins;
-- reconhecimentos;
-- plano de ação e desenvolvimento da liderança.
+Entrega workspace e ciclo de vagas, timeline, Approval multiestágio e outbox.
 
-Dependências: pessoas, timeline e notificações.
+Restante: garantir atomicidade da sincronização entre Approval e Job Opening e
+eliminar referências cross-tenant possíveis.
 
-## Épico 4 — Desenvolvimento
+## Organization Planning — concluído na fundação
 
-**Estado: Concluído na fundação**
+Entrega cenários, snapshots, change sets, projeção determinística, comparação,
+insights, timeline, branching, validação e publicação.
 
-Concluído:
+Seu uso operacional continua subordinado ao gate de Fundação e às invariantes da
+organização de origem.
 
-- dashboard de desenvolvimento;
-- planos individuais e ações;
-- templates reutilizáveis;
-- aplicação transacional de templates;
-- acompanhamento de estado e recomendações contextuais;
-- integração com analytics e Executive Decision Feed.
+## KPI e Analytics — concluído na fundação
 
-Evoluções futuras dependem das prioridades de Talent Intelligence e Liderança.
+Entrega engine, registry, histórico, execução durável, recovery, runtime,
+scheduler, adapters e dashboards.
 
-## Épico 5 — Recrutamento e Aprovações
+Novos indicadores só entram quando o módulo proprietário possui fonte canônica e
+uma pergunta de negócio documentada.
 
-**Estado: Concluído na fundação**
+## Executive e Financeiro — parcial
 
-Concluído:
+Entrega dashboard, contexto e Decision Feed integrado, além da fundação da
+consulta financeira.
 
-- workspace e wizard de vagas;
-- persistência e ciclo de status da vaga;
-- detalhes e timeline de atividade;
-- domínio, aplicação, persistência e outbox de Approval;
-- integração da aprovação com recrutamento;
-- integração com Executive Decision Feed.
+Restante: respeitar integralmente autorização das fontes e evoluir custo somente
+depois da definição de dados estruturais de remuneração.
 
-## Épico 6 — Organization Planning
+## Talent Intelligence — parcial
 
-**Estado: Concluído**
+Entrega gaps, insights e visão agregada de prontidão para promoção.
 
-Concluído:
+Restante: risco de desligamento determinístico, Nine Box, sucessão e Talent
+Review, sempre antes das recomendações de IA correspondentes.
 
-- workspaces, cenários, snapshots e change sets;
-- baseline e projeção determinística da organização;
-- mudanças de departamentos, times, cargos, pessoas e vagas;
-- comparação, insights e apresentação;
-- dashboard, timeline, branching e operações de cenário;
-- validação e publicação transacional;
-- dashboard e experiência executiva;
-- autorização e isolamento.
+## Copilot e IA — parcial
 
-Dependências: organização e pessoas. Sustenta KPI, Financeiro Executivo e
-Executive Decision Feed.
+Entrega providers, skills, contexto e conversas persistentes.
 
-## Épico 7 — KPI e Inteligência Executiva
+Toda evolução depende de engines determinísticas, dados autorizados,
+transparência e decisão humana.
 
-**Estado: Concluído na fundação**
+## Enterprise — futuro
 
-Concluído:
-
-- KPI Engine determinístico;
-- registry, avaliação, SLA, tendências, benchmark e forecast;
-- persistência e histórico;
-- execução durável, recovery, worker, scheduler e triggers;
-- adapters operacionais;
-- dashboard executivo de KPIs;
-- Executive Context e Decision Feed agregável;
-- providers de planejamento, recrutamento, desenvolvimento, avaliações,
-  feedback, pessoas, organização e financeiro;
-- fundação do painel e da consulta financeira executiva.
-
-Planejado:
-
-- ampliar projeções financeiras após a disponibilidade dos dados de custo;
-- adicionar KPIs somente quando houver pergunta de negócio e fonte de dados reais.
-
-## Épico 8 — Talent Intelligence
-
-**Estado: Parcial**
-
-Concluído:
-
-- gaps de competências;
-- insights de pessoas;
-- visão agregada de prontidão para promoção;
-- recomendações contextuais existentes em pessoas e desenvolvimento.
-
-Planejado:
-
-- risco de desligamento determinístico;
-- Nine Box;
-- sucessão;
-- Talent Review;
-- recomendações explicativas sobre essas engines.
-
-Dependências: pessoas, competências, avaliações e desenvolvimento.
-
-## Épico 9 — Copilot e IA
-
-**Estado: Parcial**
-
-Concluído:
-
-- providers e services de IA;
-- copilots contextuais;
-- skills e prompts por contexto;
-- conversas persistentes;
-- uso de IA em feedback e desenvolvimento.
-
-Planejado:
-
-- predições baseadas em sinais determinísticos;
-- benchmark organizacional interno;
-- expansão de recomendações estratégicas.
-
-Dependências: engines e contratos determinísticos dos demais épicos.
-
-## Épico 10 — Enterprise
-
-**Estado: Planejado**
-
-- API pública;
-- integrações externas;
-- white label;
-- marketplace.
-
-Auditoria básica já é atendida por activities, timelines, histórico de execução e
-eventos de domínio; uma capacidade enterprise de auditoria só deve ser criada
-quando houver requisitos adicionais comprovados.
+API pública, integrações externas, white label e marketplace permanecem fora do
+MVP e não possuem prioridade ativa.
 
 ## Trabalho absorvido
 
-- PR-079A — absorvida pela organização atual do `PositionForm`;
-- PR-079B — absorvida pela estrutura profissional de cargos já incorporada;
-- PR-080 — absorvida pela Engineering Foundation e pelo sistema de colaboração;
-- antigas entregas genéricas de dashboard, avaliações, feedback e analytics —
-  absorvidas pelos épicos e implementações descritos acima.
-
-Não há épicos cancelados registrados na direção atual.
+PR-079A, PR-079B, PR-080 e os antigos backlogs genéricos de dashboard,
+Assessments, Feedback e Analytics foram absorvidos pelas capacidades acima.

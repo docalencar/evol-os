@@ -101,6 +101,45 @@ Quando houver dúvida, seguir os padrões já adotados pelo Evol OS.
 
 ---
 
+# 11. Inspeção antes de implementação
+
+Antes de alterar código, ler as fontes obrigatórias, inspecionar o estado atual e
+localizar uma implementação equivalente. Ausência de evidência exige investigação
+ou escalonamento, nunca suposição.
+
+---
+
+# 12. Fontes permanentes vencem contexto transitório
+
+A documentação versionada vence conversas e memória. O código incorporado à
+`main` vence lembranças sobre o que teria sido implementado. Se código e
+documentação divergirem, a implementação para até a reconciliação.
+
+---
+
+# 13. Uma PR por vez, um objetivo por PR
+
+Cada unidade de trabalho possui objetivo único, escopo pequeno e vínculo com o
+Roadmap e o MVP Plan. Uma nova PR só começa depois que a unidade anterior tiver um
+handoff claro ou estiver explicitamente bloqueada.
+
+---
+
+# 14. Evidência antes de decisão
+
+Decisões apontam para código, contrato, migration, teste, ADR ou documento
+oficial. Prioridades não são inventadas e aprovações não são presumidas.
+
+---
+
+# 15. Testes, validação e documentação são obrigatórios
+
+Toda regra determinística possui testes. Toda PR executa as validações aplicáveis
+e declara resultados e limitações. Mudanças de estado, prioridade, arquitetura ou
+processo atualizam a documentação oficial na mesma entrega.
+
+---
+
 # Resumo
 
 Toda decisão técnica deve buscar:

@@ -26,16 +26,37 @@
 
 ## 1. Workflow de Implementação
 
-Antes de escrever qualquer código, siga **obrigatoriamente** esta sequência. Este
-é o fluxo padrão de trabalho no Evol OS:
+Antes de escrever qualquer código, leia **integralmente e nesta ordem**:
+
+1. `CLAUDE.md`;
+2. `docs/engineering/`;
+3. `ARCHITECTURE.md` e a documentação de arquitetura aplicável;
+4. `docs/Product/PRODUCT_VISION.md`;
+5. `docs/ROADMAP.md`;
+6. `docs/MVP_PLAN.md`;
+7. `docs/EPICS.md`;
+8. `docs/NEXT_STEPS.md`.
+
+Depois da leitura, siga obrigatoriamente esta sequência de trabalho:
 
 1. **Entenda** a funcionalidade solicitada.
 2. **Localize** uma implementação semelhante no repositório.
 3. **Reutilize** os padrões existentes.
 4. **Preserve** os contratos públicos.
 5. **Implemente** a menor mudança possível para atingir o objetivo.
-6. **Valide** rodando as verificações do projeto (`npm run check` ou equivalente).
+6. **Valide** rodando os comandos realmente definidos no projeto e os testes
+   aplicáveis à mudança.
 7. **Conclua** apenas depois que todas as verificações passarem.
+
+Regras de governança:
+
+- nenhuma PR de produto é criada fora da prioridade definida no `ROADMAP.md`;
+- toda PR de produto aponta para a capacidade correspondente no `MVP_PLAN.md`;
+- `NEXT_STEPS.md` contém somente a próxima entrega operacional;
+- divergência entre documentação e código interrompe a implementação e exige
+  reconciliação documental;
+- prioridade ausente nunca é presumida nem inventada;
+- uma PR por vez, com um único objetivo verificável.
 
 A referência a espelhar é a feature `organization-planning`: é a mais completa e
 demonstra todas as camadas na prática.
@@ -194,8 +215,10 @@ arquivos de config — não os replique aqui.
 
 ## 7. Qualidade e testes
 
-O build faz parte da definição de pronto. O atalho oficial é **`npm run check`**
-(testes + build); rode-o antes de concluir. A checklist marcável está na §8.
+O build e o lint fazem parte da definição de pronto. Hoje não existe script
+agregado `check` nem script geral `test`: execute `npm run build`, `npm run lint`,
+`npx tsc --noEmit` no workspace web e os testes aplicáveis com o runner usado pelo
+projeto. Declare no handoff exatamente quais comandos foram executados.
 
 Testes acompanham **domínio e lógica determinística**, que têm prioridade sobre a
 interface. Deve existir teste correspondente sempre que houver **engine, regra de
@@ -214,8 +237,10 @@ correspondente — a documentação faz parte da entrega.
 Antes de concluir:
 
 - [ ] **Build OK** (`npm run build`)
-- [ ] **Testes OK** (`npm run test`)
-- [ ] **Tipagem OK** (sem erros `strict`, sem `any` novo)
+- [ ] **Lint OK** (`npm run lint`)
+- [ ] **Testes aplicáveis OK** (comando e escopo declarados no handoff)
+- [ ] **Tipagem OK** (`npx tsc --noEmit`, sem erros `strict`, sem `any` novo)
+- [ ] **Diff íntegro** (`git diff --check`)
 - [ ] **Imports organizados**
 - [ ] **Sem duplicação de regra** (nada reimplementado que já existe)
 - [ ] **Sem código morto** e sem TODO sem contexto

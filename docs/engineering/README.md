@@ -1,83 +1,25 @@
-# Engineering Foundation
+# Evol OS — Engenharia
 
-## Objetivo
+## Fontes oficiais
 
-A pasta `docs/engineering` reúne os padrões operacionais utilizados para desenvolver o Evol OS.
+- [`EVOL_ENGINEERING_PRINCIPLES.md`](./EVOL_ENGINEERING_PRINCIPLES.md) —
+  princípios permanentes;
+- [`ENGINEERING_GUIDE.md`](./ENGINEERING_GUIDE.md) — visão operacional;
+- [`development-workflow.md`](./development-workflow.md) — fluxo de trabalho;
+- [`backend-standards.md`](./backend-standards.md),
+  [`frontend-standards.md`](./frontend-standards.md) e
+  [`database-standards.md`](./database-standards.md) — padrões por área;
+- [`agent-protocol.md`](./agent-protocol.md),
+  [`code-review.md`](./code-review.md), [`pr-template.md`](./pr-template.md) e
+  [`release-process.md`](./release-process.md) — colaboração e integração.
 
-Enquanto:
+A Definition of Done e a ordem de leitura pertencem ao `../../CLAUDE.md`. Não há
+checklist paralelo nesta pasta.
 
-- `docs/architecture` descreve a arquitetura do sistema;
-- `docs/adr` registra decisões arquiteturais permanentes;
+## Documentação relacionada
 
-esta pasta define **como a equipe desenvolve software no dia a dia**.
-
----
-
-# Estrutura
-
-## Guias
-
-- ENGINEERING_GUIDE.md
-- EVOL_ENGINEERING_PRINCIPLES.md
-
-## Fluxo de desenvolvimento
-
-- development-workflow.md
-
-## Colaboração e processo
-
-- agent-protocol.md
-- code-review.md
-- release-process.md
-- pr-template.md
-
-## Padrões
-
-- frontend-standards.md
-- backend-standards.md
-- database-standards.md
-
-## Qualidade
-
-- testing-checklist.md _(planejado — ver NEXT_STEPS / PR-080)_
-- pull-request-checklist.md _(planejado — a checklist canônica vigente é a do `../../CLAUDE.md` §8)_
-
----
-
-# Documentação relacionada
-
-Arquitetura:
-
-- ../architecture/ARCHITECTURE.md
-- ../architecture/FRONTEND_ARCHITECTURE.md
-
-ADRs:
-
-- ../adr/0001-feature-architecture.md
-- ../adr/0004-layer-responsibilities.md
-- ../adr/0005-component-organization.md
-
-Banco de dados:
-
-- ../database/database_blueprint.md
-
----
-
-# Como utilizar
-
-Ao iniciar uma nova funcionalidade:
-
-1. Consulte a arquitetura.
-2. Verifique as ADRs relacionadas.
-3. Siga os padrões definidos nesta pasta.
-4. Utilize os Playbooks.
-5. Abra uma PR pequena.
-6. Execute o checklist antes do merge.
-
----
-
-# Evolução
-
-A Engineering Foundation evolui junto com o projeto.
-
-Novos padrões devem ser registrados nesta pasta sempre que representarem uma convenção reutilizável para futuras implementações.
+- arquitetura: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md);
+- ADRs: [`../adr/`](../adr/);
+- playbooks: [`../playbooks/`](../playbooks/);
+- prioridade: [`../ROADMAP.md`](../ROADMAP.md);
+- plano do MVP: [`../MVP_PLAN.md`](../MVP_PLAN.md).

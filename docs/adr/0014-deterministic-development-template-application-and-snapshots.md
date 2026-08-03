@@ -182,7 +182,24 @@ Seu contrato lógico mínimo preserva:
 - valores sugeridos, valores resolvidos e valores efetivamente aplicados;
 - destinatário do plano, responsável, prioridade e datas efetivas;
 - ator humano, executor técnico, instante e correlação;
-- identidade idempotente e resultado funcional produzido.
+- identidade idempotente disponível durante a resolução.
+
+O snapshot lógico representa exclusivamente o estado determinístico conhecido
+antes da persistência. Por isso, não contém a identidade do Development Plan,
+IDs produzidos pela persistência nem qualquer dado que ainda não exista durante
+a resolução. A Trusted Persistence grava esse snapshot sem alterar seu significado
+ou acrescentar a ele responsabilidades posteriores.
+
+O fingerprint pertence à resolução determinística, não ao conteúdo lógico do
+snapshot. A Trusted Persistence o correlaciona com a Template Application, a
+identidade idempotente, o lineage e a auditoria. O Development Plan e sua
+identidade nascem somente na Trusted Persistence e são preservados como resultado
+funcional do agregado persistido.
+
+A evidência histórica completa é formada em conjunto por Template Application,
+fingerprint, Application Snapshot, lineage e referência ao resultado funcional.
+Esses elementos não precisam estar materializados no mesmo documento ou JSON
+para constituírem uma única evidência histórica coerente.
 
 O snapshot é criado somente com o sucesso atômico da aplicação. Depois disso não
 pode ser alterado, substituído ou removido por fluxos comuns. A forma física do
@@ -272,6 +289,12 @@ auditoria de sucesso.
 Trusted Persistence recebe somente comando já autorizado e deterministicamente
 resolvido, revalida invariantes persistentes e decide o resultado idempotente sob
 concorrência. Ela não contém resolução probabilística nem substitui o Domain.
+
+Ao persistir, a fronteira pode representar o agregado por um envelope que
+correlacione fingerprint, snapshot lógico inalterado, lineage e referências
+criadas na persistência. Esse envelope não enriquece semanticamente nem reescreve
+o snapshot; apenas materializa os vínculos que só passam a existir com o resultado
+funcional.
 
 O banco é a garantia final de atomicidade, ownership, idempotência, integridade e
 imutabilidade. O executor técnico não contorna essas garantias.

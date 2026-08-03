@@ -627,7 +627,14 @@ O snapshot preserva integralmente o contrato mínimo da ADR-0014 e do Discovery:
 - competência operacional e representação apresentada;
 - valores sugeridos, resolvidos e aplicados;
 - destinatário, responsável, prioridade e datas;
-- ator, executor, instante, correlação, idempotência e resultado.
+- ator, executor, instante, correlação e identidade idempotente disponíveis antes
+  da persistência.
+
+O snapshot produzido pelo Resolver representa somente o estado determinístico
+conhecido antes da persistência. Ele não contém a identidade do Development Plan,
+IDs gerados pela persistência ou dados que ainda não existam durante a resolução.
+O fingerprint permanece parte da resolução determinística, fora do conteúdo
+lógico do snapshot.
 
 ### Persistência e evolução
 
@@ -636,6 +643,13 @@ formas já suportadas pelo banco somente após inspecionar volume, padrões de
 consulta e precedentes do repositório. A escolha não pode alterar o contrato
 lógico acima: o snapshot precisa ser autossuficiente, versionado, gravado no
 sucesso atômico e legível sem reidratação a partir de entidades mutáveis.
+
+A Trusted Persistence persiste o snapshot produzido pelo Resolver sem alteração
+semântica. A representação física do agregado pode correlacionar, em um envelope
+ou por relações persistidas, fingerprint, snapshot, lineage e referências criadas
+durante a persistência, inclusive a referência ao resultado funcional. Essa
+correlação compõe a evidência histórica completa, mas não incorpora esses dados ao
+conteúdo lógico do snapshot.
 
 Evolução adiciona nova versão de formato e reader compatível; nunca reescreve
 snapshots existentes. A primeira PR oferece apenas leitura tenant-owned necessária

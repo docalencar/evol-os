@@ -1,4 +1,5 @@
 export * from "./contracts"
 export * from "./repositories"
 export * from "./resolver"
+export * from "./trusted-persistence"
 export * from "./types"

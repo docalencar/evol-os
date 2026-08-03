@@ -71,12 +71,12 @@ O status normativo e o conteúdo completo permanecem no
 ### Roadmap e execução
 
 - [ROADMAP](./ROADMAP.md): Fundação confiável continua sendo a prioridade.
-- [NEXT_STEPS](./NEXT_STEPS.md): atualização do Implementation Plan da PR 3C
-  conforme a ADR-0014.
+- [NEXT_STEPS](./NEXT_STEPS.md): autorização explícita para implementar a PR 3C
+  conforme o plano aprovado.
 - [MVP Plan](./MVP_PLAN.md): jornada completa até o MVP.
 - [EPICS](./EPICS.md): estado funcional das capacidades.
 - [Implementation Plan do Slice 3](./Execution/ADR-0012-SLICE-3-DEVELOPMENT-IMPLEMENTATION-PLAN.md):
-  PRs 3A e 3B concluídas; reconciliação da PR 3C ainda pendente.
+  PRs 3A e 3B concluídas; plano da PR 3C aprovado e IRR tecnicamente concluído.
 
 ## 5. Programa ADR-0012
 
@@ -86,16 +86,16 @@ O status normativo e o conteúdo completo permanecem no
 | Slice 2 | Recruitment | ✅ Concluído | `9c6695819850ddb69237e9bec7688d0a8864b908` |
 | Slice 3A | Operational Development Integrity | ✅ Concluído | `fe3d8914ce4da54e85f94794b367582971403ffa` |
 | Slice 3B | Global Concepts and Tenant Mappings | ✅ Concluído e versionado | `f4a1a5d94afa0ef76132f18ac6b1ade5636ffda1` |
-| Slice 3C | Deterministic Template Application and Snapshots | Planejado, não ativo | — |
+| Slice 3C | Deterministic Template Application and Snapshots | Tecnicamente pronta; aguardando autorização explícita, não ativa | — |
 
 ## 6. Próxima etapa
 
-A Discovery da PR 3C está concluída e aprovada, e a ADR-0014 está aceita. Esta
-reconciliação documental registra essas decisões sem autorizar implementação.
+A Discovery da PR 3C está aprovada, a ADR-0014 está aceita, o Implementation Plan
+está aprovado e o IRR concluiu que não há lacuna técnica ou arquitetural conhecida.
 
-O próximo gate é atualizar o Implementation Plan da PR 3C conforme a ADR-0014.
-A PR 3C permanece planejada, não implementada e bloqueada até que o plano seja
-reconciliado e uma autorização explícita posterior seja concedida.
+O próximo gate é obter autorização explícita do Product Architect para iniciar a
+implementação conforme o plano aprovado. A PR 3C permanece não ativa e não
+implementada até essa autorização; readiness técnico não equivale a autorização.
 
 Antes de qualquer trabalho futuro, devem ser lidos:
 
@@ -105,7 +105,7 @@ Antes de qualquer trabalho futuro, devem ser lidos:
 - [ADR-0012](./adr/0012-tenant-owned-referential-integrity-strategy.md);
 - [ADR-0013](./adr/0013-platform-global-authority-and-trusted-execution.md);
 - [ADR-0014](./adr/0014-deterministic-development-template-application-and-snapshots.md);
-- [Discovery da PR 3C](./execution/PR-3C-DETERMINISTIC-TEMPLATE-APPLICATION-AND-SNAPSHOTS-DISCOVERY.md);
+- [Discovery da PR 3C](./Execution/PR-3C-DETERMINISTIC-TEMPLATE-APPLICATION-AND-SNAPSHOTS-DISCOVERY.md);
 - [Implementation Plan do Slice 3](./Execution/ADR-0012-SLICE-3-DEVELOPMENT-IMPLEMENTATION-PLAN.md);
 - [ROADMAP](./ROADMAP.md) e [NEXT_STEPS](./NEXT_STEPS.md).
 

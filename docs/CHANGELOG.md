@@ -8,8 +8,10 @@ locais e branches abertas não entram aqui.
 - Discovery da PR 3C concluída e aprovada;
 - ADR-0014 aceita com identidade de aplicação, versionamento imutável, resolução
   determinística, snapshots, lineage, idempotência e Trusted Persistence;
-- documentação reconciliada para tornar a atualização do Implementation Plan o
-  próximo gate;
+- Implementation Plan aprovado e Implementation Readiness Review concluído sem
+  lacuna técnica ou arquitetural conhecida;
+- documentação reconciliada para tornar a autorização explícita da implementação
+  o próximo gate;
 - nenhuma implementação da PR 3C iniciada.
 
 Decisão: ADR-0014.

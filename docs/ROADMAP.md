@@ -21,8 +21,10 @@ A PD-018 está aprovada e o Implementation Plan do Slice 3 está versionado em
 concluída pela migration 0066. A PR 3B — Global Concepts and Tenant Mappings está
 concluída pela migration 0067, incluindo a fundação de autoridade global definida
 pela ADR-0013. A ADR-0014 está aceita. A PR 3C — Deterministic Template
-Application and Snapshots permanece em planejamento e depende da atualização do
-Implementation Plan e de autorização explícita do Product Architect.
+Application and Snapshots possui Discovery concluída, Implementation Plan
+aprovado e IRR tecnicamente concluído. Ela está pronta para o gate de autorização,
+mas permanece não implementada e não ativa até autorização explícita do Product
+Architect.
 
 Somente depois desse gate o produto volta a expandir capacidades funcionais,
 começando pelo enriquecimento do modelo de cargos.

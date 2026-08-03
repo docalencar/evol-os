@@ -1,32 +1,31 @@
 # Evol OS — Próxima entrega
 
-## Decisão do próximo recorte do Slice 3
+## Atualização do Implementation Plan da PR 3C
 
 ### Objetivo
 
-Obter decisão e autorização explícitas do Product Architect sobre o próximo
-recorte de implementação. A PR 3B está concluída, validada e encerrada pelo
-commit `f4a1a5d94afa0ef76132f18ac6b1ade5636ffda1`. A PR 3C permanece planejada,
-dependente e não autorizada; nenhuma implementação começa por continuidade
-automática.
+Atualizar o Implementation Plan da PR 3C conforme a ADR-0014 aceita. A Discovery
+está aprovada e a reconciliação documental registra o novo gate, sem autorizar ou
+iniciar implementação.
 
 ### Vínculo
 
 - Roadmap: Fundação confiável, item 1, ainda em andamento.
 - MVP Plan: Fundação, operação segura dos dados.
 - Épicos: Fundação e Governança de Dados; Desenvolvimento.
-- Dependências concluídas: PD-018 aprovada; ADR-0012 e ADR-0013 aceitas; PRs 3A e
-  3B concluídas, com a validação da PR 3B encerrada.
-- Plano: `Execution/ADR-0012-SLICE-3-DEVELOPMENT-IMPLEMENTATION-PLAN.md`.
+- Dependências concluídas: PD-018 aprovada; ADR-0012, ADR-0013 e ADR-0014
+  aceitas; Discovery da PR 3C aprovada; PRs 3A e 3B concluídas.
+- Plano a reconciliar: `Execution/ADR-0012-SLICE-3-DEVELOPMENT-IMPLEMENTATION-PLAN.md`.
 - Produto: PD-018.
-- Arquitetura: ADR-0003, ADR-0012, ADR-0013 e o padrão tenant-owned.
+- Arquitetura: ADR-0003, ADR-0012, ADR-0013, ADR-0014 e o padrão tenant-owned.
 
 ### Critérios objetivos de aceite
 
-- o Product Architect aprova ou redefine explicitamente o próximo recorte;
-- a autorização e o recorte aprovados são reconciliados na documentação oficial
-  antes de qualquer implementação;
-- a PR 3C não é autorizada apenas pelo encerramento da PR 3B.
+- o plano registra a ADR-0014 como autoridade arquitetural da PR 3C;
+- o encerramento da PR 3B e o status aprovado da Discovery ficam reconciliados;
+- escopo físico, rollout, contratos e testes da PR 3C são detalhados sem
+  contrariar a ADR-0014;
+- a implementação permanece dependente de autorização explícita posterior.
 
 ### Fora de escopo
 
@@ -41,6 +40,6 @@ e reconciliação prévia da documentação oficial.
 
 ### Gates técnicos
 
-- decisão explícita do Product Architect;
-- definição documental do próximo recorte;
-- autorização formal antes de qualquer implementação.
+- Implementation Plan reconciliado com a ADR-0014;
+- revisão e aprovação do plano pelo Product Architect;
+- autorização formal posterior antes de qualquer implementação.

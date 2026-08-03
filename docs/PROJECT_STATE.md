@@ -63,6 +63,7 @@ O PROJECT_STATE.md é uma fotografia oficial do estado do programa. Ele não cri
 | ADR-0011 — Notification Domain Architecture | Implementada |
 | ADR-0012 — Tenant-Owned Referential Integrity Strategy | Programa em andamento |
 | ADR-0013 — Platform Global Authority and Trusted Execution | ✅ Accepted e implementada na PR 3B |
+| ADR-0014 — Deterministic Development Template Application and Snapshots | ✅ Accepted; implementação ainda não iniciada |
 
 O status normativo e o conteúdo completo permanecem no
 [índice de ADRs](./adr/README.md).
@@ -70,12 +71,12 @@ O status normativo e o conteúdo completo permanecem no
 ### Roadmap e execução
 
 - [ROADMAP](./ROADMAP.md): Fundação confiável continua sendo a prioridade.
-- [NEXT_STEPS](./NEXT_STEPS.md): validação encerrada da PR 3B e decisão explícita
-  do próximo recorte.
+- [NEXT_STEPS](./NEXT_STEPS.md): atualização do Implementation Plan da PR 3C
+  conforme a ADR-0014.
 - [MVP Plan](./MVP_PLAN.md): jornada completa até o MVP.
 - [EPICS](./EPICS.md): estado funcional das capacidades.
 - [Implementation Plan do Slice 3](./Execution/ADR-0012-SLICE-3-DEVELOPMENT-IMPLEMENTATION-PLAN.md):
-  PRs 3A, 3B e dependência da 3C.
+  PRs 3A e 3B concluídas; reconciliação da PR 3C ainda pendente.
 
 ## 5. Programa ADR-0012
 
@@ -89,13 +90,12 @@ O status normativo e o conteúdo completo permanecem no
 
 ## 6. Próxima etapa
 
-A PR 3B está concluída, validada e versionada. O próximo passo do programa é
-decidir e autorizar explicitamente o próximo recorte de implementação.
+A Discovery da PR 3C está concluída e aprovada, e a ADR-0014 está aceita. Esta
+reconciliação documental registra essas decisões sem autorizar implementação.
 
-O recorte atualmente planejado é a **PR 3C — Deterministic Template Application
-and Snapshots**. Ele permanece planejado e não ativo até aprovação explícita do
-Product Architect. Sua conclusão não é inferida nem iniciada automaticamente a
-partir da PR 3B.
+O próximo gate é atualizar o Implementation Plan da PR 3C conforme a ADR-0014.
+A PR 3C permanece planejada, não implementada e bloqueada até que o plano seja
+reconciliado e uma autorização explícita posterior seja concedida.
 
 Antes de qualquer trabalho futuro, devem ser lidos:
 
@@ -104,6 +104,8 @@ Antes de qualquer trabalho futuro, devem ser lidos:
 - [ADR-0003](./adr/0003-development-templates.md);
 - [ADR-0012](./adr/0012-tenant-owned-referential-integrity-strategy.md);
 - [ADR-0013](./adr/0013-platform-global-authority-and-trusted-execution.md);
+- [ADR-0014](./adr/0014-deterministic-development-template-application-and-snapshots.md);
+- [Discovery da PR 3C](./execution/PR-3C-DETERMINISTIC-TEMPLATE-APPLICATION-AND-SNAPSHOTS-DISCOVERY.md);
 - [Implementation Plan do Slice 3](./Execution/ADR-0012-SLICE-3-DEVELOPMENT-IMPLEMENTATION-PLAN.md);
 - [ROADMAP](./ROADMAP.md) e [NEXT_STEPS](./NEXT_STEPS.md).
 

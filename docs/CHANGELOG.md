@@ -3,6 +3,17 @@
 Este changelog registra somente grandes entregas incorporadas à `main`. Commits
 locais e branches abertas não entram aqui.
 
+## 2026-08-02 — Arquitetura da aplicação determinística de Development Templates
+
+- Discovery da PR 3C concluída e aprovada;
+- ADR-0014 aceita com identidade de aplicação, versionamento imutável, resolução
+  determinística, snapshots, lineage, idempotência e Trusted Persistence;
+- documentação reconciliada para tornar a atualização do Implementation Plan o
+  próximo gate;
+- nenhuma implementação da PR 3C iniciada.
+
+Decisão: ADR-0014.
+
 ## 2026-08-02 — Global Concepts and Tenant Mappings
 
 - catálogo global versionado de conceitos e aliases com publicação imutável;

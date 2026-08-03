@@ -16,6 +16,7 @@ reservados antecipadamente.
 - [0011 — Notification Domain Architecture](./0011-notification-domain-architecture.md)
 - [0012 — Tenant-Owned Referential Integrity Strategy](./0012-tenant-owned-referential-integrity-strategy.md)
 - [0013 — Platform Global Authority and Trusted Execution](./0013-platform-global-authority-and-trusted-execution.md)
+- [0014 — Deterministic Development Template Application and Snapshots](./0014-deterministic-development-template-application-and-snapshots.md) — Accepted
 - [ADR-001 — Organization Sync Engine](./ADR-001-organization-sync-engine.md)
 
 A numeração paralela de ADR-001 é histórica. Novas decisões devem seguir a série

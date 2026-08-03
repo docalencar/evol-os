@@ -1,0 +1,35 @@
+import { sha256 } from "./sha256"
+
+function canonicalize(value: unknown): string {
+  if (value === null) return "null"
+
+  if (typeof value === "string" || typeof value === "boolean") {
+    return JSON.stringify(value)
+  }
+
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) {
+      throw new TypeError("Canonical JSON does not support non-finite numbers")
+    }
+    return JSON.stringify(value)
+  }
+
+  if (Array.isArray(value)) {
+    return `[${value.map(canonicalize).join(",")}]`
+  }
+
+  if (typeof value === "object") {
+    const record = value as Readonly<Record<string, unknown>>
+    const entries = Object.keys(record)
+      .filter((key) => record[key] !== undefined)
+      .sort((left, right) => (left < right ? -1 : left > right ? 1 : 0))
+      .map((key) => `${JSON.stringify(key)}:${canonicalize(record[key])}`)
+    return `{${entries.join(",")}}`
+  }
+
+  throw new TypeError(`Canonical JSON does not support ${typeof value}`)
+}
+
+export function createCanonicalFingerprint(value: unknown): string {
+  return `sha256:${sha256(canonicalize(value))}`
+}

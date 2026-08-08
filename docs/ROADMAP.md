@@ -25,11 +25,13 @@ Application and Snapshots possui Discovery concluída, Implementation Plan
 aprovado e IRR tecnicamente concluído. Sua Fase 1 — Infrastructure, incluindo a
 migration 0068 — foi incorporada à `main` em `53b12ec`; a Fase 2 — Deterministic
 Resolver — foi incorporada em `ed15eca`. A Fase 3 — Trusted Persistence foi
-revisada, validada, aprovada e incorporada à `main` no merge `fe08394`. A PR 3C
-permanece em andamento: as Fases 4–8 não foram iniciadas.
+revisada, validada, aprovada e incorporada à `main` no merge `fe08394`. A Fase 4
+— Application Layer e composição foi implementada em `a393226` e incorporada à
+`main` pelo merge `5c1d12f`. A PR 3C permanece em andamento: as Fases 5–8 não
+foram iniciadas.
 
-O próximo gate é obter aprovação explícita para iniciar a Fase 4 — Application
-Layer e composição — conforme o Implementation Plan. A incorporação da Fase 3 não
+O próximo gate é obter aprovação explícita para iniciar a Fase 5 — contrato
+retrocompatível — conforme o Implementation Plan. A incorporação da Fase 4 não
 autoriza automaticamente essa continuidade. Somente após a conclusão da PR 3C o
 produto volta a expandir capacidades funcionais, começando pelo enriquecimento do
 modelo de cargos.

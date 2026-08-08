@@ -3,7 +3,24 @@
 Este changelog registra somente grandes entregas incorporadas à `main`. Commits
 locais e branches abertas não entram aqui.
 
+## 2026-08-08 — PR 3C Fase 4 — Application Layer e composição
+
+- Application Layer, ports, repository de resolução, Server Factory e
+  Composition Root implementados em `a393226`;
+- fluxo intenção → Resolver determinístico → Trusted Persistence composto sem
+  duplicar regra de domínio ou escrita transacional;
+- implementação validada, aprovada e incorporada à `main` pelo merge `5c1d12f`;
+- Fases 1–4 da PR 3C agora estão incorporadas;
+- a PR 3C permanece em andamento porque as Fases 5–8 não foram iniciadas;
+- esta entrega não autoriza automaticamente o início de fase posterior.
+
+Próximo gate: obter aprovação explícita para iniciar a Fase 5 — contrato
+retrocompatível — conforme o Implementation Plan.
+
 ## 2026-08-08 — PR 3C Fase 3 — Trusted Persistence
+
+Registro histórico do estado anterior ao merge `5c1d12f`; o estado vigente está
+na entrada acima.
 
 - Trusted Persistence revisada, validada e incorporada à `main` no merge
   `fe08394`;

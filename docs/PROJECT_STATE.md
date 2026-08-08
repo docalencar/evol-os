@@ -63,7 +63,7 @@ O PROJECT_STATE.md é uma fotografia oficial do estado do programa. Ele não cri
 | ADR-0011 — Notification Domain Architecture | Implementada |
 | ADR-0012 — Tenant-Owned Referential Integrity Strategy | Programa em andamento |
 | ADR-0013 — Platform Global Authority and Trusted Execution | ✅ Accepted e implementada na PR 3B |
-| ADR-0014 — Deterministic Development Template Application and Snapshots | ✅ Accepted; Fases 1–3 da PR 3C incorporadas |
+| ADR-0014 — Deterministic Development Template Application and Snapshots | ✅ Accepted; Fases 1–4 da PR 3C incorporadas |
 
 O status normativo e o conteúdo completo permanecem no
 [índice de ADRs](./adr/README.md).
@@ -71,13 +71,13 @@ O status normativo e o conteúdo completo permanecem no
 ### Roadmap e execução
 
 - [ROADMAP](./ROADMAP.md): Fundação confiável continua sendo a prioridade.
-- [NEXT_STEPS](./NEXT_STEPS.md): gate de autorização explícita da Fase 4 —
-  Application Layer e composição — antes de qualquer nova implementação.
+- [NEXT_STEPS](./NEXT_STEPS.md): gate de autorização explícita da Fase 5 —
+  contrato retrocompatível — antes de qualquer nova implementação.
 - [MVP Plan](./MVP_PLAN.md): jornada completa até o MVP.
 - [EPICS](./EPICS.md): estado funcional das capacidades.
 - [Implementation Plan do Slice 3](./Execution/ADR-0012-SLICE-3-DEVELOPMENT-IMPLEMENTATION-PLAN.md):
   PRs 3A e 3B concluídas; plano da PR 3C aprovado; IRR tecnicamente concluído;
-  Fases 1, 2 e 3 incorporadas; Fases 4–8 ainda não iniciadas.
+  Fases 1–4 incorporadas; Fases 5–8 ainda não iniciadas.
 
 ## 5. Programa ADR-0012
 
@@ -87,7 +87,7 @@ O status normativo e o conteúdo completo permanecem no
 | Slice 2 | Recruitment | ✅ Concluído | `9c6695819850ddb69237e9bec7688d0a8864b908` |
 | Slice 3A | Operational Development Integrity | ✅ Concluído | `fe3d8914ce4da54e85f94794b367582971403ffa` |
 | Slice 3B | Global Concepts and Tenant Mappings | ✅ Concluído e versionado | `f4a1a5d94afa0ef76132f18ac6b1ade5636ffda1` |
-| Slice 3C | Deterministic Template Application and Snapshots | Implementação parcial: Fases 1–3 incorporadas; Fases 4–8 não iniciadas | `53b12ec`, `ed15eca`, `fe08394` |
+| Slice 3C | Deterministic Template Application and Snapshots | Implementação parcial: Fases 1–4 incorporadas; Fases 5–8 não iniciadas | `53b12ec`, `ed15eca`, `fe08394`, `5c1d12f` |
 
 ## 6. Próxima etapa
 
@@ -99,12 +99,13 @@ testes foram incorporados à `main` em `ed15eca`.
 
 A Fase 3 — Trusted Persistence foi revisada, validada, aprovada e incorporada à
 `main` no merge `fe08394`, incluindo a migration 0069, o adapter e os testes
-correspondentes. A PR 3C permanece em andamento porque as Fases 4–8 ainda não
-foram iniciadas.
+correspondentes. A Fase 4 — Application Layer e composição foi implementada em
+`a393226`, validada, aprovada e incorporada à `main` pelo merge `5c1d12f`. A PR
+3C permanece em andamento porque as Fases 5–8 ainda não foram iniciadas.
 
-O próximo gate é obter aprovação explícita para iniciar a Fase 4 — Application
-Layer e composição. Esta reconciliação registra a conclusão da Fase 3, mas não
-autoriza automaticamente a Fase 4 nem qualquer implementação posterior.
+O próximo gate é obter aprovação explícita para iniciar a Fase 5 — contrato
+retrocompatível. Esta reconciliação registra a conclusão da Fase 4, mas não
+autoriza automaticamente a Fase 5 nem qualquer implementação posterior.
 
 Antes de qualquer trabalho futuro, devem ser lidos:
 
@@ -177,6 +178,7 @@ Este resumo oferece orientação; o registro oficial de entregas é o
 | Governança da PR 3B | PD-018, plano e ADR-0013 | `730dd29`, `11063e0`, `9a256fc` |
 | ADR-0012 Slice 3B | Global Concepts e Tenant Mappings | `f4a1a5d` |
 | PR 3C — Fase 3 | Trusted Persistence | `fe08394` |
+| PR 3C — Fase 4 | Application Layer e composição | `5c1d12f` |
 
 ## 10. Como iniciar uma nova conversa
 

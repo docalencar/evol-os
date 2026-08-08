@@ -12,7 +12,7 @@ A ADR-0014 — Deterministic Development Template Application and Snapshots est�
 Accepted. Este plano incorpora seu recorte técnico para a PR 3C, foi aprovado
 pelo Product Architect e passou pelo Implementation Readiness Review sem lacuna
 técnica ou arquitetural conhecida. A implementação avançou parcialmente: Fases
-1–4 estão incorporadas à `main`. Fases posteriores não foram iniciadas. Este
+1–5 estão incorporadas à `main`. Fases posteriores não foram iniciadas. Este
 registro factual não cria autorização retroativa para a continuidade.
 
 ## Estratégia de entrega
@@ -21,7 +21,7 @@ registro factual não cria autorização retroativa para a continuidade.
 | --- | --- | --- | --- |
 | 3A | Operational Development Integrity | Concluída no commit `fe3d8914ce4da54e85f94794b367582971403ffa` | ADR-0012 |
 | 3B | Global Concepts and Tenant Mappings | Concluída no commit `f4a1a5d94afa0ef76132f18ac6b1ade5636ffda1` | PR 3A, PD-018 e ADR-0013 concluídas |
-| 3C | Deterministic Template Application and Snapshots | Implementação parcial: Fases 1–4 incorporadas; Fases 5–8 não iniciadas | PR 3B concluída e ADR-0014 aceita |
+| 3C | Deterministic Template Application and Snapshots | Implementação parcial: Fases 1–5 incorporadas; Fases 6–8 não iniciadas | PR 3B concluída e ADR-0014 aceita |
 
 As três PRs são sequenciais. A conclusão de uma não autoriza automaticamente a
 seguinte.
@@ -342,8 +342,8 @@ snapshots e não transforma similaridade de nome em resolução.
 ### Status e objetivo
 
 **Status:** Implementation Plan aprovado e IRR tecnicamente concluído;
-Fases 1–4 incorporadas à `main`; a Fase 4 — Application Layer e composição foi
-implementada em `a393226`, validada e aprovada antes do merge `5c1d12f`. Fases
+Fases 1–5 incorporadas à `main`; a Fase 5 — contrato retrocompatível foi
+implementada em `e5bae39`, validada e aprovada antes do merge `08bd7cf`. Fases
 posteriores não iniciadas.
 
 ### Estado factual das fases
@@ -354,13 +354,14 @@ posteriores não iniciadas.
 | 2 — Deterministic Resolver | Implementada e incorporada à `main` | `ed15eca`; Resolver e testes determinísticos |
 | 3 — Trusted Persistence | Implementada, validada, aprovada e incorporada à `main` | merge `fe08394`; migration 0069, adapter e testes correspondentes |
 | 4 — Application Layer e composição | Implementada, validada, aprovada e incorporada à `main` | `a393226`; merge `5c1d12f`; ports, repository, service, Server Factory, Composition Root e testes |
-| 5 — Contrato retrocompatível | Não iniciada | Nenhuma evidência versionada de implementação |
+| 5 — Contrato retrocompatível | Implementada, validada, aprovada e incorporada à `main` | `e5bae39`; merge `08bd7cf`; superfície V2 aditiva, adapter legado e testes |
 | 6 — Actions e experiência mínima | Não iniciada | Nenhuma evidência versionada de implementação |
 | 7 — Testes e cutover | Não iniciada | Nenhuma evidência versionada de implementação |
 | 8 — Reconciliação final | Não iniciada | Nenhuma evidência versionada de implementação |
 
-O próximo gate é obter aprovação explícita para iniciar a Fase 5 — contrato
-retrocompatível. A conclusão da Fase 4 não autoriza automaticamente a Fase 5
+O próximo gate é obter aprovação explícita para iniciar a Fase 6 — Actions e
+experiência mínima: readiness, confirmação, retry e mensagens. A conclusão da
+Fase 5 não autoriza automaticamente a Fase 6
 nem qualquer fase posterior.
 
 Implementar a aplicação determinística de Development Templates company-owned e
@@ -1005,13 +1006,13 @@ ativação parcial em produção.
 
 ### Gates para continuidade
 
-- Fases 1–4 incorporadas à `main`; Fase 4 no merge `5c1d12f`;
+- Fases 1–5 incorporadas à `main`; Fase 5 no merge `08bd7cf`;
 - worktree isolado e estado da `main` confirmados;
 - ausência de nova divergência entre documentação e código após esta
   reconciliação;
 - inventário final de consumidores do contrato público;
 - preflight read-only aprovado antes de qualquer transformação de dados;
-- aprovação explícita antes de iniciar a Fase 5 — contrato retrocompatível.
+- aprovação explícita antes de iniciar a Fase 6 — Actions e experiência mínima.
 
 ## 17. Riscos e mitigação
 
@@ -1060,7 +1061,7 @@ ativação parcial em produção.
 
 Interromper antes de continuar ou incorporar quando:
 
-- o início da Fase 5 — contrato retrocompatível — não estiver
+- o início da Fase 6 — Actions e experiência mínima — não estiver
   explicitamente aprovado;
 - código e documentação divergirem;
 - o preflight encontrar legado ambíguo ou corrupção;

@@ -27,11 +27,13 @@ migration 0068 — foi incorporada à `main` em `53b12ec`; a Fase 2 — Determin
 Resolver — foi incorporada em `ed15eca`. A Fase 3 — Trusted Persistence foi
 revisada, validada, aprovada e incorporada à `main` no merge `fe08394`. A Fase 4
 — Application Layer e composição foi implementada em `a393226` e incorporada à
-`main` pelo merge `5c1d12f`. A PR 3C permanece em andamento: as Fases 5–8 não
-foram iniciadas.
+`main` pelo merge `5c1d12f`. A Fase 5 — contrato retrocompatível foi implementada
+em `e5bae39` e incorporada à `main` pelo merge `08bd7cf`. A PR 3C permanece em
+andamento: as Fases 6–8 não foram iniciadas.
 
-O próximo gate é obter aprovação explícita para iniciar a Fase 5 — contrato
-retrocompatível — conforme o Implementation Plan. A incorporação da Fase 4 não
+O próximo gate é obter aprovação explícita para iniciar a Fase 6 — Actions e
+experiência mínima: readiness, confirmação, retry e mensagens — conforme o
+Implementation Plan. A incorporação da Fase 5 não
 autoriza automaticamente essa continuidade. Somente após a conclusão da PR 3C o
 produto volta a expandir capacidades funcionais, começando pelo enriquecimento do
 modelo de cargos.

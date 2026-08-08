@@ -3,7 +3,26 @@
 Este changelog registra somente grandes entregas incorporadas à `main`. Commits
 locais e branches abertas não entram aqui.
 
+## 2026-08-08 — PR 3C Fase 5 — Contrato retrocompatível
+
+- superfície V2 aditiva e adapter legado implementados em `e5bae39`;
+- wrapper TS legado migrado para a Application Layer sem remover a RPC pública,
+  alterar a Server Action ou iniciar UI e cutover final;
+- identidade, idempotência, códigos de erro, fingerprint, snapshot e lineage
+  preservados pelo fluxo aprovado;
+- implementação validada, aprovada e incorporada à `main` pelo merge `08bd7cf`;
+- Fases 1–5 da PR 3C agora estão incorporadas;
+- a PR 3C permanece em andamento porque as Fases 6–8 não foram iniciadas;
+- esta entrega não autoriza automaticamente o início de fase posterior.
+
+Próximo gate: obter aprovação explícita para iniciar a Fase 6 — Actions e
+experiência mínima: readiness, confirmação, retry e mensagens — conforme o
+Implementation Plan.
+
 ## 2026-08-08 — PR 3C Fase 4 — Application Layer e composição
+
+Registro histórico do estado anterior ao merge `08bd7cf`; o estado vigente está
+na entrada acima.
 
 - Application Layer, ports, repository de resolução, Server Factory e
   Composition Root implementados em `a393226`;

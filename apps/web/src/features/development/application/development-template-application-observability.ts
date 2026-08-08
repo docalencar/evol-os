@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto"
+
 export type DevelopmentTemplateApplicationObservation = Readonly<{
   operation: "readiness" | "apply"
   applicationId: string
@@ -7,14 +9,28 @@ export type DevelopmentTemplateApplicationObservation = Readonly<{
   failureCode?: string
 }>
 
+export type SafeDevelopmentTemplateApplicationObservation = Readonly<
+  Omit<DevelopmentTemplateApplicationObservation, "idempotencyKey"> & {
+    idempotencyKeyHash: string
+  }
+>
+
 export interface DevelopmentTemplateApplicationObserver {
   record(event: DevelopmentTemplateApplicationObservation): void
 }
 
 export function createDevelopmentTemplateApplicationObserver(
-  write: (event: DevelopmentTemplateApplicationObservation) => void,
+  write: (event: SafeDevelopmentTemplateApplicationObservation) => void,
 ): DevelopmentTemplateApplicationObserver {
-  return { record: write }
+  return {
+    record(event) {
+      const { idempotencyKey, ...safeEvent } = event
+      write({
+        ...safeEvent,
+        idempotencyKeyHash: createHash("sha256").update(idempotencyKey).digest("hex"),
+      })
+    },
+  }
 }
 
 export function createConsoleDevelopmentTemplateApplicationObserver(): DevelopmentTemplateApplicationObserver {

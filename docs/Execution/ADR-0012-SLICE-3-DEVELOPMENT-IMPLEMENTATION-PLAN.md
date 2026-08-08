@@ -12,7 +12,8 @@ A ADR-0014 — Deterministic Development Template Application and Snapshots est�
 Accepted. Este plano incorpora seu recorte técnico para a PR 3C, foi aprovado
 pelo Product Architect e passou pelo Implementation Readiness Review sem lacuna
 técnica ou arquitetural conhecida. A implementação avançou parcialmente: Fases
-1–5 estão incorporadas à `main`. Fases posteriores não foram iniciadas. Este
+1–6 estão incorporadas à `main`; a Fase 7 está autorizada e ativa; a Fase 8 não
+foi iniciada. Este
 registro factual não cria autorização retroativa para a continuidade.
 
 ## Estratégia de entrega
@@ -21,7 +22,7 @@ registro factual não cria autorização retroativa para a continuidade.
 | --- | --- | --- | --- |
 | 3A | Operational Development Integrity | Concluída no commit `fe3d8914ce4da54e85f94794b367582971403ffa` | ADR-0012 |
 | 3B | Global Concepts and Tenant Mappings | Concluída no commit `f4a1a5d94afa0ef76132f18ac6b1ade5636ffda1` | PR 3A, PD-018 e ADR-0013 concluídas |
-| 3C | Deterministic Template Application and Snapshots | Implementação parcial: Fases 1–5 incorporadas; Fases 6–8 não iniciadas | PR 3B concluída e ADR-0014 aceita |
+| 3C | Deterministic Template Application and Snapshots | Fases 1–6 incorporadas; Fase 7 ativa; Fase 8 não iniciada | PR 3B concluída e ADR-0014 aceita |
 
 As três PRs são sequenciais. A conclusão de uma não autoriza automaticamente a
 seguinte.
@@ -342,9 +343,9 @@ snapshots e não transforma similaridade de nome em resolução.
 ### Status e objetivo
 
 **Status:** Implementation Plan aprovado e IRR tecnicamente concluído;
-Fases 1–5 incorporadas à `main`; a Fase 5 — contrato retrocompatível foi
-implementada em `e5bae39`, validada e aprovada antes do merge `08bd7cf`. Fases
-posteriores não iniciadas.
+Fases 1–6 incorporadas à `main`; a Fase 6 — Actions e experiência mínima foi
+implementada em `3cc8c38`, validada e aprovada antes do merge `ca2f173`. A Fase
+7 está autorizada e ativa; a Fase 8 não foi iniciada.
 
 ### Estado factual das fases
 
@@ -355,14 +356,12 @@ posteriores não iniciadas.
 | 3 — Trusted Persistence | Implementada, validada, aprovada e incorporada à `main` | merge `fe08394`; migration 0069, adapter e testes correspondentes |
 | 4 — Application Layer e composição | Implementada, validada, aprovada e incorporada à `main` | `a393226`; merge `5c1d12f`; ports, repository, service, Server Factory, Composition Root e testes |
 | 5 — Contrato retrocompatível | Implementada, validada, aprovada e incorporada à `main` | `e5bae39`; merge `08bd7cf`; superfície V2 aditiva, adapter legado e testes |
-| 6 — Actions e experiência mínima | Não iniciada | Nenhuma evidência versionada de implementação |
-| 7 — Testes e cutover | Não iniciada | Nenhuma evidência versionada de implementação |
+| 6 — Actions e experiência mínima | Implementada, validada, aprovada e incorporada à `main` | `3cc8c38`; merge `ca2f173`; readiness, confirmação, retry e mensagens |
+| 7 — Testes e cutover | Autorizada e ativa | Testes, observabilidade, smoke, regressão e cutover controlado |
 | 8 — Reconciliação final | Não iniciada | Nenhuma evidência versionada de implementação |
 
-O próximo gate é obter aprovação explícita para iniciar a Fase 6 — Actions e
-experiência mínima: readiness, confirmação, retry e mensagens. A conclusão da
-Fase 5 não autoriza automaticamente a Fase 6
-nem qualquer fase posterior.
+O próximo gate é concluir e validar a Fase 7, submetendo-a à revisão do Product
+Architect. A conclusão da Fase 7 não autoriza automaticamente a Fase 8.
 
 Implementar a aplicação determinística de Development Templates company-owned e
 globais sobre uma única regra canônica, produzindo Development Plan completo,
@@ -1006,13 +1005,13 @@ ativação parcial em produção.
 
 ### Gates para continuidade
 
-- Fases 1–5 incorporadas à `main`; Fase 5 no merge `08bd7cf`;
+- Fases 1–6 incorporadas à `main`; Fase 6 no merge `ca2f173`;
 - worktree isolado e estado da `main` confirmados;
 - ausência de nova divergência entre documentação e código após esta
   reconciliação;
 - inventário final de consumidores do contrato público;
 - preflight read-only aprovado antes de qualquer transformação de dados;
-- aprovação explícita antes de iniciar a Fase 6 — Actions e experiência mínima.
+- Fase 7 explicitamente autorizada; Fase 8 depende de nova aprovação.
 
 ## 17. Riscos e mitigação
 
@@ -1061,8 +1060,7 @@ ativação parcial em produção.
 
 Interromper antes de continuar ou incorporar quando:
 
-- o início da Fase 6 — Actions e experiência mínima — não estiver
-  explicitamente aprovado;
+- a evidência pré e pós-cutover da Fase 7 não estiver completa;
 - código e documentação divergirem;
 - o preflight encontrar legado ambíguo ou corrupção;
 - a forma retrocompatível do contrato exigir quebra não aprovada;

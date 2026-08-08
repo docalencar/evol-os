@@ -9,6 +9,12 @@ export {
 } from "./legacy-development-template-application-adapter"
 export { developmentTemplateApplicationMessage } from "./development-template-application-messages"
 export {
+  createConsoleDevelopmentTemplateApplicationObserver,
+  createDevelopmentTemplateApplicationObserver,
+  type DevelopmentTemplateApplicationObservation,
+  type DevelopmentTemplateApplicationObserver,
+} from "./development-template-application-observability"
+export {
   createDevelopmentTemplateConfirmationIdentity,
   type DevelopmentTemplateConfirmationIdentity,
 } from "./development-template-confirmation-identity"

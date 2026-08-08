@@ -13,8 +13,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
 import {
-  applyDevelopmentTemplateAction,
-} from "@/features/development/actions/apply-development-template-action"
+  confirmDevelopmentTemplateApplicationAction,
+} from "@/features/development/actions/confirm-development-template-application-action"
 import { checkDevelopmentTemplateApplicationReadinessAction } from "@/features/development/actions/check-development-template-application-readiness-action"
 import { createDevelopmentTemplateConfirmationIdentity } from "@/features/development/application/development-template-confirmation-identity"
 
@@ -154,8 +154,7 @@ export function ApplyDevelopmentTemplateDialog({
               }
 
               const result =
-                await applyDevelopmentTemplateAction({
-                  templateId,
+                await confirmDevelopmentTemplateApplicationAction({
                   employeeId,
                   ownerId,
                   priority,
@@ -166,7 +165,7 @@ export function ApplyDevelopmentTemplateDialog({
                   idempotencyKey: identity.idempotencyKey,
                   correlationId: identity.correlationId,
                   effectiveAt: identity.effectiveAt,
-                  templateVersionId: identity.templateVersionId,
+                  templateVersionId: identity.templateVersionId!,
                 })
 
                if (

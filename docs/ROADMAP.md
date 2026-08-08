@@ -28,13 +28,13 @@ Resolver — foi incorporada em `ed15eca`. A Fase 3 — Trusted Persistence foi
 revisada, validada, aprovada e incorporada à `main` no merge `fe08394`. A Fase 4
 — Application Layer e composição foi implementada em `a393226` e incorporada à
 `main` pelo merge `5c1d12f`. A Fase 5 — contrato retrocompatível foi implementada
-em `e5bae39` e incorporada à `main` pelo merge `08bd7cf`. A PR 3C permanece em
-andamento: as Fases 6–8 não foram iniciadas.
+em `e5bae39` e incorporada à `main` pelo merge `08bd7cf`. A Fase 6 — Actions e
+experiência mínima foi implementada em `3cc8c38` e incorporada à `main` pelo
+merge `ca2f173`.
 
-O próximo gate é obter aprovação explícita para iniciar a Fase 6 — Actions e
-experiência mínima: readiness, confirmação, retry e mensagens — conforme o
-Implementation Plan. A incorporação da Fase 5 não
-autoriza automaticamente essa continuidade. Somente após a conclusão da PR 3C o
+A Fase 7 — testes, observabilidade e cutover — está autorizada e ativa conforme o
+Implementation Plan. A Fase 8 permanece não iniciada e não é automaticamente
+autorizada. Somente após a conclusão da PR 3C o
 produto volta a expandir capacidades funcionais, começando pelo enriquecimento do
 modelo de cargos.
 

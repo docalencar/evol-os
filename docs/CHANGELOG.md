@@ -3,7 +3,22 @@
 Este changelog registra somente grandes entregas incorporadas à `main`. Commits
 locais e branches abertas não entram aqui.
 
+## 2026-08-08 — PR 3C Fase 6 — Actions e experiência mínima
+
+- readiness sem persistência, confirmação humana explícita e identidade estável
+  de retry implementados em `3cc8c38`;
+- fluxo UI → readiness → confirmação → V2 → Application Layer → Resolver →
+  Trusted Persistence validado;
+- implementação aprovada e incorporada à `main` pelo merge `ca2f173`;
+- Fases 1–6 da PR 3C incorporadas; Fase 7 autorizada e ativa; Fase 8 não iniciada.
+
+Próximo gate: concluir testes, observabilidade e cutover da Fase 7 e submetê-los à
+revisão do Product Architect antes de qualquer Fase 8.
+
 ## 2026-08-08 — PR 3C Fase 5 — Contrato retrocompatível
+
+Registro histórico do estado anterior ao merge `ca2f173`; o estado vigente está
+na entrada acima.
 
 - superfície V2 aditiva e adapter legado implementados em `e5bae39`;
 - wrapper TS legado migrado para a Application Layer sem remover a RPC pública,

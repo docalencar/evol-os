@@ -1,5 +1,8 @@
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
+import { applyDevelopmentTemplateV2 } from "./apply-development-template-v2"
+import { createLegacyDevelopmentTemplateApplicationAdapter } from "./legacy-development-template-application-adapter"
+
 export type ApplyDevelopmentTemplateInput = {
   employeeId: string
   templateId: string
@@ -17,30 +20,25 @@ export async function applyDevelopmentTemplate(
     companyId,
   } = await getCurrentCompanyContext()
 
-  const { data, error } = await supabase.rpc(
-    "apply_development_template",
-    {
-      p_company_id: companyId,
-      p_employee_id: input.employeeId,
-      p_template_id: input.templateId,
-      p_priority: input.priority,
-      p_owner_id: input.ownerId ?? null,
-      p_start_date: input.startDate ?? null,
-      p_due_date: input.dueDate ?? null,
-    }
-  )
+  const adapter = createLegacyDevelopmentTemplateApplicationAdapter({
+    async findPublishedTemplateVersionId(templateId) {
+      const { data, error } = await supabase
+        .from("development_template_versions")
+        .select("id")
+        .eq("template_id", templateId)
+        .eq("company_id", companyId)
+        .eq("status", "published")
+        .order("version_number", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (error) throw error
+      if (!data) throw new Error("DEVELOPMENT_TEMPLATE_VERSION_NOT_CONSUMABLE")
+      return data.id
+    },
+    apply: applyDevelopmentTemplateV2,
+    createId: () => crypto.randomUUID(),
+    now: () => new Date(),
+  })
 
-  if (error) {
-    throw error
-  }
-
-  if (!data) {
-    throw new Error(
-      "A função apply_development_template não retornou o ID do plano."
-    )
-  }
-
-  return {
-    planId: data as string,
-  }
+  return adapter(input)
 }

@@ -15,6 +15,8 @@ import { Label } from "@/components/ui/label"
 import {
   applyDevelopmentTemplateAction,
 } from "@/features/development/actions/apply-development-template-action"
+import { checkDevelopmentTemplateApplicationReadinessAction } from "@/features/development/actions/check-development-template-application-readiness-action"
+import { createDevelopmentTemplateConfirmationIdentity } from "@/features/development/application/development-template-confirmation-identity"
 
 import {
   DEVELOPMENT_PLAN_PRIORITIES,
@@ -73,6 +75,15 @@ export function ApplyDevelopmentTemplateDialog({
   const [isPending, startTransition] =
     useTransition()
 
+  const [confirmation, setConfirmation] = useState<null | {
+    applicationId: string
+    idempotencyKey: string
+    correlationId: string
+    effectiveAt: string
+    templateVersionId?: string
+    ready: boolean
+  }>(null)
+
   const activeEmployees = employees.filter(
     (employee) =>
       employee.status === "active" ||
@@ -82,6 +93,10 @@ export function ApplyDevelopmentTemplateDialog({
   const hasEmployees =
     activeEmployees.length > 0
 
+  function invalidateConfirmation() {
+    setConfirmation(null)
+  }
+
   function resetForm() {
     setEmployeeId("")
     setOwnerId("")
@@ -90,6 +105,7 @@ export function ApplyDevelopmentTemplateDialog({
       getTodayDateInputValue()
     )
     setDueDate("")
+    setConfirmation(null)
   }
 
   return (
@@ -109,6 +125,34 @@ export function ApplyDevelopmentTemplateDialog({
             event.preventDefault()
 
             startTransition(async () => {
+              const identity = confirmation ?? {
+                ...createDevelopmentTemplateConfirmationIdentity(),
+                ready: false,
+              }
+
+              if (!identity.ready) {
+                const readiness = await checkDevelopmentTemplateApplicationReadinessAction({
+                  applicationId: identity.applicationId,
+                  idempotencyKey: identity.idempotencyKey,
+                  correlationId: identity.correlationId,
+                  effectiveAt: identity.effectiveAt,
+                  templateId,
+                  employeeId,
+                  ownerId: ownerId || undefined,
+                  priority,
+                  startDate,
+                  dueDate: dueDate || undefined,
+                })
+                if (!readiness.ready) {
+                  setConfirmation(identity)
+                  toast.error(readiness.message)
+                  return
+                }
+                setConfirmation({ ...identity, ready: true, templateVersionId: readiness.templateVersionId })
+                toast.success(readiness.message)
+                return
+              }
+
               const result =
                 await applyDevelopmentTemplateAction({
                   templateId,
@@ -118,6 +162,11 @@ export function ApplyDevelopmentTemplateDialog({
                   startDate,
                   dueDate:
                     dueDate || undefined,
+                  applicationId: identity.applicationId,
+                  idempotencyKey: identity.idempotencyKey,
+                  correlationId: identity.correlationId,
+                  effectiveAt: identity.effectiveAt,
+                  templateVersionId: identity.templateVersionId,
                 })
 
                if (
@@ -153,9 +202,7 @@ export function ApplyDevelopmentTemplateDialog({
               name="employeeId"
               value={employeeId}
               onChange={(event) =>
-                setEmployeeId(
-                  event.target.value
-                )
+                { setEmployeeId(event.target.value); invalidateConfirmation() }
               }
               className="mt-1 flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
               required
@@ -188,9 +235,7 @@ export function ApplyDevelopmentTemplateDialog({
               name="ownerId"
               value={ownerId}
               onChange={(event) =>
-                setOwnerId(
-                  event.target.value
-                )
+                { setOwnerId(event.target.value); invalidateConfirmation() }
               }
               className="mt-1 flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
               disabled={isPending}
@@ -222,10 +267,7 @@ export function ApplyDevelopmentTemplateDialog({
               name="priority"
               value={priority}
               onChange={(event) =>
-                setPriority(
-                  event.target
-                    .value as DevelopmentPlanPriority
-                )
+                { setPriority(event.target.value as DevelopmentPlanPriority); invalidateConfirmation() }
               }
               className="mt-1 flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
               disabled={isPending}
@@ -259,9 +301,7 @@ export function ApplyDevelopmentTemplateDialog({
                 type="date"
                 value={startDate}
                 onChange={(event) =>
-                  setStartDate(
-                    event.target.value
-                  )
+                  { setStartDate(event.target.value); invalidateConfirmation() }
                 }
                 className="mt-1"
                 disabled={isPending}
@@ -281,9 +321,7 @@ export function ApplyDevelopmentTemplateDialog({
                 value={dueDate}
                 min={startDate}
                 onChange={(event) =>
-                  setDueDate(
-                    event.target.value
-                  )
+                  { setDueDate(event.target.value); invalidateConfirmation() }
                 }
                 className="mt-1"
                 disabled={isPending}
@@ -320,8 +358,10 @@ export function ApplyDevelopmentTemplateDialog({
               }
             >
               {isPending
-                ? "Criando plano..."
-                : "Criar plano"}
+                ? "Processando..."
+                : confirmation?.ready
+                  ? "Confirmar aplicação"
+                  : "Verificar aplicação"}
             </Button>
           </div>
         </form>

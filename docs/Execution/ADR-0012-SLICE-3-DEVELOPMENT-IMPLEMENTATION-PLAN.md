@@ -11,10 +11,9 @@ para e a documentação é reconciliada antes de qualquer migration ou código.
 A ADR-0014 — Deterministic Development Template Application and Snapshots está
 Accepted. Este plano incorpora seu recorte técnico para a PR 3C, foi aprovado
 pelo Product Architect e passou pelo Implementation Readiness Review sem lacuna
-técnica ou arquitetural conhecida. A implementação avançou parcialmente: Fases 1
-e 2 estão incorporadas à `main`, e a Fase 3 possui implementação local ainda não
-validada nem aprovada para incorporação. Este registro factual não cria
-autorização retroativa.
+técnica ou arquitetural conhecida. A implementação avançou parcialmente: Fases
+1, 2 e 3 estão incorporadas à `main`. Fases posteriores não foram iniciadas. Este
+registro factual não cria autorização retroativa para a continuidade.
 
 ## Estratégia de entrega
 
@@ -22,7 +21,7 @@ autorização retroativa.
 | --- | --- | --- | --- |
 | 3A | Operational Development Integrity | Concluída no commit `fe3d8914ce4da54e85f94794b367582971403ffa` | ADR-0012 |
 | 3B | Global Concepts and Tenant Mappings | Concluída no commit `f4a1a5d94afa0ef76132f18ac6b1ade5636ffda1` | PR 3A, PD-018 e ADR-0013 concluídas |
-| 3C | Deterministic Template Application and Snapshots | Implementação parcial: Fases 1 e 2 incorporadas; Fase 3 local pendente de revisão e validação | PR 3B concluída e ADR-0014 aceita |
+| 3C | Deterministic Template Application and Snapshots | Implementação parcial: Fases 1–3 incorporadas; Fases 4–8 não iniciadas | PR 3B concluída e ADR-0014 aceita |
 
 As três PRs são sequenciais. A conclusão de uma não autoriza automaticamente a
 seguinte.
@@ -343,9 +342,9 @@ snapshots e não transforma similaridade de nome em resolução.
 ### Status e objetivo
 
 **Status:** Implementation Plan aprovado e IRR tecnicamente concluído;
-Fases 1 e 2 incorporadas à `main`; Fase 3 implementada localmente em `227a206`,
-ainda não publicada, não validada completamente e não aprovada para incorporação.
-Fases posteriores não iniciadas.
+Fases 1, 2 e 3 incorporadas à `main`; a Fase 3 — Trusted Persistence foi
+revisada, validada e aprovada antes do merge `fe08394`. Fases posteriores não
+iniciadas.
 
 ### Estado factual das fases
 
@@ -353,12 +352,12 @@ Fases posteriores não iniciadas.
 | --- | --- | --- |
 | 1 — Infrastructure | Implementada e incorporada à `main` | `53b12ec`; migration 0068 e testes correspondentes |
 | 2 — Deterministic Resolver | Implementada e incorporada à `main` | `ed15eca`; Resolver e testes determinísticos |
-| 3 — Trusted Persistence | Primeira implementação local; pendente de revisão, validação e aprovação para incorporação | `227a206`; migration 0069 e adapter de Trusted Persistence |
+| 3 — Trusted Persistence | Implementada, validada, aprovada e incorporada à `main` | merge `fe08394`; migration 0069, adapter e testes correspondentes |
 | 4–8 | Não iniciadas | Nenhuma evidência versionada de implementação |
 
-O próximo gate é revisar e validar a Trusted Persistence local de `227a206`.
-Depois dessa validação, qualquer incorporação ou publicação da Fase 3 exige
-aprovação explícita do Product Architect.
+O próximo gate é obter aprovação explícita para iniciar a Fase 4 — Application
+Layer e composição. A conclusão da Fase 3 não autoriza automaticamente a Fase 4
+nem qualquer fase posterior.
 
 Implementar a aplicação determinística de Development Templates company-owned e
 globais sobre uma única regra canônica, produzindo Development Plan completo,
@@ -975,10 +974,10 @@ ordem:
    RLS e catálogo, sem cutover;
 2. **Contratos e Resolver:** domínio puro, fingerprint e paridade
    Readiness/Apply;
-3. **Application Layer e composição:** ports, repositories, services, Server
-   Factory e Composition Root;
-4. **Trusted Persistence:** identidade, tentativas, atomicidade, idempotência,
+3. **Trusted Persistence:** identidade, tentativas, atomicidade, idempotência,
    concorrência, snapshot, lineage e auditoria;
+4. **Application Layer e composição:** ports, repositories, services, Server
+   Factory e Composition Root;
 5. **Contrato retrocompatível:** superfície aditiva, adapter legado e migração de
    consumidores;
 6. **Actions e experiência mínima:** readiness, confirmação, retry e mensagens;
@@ -1002,13 +1001,13 @@ ativação parcial em produção.
 
 ### Gates para continuidade
 
-- revisar e validar a Trusted Persistence local de `227a206`;
+- Fase 3 — Trusted Persistence incorporada à `main` em `fe08394`;
 - worktree isolado e estado da `main` confirmados;
 - ausência de nova divergência entre documentação e código após esta
   reconciliação;
 - inventário final de consumidores do contrato público;
-- preflight read-only aprovado antes de qualquer transformação de dados.
-- aprovação explícita antes de incorporar ou publicar a Fase 3.
+- preflight read-only aprovado antes de qualquer transformação de dados;
+- aprovação explícita antes de iniciar a Fase 4 — Application Layer e composição.
 
 ## 17. Riscos e mitigação
 
@@ -1057,8 +1056,8 @@ ativação parcial em produção.
 
 Interromper antes de continuar ou incorporar quando:
 
-- a revisão ou validação da Trusted Persistence local não estiver concluída;
-- a incorporação ou publicação da Fase 3 não estiver explicitamente aprovada;
+- o início da Fase 4 — Application Layer e composição — não estiver
+  explicitamente aprovado;
 - código e documentação divergirem;
 - o preflight encontrar legado ambíguo ou corrupção;
 - a forma retrocompatível do contrato exigir quebra não aprovada;

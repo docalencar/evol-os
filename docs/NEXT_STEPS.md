@@ -1,12 +1,12 @@
 # Evol OS — Próxima entrega
 
-## Revisão e validação da Trusted Persistence da PR 3C
+## Autorização da Fase 4 da PR 3C
 
 ### Objetivo
 
-Revisar e validar a primeira implementação local da Trusted Persistence da PR 3C,
-existente no commit `227a206`, sem incorporá-la ou publicá-la. O commit permanece
-local, não passou pelos gates completos e não possui aprovação para incorporação.
+Submeter a Fase 4 — Application Layer e composição — à aprovação explícita antes
+de iniciar qualquer implementação. A Fase 3 — Trusted Persistence já foi
+revisada, validada, aprovada e incorporada à `main` no merge `fe08394`.
 
 ### Vínculo
 
@@ -20,43 +20,40 @@ local, não passou pelos gates completos e não possui aprovação para incorpor
   migration 0068 e seus testes.
 - Fase 2 — Deterministic Resolver: incorporada à `main` em `ed15eca`, incluindo
   seus testes determinísticos.
-- Fase 3 — Trusted Persistence: implementação local em `227a206`, ainda não
-  publicada, não validada completamente e não aprovada para incorporação.
-- Fases posteriores: não iniciadas.
+- Fase 3 — Trusted Persistence: concluída e incorporada à `main` em `fe08394`.
+- Fases 4–8: não iniciadas.
 - Produto: PD-018.
 - Arquitetura: ADR-0003, ADR-0012, ADR-0013, ADR-0014 e o padrão tenant-owned.
 
 ### Critérios objetivos de aceite
 
-- o commit `227a206` é revisado contra PD-018, ADR-0012, ADR-0013, ADR-0014 e o
-  Implementation Plan aprovado;
-- os gates técnicos aplicáveis à Trusted Persistence são executados e seus
-  resultados classificados;
-- nenhuma falha introduzida permanece oculta;
-- nenhuma incorporação ou publicação ocorre antes de aprovação explícita do
-  Product Architect;
-- escopo, fases e critérios do Implementation Plan aprovado são preservados.
+- o estado incorporado da Fase 3 e a ausência de implementação das Fases 4–8
+  permanecem confirmados no Git;
+- o escopo da Fase 4 permanece limitado a Application Layer, ports,
+  repositories, services, Server Factory e Composition Root previstos no plano;
+- inventário final dos consumidores do contrato público e preflight read-only
+  são tratados como dependências, sem transformação automática de dados;
+- o Product Architect concede autorização explícita antes de qualquer código,
+  migration, teste ou alteração de contrato da Fase 4;
+- escopo, ordem e critérios do Implementation Plan aprovado são preservados.
 
 ### Fora de escopo
 
-- implementar capacidade adicional da PR 3C ou iniciar fases posteriores;
-- alterar a implementação local, migration 0069, testes ou contratos durante
-  esta reconciliação documental;
+- implementar a Fase 4 ou qualquer capacidade posterior da PR 3C;
+- alterar código, migrations, testes ou contratos durante este gate documental;
 - alterar `apply_development_template`;
 - inferir prioridade ou iniciar nova migration.
 
 ### Regra de parada
 
-Não incorporar, publicar ou ampliar a Fase 3 antes da revisão e validação de
-`227a206`. Mesmo após validação satisfatória, a incorporação exige aprovação
-explícita do Product Architect.
+Não iniciar a Fase 4 antes de autorização explícita do Product Architect. A
+conclusão e incorporação da Fase 3 não constituem autorização automática para a
+fase seguinte.
 
 ### Gates técnicos
 
 - Implementation Plan aprovado e IRR tecnicamente concluído;
-- revisão arquitetural e de segurança da Trusted Persistence local;
-- migration desde banco limpo quando autorizada, pgTAP isolado e completo,
-  inspeção do catálogo, lint do banco, TypeScript, build, lint e smoke tests;
-- correção de falhas introduzidas, incluindo o whitespace já identificado na
-  migration 0069, somente em etapa técnica autorizada;
-- aprovação formal antes de incorporar ou publicar a Fase 3.
+- Fase 3 revisada, validada, aprovada e incorporada em `fe08394`;
+- worktree e ausência de implementação posterior confirmados;
+- dependências da Fase 4 revisadas contra o Implementation Plan;
+- aprovação formal antes de iniciar a Fase 4.

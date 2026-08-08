@@ -3,7 +3,25 @@
 Este changelog registra somente grandes entregas incorporadas à `main`. Commits
 locais e branches abertas não entram aqui.
 
+## 2026-08-08 — PR 3C Fase 7 — Testes, observabilidade e cutover V2
+
+- cutover do caminho oficial para readiness, confirmação explícita e contrato V2
+  implementado em `529be29`;
+- UI → Application Layer → Resolver → Trusted Persistence validado sem fallback
+  legado no caminho oficial;
+- smoke, regressão, observabilidade, TypeScript e pgTAP comprovaram readiness,
+  criação, replay idempotente, conflito de fingerprint e bloqueio sem escrita;
+- implementação aprovada e incorporada à `main` pelo merge `95625d4`;
+- compatibilidade legada preservada separadamente por falta de evidência sobre
+  consumidores externos.
+
+Próximo gate: concluir a validação final da Fase 8 e obter aprovação explícita do
+Product Architect antes de declarar a PR 3C encerrada.
+
 ## 2026-08-08 — PR 3C Fase 6 — Actions e experiência mínima
+
+Registro histórico do estado anterior ao merge `95625d4`; o estado vigente está
+na entrada acima.
 
 - readiness sem persistência, confirmação humana explícita e identidade estável
   de retry implementados em `3cc8c38`;

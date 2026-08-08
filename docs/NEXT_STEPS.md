@@ -1,65 +1,54 @@
 # Evol OS — Próxima entrega
 
-## Execução da Fase 7 da PR 3C
+## Aprovação final da PR 3C
 
 ### Objetivo
 
-Executar testes, observabilidade e cutover controlado do fluxo V2, provando o
-fluxo antes e depois do cutover. A Fase 6 — Actions e experiência mínima foi
-implementada em `3cc8c38`, validada, aprovada e incorporada à `main` pelo merge
-`ca2f173`.
+Submeter ao Product Architect a validação final da PR 3C — Development Template
+Application. A implementação está completa e a Fase 8 foi validada tecnicamente;
+a PR 3C ainda não deve ser declarada encerrada antes dessa aprovação explícita.
 
-### Vínculo
+### Estado confirmado
 
-- Roadmap: Fundação confiável, item 1, ainda em andamento.
-- MVP Plan: Fundação, operação segura dos dados.
-- Épicos: Fundação e Governança de Dados; Desenvolvimento.
-- Dependências concluídas: PD-018 aprovada; ADR-0012, ADR-0013 e ADR-0014
-  aceitas; Discovery da PR 3C aprovada; PRs 3A e 3B concluídas.
-- Plano aprovado: `Execution/ADR-0012-SLICE-3-DEVELOPMENT-IMPLEMENTATION-PLAN.md`.
-- Fase 1 — Infrastructure: incorporada à `main` em `53b12ec`, incluindo a
-  migration 0068 e seus testes.
-- Fase 2 — Deterministic Resolver: incorporada à `main` em `ed15eca`, incluindo
-  seus testes determinísticos.
-- Fase 3 — Trusted Persistence: concluída e incorporada à `main` em `fe08394`.
-- Fase 4 — Application Layer e composição: concluída e incorporada à `main` em
-  `5c1d12f`.
-- Fase 5 — contrato retrocompatível: concluída e incorporada à `main` em
-  `08bd7cf`.
-- Fase 6 — Actions e experiência mínima: concluída e incorporada à `main` em
-  `ca2f173`.
-- Fase 7 — testes, observabilidade e cutover: autorizada e ativa.
-- Fase 8 — reconciliação final: não iniciada.
-- Produto: PD-018.
-- Arquitetura: ADR-0003, ADR-0012, ADR-0013, ADR-0014 e o padrão tenant-owned.
+- Fases 1–6 incorporadas anteriormente à `main`;
+- Fase 7 — testes, observabilidade e cutover V2 — implementada em `529be29` e
+  incorporada pelo merge `95625d4`;
+- fluxo oficial: UI → readiness → confirmação explícita → contrato V2 →
+  Application Layer → Resolver → Trusted Persistence;
+- caminho oficial sem fallback legado;
+- Fase 8: auditoria arquitetural, funcional, de segurança, legado e persistência
+  concluída, com 40/40 testes TypeScript e 223/223 testes pgTAP aprovados;
+- type-check, lint e build aprovados; quatro warnings de lint preexistentes;
+- observabilidade endurecida para substituir a chave de idempotência bruta por
+  hash SHA-256 antes do writer;
+- nenhuma migration e nenhuma regra de domínio alteradas.
 
-### Critérios objetivos de aceite
+### Legado preservado
 
-- o estado incorporado das Fases 1–6 permanece confirmado no Git;
-- V2 é provado e observado antes do cutover e provado novamente depois;
-- smoke/regressão cobrem readiness, confirmação, retry, conflitos e falhas;
-- compatibilidade legada só é removida com evidência suficiente;
-- inventário final dos consumidores do contrato público e preflight read-only
-  são tratados como dependências, sem transformação automática de dados;
-- a Fase 8 não começa sem nova autorização explícita;
-- escopo, ordem e critérios do Implementation Plan aprovado são preservados.
+- `apply_development_template`: **PUBLIC COMPATIBILITY**; RPC pública sem
+  consumidor interno, mas a ausência de uso TypeScript não exclui consumidores
+  externos;
+- `applyDevelopmentTemplate`: **PUBLIC COMPATIBILITY**; wrapper exportado que
+  converge para o contrato V2 pelo legacy adapter;
+- `createLegacyDevelopmentTemplateApplicationAdapter`: **PUBLIC COMPATIBILITY**;
+  export público e dependência do wrapper legado;
+- `applyDevelopmentTemplateAction`: **DEAD INTERNAL**; nenhum consumidor ou
+  export interno encontrado, preservada porque sua remoção não é necessária para
+  o encerramento e deve ser tratada em entrega separada.
 
-### Fora de escopo
+### Gate atual
 
-- iniciar a Fase 8 ou remover legado sem evidência suficiente;
-- alterar código, migrations, testes ou contratos durante este gate documental;
-- alterar `apply_development_template`;
-- inferir prioridade ou iniciar nova migration.
+Revisar as evidências da Fase 8 e obter a decisão do Product Architect. Estado:
+
+**PR 3C implementation complete — awaiting final Product Architect approval.**
+
+Após aprovação, reconciliar somente o status de encerramento da PR 3C. O próximo
+item de produto indicado pelo Roadmap é o enriquecimento do modelo de cargos, mas
+esta validação não autoriza seu início automático.
 
 ### Regra de parada
 
-Não considerar o cutover concluído sem evidência pré e pós-cutover. Não iniciar a
-Fase 8 automaticamente.
-
-### Gates técnicos
-
-- Implementation Plan aprovado e IRR tecnicamente concluído;
-- Fases 1–6 concluídas; Fase 6 incorporada em `ca2f173`;
-- worktree e ausência de implementação posterior confirmados;
-- testes direcionados, TypeScript, lint, build, smoke e `git diff --check`;
-- revisão do Product Architect antes da Fase 8.
+- não declarar a PR 3C concluída sem aprovação explícita;
+- não remover contratos legados neste gate;
+- não iniciar nova capacidade, migration, refactor ou PR de produto;
+- preservar snapshots, lineage, aplicações e auditorias existentes.

@@ -11,8 +11,10 @@ para e a documentação é reconciliada antes de qualquer migration ou código.
 A ADR-0014 — Deterministic Development Template Application and Snapshots está
 Accepted. Este plano incorpora seu recorte técnico para a PR 3C, foi aprovado
 pelo Product Architect e passou pelo Implementation Readiness Review sem lacuna
-técnica ou arquitetural conhecida. A implementação permanece bloqueada até
-autorização explícita posterior.
+técnica ou arquitetural conhecida. A implementação avançou parcialmente: Fases 1
+e 2 estão incorporadas à `main`, e a Fase 3 possui implementação local ainda não
+validada nem aprovada para incorporação. Este registro factual não cria
+autorização retroativa.
 
 ## Estratégia de entrega
 
@@ -20,7 +22,7 @@ autorização explícita posterior.
 | --- | --- | --- | --- |
 | 3A | Operational Development Integrity | Concluída no commit `fe3d8914ce4da54e85f94794b367582971403ffa` | ADR-0012 |
 | 3B | Global Concepts and Tenant Mappings | Concluída no commit `f4a1a5d94afa0ef76132f18ac6b1ade5636ffda1` | PR 3A, PD-018 e ADR-0013 concluídas |
-| 3C | Deterministic Template Application and Snapshots | Implementation Plan aprovado; IRR tecnicamente pronto; implementação não autorizada | PR 3B concluída e ADR-0014 aceita |
+| 3C | Deterministic Template Application and Snapshots | Implementação parcial: Fases 1 e 2 incorporadas; Fase 3 local pendente de revisão e validação | PR 3B concluída e ADR-0014 aceita |
 
 As três PRs são sequenciais. A conclusão de uma não autoriza automaticamente a
 seguinte.
@@ -341,7 +343,22 @@ snapshots e não transforma similaridade de nome em resolução.
 ### Status e objetivo
 
 **Status:** Implementation Plan aprovado e IRR tecnicamente concluído;
-implementação aguardando autorização explícita do Product Architect.
+Fases 1 e 2 incorporadas à `main`; Fase 3 implementada localmente em `227a206`,
+ainda não publicada, não validada completamente e não aprovada para incorporação.
+Fases posteriores não iniciadas.
+
+### Estado factual das fases
+
+| Fase | Estado | Evidência |
+| --- | --- | --- |
+| 1 — Infrastructure | Implementada e incorporada à `main` | `53b12ec`; migration 0068 e testes correspondentes |
+| 2 — Deterministic Resolver | Implementada e incorporada à `main` | `ed15eca`; Resolver e testes determinísticos |
+| 3 — Trusted Persistence | Primeira implementação local; pendente de revisão, validação e aprovação para incorporação | `227a206`; migration 0069 e adapter de Trusted Persistence |
+| 4–8 | Não iniciadas | Nenhuma evidência versionada de implementação |
+
+O próximo gate é revisar e validar a Trusted Persistence local de `227a206`.
+Depois dessa validação, qualquer incorporação ou publicação da Fase 3 exige
+aprovação explícita do Product Architect.
 
 Implementar a aplicação determinística de Development Templates company-owned e
 globais sobre uma única regra canônica, produzindo Development Plan completo,
@@ -891,7 +908,7 @@ implementação, após conferir a `main`. Nenhum SQL é especificado neste plano
 
 ### Gates completos da futura implementação
 
-Quando a PR 3C for autorizada, executar migration desde banco limpo, pgTAP
+Para validar a implementação local da PR 3C, executar migration desde banco limpo, pgTAP
 isolado e completo, `supabase db lint --local`, TypeScript, build, lint,
 `git diff --check`, inspeção do catálogo PostgreSQL e smoke test do fluxo
 company-owned e global. Toda falha será classificada como INTRODUZIDA,
@@ -983,13 +1000,15 @@ ativação parcial em produção.
 - PR 3B e migration 0067 concluídas e validadas;
 - modelo híbrido de Template Goals e Tenant Mappings disponível.
 
-### Gates antes da implementação
+### Gates para continuidade
 
-- autorização explícita para iniciar a PR 3C;
-- worktree isolado e estado da `main` confirmado;
-- ausência de nova divergência entre documentação e código;
+- revisar e validar a Trusted Persistence local de `227a206`;
+- worktree isolado e estado da `main` confirmados;
+- ausência de nova divergência entre documentação e código após esta
+  reconciliação;
 - inventário final de consumidores do contrato público;
 - preflight read-only aprovado antes de qualquer transformação de dados.
+- aprovação explícita antes de incorporar ou publicar a Fase 3.
 
 ## 17. Riscos e mitigação
 
@@ -1036,9 +1055,10 @@ ativação parcial em produção.
 
 ## 19. Regra de parada
 
-Interromper antes de implementar quando:
+Interromper antes de continuar ou incorporar quando:
 
-- a PR 3C não estiver explicitamente autorizada;
+- a revisão ou validação da Trusted Persistence local não estiver concluída;
+- a incorporação ou publicação da Fase 3 não estiver explicitamente aprovada;
 - código e documentação divergirem;
 - o preflight encontrar legado ambíguo ou corrupção;
 - a forma retrocompatível do contrato exigir quebra não aprovada;

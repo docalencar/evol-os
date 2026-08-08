@@ -51,7 +51,12 @@ create table public.development_template_application_audit (
       and plan_id is not null
       and snapshot_id is not null
     )
-      or (outcome in ('failed', 'conflict') and failure_code is not null and plan_id is null)
+      or (
+        outcome in ('failed', 'conflict')
+        and failure_code is not null
+        and plan_id is null
+        and snapshot_id is null
+      )
     )
 );
 
@@ -79,7 +84,14 @@ using (
 );
 
 revoke all on table public.development_template_application_audit
-from public, anon, authenticated;
+from public, anon, authenticated, service_role;
+
+revoke all on table
+  public.development_template_applications,
+  public.development_template_application_attempts,
+  public.development_template_application_snapshots,
+  public.development_template_application_lineage
+from service_role;
 
 grant select on table public.development_template_application_audit
 to authenticated;
@@ -226,7 +238,7 @@ begin
       from public.development_template_application_snapshots snapshot
       where snapshot.application_id = v_application.id
         and snapshot.company_id = v_company_id;
-      
+
       if not exists (
         select 1
         from public.development_template_application_snapshots snapshot
@@ -321,6 +333,16 @@ declare
   v_snapshot_id uuid := gen_random_uuid();
   v_current_level integer;
 begin
+  if jsonb_typeof(p_resolution) is distinct from 'object'
+    or jsonb_typeof(v_snapshot) is distinct from 'object'
+    or jsonb_typeof(v_lineage) is distinct from 'object'
+    or jsonb_typeof(p_resolution -> 'goals') is distinct from 'array'
+    or jsonb_typeof(v_snapshot -> 'goals') is distinct from 'array'
+    or p_resolution -> 'goals' is distinct from v_snapshot -> 'goals'
+  then
+    raise exception using errcode = '22023', message = 'DEVELOPMENT_TEMPLATE_PERSISTENCE_INVALID_RESOLUTION';
+  end if;
+
   perform pg_advisory_xact_lock(
     hashtextextended(v_company_id::text || ':' || v_idempotency_key, 0)
   );
@@ -339,6 +361,17 @@ begin
 
   if v_application.intent_fingerprint <> v_fingerprint then
     raise exception using errcode = '22023', message = 'IDEMPOTENCY_FINGERPRINT_CONFLICT';
+  end if;
+
+  if not exists (
+    select 1
+    from public.development_template_application_attempts attempt
+    where attempt.id = p_attempt_id
+      and attempt.application_id = v_application.id
+      and attempt.company_id = v_company_id
+      and attempt.status = 'running'
+  ) then
+    raise exception using errcode = '23514', message = 'DEVELOPMENT_TEMPLATE_ATTEMPT_INVALID';
   end if;
 
   if v_application.status = 'succeeded' then
@@ -367,6 +400,10 @@ begin
     or v_lineage ->> 'applicationId' is distinct from v_application_id::text
     or v_lineage ->> 'companyId' is distinct from v_company_id::text
     or v_lineage ->> 'templateVersionId' is distinct from v_template_version_id::text
+    or v_lineage ->> 'templateId' is distinct from v_template_id::text
+    or v_lineage ->> 'templateVersionNumber' is distinct from v_snapshot #>> '{template,versionNumber}'
+    or v_lineage ->> 'scope' is distinct from v_snapshot #>> '{template,scope}'
+    or v_lineage ->> 'snapshotFormatVersion' is distinct from v_snapshot ->> 'formatVersion'
     or v_lineage ->> 'intentFingerprint' is distinct from v_fingerprint
   then
     raise exception using errcode = '22023', message = 'DEVELOPMENT_TEMPLATE_PERSISTENCE_RESOLUTION_MISMATCH';
@@ -389,12 +426,36 @@ begin
     where version.id = v_template_version_id
       and version.template_id = v_template_id
       and version.status = 'published'
+      and version.version_number = (v_snapshot #>> '{template,versionNumber}')::integer
+      and version.scope = v_snapshot #>> '{template,scope}'
+      and version.name = v_snapshot #>> '{template,name}'
+      and version.description is not distinct from v_snapshot #>> '{template,description}'
+      and version.suggested_duration_days is not distinct from
+        (v_snapshot #>> '{template,suggestedDurationDays}')::integer
       and (
         (version.scope = 'global' and version.company_id is null)
         or (version.scope = 'company' and version.company_id = v_company_id)
       )
   ) then
     raise exception using errcode = '23514', message = 'DEVELOPMENT_TEMPLATE_VERSION_NOT_CONSUMABLE';
+  end if;
+
+  if (
+    select count(*)
+    from jsonb_array_elements(p_resolution -> 'goals') resolved_goal
+  ) <> (
+    select count(*)
+    from public.development_template_version_goals version_goal
+    where version_goal.template_version_id = v_template_version_id
+  ) or (
+    select count(distinct resolved_goal ->> 'sourceGoalId')
+    from jsonb_array_elements(p_resolution -> 'goals') resolved_goal
+  ) <> (
+    select count(*)
+    from public.development_template_version_goals version_goal
+    where version_goal.template_version_id = v_template_version_id
+  ) then
+    raise exception using errcode = '23514', message = 'DEVELOPMENT_TEMPLATE_VERSION_CONTENT_CHANGED';
   end if;
 
   if not exists (
@@ -417,6 +478,88 @@ begin
 
   for v_goal in select value from jsonb_array_elements(p_resolution -> 'goals')
   loop
+    if not exists (
+      select 1
+      from public.development_template_version_goals version_goal
+      where version_goal.id = (v_goal ->> 'sourceGoalId')::uuid
+        and version_goal.template_version_id = v_template_version_id
+        and version_goal.description is not distinct from v_goal ->> 'description'
+        and version_goal.suggested_target_level =
+          (v_goal ->> 'suggestedTargetLevel')::integer
+        and version_goal.suggested_target_level =
+          (v_goal ->> 'appliedTargetLevel')::integer
+        and version_goal.order_index = (v_goal ->> 'orderIndex')::integer
+        and (
+          (
+            version_goal.company_id = v_company_id
+            and version_goal.competency_id = (v_goal #>> '{competency,id}')::uuid
+            and version_goal.global_concept_version_id is null
+            and (
+              v_goal -> 'globalCompetency' is null
+              or jsonb_typeof(v_goal -> 'globalCompetency') = 'null'
+            )
+          )
+          or (
+            version_goal.company_id is null
+            and version_goal.competency_id is null
+            and version_goal.global_concept_version_id =
+              (v_goal #>> '{globalCompetency,requiredVersionId}')::uuid
+          )
+        )
+    ) then
+      raise exception using errcode = '23514', message = 'DEVELOPMENT_TEMPLATE_VERSION_CONTENT_CHANGED';
+    end if;
+
+    if jsonb_typeof(v_goal -> 'actions') is distinct from 'array'
+      or (
+        select count(*)
+        from jsonb_array_elements(v_goal -> 'actions') resolved_action
+      ) <> (
+        select count(*)
+        from public.development_template_version_actions version_action
+        where version_action.template_version_goal_id =
+          (v_goal ->> 'sourceGoalId')::uuid
+      )
+      or (
+        select count(distinct resolved_action ->> 'sourceActionId')
+        from jsonb_array_elements(v_goal -> 'actions') resolved_action
+      ) <> (
+        select count(*)
+        from public.development_template_version_actions version_action
+        where version_action.template_version_goal_id =
+          (v_goal ->> 'sourceGoalId')::uuid
+      )
+      or exists (
+        select 1
+        from jsonb_array_elements(v_goal -> 'actions') resolved_action
+        where not exists (
+          select 1
+          from public.development_template_version_actions version_action
+          where version_action.id = (resolved_action ->> 'sourceActionId')::uuid
+            and version_action.template_version_goal_id =
+              (v_goal ->> 'sourceGoalId')::uuid
+            and version_action.title = resolved_action ->> 'title'
+            and version_action.description is not distinct from
+              resolved_action ->> 'description'
+            and version_action.type = resolved_action ->> 'type'
+            and version_action.suggested_due_days is not distinct from
+              (resolved_action ->> 'suggestedDueDays')::integer
+            and version_action.order_index =
+              (resolved_action ->> 'orderIndex')::integer
+            and resolved_action ->> 'dueDate' is not distinct from
+              case
+                when version_action.suggested_due_days is null then null
+                else (
+                  (v_snapshot #>> '{plan,startDate}')::date
+                  + version_action.suggested_due_days
+                )::text
+              end
+        )
+      )
+    then
+      raise exception using errcode = '23514', message = 'DEVELOPMENT_TEMPLATE_VERSION_CONTENT_CHANGED';
+    end if;
+
     if not exists (
       select 1
       from public.competencies competency
@@ -457,6 +600,21 @@ begin
           and mapping.confirmed_at = (v_global ->> 'confirmedAt')::timestamptz
       ) then
         raise exception using errcode = '23514', message = 'DEVELOPMENT_TEMPLATE_MAPPING_CHANGED';
+      end if;
+
+      if not exists (
+        select 1
+        from public.global_competency_concept_versions concept_version
+        join public.global_competency_concepts concept
+          on concept.id = concept_version.concept_id
+        where concept_version.id = (v_global ->> 'requiredVersionId')::uuid
+          and concept_version.status = 'published'
+          and concept_version.concept_id = (v_global ->> 'conceptId')::uuid
+          and concept_version.version_number =
+            (v_global ->> 'requiredVersionNumber')::integer
+          and concept.code = v_global ->> 'conceptCode'
+      ) then
+        raise exception using errcode = '23514', message = 'DEVELOPMENT_TEMPLATE_CONCEPT_VERSION_CHANGED';
       end if;
 
       if v_global -> 'compatibility' is not null

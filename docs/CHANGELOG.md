@@ -3,6 +3,24 @@
 Este changelog registra somente grandes entregas incorporadas à `main`. Commits
 locais e branches abertas não entram aqui.
 
+## 2026-08-08 — Estado parcial da implementação da PR 3C
+
+- Fase 1 — Infrastructure incorporada à `main` em `53b12ec`, incluindo a
+  migration 0068 e os testes correspondentes;
+- Fase 2 — Deterministic Resolver incorporada à `main` em `ed15eca`, incluindo os
+  testes determinísticos correspondentes;
+- contrato de snapshot e responsabilidades da Trusted Persistence esclarecidos
+  documentalmente em `7b70d3d`;
+- a PR 3C permanece parcial e não concluída;
+- a primeira implementação da Fase 3 — Trusted Persistence — existe somente no
+  commit local `227a206`, não publicado, não validado completamente e não
+  aprovado para incorporação; por não estar na `main`, ela não é registrada como
+  entrega incorporada por este changelog;
+- fases posteriores não foram iniciadas.
+
+Próximo gate: revisar e validar `227a206`; depois, obter aprovação explícita antes
+de incorporar ou publicar a Fase 3.
+
 ## 2026-08-02 — Arquitetura da aplicação determinística de Development Templates
 
 - Discovery da PR 3C concluída e aprovada;
@@ -12,7 +30,8 @@ locais e branches abertas não entram aqui.
   lacuna técnica ou arquitetural conhecida;
 - documentação reconciliada para tornar a autorização explícita da implementação
   o próximo gate;
-- nenhuma implementação da PR 3C iniciada.
+- naquele gate documental, nenhuma implementação da PR 3C havia sido iniciada;
+  o estado posterior está registrado na entrada de 2026-08-08.
 
 Decisão: ADR-0014.
 

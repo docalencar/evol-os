@@ -22,11 +22,16 @@ concluída pela migration 0066. A PR 3B — Global Concepts and Tenant Mappings 
 concluída pela migration 0067, incluindo a fundação de autoridade global definida
 pela ADR-0013. A ADR-0014 está aceita. A PR 3C — Deterministic Template
 Application and Snapshots possui Discovery concluída, Implementation Plan
-aprovado e IRR tecnicamente concluído. Ela está pronta para o gate de autorização,
-mas permanece não implementada e não ativa até autorização explícita do Product
-Architect.
+aprovado e IRR tecnicamente concluído. Sua Fase 1 — Infrastructure, incluindo a
+migration 0068 — foi incorporada à `main` em `53b12ec`; a Fase 2 — Deterministic
+Resolver — foi incorporada em `ed15eca`. A Fase 3 possui uma primeira
+implementação local de Trusted Persistence em `227a206`, ainda não publicada,
+não validada completamente e não aprovada para incorporação. As fases posteriores
+não foram iniciadas.
 
-Somente depois desse gate o produto volta a expandir capacidades funcionais,
+O próximo gate é revisar e validar a Trusted Persistence local. Depois dessa
+validação, sua incorporação ou publicação ainda exige aprovação explícita. Somente
+após a conclusão da PR 3C o produto volta a expandir capacidades funcionais,
 começando pelo enriquecimento do modelo de cargos.
 
 ## Evidência da prioridade

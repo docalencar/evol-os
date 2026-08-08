@@ -26,7 +26,7 @@ Discovery
 ```
 
 As regras, gates e condições de parada estão no
-[MASTER_PROMPT](./prompts/MASTER_PROMPT.md). Cada etapa só ocorre quando as
+[MASTER_PROMPT](./Prompts/MASTER_PROMPT.md). Cada etapa só ocorre quando as
 dependências anteriores estiverem documentadas e aprovadas.
 
 ## 3. Fonte de verdade
@@ -63,7 +63,7 @@ O PROJECT_STATE.md é uma fotografia oficial do estado do programa. Ele não cri
 | ADR-0011 — Notification Domain Architecture | Implementada |
 | ADR-0012 — Tenant-Owned Referential Integrity Strategy | Programa em andamento |
 | ADR-0013 — Platform Global Authority and Trusted Execution | ✅ Accepted e implementada na PR 3B |
-| ADR-0014 — Deterministic Development Template Application and Snapshots | ✅ Accepted; implementação ainda não iniciada |
+| ADR-0014 — Deterministic Development Template Application and Snapshots | ✅ Accepted; implementação parcial da PR 3C em revisão |
 
 O status normativo e o conteúdo completo permanecem no
 [índice de ADRs](./adr/README.md).
@@ -71,12 +71,13 @@ O status normativo e o conteúdo completo permanecem no
 ### Roadmap e execução
 
 - [ROADMAP](./ROADMAP.md): Fundação confiável continua sendo a prioridade.
-- [NEXT_STEPS](./NEXT_STEPS.md): autorização explícita para implementar a PR 3C
-  conforme o plano aprovado.
+- [NEXT_STEPS](./NEXT_STEPS.md): revisão e validação da Trusted Persistence local
+  da PR 3C antes de qualquer incorporação.
 - [MVP Plan](./MVP_PLAN.md): jornada completa até o MVP.
 - [EPICS](./EPICS.md): estado funcional das capacidades.
 - [Implementation Plan do Slice 3](./Execution/ADR-0012-SLICE-3-DEVELOPMENT-IMPLEMENTATION-PLAN.md):
-  PRs 3A e 3B concluídas; plano da PR 3C aprovado e IRR tecnicamente concluído.
+  PRs 3A e 3B concluídas; plano da PR 3C aprovado; IRR tecnicamente concluído;
+  Fases 1 e 2 incorporadas e Fase 3 local pendente de revisão e validação.
 
 ## 5. Programa ADR-0012
 
@@ -86,20 +87,29 @@ O status normativo e o conteúdo completo permanecem no
 | Slice 2 | Recruitment | ✅ Concluído | `9c6695819850ddb69237e9bec7688d0a8864b908` |
 | Slice 3A | Operational Development Integrity | ✅ Concluído | `fe3d8914ce4da54e85f94794b367582971403ffa` |
 | Slice 3B | Global Concepts and Tenant Mappings | ✅ Concluído e versionado | `f4a1a5d94afa0ef76132f18ac6b1ade5636ffda1` |
-| Slice 3C | Deterministic Template Application and Snapshots | Tecnicamente pronta; aguardando autorização explícita, não ativa | — |
+| Slice 3C | Deterministic Template Application and Snapshots | Implementação parcial: Fases 1 e 2 incorporadas; Fase 3 local não validada | `53b12ec`, `ed15eca`; local `227a206` |
 
 ## 6. Próxima etapa
 
 A Discovery da PR 3C está aprovada, a ADR-0014 está aceita, o Implementation Plan
 está aprovado e o IRR concluiu que não há lacuna técnica ou arquitetural conhecida.
+A infraestrutura determinística da Fase 1, incluindo a migration 0068, foi
+incorporada à `main` em `53b12ec`. O Resolver determinístico da Fase 2 e seus
+testes foram incorporados à `main` em `ed15eca`.
 
-O próximo gate é obter autorização explícita do Product Architect para iniciar a
-implementação conforme o plano aprovado. A PR 3C permanece não ativa e não
-implementada até essa autorização; readiness técnico não equivale a autorização.
+A Fase 3 possui uma primeira implementação local de Trusted Persistence no commit
+`227a206`. Esse commit não foi publicado, não passou pelos gates completos de
+validação e não está aprovado para incorporação. As fases posteriores não foram
+iniciadas. Esta reconciliação registra fatos existentes e não cria autorização
+retroativa.
+
+O próximo gate é revisar e validar a Trusted Persistence local de `227a206`.
+Somente depois dessa validação poderá ser solicitada aprovação explícita para
+incorporar ou publicar a Fase 3.
 
 Antes de qualquer trabalho futuro, devem ser lidos:
 
-- [MASTER_PROMPT](./prompts/MASTER_PROMPT.md);
+- [MASTER_PROMPT](./Prompts/MASTER_PROMPT.md);
 - [PD-018](./Product/PRODUCT_DECISIONS.md);
 - [ADR-0003](./adr/0003-development-templates.md);
 - [ADR-0012](./adr/0012-tenant-owned-referential-integrity-strategy.md);
@@ -170,7 +180,7 @@ Este resumo oferece orientação; o registro oficial de entregas é o
 
 ## 10. Como iniciar uma nova conversa
 
-1. Leia o [MASTER_PROMPT](./prompts/MASTER_PROMPT.md) e este PROJECT_STATE.
+1. Leia o [MASTER_PROMPT](./Prompts/MASTER_PROMPT.md) e este PROJECT_STATE.
 2. Confirme o estado do worktree, ROADMAP e NEXT_STEPS.
 3. Leia somente as Product Decisions, ADRs e planos relacionados à entrega atual.
 4. Nunca use conversas anteriores como especificação.
@@ -180,7 +190,7 @@ Este resumo oferece orientação; o registro oficial de entregas é o
 
 ## 11. Referências oficiais
 
-- [MASTER_PROMPT](./prompts/MASTER_PROMPT.md)
+- [MASTER_PROMPT](./Prompts/MASTER_PROMPT.md)
 - [Product Decisions](./Product/PRODUCT_DECISIONS.md)
 - [ADRs](./adr/README.md)
 - [Implementation Plan do Slice 3](./Execution/ADR-0012-SLICE-3-DEVELOPMENT-IMPLEMENTATION-PLAN.md)

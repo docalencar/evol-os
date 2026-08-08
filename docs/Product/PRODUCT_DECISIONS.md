@@ -722,3 +722,360 @@ Exigem decisão própria quando entrarem no Roadmap:
 - associação opcional de templates company-owned a conceitos globais;
 - política de compatibilidade automática para mudanças puramente editoriais;
 - tratamento definitivo do conteúdo global legado após inventário de dados.
+
+---
+
+# PD-019 — Tenant Multiuser Activation Policy
+
+**Status:** Proposed
+
+**Owner:** Product Architect
+
+## Contexto
+
+Uma empresa no Evol OS precisa permitir que mais de uma pessoa use o mesmo
+tenant sem confundir identidade autenticada, cadastro de People, papel
+corporativo ou relação de liderança. O produto já admite pessoas sem conta,
+memberships tenant-owned e os papéis `owner`, `admin`, `hr`, `manager` e
+`employee`, mas ainda não possui uma política permanente para convite, aceite,
+vínculo, múltiplas empresas e ownership.
+
+Esta decisão define o comportamento funcional da ativação multiusuário. Ela não
+define persistência, APIs, migrations, RLS, componentes, provedor de e-mail ou
+outras escolhas arquiteturais.
+
+## Problema
+
+Sem uma política explícita, o produto pode:
+
+- conceder acesso antes de a pessoa convidada confirmar sua identidade;
+- vincular uma conta à pessoa ou à empresa errada;
+- escolher arbitrariamente um tenant quando o usuário participa de vários;
+- permitir escalonamento indevido de role ou deixar uma empresa sem owner;
+- tratar e-mail ou executor técnico como autoridade humana;
+- perder a autoria de convites, vínculos e mudanças de acesso.
+
+## Objetivos
+
+- ativar contas somente por decisão humana explícita e aceite válido;
+- vincular cada acesso tenant a uma pessoa já cadastrada na empresa;
+- suportar participação do mesmo usuário em várias empresas sem ambiguidade;
+- preservar o catálogo vigente de papéis e o menor privilégio;
+- proteger ownership, isolamento tenant e rastreabilidade;
+- oferecer comportamento simples e seguro para convite, aceite e troca de
+  empresa.
+
+## Não objetivos
+
+- criar novos papéis corporativos;
+- substituir relações de gestor e liderado por roles de acesso;
+- definir schema, constraints, RPCs, triggers, indexes ou policies;
+- definir detalhes do provedor de autenticação ou de e-mail;
+- permitir convite sem uma pessoa previamente cadastrada;
+- definir exclusão legal ou retenção física de dados de ex-colaboradores.
+
+## Decisão
+
+### Modelo de convite
+
+No MVP, todo convite pertence a exatamente uma empresa, uma pessoa já existente
+nessa empresa, um e-mail normalizado e uma role pretendida.
+
+- `owner` e `admin` podem convidar;
+- somente `owner` pode conceder a role `owner`;
+- `owner` pode conceder qualquer role vigente;
+- `admin` pode conceder `admin`, `hr`, `manager` ou `employee`;
+- `hr`, `manager` e `employee` não convidam nem concedem acesso;
+- convite não concede acesso: a membership só se torna ativa após aceite válido;
+- os estados funcionais são `pending`, `accepted`, `expired` e `revoked`;
+- um convite `pending` expira sete dias após o envio ou último reenvio;
+- convite expirado ou revogado nunca pode ser aceito;
+- reenvio é permitido para convite `pending` ou `expired`, renova sua validade e
+  preserva empresa, pessoa e role pretendida;
+- convite revogado não é reativado por reenvio; uma nova intenção explícita é
+  necessária;
+- somente quem teria autoridade para criar o convite pode reenviá-lo ou
+  revogá-lo;
+- não pode existir mais de um convite vigente para a mesma pessoa na mesma
+  empresa;
+- nova tentativa equivalente informa o convite já existente e oferece reenvio,
+  sem criar uma segunda intenção concorrente;
+- pessoa com membership ativa não recebe novo convite para a mesma empresa;
+  mudança de role segue o fluxo próprio de administração de acesso;
+- se o e-mail já pertence a uma conta Evol OS, o convite vincula essa identidade
+  após o aceite, sem criar conta duplicada e sem conceder acesso antecipado;
+- mensagens anteriores ao aceite não revelam ao ator se o e-mail possui ou não
+  uma conta global.
+
+Alterar pessoa, e-mail, empresa ou role de um convite pendente constitui nova
+decisão humana: o convite anterior deve ser revogado e outro deve ser criado.
+
+### Pessoa e usuário
+
+`People` e conta autenticada são identidades relacionadas, mas não equivalentes.
+
+- uma pessoa pode existir sem conta autenticada;
+- uma conta global pode existir sem People em determinado tenant;
+- uma conta não recebe acesso ativo a um tenant sem estar vinculada a exatamente
+  uma pessoa desse tenant;
+- no MVP, somente uma pessoa já cadastrada pode ser convidada; o convite não cria
+  People posteriormente;
+- o ator autorizado escolhe a pessoa e confirma a intenção de vínculo ao criar o
+  convite;
+- a pessoa convidada confirma o vínculo ao aceitar usando a conta correspondente
+  ao e-mail verificado do convite;
+- o e-mail cadastrado para a pessoa deve corresponder ao e-mail do convite no
+  momento da criação; divergência precisa ser corrigida por ator autorizado antes
+  de convidar;
+- um usuário pode estar vinculado a no máximo uma pessoa por tenant;
+- uma pessoa pode estar vinculada a no máximo um usuário por vez;
+- vínculo ativo não pode ser trocado silenciosamente. Correção exige desativar o
+  acesso existente, registrar a desvinculação e realizar novo convite;
+- após o vínculo, `auth.users.id` é a identidade de acesso. O e-mail deixa de ser
+  autoridade permanente e uma mudança posterior de e-mail não troca a pessoa;
+- desligamento ou inativação da pessoa desativa seu acesso ao tenant;
+- o vínculo histórico é preservado para rastreabilidade. Uma reativação exige
+  decisão explícita e não restaura acesso automaticamente.
+
+### Múltiplos tenants e tenant ativo
+
+Um usuário pode possuir memberships ativas em várias empresas. Cada membership é
+independente e não concede visibilidade ou autoridade nas demais.
+
+- com exatamente uma membership ativa, ela se torna o tenant ativo
+  automaticamente;
+- no primeiro login com mais de uma membership ativa, o usuário precisa escolher
+  a empresa antes de acessar qualquer área tenant-owned;
+- após uma escolha válida, o produto pode restaurar a última empresa usada em
+  acessos posteriores;
+- se a empresa lembrada não estiver mais ativa para o usuário, a preferência é
+  ignorada: uma única opção restante é selecionada automaticamente e múltiplas
+  opções retornam ao seletor;
+- o usuário pode trocar de empresa por uma ação sempre visível quando possuir
+  mais de uma membership ativa;
+- troca de empresa substitui integralmente o contexto tenant; dados, navegação e
+  permissões do tenant anterior não permanecem ativos;
+- nenhuma consulta pode escolher “a primeira” membership como decisão de
+  produto;
+- sem membership ativa, o usuário não acessa áreas tenant-owned. Convite pendente
+  válido conduz ao aceite; sem convite válido, o produto apresenta estado seguro
+  sem inventar vínculo ou empresa.
+
+### Roles e autoridade
+
+O catálogo permanece `owner`, `admin`, `hr`, `manager` e `employee`.
+
+- `owner` governa ownership e pode administrar todas as memberships do tenant;
+- `admin` administra acessos que não sejam de owner, inclusive outros admins;
+- `hr` administra cadastros de People dentro das permissões já vigentes, mas não
+  concede, revoga ou altera acesso;
+- `manager` representa permissões funcionais aprovadas e nunca recebe poder
+  administrativo apenas por possuir liderados;
+- `employee` possui somente as permissões funcionais aprovadas para colaborador;
+- relação gestor–liderado pertence à estrutura de People e não cria, altera nem
+  substitui role corporativa;
+- owner pode alterar qualquer role, observadas as proteções de ownership;
+- admin pode alterar apenas roles não-owner e nunca promover alguém a owner,
+  rebaixar owner ou administrar sua membership;
+- owner e admin podem reenviar, revogar e remover acessos dentro da mesma fronteira
+  de autoridade usada para convidar;
+- somente owner pode vincular uma conta como owner. Owner e admin podem vincular
+  as demais roles pelo fluxo de convite;
+- remoção de membership significa retirada de acesso, não exclusão da pessoa nem
+  apagamento do histórico.
+
+### Ownership
+
+Uma empresa pode possuir mais de um owner.
+
+- a empresa deve manter pelo menos um owner ativo;
+- o último owner ativo não pode ser removido, desativado ou rebaixado;
+- owner pode rebaixar a si próprio somente quando existir outro owner ativo e
+  após confirmação explícita;
+- transferência de ownership ocorre promovendo explicitamente outro membro a
+  owner e, se desejado, rebaixando depois o owner anterior;
+- promover outro owner não rebaixa automaticamente nenhum owner existente;
+- toda promoção, transferência, autorrebaixamento ou remoção de owner é uma
+  decisão humana auditável.
+
+### Identidade e segurança
+
+- nenhum convite, vínculo, membership ou mudança de role atravessa tenants;
+- empresa e pessoa do convite são resolvidas no contexto autorizado do ator;
+- convite pendente, expirado ou revogado não concede acesso;
+- aceite falha fechado diante de identidade, tenant, pessoa, role ou estado
+  divergente;
+- e-mail serve somente para endereçar e comprovar o aceite inicial; depois do
+  vínculo, a identidade canônica é a conta autenticada;
+- payload do cliente, e-mail, domínio e role declarada não provam autoridade;
+- `company_members` nunca concede autoridade global;
+- ator humano e executor técnico são identidades distintas;
+- `service_role` nunca representa autoria, convite, aceite, aprovação ou mudança
+  de role;
+- operação privilegiada, quando necessária, permanece server-only e só executa
+  decisão humana já autorizada;
+- erros não revelam pessoas, contas, memberships ou empresas fora do contexto
+  permitido.
+
+### Revogação, desativação e remoção
+
+- revogar convite impede qualquer aceite posterior;
+- desativar membership retira acesso imediatamente e preserva pessoa e histórico;
+- remover membership também não apaga decisões e auditorias anteriores;
+- desligar ou inativar a pessoa exige desativação do acesso correspondente;
+- reativar pessoa, membership ou acesso exige ação humana explícita e validação
+  atual da role; nenhum retorno é automático;
+- uma sessão ou contexto associado a acesso revogado, removido ou desativado
+  deixa de ser válido para operações tenant-owned.
+
+## Auditoria
+
+Devem produzir registro durável, com empresa, ator humano, alvo, decisão,
+instante e resultado:
+
+- criação do convite;
+- reenvio do convite;
+- revogação do convite;
+- aceite válido ou rejeitado;
+- criação ou ativação da membership;
+- alteração de role, incluindo estado anterior e posterior;
+- vínculo entre pessoa e usuário;
+- desvinculação entre pessoa e usuário;
+- desativação, reativação ou remoção da membership;
+- promoção, transferência, autorrebaixamento ou remoção de owner;
+- falhas relevantes de autorização, identidade ou isolamento.
+
+Quando houver executor técnico, ele é registrado separadamente do ator humano.
+Segredos, credenciais e conteúdo utilizável do convite não fazem parte da
+auditoria.
+
+## Experiência mínima
+
+### Owner ou admin convidando
+
+- a interface explica que o convite dará acesso a uma pessoa já cadastrada;
+- o ator escolhe a pessoa, confirma o e-mail e escolhe somente roles que pode
+  conceder;
+- o produto mostra confirmação, validade e próximo passo;
+- duplicidade informa o convite ou membership existente sem criar outro vínculo;
+- ações de reenvio e revogação mostram estado e consequência antes de confirmar.
+
+### Pessoa convidada aceitando
+
+- a experiência identifica a empresa e a finalidade do convite sem expor dados
+  além do necessário;
+- usuário sem conta conclui sua ativação; usuário existente autentica na conta
+  correspondente;
+- o aceite explica qual pessoa e empresa serão vinculadas e exige confirmação;
+- convite expirado orienta solicitar reenvio;
+- convite revogado informa que não é mais válido, sem oferecer bypass;
+- divergência de conta ou e-mail falha com mensagem segura e próximo passo;
+- membership já ativa conduz ao tenant, sem criar nova membership.
+
+### Escolha de empresa
+
+- uma única empresa ativa dispensa escolha;
+- múltiplas empresas exigem seleção explícita quando não houver preferência
+  válida;
+- o seletor usa nomes humanos e não expõe identificadores técnicos;
+- a troca de empresa permanece acessível e confirma visualmente o tenant ativo;
+- ausência de acesso oferece orientação segura para aceitar convite válido ou
+  procurar o administrador da empresa.
+
+## Invariantes
+
+- fail closed diante de estado ou identidade ambígua;
+- isolamento tenant em convite, vínculo, membership, contexto e auditoria;
+- menor privilégio para concessão e administração de roles;
+- exatamente uma pessoa por usuário em cada tenant e no máximo um usuário ativo
+  por pessoa;
+- nenhum acesso antes de aceite válido;
+- nenhuma seleção implícita entre múltiplos tenants;
+- nenhuma empresa sem owner ativo;
+- role corporativa separada de relacionamento gestor–liderado;
+- e-mail não é autoridade permanente após o vínculo;
+- ator humano diferente de executor técnico;
+- `service_role` diferente de autoria;
+- `company_members` não concede autoridade global;
+- operações privilegiadas server-only quando aplicável;
+- decisões humanas duravelmente auditáveis;
+- nenhuma associação cross-tenant.
+
+## Alternativas rejeitadas
+
+- permitir que `hr` ou `manager` convidem por possuírem responsabilidade sobre
+  pessoas;
+- criar nova role específica para convite;
+- ativar membership no envio, antes do aceite;
+- convidar e criar People posteriormente;
+- vincular automaticamente por nome, domínio ou similaridade de e-mail;
+- usar e-mail como identidade permanente depois da ativação;
+- permitir múltiplas pessoas para o mesmo usuário dentro do tenant;
+- escolher a primeira membership retornada quando houver várias;
+- limitar permanentemente cada usuário a uma única empresa;
+- permitir que admin conceda ou administre owner;
+- exigir owner único e transferi-lo implicitamente;
+- permitir remoção ou autorrebaixamento do último owner;
+- apagar histórico ao revogar convite, remover acesso ou desligar pessoa;
+- tratar executor técnico ou `service_role` como ator humano.
+
+## Consequências
+
+### Positivas
+
+- empresas podem ativar vários usuários e compartilhar pessoas autorizadamente;
+- um usuário pode trabalhar em empresas distintas sem mistura de contexto;
+- acesso, pessoa e identidade permanecem separados e rastreáveis;
+- ownership não fica órfão e escalonamentos de role são limitados;
+- convite, aceite e mudanças administrativas possuem autoria explícita;
+- mensagens e estados suportam recuperação sem relaxar segurança.
+
+### Custos e riscos
+
+- o MVP exige People previamente cadastrado e com e-mail corrigido antes do
+  convite;
+- usuários com várias empresas precisam de seleção e troca de contexto;
+- convite e identidade global podem divergir e exigir recuperação orientada;
+- o ciclo de vida auditável aumenta o número de estados funcionais;
+- proteção do último owner exige confirmação e tratamento próprios;
+- retirada de acesso precisa invalidar contextos ainda abertos;
+- comportamento entre envio externo e ativação interna exigirá consistência e
+  recuperação arquitetural explícitas.
+
+## Critérios de aceitação
+
+A decisão estará refletida corretamente quando:
+
+- owner e admin convidarem somente dentro de sua autoridade;
+- apenas owner conceder ou administrar a role owner;
+- convite não conceder acesso antes de aceite válido;
+- pessoa sem conta continuar válida, mas acesso ativo exigir vínculo inequívoco;
+- conta e pessoa se relacionarem no máximo uma vez por tenant;
+- convite duplicado, expirado, revogado e para usuário existente tiver
+  comportamento determinístico e seguro;
+- usuário com uma empresa entrar diretamente e usuário com várias escolher ou
+  restaurar um tenant válido sem seleção arbitrária;
+- troca de empresa substituir integralmente o contexto tenant;
+- último owner permanecer protegido;
+- desligamento retirar acesso sem apagar histórico;
+- e-mail deixar de ser autoridade após vínculo;
+- ator e executor permanecerem separados;
+- todas as decisões humanas catalogadas forem auditáveis;
+- falhas de identidade, autorização e tenant ocorrerem de forma fechada.
+
+## Questões arquiteturais para a ADR
+
+A ADR posterior deverá decidir, sem alterar esta política:
+
+- representação persistente do convite, estados, validade e tentativas;
+- garantias de unicidade e integridade entre empresa, pessoa, usuário e
+  membership;
+- transação e idempotência de criação, reenvio, aceite, revogação e ativação;
+- fronteira entre autenticação externa e persistência tenant-owned;
+- recuperação de falhas parciais e concorrência;
+- resolução e persistência do tenant ativo;
+- revogação efetiva de contexto e sessão;
+- autorização em profundidade e papel de RLS;
+- fronteira server-only e executor técnico de menor privilégio;
+- contrato de auditoria, retenção e observabilidade;
+- mensagens e códigos seguros entre Application Layer e experiência.

@@ -7,6 +7,12 @@ export {
 export {
   createLegacyDevelopmentTemplateApplicationAdapter,
 } from "./legacy-development-template-application-adapter"
+export { developmentTemplateApplicationMessage } from "./development-template-application-messages"
+export {
+  createDevelopmentTemplateConfirmationIdentity,
+  type DevelopmentTemplateConfirmationIdentity,
+} from "./development-template-confirmation-identity"
+export { getPublishedDevelopmentTemplateVersionId } from "./get-published-development-template-version-id"
 
 export type {
   ApplyDevelopmentTemplateInput,

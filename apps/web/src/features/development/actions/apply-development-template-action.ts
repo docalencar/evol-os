@@ -10,7 +10,9 @@ import {
 
 import {
   applyDevelopmentTemplate,
-} from "../application/apply-development-template"
+  applyDevelopmentTemplateV2,
+  developmentTemplateApplicationMessage,
+} from "../application"
 
 const applyDevelopmentTemplateSchema =
   z.object({
@@ -47,6 +49,12 @@ const applyDevelopmentTemplateSchema =
     dueDate: z
       .string()
       .optional(),
+
+    applicationId: z.string().uuid().optional(),
+    idempotencyKey: z.string().uuid().optional(),
+    correlationId: z.string().uuid().optional(),
+    templateVersionId: z.string().uuid().optional(),
+    effectiveAt: z.string().datetime().optional(),
   })
 
 type ApplyDevelopmentTemplateInput =
@@ -93,8 +101,40 @@ export async function applyDevelopmentTemplateAction(
   }
 
   try {
-    const result =
-      await applyDevelopmentTemplate({
+    const usesV2 = parsed.data.applicationId && parsed.data.idempotencyKey &&
+      parsed.data.correlationId && parsed.data.templateVersionId && parsed.data.effectiveAt
+    const hasV2Identity = parsed.data.applicationId || parsed.data.idempotencyKey ||
+      parsed.data.correlationId || parsed.data.templateVersionId || parsed.data.effectiveAt
+    if (hasV2Identity && !usesV2) {
+      return failureResult("A confirmação está incompleta. Verifique o template novamente.")
+    }
+    let planId: string
+    let idempotentRetry = false
+    if (usesV2) {
+      const result = await applyDevelopmentTemplateV2({
+          applicationId: parsed.data.applicationId!,
+          idempotencyKey: parsed.data.idempotencyKey!,
+          correlationId: parsed.data.correlationId!,
+          templateVersionId: parsed.data.templateVersionId!,
+          effectiveAt: parsed.data.effectiveAt!,
+          employeeId: parsed.data.employeeId,
+          ownerId: parsed.data.ownerId || undefined,
+          priority: parsed.data.priority,
+          startDate: parsed.data.startDate || new Date().toISOString().slice(0, 10),
+          dueDate: parsed.data.dueDate || undefined,
+        })
+      if (result.status !== "created" && result.status !== "idempotent_retry") {
+        const code = "code" in result
+          ? result.code
+          : result.status === "resolution_failure"
+            ? result.errors[0]?.code
+            : undefined
+        return failureResult(developmentTemplateApplicationMessage(code ?? result.status))
+      }
+      planId = result.planId
+      idempotentRetry = result.status === "idempotent_retry"
+    } else {
+      const result = await applyDevelopmentTemplate({
         employeeId:
           parsed.data.employeeId,
 
@@ -115,20 +155,24 @@ export async function applyDevelopmentTemplateAction(
         dueDate:
           parsed.data.dueDate ||
           undefined,
-      })
+        })
+      planId = result.planId
+    }
 
     revalidatePath(
       "/app/development"
     )
 
     revalidatePath(
-      `/app/development/plans/${result.planId}`
+      `/app/development/plans/${planId}`
     )
 
     return successResult<ApplyDevelopmentTemplateResult>(
-      "Plano de desenvolvimento criado com sucesso.",
+      idempotentRetry
+        ? "Aplicação já concluída; o mesmo plano foi recuperado."
+        : "Plano de desenvolvimento criado com sucesso.",
       {
-        planId: result.planId,
+        planId,
       }
     )
   } catch (error) {

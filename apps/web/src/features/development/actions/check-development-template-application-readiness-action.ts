@@ -5,6 +5,7 @@ import { z } from "zod"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 import {
+  createConsoleDevelopmentTemplateApplicationObserver,
   developmentTemplateApplicationMessage,
   getPublishedDevelopmentTemplateVersionId,
 } from "../application"
@@ -21,6 +22,7 @@ export async function checkDevelopmentTemplateApplicationReadinessAction(values:
   const parsed = schema.safeParse(values)
   if (!parsed.success) return { ready: false as const, message: "Dados inválidos para verificar a aplicação." }
 
+  const observer = createConsoleDevelopmentTemplateApplicationObserver()
   try {
     const [{ companyId, user }, templateVersionId, readiness] = await Promise.all([
       getCurrentCompanyContext(),
@@ -41,10 +43,25 @@ export async function checkDevelopmentTemplateApplicationReadinessAction(values:
     })
     if (!result.ready) {
       const code = result.errors[0]?.code ?? "DEVELOPMENT_TEMPLATE_READINESS_FAILED"
+      observer.record({
+        operation: "readiness", applicationId: parsed.data.applicationId,
+        correlationId: parsed.data.correlationId, idempotencyKey: parsed.data.idempotencyKey,
+        outcome: "blocked", failureCode: code,
+      })
       return { ready: false as const, message: developmentTemplateApplicationMessage(code), code }
     }
+    observer.record({
+      operation: "readiness", applicationId: parsed.data.applicationId,
+      correlationId: parsed.data.correlationId, idempotencyKey: parsed.data.idempotencyKey,
+      outcome: "ready",
+    })
     return { ready: true as const, message: "Template pronto para confirmação.", templateVersionId, fingerprint: result.fingerprint }
   } catch {
+    observer.record({
+      operation: "readiness", applicationId: parsed.data.applicationId,
+      correlationId: parsed.data.correlationId, idempotencyKey: parsed.data.idempotencyKey,
+      outcome: "persistence_failure", failureCode: "DEVELOPMENT_TEMPLATE_READINESS_UNEXPECTED_FAILURE",
+    })
     return { ready: false as const, message: "Não foi possível verificar este template agora." }
   }
 }

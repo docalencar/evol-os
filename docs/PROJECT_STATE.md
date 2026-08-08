@@ -63,7 +63,7 @@ O PROJECT_STATE.md é uma fotografia oficial do estado do programa. Ele não cri
 | ADR-0011 — Notification Domain Architecture | Implementada |
 | ADR-0012 — Tenant-Owned Referential Integrity Strategy | Programa em andamento |
 | ADR-0013 — Platform Global Authority and Trusted Execution | ✅ Accepted e implementada na PR 3B |
-| ADR-0014 — Deterministic Development Template Application and Snapshots | ✅ Accepted; Fases 1–6 da PR 3C incorporadas |
+| ADR-0014 — Deterministic Development Template Application and Snapshots | ✅ Accepted; Fases 1–7 da PR 3C incorporadas; validação final aguardando aprovação |
 
 O status normativo e o conteúdo completo permanecem no
 [índice de ADRs](./adr/README.md).
@@ -71,13 +71,13 @@ O status normativo e o conteúdo completo permanecem no
 ### Roadmap e execução
 
 - [ROADMAP](./ROADMAP.md): Fundação confiável continua sendo a prioridade.
-- [NEXT_STEPS](./NEXT_STEPS.md): Fase 7 — testes, observabilidade e cutover —
-  autorizada e ativa; Fase 8 permanece não iniciada.
+- [NEXT_STEPS](./NEXT_STEPS.md): Fase 8 validada tecnicamente; encerramento da
+  PR 3C aguarda aprovação final do Product Architect.
 - [MVP Plan](./MVP_PLAN.md): jornada completa até o MVP.
 - [EPICS](./EPICS.md): estado funcional das capacidades.
 - [Implementation Plan do Slice 3](./Execution/ADR-0012-SLICE-3-DEVELOPMENT-IMPLEMENTATION-PLAN.md):
   PRs 3A e 3B concluídas; plano da PR 3C aprovado; IRR tecnicamente concluído;
-  Fases 1–6 incorporadas; Fase 7 autorizada e ativa; Fase 8 não iniciada.
+  Fases 1–7 incorporadas; Fase 8 validada tecnicamente e aguardando aprovação.
 
 ## 5. Programa ADR-0012
 
@@ -87,7 +87,7 @@ O status normativo e o conteúdo completo permanecem no
 | Slice 2 | Recruitment | ✅ Concluído | `9c6695819850ddb69237e9bec7688d0a8864b908` |
 | Slice 3A | Operational Development Integrity | ✅ Concluído | `fe3d8914ce4da54e85f94794b367582971403ffa` |
 | Slice 3B | Global Concepts and Tenant Mappings | ✅ Concluído e versionado | `f4a1a5d94afa0ef76132f18ac6b1ade5636ffda1` |
-| Slice 3C | Deterministic Template Application and Snapshots | Fases 1–6 incorporadas; Fase 7 ativa; Fase 8 não iniciada | `53b12ec`, `ed15eca`, `fe08394`, `5c1d12f`, `08bd7cf`, `ca2f173` |
+| Slice 3C | Deterministic Template Application and Snapshots | Implementação completa; validação final aguardando aprovação do Product Architect | `53b12ec`, `ed15eca`, `fe08394`, `5c1d12f`, `08bd7cf`, `ca2f173`, `95625d4` |
 
 ## 6. Próxima etapa
 
@@ -106,9 +106,21 @@ aprovada e incorporada à `main` pelo merge `08bd7cf`. A PR 3C permanece em
 andamento. A Fase 6 — Actions e experiência mínima foi implementada em `3cc8c38`,
 validada, aprovada e incorporada à `main` pelo merge `ca2f173`.
 
-A Fase 7 — testes, observabilidade e cutover — está explicitamente autorizada e
-ativa. A Fase 8 — reconciliação final — permanece não iniciada e não é autorizada
-automaticamente pela conclusão da Fase 7.
+A Fase 7 — testes, observabilidade e cutover — foi implementada em `529be29` e
+incorporada à `main` pelo merge `95625d4`. O caminho oficial passou a ser UI →
+readiness → confirmação explícita → contrato V2 → Application Layer → Resolver →
+Trusted Persistence, sem fallback legado. A Fase 8 executou a auditoria final,
+revalidou 40 testes TypeScript direcionados e 223 testes pgTAP, type-check, lint e
+build, e endureceu a observabilidade para registrar somente hash SHA-256 da chave
+de idempotência. A implementação da PR 3C está completa, mas seu encerramento
+aguarda aprovação final do Product Architect.
+
+Os contratos legados permanecem separados do caminho oficial por compatibilidade:
+a RPC pública `apply_development_template`, o wrapper `applyDevelopmentTemplate`
+e o legacy adapter são superfícies públicas potenciais; a Action legada não possui
+consumidor interno comprovado. Nenhum deles foi removido porque a ausência de uso
+interno não prova ausência de consumidor externo e a remoção não é necessária para
+o encerramento.
 
 Antes de qualquer trabalho futuro, devem ser lidos:
 
@@ -184,6 +196,7 @@ Este resumo oferece orientação; o registro oficial de entregas é o
 | PR 3C — Fase 4 | Application Layer e composição | `5c1d12f` |
 | PR 3C — Fase 5 | Contrato retrocompatível | `08bd7cf` |
 | PR 3C — Fase 6 | Actions e experiência mínima | `ca2f173` |
+| PR 3C — Fase 7 | Testes, observabilidade e cutover V2 | `95625d4` |
 
 ## 10. Como iniciar uma nova conversa
 

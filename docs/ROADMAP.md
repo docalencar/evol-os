@@ -30,13 +30,14 @@ revisada, validada, aprovada e incorporada à `main` no merge `fe08394`. A Fase 
 `main` pelo merge `5c1d12f`. A Fase 5 — contrato retrocompatível foi implementada
 em `e5bae39` e incorporada à `main` pelo merge `08bd7cf`. A Fase 6 — Actions e
 experiência mínima foi implementada em `3cc8c38` e incorporada à `main` pelo
-merge `ca2f173`.
+merge `ca2f173`. A Fase 7 — testes, observabilidade e cutover — foi implementada
+em `529be29` e incorporada à `main` pelo merge `95625d4`.
 
-A Fase 7 — testes, observabilidade e cutover — está autorizada e ativa conforme o
-Implementation Plan. A Fase 8 permanece não iniciada e não é automaticamente
-autorizada. Somente após a conclusão da PR 3C o
-produto volta a expandir capacidades funcionais, começando pelo enriquecimento do
-modelo de cargos.
+A Fase 8 concluiu a validação técnica e a reconciliação final. A implementação da
+PR 3C está completa e aguarda aprovação final do Product Architect; esse estado
+não equivale ao encerramento autônomo da PR. Após a aprovação, a prioridade de
+produto volta ao enriquecimento do modelo de cargos, sem autorização automática
+para iniciar implementação adicional.
 
 ## Evidência da prioridade
 

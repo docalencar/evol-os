@@ -13,6 +13,7 @@ export {
   createDevelopmentTemplateApplicationObserver,
   type DevelopmentTemplateApplicationObservation,
   type DevelopmentTemplateApplicationObserver,
+  type SafeDevelopmentTemplateApplicationObservation,
 } from "./development-template-application-observability"
 export {
   createDevelopmentTemplateConfirmationIdentity,

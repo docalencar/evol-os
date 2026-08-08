@@ -11,10 +11,10 @@ para e a documentação é reconciliada antes de qualquer migration ou código.
 A ADR-0014 — Deterministic Development Template Application and Snapshots está
 Accepted. Este plano incorpora seu recorte técnico para a PR 3C, foi aprovado
 pelo Product Architect e passou pelo Implementation Readiness Review sem lacuna
-técnica ou arquitetural conhecida. A implementação avançou parcialmente: Fases
-1–6 estão incorporadas à `main`; a Fase 7 está autorizada e ativa; a Fase 8 não
-foi iniciada. Este
-registro factual não cria autorização retroativa para a continuidade.
+técnica ou arquitetural conhecida. As Fases 1–7 estão incorporadas à `main`; a
+Fase 8 foi validada tecnicamente e aguarda aprovação final do Product Architect.
+Este registro factual não declara a PR 3C encerrada nem autoriza a próxima
+capacidade.
 
 ## Estratégia de entrega
 
@@ -22,7 +22,7 @@ registro factual não cria autorização retroativa para a continuidade.
 | --- | --- | --- | --- |
 | 3A | Operational Development Integrity | Concluída no commit `fe3d8914ce4da54e85f94794b367582971403ffa` | ADR-0012 |
 | 3B | Global Concepts and Tenant Mappings | Concluída no commit `f4a1a5d94afa0ef76132f18ac6b1ade5636ffda1` | PR 3A, PD-018 e ADR-0013 concluídas |
-| 3C | Deterministic Template Application and Snapshots | Fases 1–6 incorporadas; Fase 7 ativa; Fase 8 não iniciada | PR 3B concluída e ADR-0014 aceita |
+| 3C | Deterministic Template Application and Snapshots | Implementação completa; validação final aguardando aprovação | PR 3B concluída e ADR-0014 aceita |
 
 As três PRs são sequenciais. A conclusão de uma não autoriza automaticamente a
 seguinte.
@@ -343,9 +343,10 @@ snapshots e não transforma similaridade de nome em resolução.
 ### Status e objetivo
 
 **Status:** Implementation Plan aprovado e IRR tecnicamente concluído;
-Fases 1–6 incorporadas à `main`; a Fase 6 — Actions e experiência mínima foi
-implementada em `3cc8c38`, validada e aprovada antes do merge `ca2f173`. A Fase
-7 está autorizada e ativa; a Fase 8 não foi iniciada.
+Fases 1–7 incorporadas à `main`. A Fase 7 — testes, observabilidade e cutover —
+foi implementada em `529be29` e incorporada pelo merge `95625d4`. A Fase 8 foi
+validada tecnicamente; a implementação da PR 3C está completa e aguarda aprovação
+final do Product Architect.
 
 ### Estado factual das fases
 
@@ -357,11 +358,39 @@ implementada em `3cc8c38`, validada e aprovada antes do merge `ca2f173`. A Fase
 | 4 — Application Layer e composição | Implementada, validada, aprovada e incorporada à `main` | `a393226`; merge `5c1d12f`; ports, repository, service, Server Factory, Composition Root e testes |
 | 5 — Contrato retrocompatível | Implementada, validada, aprovada e incorporada à `main` | `e5bae39`; merge `08bd7cf`; superfície V2 aditiva, adapter legado e testes |
 | 6 — Actions e experiência mínima | Implementada, validada, aprovada e incorporada à `main` | `3cc8c38`; merge `ca2f173`; readiness, confirmação, retry e mensagens |
-| 7 — Testes e cutover | Autorizada e ativa | Testes, observabilidade, smoke, regressão e cutover controlado |
-| 8 — Reconciliação final | Não iniciada | Nenhuma evidência versionada de implementação |
+| 7 — Testes e cutover | Implementada, validada, aprovada e incorporada à `main` | `529be29`; merge `95625d4`; smoke, regressão, observabilidade e cutover V2 |
+| 8 — Reconciliação final | Validada tecnicamente; aguardando aprovação | auditoria final, gates completos e documentação reconciliada na branch `feat/pr3c-phase8-final-validation` |
 
-O próximo gate é concluir e validar a Fase 7, submetendo-a à revisão do Product
-Architect. A conclusão da Fase 7 não autoriza automaticamente a Fase 8.
+O próximo gate é a aprovação final do Product Architect. A validação técnica da
+Fase 8 não autoriza declarar a PR 3C encerrada nem iniciar a próxima capacidade.
+
+### Evidências da validação final
+
+- caminho oficial confirmado sem fallback legado: UI → readiness → confirmação
+  explícita → V2 → Application Layer → Resolver → Trusted Persistence;
+- identidade estável em retry, nova identidade por nova intenção e reinício após
+  sucesso confirmados por código e testes;
+- readiness usa o Resolver canônico, falha fechado e não persiste;
+- Trusted Persistence permanece a única fronteira de escrita funcional completa;
+- 40/40 testes TypeScript direcionados e 223/223 testes pgTAP aprovados;
+- type-check, lint e build aprovados; quatro warnings de lint preexistentes;
+- observabilidade preserva operation, applicationId, correlationId, outcome e
+  failure code seguro, substituindo a chave de idempotência bruta por hash SHA-256;
+- nenhum gap de tenancy, autorização, atomicidade, replay, fingerprint ou
+  duplicação funcional foi identificado.
+
+### Destino do legado
+
+| Componente | Classificação | Evidência e recomendação |
+| --- | --- | --- |
+| RPC `apply_development_template` | PUBLIC COMPATIBILITY | contrato PostgreSQL público preservado e coberto por pgTAP; ausência de consumidor TypeScript não prova ausência externa; manter |
+| wrapper `applyDevelopmentTemplate` | PUBLIC COMPATIBILITY | exportado pelo barrel de Application e pelo barrel da feature; converge para V2 via adapter; manter até depreciação aprovada |
+| `createLegacyDevelopmentTemplateApplicationAdapter` | PUBLIC COMPATIBILITY | exportado e usado pelo wrapper legado; não duplica Resolver ou Trusted Persistence; manter |
+| `applyDevelopmentTemplateAction` | DEAD INTERNAL | busca integral não encontrou consumidor nem export; propor remoção em follow-up pequeno e separado, após revisão de compatibilidade |
+
+Risco residual: consumidores externos da RPC e dos exports legados não são
+observáveis pelo repositório. Por isso, nenhum contrato legado foi removido nesta
+fase.
 
 Implementar a aplicação determinística de Development Templates company-owned e
 globais sobre uma única regra canônica, produzindo Development Plan completo,
@@ -1005,13 +1034,13 @@ ativação parcial em produção.
 
 ### Gates para continuidade
 
-- Fases 1–6 incorporadas à `main`; Fase 6 no merge `ca2f173`;
+- Fases 1–7 incorporadas à `main`; Fase 7 no merge `95625d4`;
 - worktree isolado e estado da `main` confirmados;
 - ausência de nova divergência entre documentação e código após esta
   reconciliação;
 - inventário final de consumidores do contrato público;
 - preflight read-only aprovado antes de qualquer transformação de dados;
-- Fase 7 explicitamente autorizada; Fase 8 depende de nova aprovação.
+- Fase 8 validada tecnicamente; encerramento depende de aprovação final explícita.
 
 ## 17. Riscos e mitigação
 

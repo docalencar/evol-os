@@ -52,6 +52,7 @@ O PROJECT_STATE.md é uma fotografia oficial do estado do programa. Ele não cri
 | PD-016 — Assessment Authorization Policy | ✅ Approved |
 | PD-017 — Notification Domain Policy | ✅ Approved |
 | PD-018 — Global Competency Concepts and Tenant Mapping | ✅ Approved |
+| PD-019 — Tenant Multiuser Activation Policy | ✅ Approved |
 
 ### ADRs
 
@@ -63,7 +64,8 @@ O PROJECT_STATE.md é uma fotografia oficial do estado do programa. Ele não cri
 | ADR-0011 — Notification Domain Architecture | Implementada |
 | ADR-0012 — Tenant-Owned Referential Integrity Strategy | Programa em andamento |
 | ADR-0013 — Platform Global Authority and Trusted Execution | ✅ Accepted e implementada na PR 3B |
-| ADR-0014 — Deterministic Development Template Application and Snapshots | ✅ Accepted; Fases 1–7 da PR 3C incorporadas; validação final aguardando aprovação |
+| ADR-0014 — Deterministic Development Template Application and Snapshots | ✅ Accepted e implementada; PR 3C encerrada em `5c2675b` |
+| ADR-0015 — Tenant Multiuser Activation Architecture | ✅ Accepted; MVP-PR1 em andamento |
 
 O status normativo e o conteúdo completo permanecem no
 [índice de ADRs](./adr/README.md).
@@ -71,13 +73,12 @@ O status normativo e o conteúdo completo permanecem no
 ### Roadmap e execução
 
 - [ROADMAP](./ROADMAP.md): Fundação confiável continua sendo a prioridade.
-- [NEXT_STEPS](./NEXT_STEPS.md): Fase 8 validada tecnicamente; encerramento da
-  PR 3C aguarda aprovação final do Product Architect.
+- [NEXT_STEPS](./NEXT_STEPS.md): obter aprovação explícita para iniciar a Phase
+  3 do MVP-PR1; nenhuma implementação dessa fase foi iniciada.
 - [MVP Plan](./MVP_PLAN.md): jornada completa até o MVP.
 - [EPICS](./EPICS.md): estado funcional das capacidades.
-- [Implementation Plan do Slice 3](./Execution/ADR-0012-SLICE-3-DEVELOPMENT-IMPLEMENTATION-PLAN.md):
-  PRs 3A e 3B concluídas; plano da PR 3C aprovado; IRR tecnicamente concluído;
-  Fases 1–7 incorporadas; Fase 8 validada tecnicamente e aguardando aprovação.
+- [Implementation Plan do MVP-PR1](./Execution/MVP-PR1-TENANT-MULTIUSER-ACTIVATION-IMPLEMENTATION-PLAN.md):
+  Phases 1 e 2 concluídas; readiness da Phase 3 tecnicamente concluída.
 
 ## 5. Programa ADR-0012
 
@@ -87,51 +88,39 @@ O status normativo e o conteúdo completo permanecem no
 | Slice 2 | Recruitment | ✅ Concluído | `9c6695819850ddb69237e9bec7688d0a8864b908` |
 | Slice 3A | Operational Development Integrity | ✅ Concluído | `fe3d8914ce4da54e85f94794b367582971403ffa` |
 | Slice 3B | Global Concepts and Tenant Mappings | ✅ Concluído e versionado | `f4a1a5d94afa0ef76132f18ac6b1ade5636ffda1` |
-| Slice 3C | Deterministic Template Application and Snapshots | Implementação completa; validação final aguardando aprovação do Product Architect | `53b12ec`, `ed15eca`, `fe08394`, `5c1d12f`, `08bd7cf`, `ca2f173`, `95625d4` |
+| Slice 3C | Deterministic Template Application and Snapshots | ✅ Concluído | `5c2675b` |
 
 ## 6. Próxima etapa
 
-A Discovery da PR 3C está aprovada, a ADR-0014 está aceita, o Implementation Plan
-está aprovado e o IRR concluiu que não há lacuna técnica ou arquitetural conhecida.
-A infraestrutura determinística da Fase 1, incluindo a migration 0068, foi
-incorporada à `main` em `53b12ec`. O Resolver determinístico da Fase 2 e seus
-testes foram incorporados à `main` em `ed15eca`.
+A PR 3C foi concluída historicamente no merge `5c2675b` e não é mais o gate
+ativo. Seus contratos legados continuam preservados por compatibilidade, sem
+autorizar cleanup automático.
 
-A Fase 3 — Trusted Persistence foi revisada, validada, aprovada e incorporada à
-`main` no merge `fe08394`, incluindo a migration 0069, o adapter e os testes
-correspondentes. A Fase 4 — Application Layer e composição foi implementada em
-`a393226`, validada, aprovada e incorporada à `main` pelo merge `5c1d12f`. A PR
-Fase 5 — contrato retrocompatível foi implementada em `e5bae39`, validada,
-aprovada e incorporada à `main` pelo merge `08bd7cf`. A PR 3C permanece em
-andamento. A Fase 6 — Actions e experiência mínima foi implementada em `3cc8c38`,
-validada, aprovada e incorporada à `main` pelo merge `ca2f173`.
+O gate ativo é o MVP-PR1 — Tenant Multiuser Activation, regido pela PD-019 e
+ADR-0015. A Phase 1 — Persistence Foundation foi incorporada pela migration 0070.
+A Phase 2 — Persistent Invariants foi incorporada pelas migrations 0071/0072 e
+merge `dbf592c`. A migration 0073 corrigiu de forma forward-only a resolução de
+extensões e foi incorporada pelo merge `f77b229`.
 
-A Fase 7 — testes, observabilidade e cutover — foi implementada em `529be29` e
-incorporada à `main` pelo merge `95625d4`. O caminho oficial passou a ser UI →
-readiness → confirmação explícita → contrato V2 → Application Layer → Resolver →
-Trusted Persistence, sem fallback legado. A Fase 8 executou a auditoria final,
-revalidou 40 testes TypeScript direcionados e 223 testes pgTAP, type-check, lint e
-build, e endureceu a observabilidade para registrar somente hash SHA-256 da chave
-de idempotência. A implementação da PR 3C está completa, mas seu encerramento
-aguarda aprovação final do Product Architect.
+Um novo projeto Supabase canônico e vazio foi reconstruído exclusivamente pela
+cadeia `0001`–`0073`, com migration history Local/Remote alinhado. O projeto
+antigo divergente deixou de ser autoridade canônica. Fresh reset local passou;
+pgTAP local passou 312/312; a validação remota direcionada da 0073 passou. A suíte
+pgTAP remota completa permanece inconclusiva por privilégios da role técnica
+`cli_login_postgres`, sem regressão funcional confirmada e sem grant permanente.
 
-Os contratos legados permanecem separados do caminho oficial por compatibilidade:
-a RPC pública `apply_development_template`, o wrapper `applyDevelopmentTemplate`
-e o legacy adapter são superfícies públicas potenciais; a Action legada não possui
-consumidor interno comprovado. Nenhum deles foi removido porque a ausência de uso
-interno não prova ausência de consumidor externo e a remoção não é necessária para
-o encerramento.
+A readiness review concluiu que a Phase 3 — Trusted Persistence / Actor !=
+Executor está tecnicamente pronta, sem necessidade de nova Product Decision, ADR
+ou amendment. Nenhum código, migration, RPC, grant ou teste da Phase 3 foi
+implementado. O próximo gate é a autorização explícita do Product Architect.
 
-Antes de qualquer trabalho futuro, devem ser lidos:
+Antes desse gate, devem ser lidos:
 
 - [MASTER_PROMPT](./Prompts/MASTER_PROMPT.md);
-- [PD-018](./Product/PRODUCT_DECISIONS.md);
-- [ADR-0003](./adr/0003-development-templates.md);
-- [ADR-0012](./adr/0012-tenant-owned-referential-integrity-strategy.md);
-- [ADR-0013](./adr/0013-platform-global-authority-and-trusted-execution.md);
-- [ADR-0014](./adr/0014-deterministic-development-template-application-and-snapshots.md);
-- [Discovery da PR 3C](./Execution/PR-3C-DETERMINISTIC-TEMPLATE-APPLICATION-AND-SNAPSHOTS-DISCOVERY.md);
-- [Implementation Plan do Slice 3](./Execution/ADR-0012-SLICE-3-DEVELOPMENT-IMPLEMENTATION-PLAN.md);
+- [PD-019](./Product/PRODUCT_DECISIONS.md);
+- [ADR-0015](./adr/0015-tenant-multiuser-activation-architecture.md);
+- [Discovery do MVP-PR1](./Execution/MVP-PR1-TENANT-MULTIUSER-ACTIVATION-DISCOVERY.md);
+- [Implementation Plan do MVP-PR1](./Execution/MVP-PR1-TENANT-MULTIUSER-ACTIVATION-IMPLEMENTATION-PLAN.md);
 - [ROADMAP](./ROADMAP.md) e [NEXT_STEPS](./NEXT_STEPS.md).
 
 ## 7. Arquitetura consolidada
@@ -197,6 +186,10 @@ Este resumo oferece orientação; o registro oficial de entregas é o
 | PR 3C — Fase 5 | Contrato retrocompatível | `08bd7cf` |
 | PR 3C — Fase 6 | Actions e experiência mínima | `ca2f173` |
 | PR 3C — Fase 7 | Testes, observabilidade e cutover V2 | `95625d4` |
+| PR 3C — encerramento | Validação final e encerramento histórico | `5c2675b` |
+| MVP-PR1 — Phase 1 | Persistence Foundation | `48d71fa` |
+| MVP-PR1 — Phase 2 | Persistent Invariants | `dbf592c` |
+| Extension schema hardening | Migration 0073 e ambiente canônico alinhado | `f77b229` |
 
 ## 10. Como iniciar uma nova conversa
 
@@ -213,7 +206,7 @@ Este resumo oferece orientação; o registro oficial de entregas é o
 - [MASTER_PROMPT](./Prompts/MASTER_PROMPT.md)
 - [Product Decisions](./Product/PRODUCT_DECISIONS.md)
 - [ADRs](./adr/README.md)
-- [Implementation Plan do Slice 3](./Execution/ADR-0012-SLICE-3-DEVELOPMENT-IMPLEMENTATION-PLAN.md)
+- [Implementation Plan do MVP-PR1](./Execution/MVP-PR1-TENANT-MULTIUSER-ACTIVATION-IMPLEMENTATION-PLAN.md)
 - [ROADMAP](./ROADMAP.md)
 - [NEXT_STEPS](./NEXT_STEPS.md)
 - [MVP Plan](./MVP_PLAN.md)

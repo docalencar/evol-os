@@ -3,6 +3,33 @@
 Este changelog registra somente grandes entregas incorporadas à `main`. Commits
 locais e branches abertas não entram aqui.
 
+## 2026-08-09 — Supabase canônico e readiness da Phase 3 do MVP-PR1
+
+- Phases 1 e 2 do MVP-PR1 incorporadas; migrations 0070–0072 materializam a
+  Persistence Foundation e os Persistent Invariants;
+- novo projeto Supabase canônico reconstruído vazio exclusivamente pela cadeia
+  oficial `0001`–`0073`, com migration history Local/Remote alinhado;
+- projeto Supabase antigo divergente deixou de ser autoridade canônica;
+- hardening forward-only da migration 0073 incorporado em `f77b229`:
+  `save_approval_request` usa `extensions.digest(...)` e o harness pgTAP resolve
+  extensões deterministicamente;
+- fresh reset local e pgTAP local 312/312 aprovados; validação remota direcionada
+  da 0073 aprovada;
+- pgTAP remoto completo inconclusivo por privilégios de
+  `cli_login_postgres`, sem regressão confirmada e sem concessão permanente;
+- readiness review da Phase 3 concluída: tecnicamente pronta, não iniciada e
+  dependente de autorização explícita do Product Architect.
+
+Próximo gate: aprovação explícita para iniciar a Phase 3. Nenhuma implementação
+da Phase 3 foi incorporada por esta entrada.
+
+## 2026-08-08 — Encerramento histórico da PR 3C
+
+- validação final aprovada e incorporada no merge `5c2675b`;
+- PR 3C concluída sem remoção automática dos contratos legados;
+- esta entrega deixa de ser o gate ativo; seu histórico permanece nas entradas
+  abaixo.
+
 ## 2026-08-08 — PR 3C Fase 7 — Testes, observabilidade e cutover V2
 
 - cutover do caminho oficial para readiness, confirmação explícita e contrato V2
@@ -214,13 +241,15 @@ Decisões: PD-017 e ADR-0011.
 
 Decisões: PD-016 e ADR-0010.
 
-Limitações conhecidas, anteriores a esta entrega:
+Limitações conhecidas naquele gate histórico:
 
 - a suíte TypeScript completa não carrega
   `create-employee-intelligence.test.ts` no runner `tsx`, porque o barrel de
   People alcança um módulo marcado com `server-only`;
-- `supabase db lint --local` reporta em `save_approval_request`, criada pela
-  migration 0046, a resolução inválida de `digest(text, unknown)`.
+- `supabase db lint --local` reportava em `save_approval_request`, criada pela
+  migration 0046, a resolução inválida de `digest(text, unknown)`; essa limitação
+  foi corrigida posteriormente pela migration 0073, registrada na entrada de
+  2026-08-09.
 
 ## 2026-08-01 — Executive Decision Center e Financeiro Executivo
 

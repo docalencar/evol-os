@@ -1466,3 +1466,343 @@ unique aprovada está presente. Nenhuma regra anterior foi removida.
 
 Nenhuma migration foi aplicada em produção. A Phase 2 aguarda aprovação final;
 Phase 3 continua não autorizada.
+
+## 28. Phase 3 — Trusted Persistence — Implementation Readiness Review
+
+**Status:** revisão concluída; implementação não autorizada
+
+### 28.1 Baseline confirmado
+
+A revisão partiu da branch
+`docs/mvp-pr1-phase3-trusted-persistence-review`, com worktree limpa e
+`HEAD`, `main` e `origin/main` em `f77b229`. As Phases 1 e 2 estão incorporadas.
+A cadeia canônica chega à migration `0073`; o novo projeto canônico foi criado
+exclusivamente por `0001`–`0073`, e o hardening de resolução de extensões está
+incorporado por `be269bd`/`f77b229`.
+
+As seções 27.8 e 27.12 preservam o histórico anterior à aprovação e ao rollout.
+O estado vigente é: Phase 2 concluída e incorporada; Phase 3 ainda não
+autorizada. O projeto antigo divergente não é autoridade normativa.
+
+### 28.2 Decisão de actor versus executor
+
+A opção de menor privilégio para as mutações internas da Phase 3 é uma
+`SECURITY DEFINER RPC` chamada com o client Supabase da sessão `authenticated`.
+Nesse caminho:
+
+- `actorUserId` é sempre `auth.uid()` dentro da RPC;
+- `actorUserId` não existe no payload público da operação;
+- `companyId` e IDs tenant-owned são seletores não confiáveis, sempre
+  revalidados contra membership ativa, role e relações compostas;
+- a RPC persiste `executorType = authenticated`, sem confundir a database role
+  com o ator humano derivado por `auth.uid()`;
+- o guard de ownership da 0071 continua recebendo o mesmo `auth.uid()` e não
+  precisa de GUC, impersonation, claim customizada ou bypass;
+- nenhuma RPC aceita `actor_user_id` arbitrário para depois tratá-lo como prova
+  de autoria.
+
+`auth.getUser()` ocorre na futura fronteira server-only antes da Application
+Layer, para construir um contexto autenticado e rejeitar sessão ausente ou
+inválida. Essa verificação não substitui `auth.uid()` na RPC: a identidade é
+revalidada novamente na fronteira persistente. O fluxo futuro será:
+
+```text
+Server Action
+  → auth.getUser() no client da sessão
+  → ActorContext interno { actorUserId }
+  → Application intent sem actor controlado pelo client
+  → port de Trusted Persistence
+  → authenticated SECURITY DEFINER RPC
+  → auth.uid() + autorização tenant atual + constraints + auditoria
+```
+
+O `companyId` pode atravessar as camadas como parte da intenção, mas nunca como
+autoridade. Até a Phase 7 não há resolver multi-tenant oficial; portanto a Phase
+3 não usa o atual `.limit(1)`. Cada RPC valida diretamente que `auth.uid()` possui
+membership ativa no `companyId` indicado e a role necessária. Para aceite, a
+Company é derivada do convite resolvido pelo digest, não do payload.
+
+RPC com `service_role` e `p_actor_user_id` não é o padrão da Phase 3. Uma RPC
+dessas não conseguiria provar autonomamente que o argumento corresponde à sessão
+humana e perderia `auth.uid()` no trigger da 0071. Service role fica reservado às
+integrações Auth Admin e entrega externa das Phases 5/6. Se surgir operação de
+banco que realmente exija service role, ela precisará de adapter server-only que
+execute `auth.getUser(token)`, derive o ator sem input do client, revalide no
+banco a capability atual e registre `service_role` somente como executor; isso
+exige revisão específica antes de implementação.
+
+`correlationId` é criado na fronteira server-only com UUID criptograficamente
+aleatório, atravessa Application Layer e port como metadado não autoritativo e é
+vinculado à `tenant_access_operation`. Chave de idempotência pode ser recebida do
+client para retry, mas é validada e escopada por Company, ator e operação. A RPC
+calcula o fingerprint canônico; não confia em fingerprint fornecido.
+
+### 28.3 Inventário operacional e classificação de execução
+
+Legenda: **A** = authenticated + `SECURITY DEFINER RPC` preservando `auth.uid()`;
+**B** = server-only + service role + revalidação explícita; **C** = authenticated
+e RLS sem trusted RPC; **D** = fora da Phase 3.
+
+| Operação | Ator e autoridade | Execução | Atomicidade, identidade e resultado |
+| --- | --- | --- | --- |
+| Criar convite | owner/admin ativo; owner obrigatório para role owner | **A**, primitiva persistente; geração/entrega fica na Phase 5 | operation + invitation pending + `invite.created`; idempotency key, fingerprint calculado, lock/uniques por People/e-mail |
+| Reenviar convite | owner/admin ainda autorizado para a role | **A**, rotação persistente; segredo/entrega na Phase 5 | lock do convite; nova geração/digest/expiração + `invite.resent`; retry canônico |
+| Revogar convite | owner/admin ainda autorizado para a role | **A** | lock do convite; pending/expired → revoked + `invite.revoked`; accepted é conflito fechado |
+| Aceitar convite | usuário autenticado correspondente ao e-mail verificado | **A**, primitiva dormente até a Phase 6 | invitation + membership + People + três auditorias em um commit; Company vem do convite; lock por convite/Company |
+| Criar membership | não é intenção pública independente | **D** como API; subpasso interno do aceite **A** | unique `(company,user)` e constraint diferível; `membership.created` quando houver criação |
+| Vincular People ↔ user | não é intenção pública independente | **D** como API; subpasso interno do aceite **A** | FK/unique da 0071/0072; `person.linked`; nunca por igualdade de e-mail isolada |
+| Alterar role | owner; admin somente para memberships não-owner e roles não-owner | **A** | lock da Company/membership; fingerprint com estado esperado; `membership.role_changed` |
+| Transferir ownership | owner ativo | **A** | operação única: promove destino e opcionalmente rebaixa origem no mesmo commit; lock da Company; uma idempotency key |
+| Remover/rebaixar owner | owner ativo; autorrebaixamento exige confirmação futura na Action | **A** | guard 0071, lock da Company, estado esperado; último owner protegido |
+| Desativar membership | owner/admin, exceto owner administrado somente por owner | **A** | membership inactive + unlink People quando aplicável + eventos no mesmo commit; owner guard ativo |
+| Desligar/inativar People | ator autorizado a administrar People; desativação de acesso é consequência obrigatória, não escolha de role | **A** | People status + membership inactive + unlink + `membership.deactivated`/`person.unlinked`; constraints diferíveis |
+| Escolher tenant ativo | próprio usuário | **D**, Phase 7; provável **C** ou RPC estreita conforme preferência escolhida | não concede autoridade; revalida membership ativa |
+| Trocar tenant ativo | próprio usuário | **D**, Phase 7 | invalida contexto/cache; nunca usa primeira membership |
+
+Nenhuma operação da Phase 3 precisa de **B** para persistência PostgreSQL. Auth
+Admin, descoberta global de conta, criação/ativação no provedor e entrega de
+e-mail são **B**, mas pertencem às Phases 5/6. Leituras da própria identidade e
+memberships podem ser **C**; as mutações multi-step permanecem **A**.
+
+### 28.4 Formato da Trusted Persistence
+
+A Phase 3 cria somente contratos internos e fronteiras persistentes dormentes:
+
+- intents fechadas por operação, com `companyId`, targets, idempotency key,
+  correlation ID e estado esperado quando aplicável;
+- nenhum intent público contém `actorUserId`, executor, role atual inferida,
+  fingerprint ou resultado;
+- resultados discriminados: `succeeded`, `idempotent_retry`, `conflict`,
+  `denied` e `known_failure`, sempre com IDs seguros e código estável;
+- um port por agregado coerente, sem repository com escrita direta nas tabelas;
+- adapter Supabase server-only capaz de usar o client authenticated recebido da
+  sessão, sem criar service-role client para as RPCs da Phase 3;
+- RPCs estreitas por transição; sem RPC genérica `manage_membership(payload)` e
+  sem grants de escrita nas tabelas protegidas;
+- reservation/idempotência em `tenant_access_operations`, fingerprint calculado
+  sobre intenção normalizada e resultado terminal persistido;
+- auditoria em `tenant_access_audit_events` dentro da mesma transação da mutação;
+- `search_path = public, pg_temp`, referências qualificadas a extensões e grants
+  `EXECUTE` mínimos somente às RPCs efetivamente seguras para `authenticated`.
+
+As tabelas da 0070 já cobrem operação, convite e auditoria. A Phase 3 ainda
+precisa de migration forward-only para funções transacionais, grants de execução
+e, somente se o desenho detalhado provar necessidade, constraints aditivas para
+transições/identidades que não possam ser garantidas pelas estruturas atuais.
+Não há necessidade conhecida de nova tabela, backfill ou RLS cutover.
+
+### 28.5 Invite lifecycle e aceite atômico
+
+O lifecycle persistente da Phase 3 é:
+
+```text
+create → pending → resend (pending, geração + 1)
+                 → expire lógico por expires_at
+                 → revoke
+                 → accept
+expired → resend (mesma intenção, nova geração e validade)
+revoked/accepted → terminal para resend/accept
+```
+
+`expired` pode ser materializado na mesma transação que observa
+`pending + expires_at <= now()`; nenhuma autorização depende de job assíncrono.
+Cada geração recebe digest SHA-256 de segredo forte criado fora da persistência;
+somente o digest entra no banco. Reenvio substitui o digest e invalida a geração
+anterior. A Phase 3 testa isso com segredos/digests controlados, mas não gera link,
+chama Auth Admin ou envia e-mail.
+
+O aceite acontece sob sessão autenticada, quando `auth.uid()` já existe. Não
+precisa de Admin API antes da transação. A RPC lê a identidade canônica atual em
+`auth.users` por `auth.uid()`, exige e-mail verificado normalizado compatível e,
+sob locks, executa no mesmo commit:
+
+1. resolver convite por digest/generation e bloquear a linha;
+2. derivar Company/People/role do convite;
+3. revalidar pending, prazo, revogação e ausência de aceite divergente;
+4. verificar People ativa, tenant correto e vínculo atual compatível;
+5. criar ou reativar exatamente uma membership com a role pretendida;
+6. vincular `people.user_id = auth.uid()`;
+7. marcar invitation accepted;
+8. concluir operation e persistir `invite.accepted`, `membership.created` quando
+   aplicável e `person.linked`.
+
+Constraints diferíveis permitem membership e People alcançarem juntas o estado
+final válido. Falha em qualquer passo reverte tudo. Conta Auth criada ou
+confirmada antes do aceite não é estado funcional parcial: sem membership ativa
+ela não acessa o tenant. Retry após falha externa é seguro porque a transação
+interna é idempotente. Estado integralmente compatível já concluído retorna o
+resultado canônico; estado apenas parcial ou identidade diferente retorna
+conflito e nunca é reparado silenciosamente.
+
+### 28.6 Ownership e concorrência
+
+0071 já serializa mutações que tocam owner pelo lock da Company, exige owner
+ativo para administrar owner e rejeita zero owners com
+`LAST_ACTIVE_OWNER_REQUIRED`. 0072 garante que membership ativa termine a
+transação com exatamente uma People coerente.
+
+A Phase 3 não substitui esses triggers. RPCs autenticadas fazem a autorização de
+produto antes da escrita e deixam os triggers como garantia final. Transferência
+é uma única operação transacional, não duas chamadas de Application Layer.
+Promover o destino e, se solicitado, rebaixar a origem compartilham operation,
+correlation ID, fingerprint, lock e auditoria. Duas transferências ou duas
+remoções concorrentes serializam na Company; o segundo writer revalida o estado
+já alterado e retorna retry canônico ou conflito.
+
+Os testes concorrentes obrigatórios usam conexões PostgreSQL reais e incluem:
+
+- dois accepts da mesma geração;
+- accept versus revoke/resend;
+- dois convites para a mesma People e para o mesmo e-mail no tenant;
+- duas mudanças de role com o mesmo estado esperado;
+- duas transferências de ownership;
+- dois owners tentando eliminar o último owner;
+- ativação versus desativação da membership;
+- dois vínculos People/Auth concorrentes.
+
+### 28.7 Auditoria
+
+A infraestrutura da 0070 já contém os dez tipos atuais, incluindo os nove
+obrigatórios. Toda linha de decisão da Phase 3 deve preencher:
+
+| Campo lógico | Origem confiável |
+| --- | --- |
+| `companyId` | convite ou membership/People revalidada no tenant |
+| `actorUserId` | `auth.uid()` |
+| `executorType` / `executorId` | database role real (`authenticated`) e identificador técnico não secreto |
+| target user/person/membership/invitation | linhas bloqueadas e revalidadas; IDs ausentes permanecem nulos/metadados seguros |
+| `correlationId` | contexto server-only vinculado à operation |
+| `occurredAt` | relógio do banco |
+| outcome/reason | transição efetiva e código estável |
+
+O schema possui `target_id`, `target_type` e `target_user_id`; invitation,
+membership e person IDs adicionais podem ser representados pelo target primário
+e metadata mínima. Antes de adicionar colunas, a implementação deve provar que
+essa representação não perde a rastreabilidade exigida pela ADR. Nenhum token,
+digest, e-mail bruto, JWT ou credencial entra em metadata/log.
+
+Eventos de sucesso fazem parte da mesma transação da mutação. Falha do writer de
+auditoria aborta a mutação. Falhas esperadas que precisem auditoria durável devem
+ser convertidas em resultado terminal da operation dentro da RPC; exceção
+inesperada/corrupção aborta e não produz auditoria falsamente concluída.
+Observabilidade, readers e alertas permanecem para a Phase 10.
+
+### 28.8 Idempotência e conflitos
+
+| Operação | Semântica |
+| --- | --- |
+| Create invite | key obrigatória; unique da operation e uniques pending; fingerprint inclui Company, People, e-mail normalizado e role |
+| Resend | key obrigatória; lock invitation; fingerprint inclui invitation, geração esperada e expiração alvo; retry não gira duas vezes |
+| Revoke | key obrigatória; lock invitation; repetir mesma revogação retorna terminal; accepted é conflito |
+| Accept | key obrigatória por ator; lock invitation; mesmo ator/intenção retorna resultado; ator/generation divergente falha fechado |
+| Role change | key + role/status esperado; lock membership/Company; payload divergente é conflito otimista |
+| Deactivate/unlink | key + estado esperado; lock membership/People/Company quando owner; retry preserva resultado |
+| Ownership transfer | key + owners/roles esperados; lock Company; uma operação abrange promoção e rebaixamento opcional |
+
+Relógio, IDs gerados e fingerprint são calculados no lado confiável. A unique de
+`tenant_access_operations` resolve retries entre processos. Advisory lock só é
+necessário quando não houver linha natural antes da criação; locks de row/Company
+e uniques continuam sendo a defesa final.
+
+### 28.9 Error model
+
+Os códigos mínimos são:
+
+- autenticação/autorização: `AUTHENTICATION_REQUIRED`,
+  `TENANT_AUTHORIZATION_DENIED`, `OWNER_ADMINISTRATION_REQUIRES_ACTIVE_OWNER`;
+- convite: `TENANT_INVITE_NOT_FOUND`, `TENANT_INVITE_EXPIRED`,
+  `TENANT_INVITE_REVOKED`, `TENANT_INVITE_ALREADY_ACCEPTED`;
+- identidade/integridade: `TENANT_MEMBERSHIP_ALREADY_EXISTS`,
+  `TENANT_PERSON_ALREADY_LINKED`,
+  `ACTIVE_MEMBERSHIP_REQUIRES_EXACTLY_ONE_PERSON`,
+  `LAST_ACTIVE_OWNER_REQUIRED`;
+- idempotência/conflito: `TENANT_IDEMPOTENCY_CONFLICT`, `TENANT_CONFLICT`;
+- infraestrutura inesperada, somente na tradução externa:
+  `TENANT_PERSISTENCE_FAILED`.
+
+`NOT_FOUND` é usado também para ID de outro tenant, evitando enumeração.
+Autorização e estados terminais são determinísticos e não retryable. Conflito de
+estado exige reload/nova intenção. Falhas de conexão/timeout são transientes e o
+mesmo idempotency key pode ser repetido. Erros SQL inesperados não são reduzidos
+silenciosamente a regra de domínio dentro do banco.
+
+### 28.10 Threat model aplicado
+
+| Ameaça | Mitigação da Phase 3 |
+| --- | --- |
+| ator forjado | nenhum parâmetro de ator; `auth.uid()` obrigatório e revalidado |
+| tenant/role/People/invitation forjado | IDs são seletores; lookup tenant-scoped, role derivada da membership/convite e erro indistinguível |
+| confused deputy | RPC authenticated por padrão; service role não participa da persistência Phase 3 |
+| privilege escalation | matriz PD-019 revalidada na transação e guard 0071 para owner |
+| cross-tenant/IDOR | FKs compostas, lookup por Company e nenhuma resposta que confirme outro tenant |
+| replay/token roubado | digest, geração, prazo, `auth.uid()` e e-mail verificado; aceite único |
+| stale membership/owner | revalidação no instante da escrita e lock da Company/membership |
+| corrida | row locks, Company lock, uniques, constraints diferíveis e operation idempotente |
+| segredo vazado | somente digest persistido; nenhuma auditoria/log contém token ou JWT |
+| audit bypass | evento e mutação no mesmo commit; tabelas continuam sem escrita client genérica |
+
+### 28.11 Boundaries e testes para aprovação
+
+Pertencem à Phase 3: migration forward-only das RPCs transacionais e grants
+estreitos; contratos internos; adapter/repository de Trusted Persistence
+server-only ainda sem consumer; pgTAP de autorização, atomicidade, idempotência,
+auditoria, grants, cross-tenant, actor forgery, rollback e ownership; testes reais
+de concorrência.
+
+Não pertencem à Phase 3:
+
+- Application Services e composição consumível — Phase 4;
+- geração/entrega de e-mail, Auth Admin, resend externo e rate limit — Phase 5;
+- callback, redirect, entrada real de aceite e integração Auth — Phase 6;
+- resolução, preferência e seleção/troca de tenant — Phase 7;
+- RLS/grants de cutover e remoção de escrita legada — Phase 8;
+- Actions, páginas, formulários, selector e UX — Phase 9;
+- readers, métricas e alertas — Phase 10;
+- cutover e cleanup — Phases 11/12.
+
+Suíte proposta:
+
+1. unitários do adapter e contratos, sem Application Layer da Phase 4;
+2. pgTAP de cada RPC e transição;
+3. matriz owner/admin/hr/manager/employee, inactive, anon e service role;
+4. ausência de parâmetro de ator e tentativa de ator/tenant forjado;
+5. cross-tenant para People, membership, invitation e audit;
+6. audit atomicity, append-only e falha do writer;
+7. retry igual e fingerprint divergente;
+8. concorrência com duas conexões PostgreSQL reais;
+9. rollback sem estado parcial;
+10. catálogo de grants, `SECURITY DEFINER` e `search_path`;
+11. comprovação de que service role sem sessão humana não administra owner;
+12. regressão do onboarding e invariantes 0070–0073.
+
+pgTAP comum roda localmente. Corridas exigem harness com conexões reais. A
+validação linked deve respeitar os privilégios do novo projeto: o full pgTAP pela
+role `cli_login_postgres` permanece inconclusivo, sem concessão permanente; testes
+targeted e inspeção de catálogo são a evidência remota permitida até existir
+mecanismo operacional aprovado.
+
+### 28.12 Gaps e governança
+
+PD-019 já cobre roles, identidade, lifecycle, ownership, múltiplos tenants e
+auditoria. ADR-0015 já cobre Trusted Persistence, `ACTOR != EXECUTOR`, aceite,
+idempotência e concorrência. Portanto:
+
+| Gate | Resultado |
+| --- | --- |
+| Nova Product Decision | não necessária |
+| Nova ADR | não necessária |
+| Amendment da ADR-0015 | não necessário |
+| Implementation Plan cobre a Phase 3 | sim, detalhado por esta revisão |
+| Implementação intermediária antes da Phase 3 | não necessária |
+| Reconciliação documental | concluída nesta entrega documental |
+
+`PROJECT_STATE.md`, `ROADMAP.md`, `NEXT_STEPS.md` e `CHANGELOG.md` foram
+reconciliados com o encerramento histórico da PR 3C, as Phases 1/2 do MVP-PR1 e o
+hardening 0073. Não há divergência documental conhecida impedindo a decisão do
+Product Architect.
+
+**Classificação desta revisão:** READY FOR PHASE 3 APPROVAL.
+
+O recorte técnico está pronto para decisão, mas a Phase 3 continua não iniciada.
+Somente autorização explícita do Product Architect permitirá implementar
+migration, RPC, grant, contratos internos ou testes dessa fase.

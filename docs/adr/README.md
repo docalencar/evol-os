@@ -17,6 +17,7 @@ reservados antecipadamente.
 - [0012 — Tenant-Owned Referential Integrity Strategy](./0012-tenant-owned-referential-integrity-strategy.md)
 - [0013 — Platform Global Authority and Trusted Execution](./0013-platform-global-authority-and-trusted-execution.md)
 - [0014 — Deterministic Development Template Application and Snapshots](./0014-deterministic-development-template-application-and-snapshots.md) — Accepted
+- [0015 — Tenant Multiuser Activation Architecture](./0015-tenant-multiuser-activation-architecture.md) — Accepted
 - [ADR-001 — Organization Sync Engine](./ADR-001-organization-sync-engine.md)
 
 A numeração paralela de ADR-001 é histórica. Novas decisões devem seguir a série

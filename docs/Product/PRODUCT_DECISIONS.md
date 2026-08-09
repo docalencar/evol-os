@@ -727,7 +727,7 @@ Exigem decisão própria quando entrarem no Roadmap:
 
 # PD-019 — Tenant Multiuser Activation Policy
 
-**Status:** Proposed
+**Status:** Approved
 
 **Owner:** Product Architect
 

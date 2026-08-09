@@ -693,7 +693,7 @@ O MVP-PR1 só pode ser declarado concluído quando:
 
 ## 25. Phase 0 — Baseline & invariant mapping — resultado
 
-**Status:** Executada em ambiente local; aguardando aprovação do Product Architect
+**Status:** Approved pelo Product Architect
 
 ### 25.1 Baseline do repositório
 
@@ -1000,3 +1000,173 @@ Gates obrigatórios antes de autorizar Phase 1:
 - nenhuma migration, backfill ou escrita funcional.
 
 **Classificação da Phase 0:** READY FOR PHASE 0 APPROVAL.
+
+## 26. Phase 1 — Additive persistence model — resultado
+
+**Status:** Executada e validada localmente; aguardando aprovação do Product Architect
+
+### 26.1 Baseline e escopo efetivo
+
+A Phase 1 partiu de `feat/mvp-pr1-phase0-baseline` no commit `f8d22c7`, com a
+ADR-0015 Accepted, o plano Approved e a Phase 0 aprovada. Nenhuma mudança de
+comportamento, Auth, tenant resolution, UI, Application Layer, membership legada
+ou policy existente foi realizada.
+
+A migration `0070_create_tenant_multiuser_persistence_foundation.sql` é somente
+aditiva. Ela cria três estruturas novas e um índice de lookup não-enforcing em
+People. Não contém `UPDATE`, `DELETE`, `INSERT ... SELECT`, backfill, alteração de
+coluna existente, `DROP`, mudança de status legado ou consumer novo.
+
+### 26.2 Modelo persistente introduzido
+
+#### Tenant Access Operation
+
+`tenant_access_operations` é a identidade persistente de uma intenção técnica
+tenant-scoped. Ela reserva:
+
+- empresa e ator humano;
+- catálogo fechado de operação;
+- chave idempotente e fingerprint da intenção;
+- correlation ID;
+- estado `reserved|succeeded|failed`;
+- resultado JSON seguro, failure code e timestamps.
+
+A unique `(company, actor, operation, idempotency_key)` prepara retry e conflito
+sem implementar workflow. A candidate key `(id, company)` permite referências
+tenant-aware. O state check impede resultado terminal incompleto em dados novos.
+
+#### Company Member Invitation
+
+`company_member_invitations` é separada de `company_members` e contém:
+
+- identidade própria e candidate key tenant-aware;
+- FK composta para People do mesmo tenant;
+- operação de criação no mesmo tenant;
+- e-mail já normalizado, role pretendida e geração positiva;
+- somente `token_digest bytea` de 32 bytes; não há token bruto;
+- estados `pending|accepted|expired|revoked`;
+- expiração, atores/timestamps de criação, aceite e revogação;
+- idempotency key, fingerprint e correlation ID.
+
+Checks preservam coerência entre status e timestamps. Uniques parciais impedem,
+somente nas linhas novas, dois convites `pending` para a mesma People ou o mesmo
+e-mail no tenant. Reenvio/rotation, expiração automática, revogação e aceite não
+foram implementados.
+
+#### Tenant Access Audit Event
+
+`tenant_access_audit_events` é a fundação append-only específica de acesso
+tenant. As auditorias existentes são domain-specific e não cobrem membership,
+invitation, People linking, ownership ou seleção de tenant; por isso não eram
+reutilizáveis sem misturar ownership e contratos.
+
+O catálogo suporta os nove eventos da ADR-0015 e `tenant.selected`. Cada linha
+preserva empresa, operação, ator humano, tipo/identidade segura do executor,
+target, target user opcional, correlation, outcome, reason code, metadata segura e
+timestamp. Update/delete são bloqueados por grants e trigger append-only.
+
+### 26.3 People ↔ Auth e tenant preference
+
+Foi criado somente o índice parcial não-único
+`people_company_user_lookup_idx(company_id,user_id) where user_id is not null`.
+Ele prepara preflight e lookups sem impor unicidade sobre ambientes desconhecidos.
+
+A unique parcial `(company_id,user_id)` foi **adiada para a Phase 2**, pois pode
+falhar em staging/produção sem preflight. `people.user_id` continua nullable e
+nenhuma membership existente passou a exigir People.
+
+Tenant preference foi **adiada para a Phase 7**, conforme o baseline aprovado.
+Não existe novo consumer, tabela, cookie, metadata Auth ou fallback. A escolha
+física entre preferência global persistida e estado server-side protegido afeta
+contratos futuros e não é necessária ao modelo aditivo desta fase.
+
+### 26.4 FKs, constraints e índices
+
+| Elemento | Justificativa |
+| --- | --- |
+| Invitation `(person_id,company_id)` → People | impede convite cross-tenant em dados novos |
+| Invitation `(created_operation_id,company_id)` → Operation | correlaciona criação à intenção no mesmo tenant |
+| Audit `(operation_id,company_id)` → Operation | garante auditoria tenant-aware da operação |
+| Auth actor/user FKs | preserva identidade canônica e impede ator inventado |
+| Operation idempotency unique | prepara retry persistente por ator/operação |
+| Invitation digest unique | lookup inequívoco sem segredo bruto |
+| Pending person unique | evita duas intenções vigentes para a mesma People |
+| Pending email unique | evita disputa da mesma identidade bootstrap no tenant |
+| Pending expiry index | suporta futura expiração/recovery sem indexar estados terminais |
+| Operation correlation index | suporta rastreamento técnico por tenant |
+| Audit company/time index | timeline tenant-scoped |
+| Audit operation index | correlação de todos os eventos da intenção |
+| People company/user non-unique | acelera preflight/resolução sem enforcement prematuro |
+
+Não foi adicionada candidate key redundante a `company_members`, nem índice de
+tenant preference, nem unique People/Auth. Nenhum índice foi criado para consulta
+sem consumer futuro identificado.
+
+### 26.5 RLS e grants
+
+As três tabelas novas nascem com RLS habilitada e zero policies. `anon` e
+`authenticated` recebem revoke completo. Convites, digest, operação e auditoria
+não são legíveis pelo client.
+
+`service_role` possui somente o acesso necessário para os futuros adapters:
+
+- operação e invitation: `select`, `insert`, `update`;
+- audit: `select`, `insert`, sem `update` ou `delete`.
+
+Nenhuma policy/grant de Companies, Company Members ou People foi alterada. Ainda
+não existe função pública, RPC, adapter ou workflow que consuma os grants novos.
+
+### 26.6 Backward compatibility e ausência de backfill
+
+- onboarding e `create_company_with_owner` permanecem inalterados;
+- `company_members.status = invited` continua com significado e constraint
+  legados intactos;
+- `.limit(1)` e tenant resolution não foram tocados;
+- nenhum consumer consulta as tabelas novas;
+- RLS/policies antigas não sofreram cutover;
+- migration aplicou sobre schema vazio e não lê ou transforma linhas legadas;
+- a suíte comprova que unique de People/Auth ainda não existe;
+- nenhuma estrutura torna People obrigatória para membership atual.
+
+### 26.7 Testes e quality gates
+
+| Gate | Resultado | Classificação |
+| --- | --- | --- |
+| Reset local sem seed, migrations 0001–0070 | passou | Phase 1 verde |
+| pgTAP específico | 41/41 | Phase 1 verde |
+| pgTAP completo | 264/264 em 9 arquivos | regressão verde |
+| DB lint | uma falha em `save_approval_request`/migration 0046 | PREEXISTENTE |
+| TypeScript | passou após build concluir | verde |
+| Lint | passou com quatro warnings conhecidos | PREEXISTENTES |
+| Build | passou; 30 páginas geradas | verde |
+| `git diff --check` | passou antes da documentação final | verde |
+
+A primeira tentativa isolada de TypeScript coincidiu com o build recriando
+`.next/types` e retornou arquivos gerados ausentes. Repetida sequencialmente após
+o build, passou sem erro; classificação: falha de execução concorrente, não
+defeito introduzido.
+
+O DB lint reportou `function digest(text, unknown) does not exist` dentro de
+`public.save_approval_request`, criada na migration 0046 e não alterada pela Phase
+1. Nenhum alerta aponta para a migration 0070.
+
+O primeiro pgTAP usou uma assertion inexistente na versão local e foi corrigido.
+Depois, duas expectativas alcançavam o bloqueio de grant antes do trigger; foram
+ajustadas para testar o trigger sob papel privilegiado. A suíte final passou
+integralmente.
+
+### 26.8 Decisões adiadas e gates da Phase 2
+
+- repetir o preflight read-only no ambiente alvo;
+- comprovar ou reparar duplicidades antes da unique People/Auth;
+- decidir enforcement físico entre membership ativa e People somente após
+  inventário real;
+- classificar linhas `company_members.status = invited` se existirem fora do
+  ambiente local;
+- materializar proteção do último owner apenas na Phase 2/3;
+- manter tenant preference para a Phase 7;
+- emissão, Auth Admin, resend, revogação e aceite permanecem nas Phases 5/6.
+
+Nenhuma Phase 2+ está autorizada por este registro.
+
+**Classificação da Phase 1:** READY FOR PHASE 1 APPROVAL.

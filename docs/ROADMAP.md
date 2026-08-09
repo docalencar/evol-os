@@ -2,11 +2,10 @@
 
 ## O que vem agora?
 
-### Fundação confiável
+### MVP Closure — ativação multiusuário do tenant
 
-1. Endurecer integridade relacional entre tenants nas relações organizacionais e
-   nos domínios que referenciam pessoas, cargos, times, departamentos e
-   competências.
+1. Obter aprovação explícita do Product Architect para iniciar a Phase 3 —
+   Trusted Persistence / Actor != Executor — do MVP-PR1.
 
 O primeiro slice está concluído pela migration 0064: as 14 relações de
 Organization, People e Competencies agora preservam fisicamente o tenant. O
@@ -33,11 +32,18 @@ experiência mínima foi implementada em `3cc8c38` e incorporada à `main` pelo
 merge `ca2f173`. A Fase 7 — testes, observabilidade e cutover — foi implementada
 em `529be29` e incorporada à `main` pelo merge `95625d4`.
 
-A Fase 8 concluiu a validação técnica e a reconciliação final. A implementação da
-PR 3C está completa e aguarda aprovação final do Product Architect; esse estado
-não equivale ao encerramento autônomo da PR. Após a aprovação, a prioridade de
-produto volta ao enriquecimento do modelo de cargos, sem autorização automática
-para iniciar implementação adicional.
+A Fase 8 e a validação final da PR 3C foram concluídas e incorporadas no merge
+`5c2675b`. Esse programa permanece como histórico e não é mais o gate ativo.
+
+O MVP-PR1 — Tenant Multiuser Activation — é a execução vigente. A Phase 1 foi
+incorporada pela migration 0070 e a Phase 2 pelas migrations 0071/0072, com merge
+final `dbf592c`. O ambiente Supabase canônico foi reconstruído pela cadeia
+`0001`–`0073`; o hardening 0073 foi incorporado em `f77b229`.
+
+A Phase 3 ainda não foi iniciada. Sua readiness review concluiu que o recorte
+técnico está pronto e já coberto por PD-019, ADR-0015 e pelo Implementation Plan.
+Isso não autoriza implementação automática: o próximo gate permanece a decisão
+explícita do Product Architect.
 
 ## Evidência da prioridade
 
@@ -49,6 +55,10 @@ para iniciar implementação adicional.
   operacional de Development.
 - PD-018 define a separação entre conceitos globais e competências operacionais,
   e o Implementation Plan aprovado recorta sua entrega em PRs 3B e 3C.
+- PD-019 e ADR-0015 definem a ativação multiusuário, identidade, ownership,
+  Trusted Persistence e separação entre ator humano e executor técnico.
+- as Phases 1/2 do MVP-PR1 materializam a fundação e os invariantes necessários
+  para a futura Phase 3.
 
 Este documento é a fonte oficial de priorização. O plano completo está em
 `MVP_PLAN.md`; `NEXT_STEPS.md` contém somente a primeira entrega acima.

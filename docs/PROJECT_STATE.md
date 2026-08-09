@@ -73,13 +73,13 @@ O status normativo e o conteúdo completo permanecem no
 ### Roadmap e execução
 
 - [ROADMAP](./ROADMAP.md): Fundação confiável continua sendo a prioridade.
-- [NEXT_STEPS](./NEXT_STEPS.md): revisar o escopo residual e obter aprovação
-  explícita para iniciar a Phase 4 do MVP-PR1; nenhuma implementação dessa fase
-  foi iniciada como fase autônoma.
+- [NEXT_STEPS](./NEXT_STEPS.md): obter autorização explícita para a Phase 5 do
+  MVP-PR1 e fechar previamente seus gates de token e entrega de e-mail.
 - [MVP Plan](./MVP_PLAN.md): jornada completa até o MVP.
 - [EPICS](./EPICS.md): estado funcional das capacidades.
 - [Implementation Plan do MVP-PR1](./Execution/MVP-PR1-TENANT-MULTIUSER-ACTIVATION-IMPLEMENTATION-PLAN.md):
-  Phases 1, 2 e 3 concluídas; Phase 4 ainda não autorizada.
+  Phases 1, 2 e 3 concluídas; Phase 4 encerrada como Complete by Prior Delivery;
+  Phase 5 não iniciada.
 
 ## 5. Programa ADR-0012
 
@@ -134,9 +134,21 @@ continua limitado pelo schema `extensions` e pela role técnica
 `cli_login_postgres`; isso não foi introduzido pela 0074, não indica falha nas
 RPCs Tenant Access e não autoriza grant permanente.
 
-O próximo gate é revisar o escopo residual da Phase 4 — Application Layer — à
-luz da fundação mínima já incorporada na Phase 3 e obter autorização explícita
-do Product Architect. Isso não autoriza a Phase 4 nem fases posteriores.
+A Phase 4 — Application Layer — foi formalmente encerrada como **Complete by
+Prior Delivery**. Ela não foi executada como fase autônoma: sua fundação
+estrutural foi antecipada de maneira controlada durante a Phase 3 para validar a
+Trusted Persistence ponta a ponta. Intents, results, port, Application Service,
+adapter autenticado, Composition Root server-only e testes já estão integrados.
+Não existe dívida que justifique criar uma segunda Application Layer.
+
+Nenhum consumer funcional foi conectado. Token lifecycle, entrega e Actions de
+issue/resend/revoke permanecem na Phase 5; aceite e Auth integration, na Phase 6;
+resolver, preferência e seleção/troca de tenant, na Phase 7. RLS cutover, UI,
+E2E e observabilidade permanecem em suas fases posteriores.
+
+O próximo gate é a **Phase 5 — Invitation issuance, revocation & resend**, ainda
+não iniciada nem autorizada. Antes de implementação, exige autorização explícita
+do Product Architect e confirmação dos gates operacionais de token e e-mail.
 
 Antes desse gate, devem ser lidos:
 

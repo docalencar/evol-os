@@ -4,8 +4,9 @@
 
 ### MVP Closure — ativação multiusuário do tenant
 
-1. Revisar o escopo residual e obter aprovação explícita do Product Architect
-   para iniciar a Phase 4 — Application Layer — do MVP-PR1.
+1. Obter aprovação explícita do Product Architect para iniciar a Phase 5 —
+   Invitation issuance, revocation & resend — do MVP-PR1, após fechar seus gates
+   de token lifecycle e entrega de e-mail.
 
 O primeiro slice está concluído pela migration 0064: as 14 relações de
 Organization, People e Competencies agora preservam fisicamente o tenant. O
@@ -48,12 +49,18 @@ ownership e concorrência transacional. O serviço mínimo de aplicação, port,
 adapter autenticado e Composition Root server-only permanecem sem consumidor
 funcional.
 
-A próxima fase prevista no Implementation Plan é a Phase 4 — Application Layer.
-Como parte de sua fundação mínima foi incorporada no escopo aprovado da Phase 3,
-o próximo gate é revisar o escopo residual para impedir duplicação e então obter
-aprovação explícita do Product Architect. A Phase 4 não está iniciada ou
-automaticamente autorizada; Actions, UI, Auth Admin, e-mail, seleção de tenant,
-cutover RLS e observabilidade posterior permanecem fora do escopo concluído.
+A Phase 4 — Application Layer — foi encerrada como **Complete by Prior Delivery**,
+sem implementação adicional e sem ter sido executada como fase autônoma. A
+fundação prevista — contracts, port, Application Service, adapter autenticado,
+Composition Root server-only e testes — já havia sido incorporada de forma
+controlada na Phase 3. Nenhuma segunda Application Layer deve ser criada.
+
+A Phase 5 passa a ser o próximo gate, mas não está iniciada nem automaticamente
+autorizada. Seu escopo permanece token lifecycle server-only, boundary de
+Invitation Delivery, adapter somente após escolha humana do provider e consumers
+de issue/resend/revoke integrados pela Application Layer existente. Aceite/Auth
+permanece na Phase 6; resolver/preferência/switch, na Phase 7; RLS cutover, UI,
+E2E e observabilidade permanecem nas fases posteriores.
 
 ## Evidência da prioridade
 

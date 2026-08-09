@@ -290,13 +290,31 @@ teste de concorrência e inspeção de grants.
 
 ## 11. Phase 4 — Application Layer
 
-> **Reconciliação pós-Phase 3:** o escopo aprovado da Phase 3 incorporou a
-> fundação mínima formada por contratos, um Application Service coordenador, um
-> port de Trusted Persistence, adapter Supabase autenticado e Composition Root
-> server-only, todos sem consumidor funcional. Isso não iniciou nem concluiu a
-> Phase 4 como fase autônoma. Antes de autorizá-la, seu escopo residual deve ser
-> revisado contra essa fundação para evitar duplicação; nenhuma regra de produto
-> ou arquitetura nova é criada por esta reconciliação.
+**Status:** COMPLETE BY PRIOR DELIVERY
+
+> A Phase 4 não foi executada como fase autônoma. Sua fundação estrutural foi
+> antecipada de maneira controlada durante a Phase 3 porque a Trusted Persistence
+> precisava de contracts, port, Application Service, adapter e Composition Root
+> para validação ponta a ponta. A inspeção posterior confirmou que não existe
+> dívida arquitetural que justifique uma segunda Application Layer.
+
+| Item originalmente previsto | Classificação vigente |
+| --- | --- |
+| intents das sete operações | ALREADY IMPLEMENTED |
+| results discriminados e stable error mapping | ALREADY IMPLEMENTED |
+| port de Trusted Persistence | ALREADY IMPLEMENTED |
+| `TenantAccessApplicationService` | ALREADY IMPLEMENTED |
+| adapter Supabase autenticado | ALREADY IMPLEMENTED |
+| Composition Root server-only | ALREADY IMPLEMENTED |
+| idempotency key e correlation ID preservados | ALREADY IMPLEMENTED |
+| testes do service e adapter | ALREADY IMPLEMENTED |
+| token lifecycle, delivery e issue/resend/revoke Actions | DEFERRED TO PHASE 5 |
+| acceptance route, accept Action e Auth integration | DEFERRED TO PHASE 6 |
+| resolver, preferência, seleção e switch de tenant | DEFERRED TO PHASE 7 |
+| RLS cutover, UI, E2E e observabilidade | DEFERRED TO THEIR ORIGINAL PHASES |
+
+Este fechamento não implementa consumer funcional, não antecipa fase posterior e
+não autoriza a Phase 5.
 
 ### Objetivo e estado inicial
 
@@ -1886,11 +1904,19 @@ Continuam fora da Phase 3: Server Actions consumidoras, UI de membros/convites,
 Auth Admin, geração/envio real de e-mail, redirects, tenant selection/switch,
 cutover RLS adicional e observabilidade de fases posteriores.
 
-O próximo gate previsto é a **Phase 4 — Application Layer**. Seu objetivo
-original é compor services, ports e repositories sem duplicar autorização ou
-integridade. A Phase 3 aprovada já entregou a fundação mínima desses elementos;
-portanto, antes de qualquer implementação, o Product Architect deve revisar e
-aprovar explicitamente o escopo residual da Phase 4. A dependência na Phase 3
-está satisfeita, mas a fase não está automaticamente autorizada nem tecnicamente
-recortada para execução até essa revisão. Não há nova Product Decision, ADR ou
-amendment arquitetural identificado como necessário.
+A Phase 4 foi posteriormente encerrada como **Complete by Prior Delivery**, sem
+implementação adicional. A Phase 3 aprovada já havia entregue sua fundação
+estrutural, e a revisão confirmou que duplicá-la seria incorreto.
+
+O próximo gate previsto é a **Phase 5 — Invitation issuance, revocation &
+resend**, ainda não iniciada nem autorizada. Antes de implementação, o Product
+Architect deve autorizar explicitamente a fase e confirmar token lifecycle,
+provider de e-mail, secret management, domínio/remetente, URL/redirect e política
+mínima de timeout/retry/idempotência. O primeiro slice futuro esperado é o Block
+B — Token utility; depois, Block C — Delivery boundary. Nenhum deles é
+implementado ou autorizado por este fechamento.
+
+Acceptance/Auth permanece na Phase 6; resolver, preferência e seleção/troca de
+tenant permanecem na Phase 7; RLS cutover, UI, E2E e observabilidade permanecem
+em suas fases originais. Não há nova Product Decision, ADR ou amendment
+arquitetural identificado como necessário.

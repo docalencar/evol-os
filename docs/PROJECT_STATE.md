@@ -73,12 +73,13 @@ O status normativo e o conteúdo completo permanecem no
 ### Roadmap e execução
 
 - [ROADMAP](./ROADMAP.md): Fundação confiável continua sendo a prioridade.
-- [NEXT_STEPS](./NEXT_STEPS.md): obter aprovação explícita para iniciar a Phase
-  3 do MVP-PR1; nenhuma implementação dessa fase foi iniciada.
+- [NEXT_STEPS](./NEXT_STEPS.md): revisar o escopo residual e obter aprovação
+  explícita para iniciar a Phase 4 do MVP-PR1; nenhuma implementação dessa fase
+  foi iniciada como fase autônoma.
 - [MVP Plan](./MVP_PLAN.md): jornada completa até o MVP.
 - [EPICS](./EPICS.md): estado funcional das capacidades.
 - [Implementation Plan do MVP-PR1](./Execution/MVP-PR1-TENANT-MULTIUSER-ACTIVATION-IMPLEMENTATION-PLAN.md):
-  Phases 1 e 2 concluídas; readiness da Phase 3 tecnicamente concluída.
+  Phases 1, 2 e 3 concluídas; Phase 4 ainda não autorizada.
 
 ## 5. Programa ADR-0012
 
@@ -109,10 +110,33 @@ pgTAP local passou 312/312; a validação remota direcionada da 0073 passou. A s
 pgTAP remota completa permanece inconclusiva por privilégios da role técnica
 `cli_login_postgres`, sem regressão funcional confirmada e sem grant permanente.
 
-A readiness review concluiu que a Phase 3 — Trusted Persistence / Actor !=
-Executor está tecnicamente pronta, sem necessidade de nova Product Decision, ADR
-ou amendment. Nenhum código, migration, RPC, grant ou teste da Phase 3 foi
-implementado. O próximo gate é a autorização explícita do Product Architect.
+A Phase 3 — Trusted Persistence / Actor != Executor foi concluída e incorporada
+à `main` pelo merge `3559a9b`. A migration 0074 foi aplicada ao projeto Supabase
+canônico e está alinhada Local/Remote. Ela materializa sete RPCs v1 estreitas,
+`SECURITY DEFINER`, com `search_path = public, pg_temp`, owner PostgreSQL e
+`EXECUTE` funcional somente para `authenticated`; `anon`, `service_role` e
+`PUBLIC` não possuem `EXECUTE`. O executor PostgreSQL `postgres` decorre do
+ownership/superuser e não é caminho funcional da aplicação.
+
+O caminho aprovado preserva `ACTOR != EXECUTOR`: a autoridade humana é derivada
+exclusivamente de `auth.uid()`, o tenant é revalidado na fronteira persistente e
+nenhuma intenção aceita `actorUserId` como autoridade. Idempotência, fingerprint,
+auditoria, owner invitation e ownership são transacionais; locks possuem ordem
+determinística. O serviço mínimo de aplicação, port, adapter Supabase autenticado
+e Composition Root server-only foram incorporados sem consumidor funcional e sem
+uso de `service_role`.
+
+Fresh reset `0001`–`0074`, pgTAP local 362/362, Tenant Access pgTAP 50/50,
+testes TypeScript Tenant Access 8/8, regressões relevantes 18/18, DB lint local,
+TypeScript, lint, build e quatro cenários reais de concorrência passaram. O lint
+teve quatro warnings preexistentes fora do escopo. O pgTAP/lint remoto completo
+continua limitado pelo schema `extensions` e pela role técnica
+`cli_login_postgres`; isso não foi introduzido pela 0074, não indica falha nas
+RPCs Tenant Access e não autoriza grant permanente.
+
+O próximo gate é revisar o escopo residual da Phase 4 — Application Layer — à
+luz da fundação mínima já incorporada na Phase 3 e obter autorização explícita
+do Product Architect. Isso não autoriza a Phase 4 nem fases posteriores.
 
 Antes desse gate, devem ser lidos:
 
@@ -190,6 +214,7 @@ Este resumo oferece orientação; o registro oficial de entregas é o
 | MVP-PR1 — Phase 1 | Persistence Foundation | `48d71fa` |
 | MVP-PR1 — Phase 2 | Persistent Invariants | `dbf592c` |
 | Extension schema hardening | Migration 0073 e ambiente canônico alinhado | `f77b229` |
+| MVP-PR1 — Phase 3 | Trusted Persistence / Actor != Executor | `3559a9b` |
 
 ## 10. Como iniciar uma nova conversa
 

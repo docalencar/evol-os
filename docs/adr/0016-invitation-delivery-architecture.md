@@ -1,6 +1,6 @@
 # ADR-0016 — Invitation Delivery Architecture
 
-**Status:** Proposed
+**Status:** Accepted
 
 ## 1. Context
 

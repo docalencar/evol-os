@@ -1179,7 +1179,7 @@ não autoriza a Phase 3.
 
 ## 27. Phase 2 — Constraints & persistent invariants — resultado
 
-**Status:** safe subset Approved; target preflight completo; conclusão aguardando aprovação
+**Status:** enforcement concluído e validado; aguardando aprovação final da Phase 2
 
 ### 27.1 Fechamento da Phase 1 e baseline
 
@@ -1229,9 +1229,9 @@ alterado e nenhum backfill foi executado.
 | --- | --- | --- |
 | FK People `(company,user)` → membership | SAFE NOW como `NOT VALID` | adicionada; protege linhas novas, sem varrer legado |
 | Proteção do último owner e administração de owner | SAFE NOW | adicionada na fronteira persistente com serialização por Company |
-| Unique parcial People `(company,user)` | SAFE NOW pelos dados | não adicionada; aguarda aprovação após preflight de produção vazio |
-| Validar a FK People → membership | SAFE NOW pelos dados | constraint da 0071 ainda não aplicada em produção; validação não executada |
-| Membership ativa → exatamente uma People | SAFE NOW pelos dados | não adicionada; zero memberships ativas em produção |
+| Unique parcial People `(company,user)` | SAFE NOW pelos dados | adicionada na migration 0072 |
+| Validar a FK People → membership | SAFE NOW pelos dados | validação incluída na migration 0072 |
+| Membership ativa → exatamente uma People | SAFE NOW pelos dados | constraint triggers diferíveis adicionados na migration 0072 |
 | Backfill People/membership | NOT APPLICABLE | nenhum dado alvo e nenhum backfill executado |
 | Transformar `company_members.status = invited` | NOT APPLICABLE | zero linhas em produção; nenhuma transformação executada |
 | Preferência de tenant | fase 7 / fora do escopo | não alterada |
@@ -1311,21 +1311,18 @@ O DB lint mantém exclusivamente a falha da migration 0046 já registrada na Pha
 ### 27.8 Gates pendentes e decisão antes da Phase 3
 
 A Phase 2 não é declarada completa automaticamente. O preflight de produção
-removeu o bloqueio de dados, mas os seguintes passos ainda exigem aprovação e
-execução separada:
+removeu o bloqueio de dados e a migration 0072 materializou:
 
-1. criar a unique parcial `(company_id,user_id)` de People;
-2. aplicar e validar a FK People → membership;
-3. materializar membership ativa → People conforme I6;
-4. repetir as contagens depois do enforcement e validar zero anomalia.
+1. unique parcial `(company_id,user_id)` de People;
+2. validação da FK People → membership;
+3. membership ativa → exatamente uma People conforme I6.
 
-Não há backfill ou reparação a executar sobre o estado observado. A aplicação da
-migration 0071 e qualquer enforcement adicional permanecem sujeitos à aprovação
-do Product Architect e à execução humana de migrations. Não há autorização para
-Phase 3.
+Não há backfill ou reparação a executar sobre o estado observado. As migrations
+0071/0072 estão preparadas para rollout, mas não foram aplicadas manualmente em
+produção. A Phase 2 aguarda aprovação final do Product Architect e a execução de
+migrations continua responsabilidade humana. Não há autorização para Phase 3.
 
-**Classificação da Phase 2:** TARGET PREFLIGHT COMPLETE — READY FOR PHASE 2
-COMPLETION APPROVAL.
+**Classificação da Phase 2:** READY FOR PHASE 2 FINAL APPROVAL.
 
 ### 27.9 Aprovação do safe subset e acesso aos ambientes alvo
 
@@ -1422,3 +1419,50 @@ Classificação após o preflight:
 
 O target preflight está completo para decisão do Product Architect. Nenhum
 enforcement adicional, migration, backfill, repair ou Phase 3 foi iniciado.
+
+### 27.12 Conclusão do enforcement da Phase 2
+
+Após aprovação explícita do target preflight, a migration
+`0072_complete_tenant_membership_invariants.sql` foi criada sem DML ou backfill.
+Ela:
+
+- adiciona a unique parcial `people_company_user_key` sobre
+  `(company_id,user_id)` quando `user_id is not null`;
+- valida a constraint `people_company_user_membership_fkey` introduzida na 0071;
+- adiciona constraint trigger diferível que exige exatamente uma People para o
+  estado final de toda membership humana `active`;
+- protege delete/unlink/reassociação de People quando deixaria uma membership
+  ativa sem vínculo;
+- permite membership + People e desativação + unlink na mesma transação;
+- mantém People sem Auth e o mesmo Auth user em tenants diferentes;
+- não usa e-mail como identidade, não altera role e não transforma `invited`;
+- preserva o ownership guard e não altera RLS ou grants de tabela.
+
+O modelo atual não possui membership de sistema: `company_members.user_id`
+referencia `auth.users.id`. Portanto, I6 é aplicado a todas as memberships
+persistidas; `service_role` continua executor técnico e não se torna ator humano.
+O transporte confiável de ator pela futura Trusted Persistence permanece questão
+reservada da Phase 3.
+
+#### Evidência de validação
+
+| Gate | Resultado | Classificação |
+| --- | --- | --- |
+| Reset local migrations 0001–0072 | passou | Phase 2 verde |
+| pgTAP específico da conclusão | 24/24 | Phase 2 verde |
+| pgTAP completo | 308/308 em 11 arquivos | regressão verde |
+| `create_company_with_owner` | owner + People coerentes; constraints imediatas passaram | regressão verde |
+| Concorrência de People/Auth | 1 insert + 1 violação unique; 1 vínculo final | Phase 2 verde |
+| Concorrência de último owner | 1 commit + 1 rejeição; 1 owner final | Phase 2 verde |
+| DB lint | `digest(text,unknown)` em `save_approval_request`/0046 | PREEXISTENTE |
+| TypeScript | passou | verde |
+| Lint | passou com quatro warnings conhecidos | PREEXISTENTES |
+| Build | passou; 30 páginas geradas | verde |
+| `git diff --check` | passou antes do registro documental | verde |
+
+As expectativas pgTAP das Phases 1 e 2 safe subset foram reconciliadas com o
+estado final: o índice lookup aditivo permanece, a FK agora está validada e a
+unique aprovada está presente. Nenhuma regra anterior foi removida.
+
+Nenhuma migration foi aplicada em produção. A Phase 2 aguarda aprovação final;
+Phase 3 continua não autorizada.

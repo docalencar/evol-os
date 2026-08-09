@@ -84,11 +84,32 @@ export type OwnershipTransferPersistenceResult = Readonly<{
   actorDemoted: boolean
 }>
 
+export type TenantAccessStableErrorCode =
+  | "ACTIVE_MEMBERSHIP_REQUIRES_EXACTLY_ONE_PERSON"
+  | "AUTHENTICATION_REQUIRED"
+  | "LAST_ACTIVE_OWNER_REQUIRED"
+  | "OWNER_ADMINISTRATION_REQUIRES_ACTIVE_OWNER"
+  | "TENANT_AUTHORIZATION_DENIED"
+  | "TENANT_CONFLICT"
+  | "TENANT_IDEMPOTENCY_CONFLICT"
+  | "TENANT_INVITE_ALREADY_ACCEPTED"
+  | "TENANT_INVITE_EXPIRED"
+  | "TENANT_INVITE_IDENTITY_INVALID"
+  | "TENANT_INVITE_INVALID"
+  | "TENANT_INVITE_NOT_FOUND"
+  | "TENANT_INVITE_REVOKED"
+  | "TENANT_MEMBERSHIP_ALREADY_EXISTS"
+  | "TENANT_MEMBERSHIP_NOT_FOUND"
+  | "TENANT_OPERATION_INVALID"
+  | "TENANT_OWNER_AUTHORIZATION_INVALID"
+  | "TENANT_PERSON_ALREADY_LINKED"
+  | "TENANT_ROLE_INVALID"
+
 export type TenantAccessApplicationResult<T> =
   | Readonly<{ status: "succeeded" | "idempotent_retry"; operationId: string; result: T }>
-  | Readonly<{ status: "conflict"; operationId?: string; code: string }>
-  | Readonly<{ status: "denied"; operationId?: string; code: string }>
-  | Readonly<{ status: "known_failure"; operationId?: string; code: string }>
+  | Readonly<{ status: "conflict"; operationId?: string; code: TenantAccessStableErrorCode }>
+  | Readonly<{ status: "denied"; operationId?: string; code: TenantAccessStableErrorCode }>
+  | Readonly<{ status: "known_failure"; operationId?: string; code: TenantAccessStableErrorCode }>
   | Readonly<{
       status: "unexpected_persistence_failure"
       code: "TENANT_ACCESS_PERSISTENCE_FAILED" | "TENANT_ACCESS_INVALID_RESULT"

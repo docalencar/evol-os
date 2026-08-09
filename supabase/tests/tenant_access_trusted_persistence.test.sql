@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public, pg_temp;
 
-select plan(45);
+select plan(50);
 
 select has_function('public', 'issue_company_member_invitation_v1',
   array['uuid','uuid','text','text','text','text','uuid']);
@@ -116,6 +116,12 @@ select lives_ok(
     (select id from trusted_test_ids where name='member-invitation'),
     1, repeat('b',64), 'resend-member', '74000000-0000-4000-8000-000000000303')$$,
   'resend rotates the digest');
+select is((public.resend_company_member_invitation_v1(
+    '74000000-0000-4000-8000-000000000101',
+    (select id from trusted_test_ids where name='member-invitation'),
+    1, repeat('b',64), 'resend-member',
+    '74000000-0000-4000-8000-000000000303')->>'status'),
+  'idempotent_retry', 'resend retry returns its canonical result');
 reset role;
 
 select is((select generation from public.company_member_invitations
@@ -209,6 +215,9 @@ select is((public.accept_company_member_invitation_v1(repeat('e',64), 'accept-in
     '74000000-0000-4000-8000-000000000315')->>'code'),
   'TENANT_OWNER_AUTHORIZATION_INVALID',
   'owner acceptance fails when the recorded grantor is no longer owner');
+select is((public.accept_company_member_invitation_v1(repeat('e',64), 'accept-invalid-owner',
+    '74000000-0000-4000-8000-000000000315')->>'status'),
+  'denied', 'persisted owner denial preserves its category on retry');
 reset role;
 
 set local role authenticated;
@@ -276,6 +285,12 @@ select lives_ok(
     'employee', 'active', 'manager', 'promote-member',
     '74000000-0000-4000-8000-000000000311')$$,
   'owner changes a non-owner role');
+select is((public.change_company_member_role_v1(
+    '74000000-0000-4000-8000-000000000101',
+    (select id from trusted_test_ids where name='member-membership'),
+    'employee', 'active', 'manager', 'promote-member',
+    '74000000-0000-4000-8000-000000000311')->>'status'),
+  'idempotent_retry', 'role change retry returns its canonical result');
 select lives_ok(
   $$select public.transfer_company_ownership_v1(
     '74000000-0000-4000-8000-000000000101',
@@ -283,6 +298,12 @@ select lives_ok(
     'manager', 'owner', true, 'transfer-owner',
     '74000000-0000-4000-8000-000000000312')$$,
   'ownership transfer is transactional');
+select is((public.transfer_company_ownership_v1(
+    '74000000-0000-4000-8000-000000000101',
+    (select id from trusted_test_ids where name='member-membership'),
+    'manager', 'owner', true, 'transfer-owner',
+    '74000000-0000-4000-8000-000000000312')->>'status'),
+  'idempotent_retry', 'ownership transfer retry survives actor demotion');
 reset role;
 
 select is((select role from public.company_members where user_id='74000000-0000-4000-8000-000000000002'),
@@ -299,6 +320,12 @@ select lives_ok(
     'admin', 'active', 'deactivate-former-owner',
     '74000000-0000-4000-8000-000000000318')$$,
   'current owner deactivates a non-owner membership');
+select is((public.deactivate_company_membership_v1(
+    '74000000-0000-4000-8000-000000000101',
+    '74000000-0000-4000-8000-000000000111', 'admin', 'active',
+    'deactivate-former-owner',
+    '74000000-0000-4000-8000-000000000318')->>'status'),
+  'idempotent_retry', 'deactivation retry returns its canonical result');
 reset role;
 
 select is((select status from public.company_members where id='74000000-0000-4000-8000-000000000111'),

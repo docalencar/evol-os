@@ -68,7 +68,7 @@ begin
   end if;
   if v_operation.status = 'failed' then
     return jsonb_build_object(
-      'status', 'known_failure',
+      'status', coalesce(v_operation.result ->> 'status', 'known_failure'),
       'operationId', v_operation.id,
       'code', v_operation.failure_code,
       'result', v_operation.result
@@ -153,7 +153,7 @@ set search_path = public, pg_temp
 as $$
 declare v_result jsonb;
 begin
-  v_result := jsonb_build_object('code', p_code);
+  v_result := jsonb_build_object('code', p_code, 'status', p_result_status);
   update public.tenant_access_operations
   set status='failed', failure_code=p_code, result=v_result,
     completed_at=now(), updated_at=now()
@@ -322,6 +322,11 @@ begin
   where id=p_invitation_id and company_id=p_company_id for update;
   if not found then raise exception using errcode='P0002', message='TENANT_INVITE_NOT_FOUND'; end if;
   perform public.require_tenant_access_administrator(p_company_id, v_inv.intended_role='owner');
+  v_res := public.reserve_tenant_access_operation(p_company_id,'invite_resend',p_idempotency_key,
+    jsonb_build_object('invitationId',p_invitation_id,'expectedGeneration',p_expected_generation,
+      'tokenDigest',lower(p_token_digest_hex)),p_correlation_id);
+  if v_res->>'status'<>'acquired' then return v_res; end if;
+  v_op := (v_res->>'operationId')::uuid;
   if v_inv.status in ('revoked','accepted') then
     raise exception using errcode='23514', message=case when v_inv.status='revoked'
       then 'TENANT_INVITE_REVOKED' else 'TENANT_INVITE_ALREADY_ACCEPTED' end;
@@ -329,11 +334,6 @@ begin
   if v_inv.generation<>p_expected_generation then
     raise exception using errcode='40001',message='TENANT_CONFLICT';
   end if;
-  v_res := public.reserve_tenant_access_operation(p_company_id,'invite_resend',p_idempotency_key,
-    jsonb_build_object('invitationId',p_invitation_id,'expectedGeneration',p_expected_generation,
-      'tokenDigest',lower(p_token_digest_hex)),p_correlation_id);
-  if v_res->>'status'<>'acquired' then return v_res; end if;
-  v_op := (v_res->>'operationId')::uuid;
   perform 1 from public.companies where id=p_company_id for update;
   if exists(select 1 from public.company_member_invitations
     where token_digest=decode(lower(p_token_digest_hex),'hex') and id<>p_invitation_id) then
@@ -534,13 +534,13 @@ begin
   select * into v_member from public.company_members where id=p_membership_id and company_id=p_company_id for update;
   if not found then raise exception using errcode='P0002',message='TENANT_MEMBERSHIP_NOT_FOUND'; end if;
   perform public.require_tenant_access_administrator(p_company_id,p_new_role='owner' or v_member.role='owner');
-  if v_member.role<>p_expected_role or v_member.status<>p_expected_status then
-    raise exception using errcode='40001',message='TENANT_CONFLICT';
-  end if;
   v_res:=public.reserve_tenant_access_operation(p_company_id,'membership_role_change',p_idempotency_key,
     jsonb_build_object('membershipId',p_membership_id,'expectedRole',p_expected_role,
       'expectedStatus',p_expected_status,'newRole',p_new_role),p_correlation_id);
   if v_res->>'status'<>'acquired' then return v_res; end if; v_op:=(v_res->>'operationId')::uuid;
+  if v_member.role<>p_expected_role or v_member.status<>p_expected_status then
+    raise exception using errcode='40001',message='TENANT_CONFLICT';
+  end if;
   update public.company_members set role=p_new_role where id=p_membership_id;
   perform public.append_tenant_access_audit(v_op,p_company_id,'membership.role_changed','membership',p_membership_id,
     v_member.user_id,p_correlation_id,jsonb_build_object('previousRole',v_member.role,'newRole',p_new_role));
@@ -558,13 +558,13 @@ begin
   select * into v_member from public.company_members where id=p_membership_id and company_id=p_company_id for update;
   if not found then raise exception using errcode='P0002',message='TENANT_MEMBERSHIP_NOT_FOUND'; end if;
   perform public.require_tenant_access_administrator(p_company_id,v_member.role='owner');
-  if v_member.role<>p_expected_role or v_member.status<>p_expected_status then
-    raise exception using errcode='40001',message='TENANT_CONFLICT';
-  end if;
   v_res:=public.reserve_tenant_access_operation(p_company_id,'membership_deactivate',p_idempotency_key,
     jsonb_build_object('membershipId',p_membership_id,'expectedRole',p_expected_role,
       'expectedStatus',p_expected_status),p_correlation_id);
   if v_res->>'status'<>'acquired' then return v_res; end if; v_op:=(v_res->>'operationId')::uuid;
+  if v_member.role<>p_expected_role or v_member.status<>p_expected_status then
+    raise exception using errcode='40001',message='TENANT_CONFLICT';
+  end if;
   select id into v_person_id from public.people where company_id=p_company_id and user_id=v_member.user_id for update;
   update public.company_members set status='inactive' where id=p_membership_id;
   if v_person_id is not null then update public.people set user_id=null,updated_at=now() where id=v_person_id; end if;
@@ -584,21 +584,23 @@ create or replace function public.transfer_company_ownership_v1(
 declare v_actor uuid; v_target public.company_members%rowtype; v_actor_member public.company_members%rowtype;
   v_res jsonb; v_op uuid; v_result jsonb;
 begin
-  v_actor:=public.require_tenant_access_administrator(p_company_id,true);
+  v_actor:=auth.uid();
+  if v_actor is null then raise exception using errcode='42501',message='AUTHENTICATION_REQUIRED'; end if;
   perform 1 from public.companies where id=p_company_id for update;
   select * into v_target from public.company_members where id=p_target_membership_id
     and company_id=p_company_id and status='active' for update;
   if not found then raise exception using errcode='P0002',message='TENANT_MEMBERSHIP_NOT_FOUND'; end if;
   select * into v_actor_member from public.company_members where company_id=p_company_id and user_id=v_actor for update;
   if v_target.user_id=v_actor then raise exception using errcode='22023',message='TENANT_CONFLICT'; end if;
-  if v_target.role<>p_expected_target_role or v_actor_member.role<>p_expected_actor_role then
-    raise exception using errcode='40001',message='TENANT_CONFLICT';
-  end if;
   v_res:=public.reserve_tenant_access_operation(p_company_id,'ownership_transfer',p_idempotency_key,
     jsonb_build_object('targetMembershipId',p_target_membership_id,
       'expectedTargetRole',p_expected_target_role,'expectedActorRole',p_expected_actor_role,
       'demoteActor',p_demote_actor),p_correlation_id);
   if v_res->>'status'<>'acquired' then return v_res; end if; v_op:=(v_res->>'operationId')::uuid;
+  perform public.require_tenant_access_administrator(p_company_id,true);
+  if v_target.role<>p_expected_target_role or v_actor_member.role<>p_expected_actor_role then
+    raise exception using errcode='40001',message='TENANT_CONFLICT';
+  end if;
   update public.company_members set role='owner' where id=p_target_membership_id;
   perform public.append_tenant_access_audit(v_op,p_company_id,'membership.role_changed','membership',p_target_membership_id,
     v_target.user_id,p_correlation_id,jsonb_build_object('previousRole',v_target.role,'newRole','owner','ownershipTransfer',true));

@@ -8,7 +8,12 @@ const context = { idempotencyKey: "idem-1", correlationId: "correlation-1" }
 
 test("maps success and preserves issue invitation identity without actor injection", async () => {
   const database = new RpcClientMock([
-    success({ invitationId: "invitation-1", status: "pending", generation: 1 }),
+    success({
+      invitationId: "invitation-1",
+      status: "pending",
+      generation: 1,
+      expiresAt: "2026-08-16T20:00:00Z",
+    }),
   ])
   const persistence = createSupabaseTenantAccessTrustedPersistence(database)
 
@@ -24,7 +29,12 @@ test("maps success and preserves issue invitation identity without actor injecti
     {
       status: "succeeded",
       operationId: "operation-1",
-      result: { invitationId: "invitation-1", status: "pending", generation: 1 },
+      result: {
+        invitationId: "invitation-1",
+        status: "pending",
+        generation: 1,
+        expiresAt: "2026-08-16T20:00:00Z",
+      },
     },
   )
   assert.deepEqual(database.calls[0], {
@@ -114,7 +124,11 @@ test("maps stable RPC error and collapses unknown persistence details", async ()
 })
 
 test("fails closed on thrown adapter error and malformed result", async () => {
-  const database = new RpcClientMock([Promise.reject(new Error("socket detail")), rpcResult({ status: "succeeded" })])
+  const database = new RpcClientMock([
+    Promise.reject(new Error("socket detail")),
+    rpcResult({ status: "succeeded" }),
+    rpcResult({ status: "acquired", operationId: "operation-1" }),
+  ])
   const persistence = createSupabaseTenantAccessTrustedPersistence(database)
 
   assert.equal(
@@ -125,10 +139,15 @@ test("fails closed on thrown adapter error and malformed result", async () => {
     await persistence.acceptInvitation({ ...context, tokenDigestHex: "digest-1" }),
     { status: "unexpected_persistence_failure", code: "TENANT_ACCESS_INVALID_RESULT" },
   )
+  assert.deepEqual(
+    await persistence.acceptInvitation({ ...context, tokenDigestHex: "digest-1" }),
+    { status: "unexpected_persistence_failure", code: "TENANT_ACCESS_INVALID_RESULT" },
+  )
 })
 
 test("maps all remaining RPC parameters including ownership expected state", async () => {
   const database = new RpcClientMock([
+    success({ membershipId: "membership-1", role: "manager" }),
     success({ invitationId: "invitation-1", status: "pending", generation: 2 }),
     success({ invitationId: "invitation-1", status: "revoked" }),
     success({ membershipId: "membership-1", status: "inactive", personId: null }),
@@ -136,6 +155,14 @@ test("maps all remaining RPC parameters including ownership expected state", asy
   ])
   const persistence = createSupabaseTenantAccessTrustedPersistence(database)
 
+  await persistence.changeMembershipRole({
+    ...context,
+    companyId: "company-1",
+    membershipId: "membership-1",
+    expectedRole: "employee",
+    expectedStatus: "active",
+    newRole: "manager",
+  })
   await persistence.resendInvitation({
     ...context,
     companyId: "company-1",
@@ -166,12 +193,13 @@ test("maps all remaining RPC parameters including ownership expected state", asy
   })
 
   assert.deepEqual(database.calls.map((call) => call.name), [
+    "change_company_member_role_v1",
     "resend_company_member_invitation_v1",
     "revoke_company_member_invitation_v1",
     "deactivate_company_membership_v1",
     "transfer_company_ownership_v1",
   ])
-  assert.deepEqual(database.calls[3].parameters, {
+  assert.deepEqual(database.calls[4].parameters, {
     p_company_id: "company-1",
     p_target_membership_id: "membership-2",
     p_expected_target_role: "admin",
@@ -180,6 +208,41 @@ test("maps all remaining RPC parameters including ownership expected state", asy
     p_idempotency_key: "idem-1",
     p_correlation_id: "correlation-1",
   })
+})
+
+test("classifies every stable code emitted by the trusted persistence boundary", async () => {
+  const classifiedCodes = [
+    "ACTIVE_MEMBERSHIP_REQUIRES_EXACTLY_ONE_PERSON",
+    "AUTHENTICATION_REQUIRED",
+    "LAST_ACTIVE_OWNER_REQUIRED",
+    "OWNER_ADMINISTRATION_REQUIRES_ACTIVE_OWNER",
+    "TENANT_AUTHORIZATION_DENIED",
+    "TENANT_CONFLICT",
+    "TENANT_IDEMPOTENCY_CONFLICT",
+    "TENANT_INVITE_ALREADY_ACCEPTED",
+    "TENANT_INVITE_EXPIRED",
+    "TENANT_INVITE_IDENTITY_INVALID",
+    "TENANT_INVITE_INVALID",
+    "TENANT_INVITE_NOT_FOUND",
+    "TENANT_INVITE_REVOKED",
+    "TENANT_MEMBERSHIP_ALREADY_EXISTS",
+    "TENANT_MEMBERSHIP_NOT_FOUND",
+    "TENANT_OPERATION_INVALID",
+    "TENANT_OWNER_AUTHORIZATION_INVALID",
+    "TENANT_PERSON_ALREADY_LINKED",
+    "TENANT_ROLE_INVALID",
+  ] as const
+  const database = new RpcClientMock(classifiedCodes.map((code) => rpcError(code)))
+  const persistence = createSupabaseTenantAccessTrustedPersistence(database)
+
+  for (const code of classifiedCodes) {
+    const result = await persistence.acceptInvitation({
+      ...context,
+      tokenDigestHex: "digest-1",
+    })
+    assert.notEqual(result.status, "unexpected_persistence_failure", code)
+    assert.equal("code" in result && result.code, code)
+  }
 })
 
 type RpcResponse = Readonly<{ data: unknown; error: unknown }>

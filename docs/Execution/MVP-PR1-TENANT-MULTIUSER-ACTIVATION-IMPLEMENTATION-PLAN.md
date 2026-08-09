@@ -290,6 +290,14 @@ teste de concorrência e inspeção de grants.
 
 ## 11. Phase 4 — Application Layer
 
+> **Reconciliação pós-Phase 3:** o escopo aprovado da Phase 3 incorporou a
+> fundação mínima formada por contratos, um Application Service coordenador, um
+> port de Trusted Persistence, adapter Supabase autenticado e Composition Root
+> server-only, todos sem consumidor funcional. Isso não iniciou nem concluiu a
+> Phase 4 como fase autônoma. Antes de autorizá-la, seu escopo residual deve ser
+> revisado contra essa fundação para evitar duplicação; nenhuma regra de produto
+> ou arquitetura nova é criada por esta reconciliação.
+
 ### Objetivo e estado inicial
 
 Criar services, ports e repositories que orquestrem Trusted Persistence sem
@@ -1179,7 +1187,8 @@ não autoriza a Phase 3.
 
 ## 27. Phase 2 — Constraints & persistent invariants — resultado
 
-**Status:** enforcement concluído e validado; aguardando aprovação final da Phase 2
+**Status:** concluída, aprovada e incorporada; narrativa intermediária preservada
+como histórico
 
 ### 27.1 Fechamento da Phase 1 e baseline
 
@@ -1308,9 +1317,10 @@ não um defeito funcional introduzido.
 O DB lint mantém exclusivamente a falha da migration 0046 já registrada na Phase
 1. Nenhum alerta aponta para 0070 ou 0071.
 
-### 27.8 Gates pendentes e decisão antes da Phase 3
+### 27.8 Gates que estavam pendentes antes da conclusão da Phase 2
 
-A Phase 2 não é declarada completa automaticamente. O preflight de produção
+Neste gate histórico, a Phase 2 ainda não era declarada completa
+automaticamente. O preflight de produção
 removeu o bloqueio de dados e a migration 0072 materializou:
 
 1. unique parcial `(company_id,user_id)` de People;
@@ -1320,7 +1330,8 @@ removeu o bloqueio de dados e a migration 0072 materializou:
 Não há backfill ou reparação a executar sobre o estado observado. As migrations
 0071/0072 estão preparadas para rollout, mas não foram aplicadas manualmente em
 produção. A Phase 2 aguarda aprovação final do Product Architect e a execução de
-migrations continua responsabilidade humana. Não há autorização para Phase 3.
+migrations continuava responsabilidade humana. Naquele gate, não havia
+autorização para Phase 3; o estado vigente está em §28.13.
 
 **Classificação da Phase 2:** READY FOR PHASE 2 FINAL APPROVAL.
 
@@ -1464,12 +1475,14 @@ As expectativas pgTAP das Phases 1 e 2 safe subset foram reconciliadas com o
 estado final: o índice lookup aditivo permanece, a FK agora está validada e a
 unique aprovada está presente. Nenhuma regra anterior foi removida.
 
-Nenhuma migration foi aplicada em produção. A Phase 2 aguarda aprovação final;
-Phase 3 continua não autorizada.
+Naquele gate, nenhuma migration havia sido aplicada em produção, a Phase 2
+aguardava aprovação final e a Phase 3 não estava autorizada. O estado vigente
+posterior está em §28.13.
 
 ## 28. Phase 3 — Trusted Persistence — Implementation Readiness Review
 
-**Status:** revisão concluída; implementação não autorizada
+**Status:** concluída, integrada e publicada; readiness abaixo preservada como
+baseline histórico
 
 ### 28.1 Baseline confirmado
 
@@ -1481,8 +1494,9 @@ exclusivamente por `0001`–`0073`, e o hardening de resolução de extensões e
 incorporado por `be269bd`/`f77b229`.
 
 As seções 27.8 e 27.12 preservam o histórico anterior à aprovação e ao rollout.
-O estado vigente é: Phase 2 concluída e incorporada; Phase 3 ainda não
-autorizada. O projeto antigo divergente não é autoridade normativa.
+Na data desta readiness review, o estado era: Phase 2 concluída e incorporada;
+Phase 3 ainda não autorizada. O resultado posterior e vigente está registrado em
+§28.13. O projeto antigo divergente não é autoridade normativa.
 
 ### 28.2 Decisão de actor versus executor
 
@@ -1803,6 +1817,80 @@ Product Architect.
 
 **Classificação desta revisão:** READY FOR PHASE 3 APPROVAL.
 
-O recorte técnico está pronto para decisão, mas a Phase 3 continua não iniciada.
-Somente autorização explícita do Product Architect permitirá implementar
-migration, RPC, grant, contratos internos ou testes dessa fase.
+Na data desta revisão, o recorte técnico estava pronto para decisão, mas a Phase
+3 ainda não havia sido iniciada. A aprovação e o resultado posteriores estão
+registrados abaixo.
+
+### 28.13 Resultado final, rollout e próximo gate
+
+**Status vigente:** APPROVED, concluída, incorporada à `main` e publicada em
+`origin/main` pelo merge `3559a9b` (`80973f9`, `948999a`, `69ed8cd`).
+
+A migration `0074_create_tenant_access_trusted_persistence.sql` criou sete RPCs
+v1 estreitas:
+
+1. `issue_company_member_invitation_v1`;
+2. `resend_company_member_invitation_v1`;
+3. `revoke_company_member_invitation_v1`;
+4. `accept_company_member_invitation_v1`;
+5. `change_company_member_role_v1`;
+6. `deactivate_company_membership_v1`;
+7. `transfer_company_ownership_v1`.
+
+O rollout no projeto Supabase canônico confirmou 0074 Local = Remote. As sete
+RPCs têm owner `postgres`, `SECURITY DEFINER = true`,
+`search_path = public, pg_temp` e `EXECUTE` funcional somente para
+`authenticated`; `anon`, `service_role` e `PUBLIC` não possuem `EXECUTE`.
+`postgres` pode executar por ownership/superuser, não como caminho funcional da
+aplicação.
+
+O modelo final preserva `ACTOR != EXECUTOR`: `auth.uid()` é a única autoridade
+humana persistente; tenant e role são revalidados no lado confiável; nenhuma
+intenção pública aceita `actorUserId`; e `service_role` não participa do caminho
+funcional. Convite de owner registra o grantor original, que precisa continuar
+owner ativo no aceite; o convidado não se torna autor da concessão. Ownership
+transfer é transacional. Idempotência e fingerprint são calculadas/persistidas
+no lado confiável, retry equivalente retorna resultado canônico e reutilização
+divergente da chave retorna conflito. Auditoria é atômica e separa ator humano de
+executor técnico, sem token, JWT, digest, credencial ou e-mail sensível em
+metadata. Falhas conhecidas usam códigos estáveis; erro SQL inesperado aborta.
+
+O escopo aprovado também incorporou contratos, Application Service coordenador,
+port, adapter Supabase autenticado e Composition Root server-only, ainda sem
+consumer funcional. Esse refinamento substitui a reserva de escopo feita na
+readiness de §28.11 somente para essa fundação mínima; não declara a Phase 4
+iniciada ou concluída.
+
+Validação final aprovada:
+
+- fresh reset `0001`–`0074`: PASS;
+- pgTAP completo local: 362/362;
+- Tenant Access pgTAP: 50/50;
+- testes TypeScript Tenant Access: 8/8;
+- Tenant Access e regressões relevantes: 18/18;
+- DB lint local, TypeScript, lint e build: PASS;
+- lint com quatro warnings preexistentes fora do escopo;
+- concorrência PostgreSQL real: accept/accept, accept/revoke, owner accept versus
+  downgrade do grantor e ownership transfer race: PASS;
+- deadlock encontrado durante o desenvolvimento eliminado por ordem uniforme de
+  locks;
+- `git diff --check`: PASS.
+
+O pgTAP/lint remoto completo não é registrado como integralmente verde: funções
+pgTAP no schema `extensions` e a role técnica `cli_login_postgres` limitam o
+runner. Essa condição não foi introduzida pela 0074, não representa erro nas RPCs
+Tenant Access e não autoriza grant permanente de `USAGE`. A 0073 já resolveu,
+separadamente, `extensions.digest(...)` na função de negócio afetada.
+
+Continuam fora da Phase 3: Server Actions consumidoras, UI de membros/convites,
+Auth Admin, geração/envio real de e-mail, redirects, tenant selection/switch,
+cutover RLS adicional e observabilidade de fases posteriores.
+
+O próximo gate previsto é a **Phase 4 — Application Layer**. Seu objetivo
+original é compor services, ports e repositories sem duplicar autorização ou
+integridade. A Phase 3 aprovada já entregou a fundação mínima desses elementos;
+portanto, antes de qualquer implementação, o Product Architect deve revisar e
+aprovar explicitamente o escopo residual da Phase 4. A dependência na Phase 3
+está satisfeita, mas a fase não está automaticamente autorizada nem tecnicamente
+recortada para execução até essa revisão. Não há nova Product Decision, ADR ou
+amendment arquitetural identificado como necessário.

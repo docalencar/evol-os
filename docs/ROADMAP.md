@@ -4,8 +4,8 @@
 
 ### MVP Closure — ativação multiusuário do tenant
 
-1. Obter aprovação explícita do Product Architect para iniciar a Phase 3 —
-   Trusted Persistence / Actor != Executor — do MVP-PR1.
+1. Revisar o escopo residual e obter aprovação explícita do Product Architect
+   para iniciar a Phase 4 — Application Layer — do MVP-PR1.
 
 O primeiro slice está concluído pela migration 0064: as 14 relações de
 Organization, People e Competencies agora preservam fisicamente o tenant. O
@@ -40,10 +40,20 @@ incorporada pela migration 0070 e a Phase 2 pelas migrations 0071/0072, com merg
 final `dbf592c`. O ambiente Supabase canônico foi reconstruído pela cadeia
 `0001`–`0073`; o hardening 0073 foi incorporado em `f77b229`.
 
-A Phase 3 ainda não foi iniciada. Sua readiness review concluiu que o recorte
-técnico está pronto e já coberto por PD-019, ADR-0015 e pelo Implementation Plan.
-Isso não autoriza implementação automática: o próximo gate permanece a decisão
-explícita do Product Architect.
+A Phase 3 — Trusted Persistence / Actor != Executor — foi concluída, integrada e
+publicada pelo merge `3559a9b`. A migration 0074 está aplicada no projeto
+Supabase canônico e alinhada Local/Remote. Sete RPCs v1 autenticadas preservam
+`auth.uid()` como ator humano, grants mínimos, idempotência, auditoria,
+ownership e concorrência transacional. O serviço mínimo de aplicação, port,
+adapter autenticado e Composition Root server-only permanecem sem consumidor
+funcional.
+
+A próxima fase prevista no Implementation Plan é a Phase 4 — Application Layer.
+Como parte de sua fundação mínima foi incorporada no escopo aprovado da Phase 3,
+o próximo gate é revisar o escopo residual para impedir duplicação e então obter
+aprovação explícita do Product Architect. A Phase 4 não está iniciada ou
+automaticamente autorizada; Actions, UI, Auth Admin, e-mail, seleção de tenant,
+cutover RLS e observabilidade posterior permanecem fora do escopo concluído.
 
 ## Evidência da prioridade
 
@@ -57,8 +67,8 @@ explícita do Product Architect.
   e o Implementation Plan aprovado recorta sua entrega em PRs 3B e 3C.
 - PD-019 e ADR-0015 definem a ativação multiusuário, identidade, ownership,
   Trusted Persistence e separação entre ator humano e executor técnico.
-- as Phases 1/2 do MVP-PR1 materializam a fundação e os invariantes necessários
-  para a futura Phase 3.
+- as Phases 1/2 do MVP-PR1 materializam a fundação e os invariantes persistentes;
+  a Phase 3 materializa as fronteiras confiáveis necessárias às fases seguintes.
 
 Este documento é a fonte oficial de priorização. O plano completo está em
 `MVP_PLAN.md`; `NEXT_STEPS.md` contém somente a primeira entrega acima.

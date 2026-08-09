@@ -3,6 +3,34 @@
 Este changelog registra somente grandes entregas incorporadas à `main`. Commits
 locais e branches abertas não entram aqui.
 
+## 2026-08-09 — MVP-PR1 Phase 3 — Trusted Persistence
+
+- Phase 3 concluída e incorporada à `main` pelo merge `3559a9b`, incluindo os
+  commits `80973f9`, `948999a` e `69ed8cd`;
+- migration 0074 aplicada ao projeto Supabase canônico, com Local/Remote
+  alinhados e sete RPCs v1 estreitas para convite, aceite, role, desativação e
+  transferência de ownership;
+- autoridade humana derivada exclusivamente de `auth.uid()`, sem `actorUserId`
+  confiado ao client e sem `service_role` no caminho funcional;
+- RPCs `SECURITY DEFINER`, `search_path = public, pg_temp`, owner PostgreSQL e
+  `EXECUTE` somente para `authenticated`; `anon`, `service_role` e `PUBLIC` sem
+  `EXECUTE`;
+- idempotência, fingerprint, auditoria, owner invitation, ownership e locks
+  determinísticos preservados na fronteira transacional;
+- serviço mínimo de aplicação, port, adapter Supabase autenticado e Composition
+  Root server-only incorporados sem consumidor funcional;
+- fresh reset `0001`–`0074`, pgTAP local 362/362, Tenant Access 50/50, testes
+  TypeScript Tenant Access 8/8, regressões relevantes 18/18, DB lint local,
+  TypeScript, lint, build e quatro cenários reais de concorrência aprovados;
+- deadlock encontrado durante o desenvolvimento eliminado pela ordem uniforme
+  de locks; quatro warnings de lint preexistentes permaneceram fora do escopo;
+- pgTAP/lint remoto completo permanece limitado pelo schema `extensions` e pela
+  role `cli_login_postgres`, sem erro identificado nas RPCs da 0074 e sem grant
+  permanente para contornar o runner.
+
+Próximo gate: revisar o escopo residual da Phase 4 — Application Layer — e obter
+aprovação explícita do Product Architect. A Phase 4 não foi iniciada.
+
 ## 2026-08-09 — Supabase canônico e readiness da Phase 3 do MVP-PR1
 
 - Phases 1 e 2 do MVP-PR1 incorporadas; migrations 0070–0072 materializam a

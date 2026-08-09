@@ -12,9 +12,9 @@ select ok(
     where conname = 'people_company_user_membership_fkey'
       and condeferrable
       and not condeferred
-      and not convalidated
+      and convalidated
   ),
-  'People membership FK is deferrable, immediate and intentionally NOT VALID'
+  'People membership FK is deferrable, immediate and validated after preflight'
 );
 
 select ok(
@@ -225,13 +225,13 @@ select lives_ok(
 );
 
 select ok(
-  not exists (
+  exists (
     select 1
     from pg_indexes
     where schemaname = 'public'
       and indexname = 'people_company_user_key'
   ),
-  'People/Auth unique enforcement remains gated by target preflight'
+  'People/Auth unique enforcement is present after approved target preflight'
 );
 
 select is(

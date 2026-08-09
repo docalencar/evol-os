@@ -362,14 +362,14 @@ select ok(
   'tenant preference persistence is deferred'
 );
 select ok(
-  not exists (
+  exists (
     select 1 from pg_indexes
     where schemaname = 'public'
       and tablename = 'people'
-      and indexdef ilike 'create unique index%'
-      and indexdef ilike '%company_id%user_id%'
+      and indexname = 'people_company_user_lookup_idx'
+      and indexdef not ilike 'create unique index%'
   ),
-  'Phase 1 does not enforce People Auth uniqueness before target preflight'
+  'Phase 1 additive People Auth lookup remains present after enforcement'
 );
 
 select * from finish();

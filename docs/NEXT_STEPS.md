@@ -1,12 +1,12 @@
 # Evol OS — Próxima entrega
 
-## Revisão e aprovação da Phase 4 do MVP-PR1
+## Discovery e autorização da Phase 5 do MVP-PR1
 
 ### Objetivo
 
-Revisar o escopo residual da Phase 4 — Application Layer — do MVP-PR1 Tenant
-Multiuser Activation e submetê-lo à autorização explícita do Product Architect.
-Esta etapa não autoriza implementação automaticamente.
+Preparar o gate de autorização da Phase 5 — Invitation issuance, revocation &
+resend — do MVP-PR1 Tenant Multiuser Activation. Nenhuma implementação está
+autorizada automaticamente.
 
 ### Estado confirmado
 
@@ -35,25 +35,42 @@ Esta etapa não autoriza implementação automaticamente.
   build e concorrência aprovados;
 - quatro warnings de lint preexistentes e limitação remota de pgTAP/lint por
   `extensions`/`cli_login_postgres`, sem regressão da 0074 e sem grant permanente;
-- Phase 4 não iniciada nem autorizada.
+- Phase 4 encerrada como **Complete by Prior Delivery**, sem execução autônoma ou
+  implementação adicional;
+- nenhuma segunda Application Layer deve ser criada;
+- nenhum consumer funcional, token utility, Delivery Port, provider adapter ou
+  Action de convite foi implementado;
+- Phase 5 não iniciada nem autorizada.
 
 ### Gate atual
 
-Revisar o recorte da Phase 4 registrado no
-[Implementation Plan do MVP-PR1](./Execution/MVP-PR1-TENANT-MULTIUSER-ACTIVATION-IMPLEMENTATION-PLAN.md)
-contra a fundação mínima já entregue na Phase 3, identificar somente trabalho
-residual sem duplicação e obter a decisão explícita do Product Architect.
+Antes de qualquer implementação da Phase 5:
+
+1. obter autorização explícita do Product Architect;
+2. confirmar token lifecycle server-only;
+3. selecionar humanamente o provider de e-mail antes do adapter real;
+4. confirmar secret management;
+5. confirmar domínio e remetente;
+6. confirmar URL base e redirects permitidos dos links de convite;
+7. confirmar timeout, retry e idempotência mínimos do provider.
+
+O primeiro slice futuro esperado é o Block B — Token utility: geração segura de
+no mínimo 256 bits, base64url, SHA-256, persistência exclusiva do digest e raw
+token restrito a boundaries server-only. Depois vem o Block C — Delivery
+boundary. Nenhum dos dois está autorizado por este documento.
 
 Estado:
 
-**Phase 3 complete — Phase 4 scope review awaiting explicit Product Architect approval.**
+**Phase 4 complete by prior delivery — Phase 5 not started and awaiting explicit authorization.**
 
 ### Regra de parada
 
-- não iniciar a Phase 4 sem aprovação explícita;
-- não duplicar o serviço, port, adapter ou Composition Root já incorporados;
-- não criar automaticamente migration, RPC, grant, RLS, Auth integration,
-  Action ou UI;
+- não iniciar a Phase 5 sem aprovação explícita;
+- não escolher provider nem implementar token utility, Delivery Port, adapter ou
+  Actions neste gate;
+- não duplicar o serviço, port, adapter de persistence ou Composition Root já
+  incorporados;
+- manter acceptance/Auth na Phase 6 e tenant resolution/selection na Phase 7;
 - preservar a separação `ACTOR != EXECUTOR`, menor privilégio e fail closed;
 - não conceder privilégio permanente à role `cli_login_postgres` para contornar
   limitações do runner remoto.

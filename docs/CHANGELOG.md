@@ -3,6 +3,22 @@
 Este changelog registra somente grandes entregas incorporadas à `main`. Commits
 locais e branches abertas não entram aqui.
 
+## 2026-08-09 — MVP-PR1 Phase 4 — Complete by Prior Delivery
+
+- Phase 4 formalmente encerrada sem implementação adicional e sem execução como
+  fase autônoma;
+- contracts, port, Application Service, adapter Supabase autenticado, Composition
+  Root server-only e testes já haviam sido entregues de forma controlada durante
+  a Phase 3 para validar a Trusted Persistence ponta a ponta;
+- nenhuma segunda Application Layer é necessária ou autorizada;
+- consumers permanecem nas fases funcionais: token/delivery/Actions na Phase 5,
+  acceptance/Auth na Phase 6 e resolver/preference/switch na Phase 7;
+- nenhuma funcionalidade da Phase 5 foi iniciada por este fechamento.
+
+Próximo gate: obter autorização explícita para a Phase 5 após confirmar token
+lifecycle, provider, secrets, remetente, URL/redirect e política mínima de
+timeout/retry/idempotência da entrega.
+
 ## 2026-08-09 — MVP-PR1 Phase 3 — Trusted Persistence
 
 - Phase 3 concluída e incorporada à `main` pelo merge `3559a9b`, incluindo os

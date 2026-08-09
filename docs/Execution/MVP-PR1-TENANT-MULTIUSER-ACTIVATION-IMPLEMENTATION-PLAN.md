@@ -1179,7 +1179,7 @@ não autoriza a Phase 3.
 
 ## 27. Phase 2 — Constraints & persistent invariants — resultado
 
-**Status:** safe subset Approved; Phase 2 completa BLOCKED BY TARGET PREFLIGHT
+**Status:** safe subset Approved; target preflight completo; conclusão aguardando aprovação
 
 ### 27.1 Fechamento da Phase 1 e baseline
 
@@ -1211,10 +1211,10 @@ O preflight local foi executado em transação `READ ONLY`, encerrada com
 | Referências órfãs de People | 0 |
 | Referências órfãs de invitation | 0 |
 
-Existe um projeto Supabase remoto legitimamente vinculado, mas a credencial de
-banco necessária não estava disponível. A conexão foi recusada antes de executar
-SQL. A documentação versionada também não classifica esse projeto como staging ou
-produção. Portanto:
+Na primeira execução existia um projeto Supabase remoto legitimamente vinculado,
+mas a credencial de banco necessária não estava disponível. A conexão foi
+recusada antes de executar SQL e a documentação versionada não classificava o
+ambiente. Naquele momento:
 
 - staging: **UNKNOWN**;
 - produção: **UNKNOWN**;
@@ -1229,20 +1229,20 @@ alterado e nenhum backfill foi executado.
 | --- | --- | --- |
 | FK People `(company,user)` → membership | SAFE NOW como `NOT VALID` | adicionada; protege linhas novas, sem varrer legado |
 | Proteção do último owner e administração de owner | SAFE NOW | adicionada na fronteira persistente com serialização por Company |
-| Unique parcial People `(company,user)` | BLOCKED BY UNKNOWN TARGET DATA | não adicionada; exige ausência comprovada de duplicidades |
-| Validar a FK People → membership | BLOCKED BY UNKNOWN TARGET DATA | constraint permanece `NOT VALID` |
-| Membership ativa → exatamente uma People | BLOCKED BY UNKNOWN TARGET DATA | não adicionada nesta execução |
-| Backfill People/membership | SAFE AFTER DETERMINISTIC BACKFILL, condicionado ao preflight | nenhum backfill executado |
-| Transformar `company_members.status = invited` | REQUIRES MANUAL REVIEW se houver linhas | nenhuma transformação; local contém zero, demais ambientes UNKNOWN |
+| Unique parcial People `(company,user)` | SAFE NOW pelos dados | não adicionada; aguarda aprovação após preflight de produção vazio |
+| Validar a FK People → membership | SAFE NOW pelos dados | constraint da 0071 ainda não aplicada em produção; validação não executada |
+| Membership ativa → exatamente uma People | SAFE NOW pelos dados | não adicionada; zero memberships ativas em produção |
+| Backfill People/membership | NOT APPLICABLE | nenhum dado alvo e nenhum backfill executado |
+| Transformar `company_members.status = invited` | NOT APPLICABLE | zero linhas em produção; nenhuma transformação executada |
 | Preferência de tenant | fase 7 / fora do escopo | não alterada |
 
 A interpretação normativa de I6 é: toda membership humana ativa deve possuir
 People coerente no mesmo tenant. O modelo atual de `company_members` referencia
 exclusivamente `auth.users`; não há identidade de sistema/service modelada como
-membership. Isso corresponde à alternativa A. O enforcement inverso, porém, não
-foi materializado porque staging e produção permanecem UNKNOWN e a validação
-física precisa tratar atomicamente criação, aceite, desativação e unlink sem
-presumir estado legado.
+membership. Isso corresponde à alternativa A. O enforcement inverso ainda não foi
+materializado. O preflight posterior provou que os dados de produção não o
+bloqueiam, mas a implementação continua sujeita a aprovação e precisa tratar
+atomicamente criação, aceite, desativação e unlink.
 
 ### 27.4 Migration 0071 e invariantes materializadas
 
@@ -1310,23 +1310,22 @@ O DB lint mantém exclusivamente a falha da migration 0046 já registrada na Pha
 
 ### 27.8 Gates pendentes e decisão antes da Phase 3
 
-A Phase 2 não pode ser declarada completa enquanto staging e produção não forem
-preflightados e os seguintes passos não tiverem evidência:
+A Phase 2 não é declarada completa automaticamente. O preflight de produção
+removeu o bloqueio de dados, mas os seguintes passos ainda exigem aprovação e
+execução separada:
 
-1. provar ausência ou executar reparação aprovada de duplicidades People/Auth;
-2. criar e validar a unique parcial `(company_id,user_id)` de People;
-3. validar a FK People → membership sobre todas as linhas existentes;
-4. provar e materializar membership ativa → People conforme I6;
-5. classificar qualquer `company_members.status = invited` encontrado;
-6. repetir as contagens antes/depois e validar zero anomalia.
+1. criar a unique parcial `(company_id,user_id)` de People;
+2. aplicar e validar a FK People → membership;
+3. materializar membership ativa → People conforme I6;
+4. repetir as contagens depois do enforcement e validar zero anomalia.
 
-O UNKNOWN bloqueia a própria migration de unique/validação e qualquer backfill;
-não bloqueia a migration 0071 no recorte `NOT VALID` e ownership, pois esses
-elementos não examinam nem transformam linhas existentes durante aplicação. O
-rollout desses enforcements adicionais permanece bloqueado. Não há autorização
-para Phase 3.
+Não há backfill ou reparação a executar sobre o estado observado. A aplicação da
+migration 0071 e qualquer enforcement adicional permanecem sujeitos à aprovação
+do Product Architect e à execução humana de migrations. Não há autorização para
+Phase 3.
 
-**Classificação da Phase 2:** BLOCKED BY TARGET PREFLIGHT.
+**Classificação da Phase 2:** TARGET PREFLIGHT COMPLETE — READY FOR PHASE 2
+COMPLETION APPROVAL.
 
 ### 27.9 Aprovação do safe subset e acesso aos ambientes alvo
 
@@ -1350,12 +1349,10 @@ A auditoria de acesso encontrou:
 - CI limitado a lint e build, sem secrets ou job de banco;
 - nenhuma configuração versionada de deploy, staging ou produção.
 
-A tentativa de conexão ao banco remoto foi recusada antes da execução de SQL por
+A tentativa inicial de conexão ao banco remoto foi recusada antes da execução de SQL por
 ausência de senha. Nenhuma query remota, mutation, migration, backfill ou repair
-foi executada. Como o projeto vinculado não é classificado documentalmente como
-staging ou produção, ambos permanecem **UNKNOWN**. O preflight requer que o Human
-Reviewer disponibilize acesso SQL read-only ao ambiente correto ou execute as
-queries aprovadas e devolva as contagens.
+foi executada. Esse bloqueio operacional foi posteriormente resolvido pela role
+dedicada registrada em §27.11.
 
 ### 27.10 Questão reservada para a Phase 3
 
@@ -1371,3 +1368,57 @@ própria de owner, e `actor_user_id` arbitrário vindo do client nunca poderá s
 confiado. O mecanismo físico para comprovar a identidade humana na fronteira
 persistente será projetado e revisado na Phase 3, somente após autorização
 explícita. Nenhuma solução foi implementada nesta fase.
+
+### 27.11 Target preflight de produção
+
+O Dashboard Supabase confirmou o projeto `gzrrwyiqfbnyprkdeqvm` como
+**PRODUCTION**. Em `2026-08-09T14:54:10Z`, o preflight foi executado pela role
+dedicada `evol_preflight_readonly`. A conexão comprovou
+`default_transaction_read_only = on`; cada inspeção abriu explicitamente
+`BEGIN READ ONLY` e terminou em `ROLLBACK` ou, quando uma tentativa foi rejeitada
+por permissão, pelo encerramento da conexão abortada. Somente `SHOW`, `SELECT` e
+leitura de catálogo foram usados.
+
+| Métrica | Produção |
+| --- | ---: |
+| Companies | 0 |
+| Auth users | UNKNOWN — role sem `USAGE` efetivo no schema `auth` |
+| Memberships total/active/inactive/invited | 0 / 0 / 0 / 0 |
+| Owners ativos | 0 |
+| People total/com `user_id` | 0 / 0 |
+| Companies sem owner ativo | 0 |
+| Companies com múltiplos owners ativos | 0 |
+| Duplicidades `(company_id,user_id)` em People | 0 grupos / 0 linhas excedentes |
+| People vinculada sem membership same-tenant | 0 |
+| Membership ativa sem People same-tenant | 0 |
+| Membership ativa com múltiplas People | 0 |
+| People vinculada a membership não ativa | 0 |
+| Usuários com memberships ativas em múltiplos tenants | 0 |
+| Duplicidades de membership | 0 |
+| Referências órfãs para Company | 0 |
+| Owners ativos sem People | 0 |
+| Companies com inconsistência owner/People | 0 |
+
+As FKs existentes `company_members.user_id → auth.users.id` e
+`people.user_id → auth.users.id` estão validadas no catálogo. Como as tabelas
+tenant possuem zero linhas, não existe referência tenant-owned que possa estar
+órfã contra Auth, embora o total global de Auth users permaneça UNKNOWN.
+
+Produção ainda não contém as estruturas das migrations 0070 e 0071: invitation
+table, FK People → membership e unique People/Auth estão ausentes. Isso é estado
+de rollout, não anomalia de dados, e não autoriza aplicar migrations.
+
+Classificação após o preflight:
+
+- unique People/Auth `(company_id,user_id)`: **SAFE NOW** pelos dados;
+- aplicar e validar FK People → membership: **SAFE NOW** pelos dados;
+- membership humana ativa → exatamente uma People: **SAFE NOW** pelos dados;
+- backfills: **NOT APPLICABLE**;
+- `company_members.status = invited`: **NOT APPLICABLE**;
+- ownership guard da 0071: **SAFE NOW** pelos dados e já aprovado como safe subset;
+- anomalias de I1–I17 dependentes das tabelas tenant: nenhuma encontrada;
+- total de Auth users: **UNKNOWN**, sem impacto sobre o hard gate porque não há
+  Company, membership ou People em produção.
+
+O target preflight está completo para decisão do Product Architect. Nenhum
+enforcement adicional, migration, backfill, repair ou Phase 3 foi iniciado.

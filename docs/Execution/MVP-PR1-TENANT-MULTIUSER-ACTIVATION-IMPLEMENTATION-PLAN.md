@@ -690,3 +690,313 @@ O MVP-PR1 só pode ser declarado concluído quando:
 - rollback/cutover estiver documentado e ensaiado;
 - documentação oficial estiver reconciliada;
 - Product Architect emitir aprovação final.
+
+## 25. Phase 0 — Baseline & invariant mapping — resultado
+
+**Status:** Executada em ambiente local; aguardando aprovação do Product Architect
+
+### 25.1 Baseline do repositório
+
+| Item | Evidência factual |
+| --- | --- |
+| Branch | `feat/mvp-pr1-phase0-baseline` |
+| Base da branch | `37f3070`; PD-019 formalmente Approved |
+| ADR | ADR-0015 Accepted |
+| Plano | Approved |
+| Migration mais recente versionada e local | `0069` |
+| Banco local | Postgres/API ativos; serviços auxiliares imgproxy/pooler parados |
+| Worktree inicial | somente ADR-0015, índice e plano ainda não commitados; preservados no commit documental da branch |
+| Código funcional na Phase 0 | nenhum |
+
+O schema local está aplicado até `0069`. A inspeção combinou migrations
+versionadas, catálogo PostgreSQL, código TypeScript e queries executadas dentro de
+transação `READ ONLY`, finalizada com `ROLLBACK`.
+
+### 25.2 Fluxo atual de login, tenant e autoridade
+
+```text
+login/signup Supabase Auth
+  → middleware valida somente a identidade Auth
+  → loadCurrentUserContext consulta company_members active por auth user
+  → limit(1) sem ordenação escolhe companyId e role
+  → getCurrentCompanyContext carrega Company
+  → People é procurada por companyId + userId com limit(1)
+  → páginas, Actions e Services reutilizam companyId/currentUser
+  → RLS revalida membership ativa e, quando aplicável, role
+```
+
+Sem usuário Auth, `/app` redireciona para login. Usuário autenticado sem
+membership ativa é redirecionado pelo contexto para onboarding. A página de
+onboarding também consulta a primeira membership ativa. A RPC
+`create_company_with_owner` rejeita qualquer usuário que já possua membership
+ativa e cria Company, owner membership e People vinculada atomicamente.
+
+O middleware não resolve membership, role, People ou tenant. Ele aceita qualquer
+sessão Auth válida para navegação inicial; autorização tenant acontece depois.
+
+### 25.3 Pontos de resolução arbitrária e consumers
+
+Foram encontrados estes pontos tenant/identidade relevantes:
+
+| Local | Comportamento | Impacto multi-tenant |
+| --- | --- | --- |
+| `features/authorization/current-user-context.ts` | primeira membership ativa por `.limit(1).maybeSingle()` | tenant oficial não determinístico |
+| `app/onboarding/page.tsx` | primeira membership ativa | usuário multi-tenant é apenas redirecionado, sem escolha |
+| `app/(dashboard)/app/people/new/page.tsx` | usa `memberships[0]` após `.limit(1)` no cliente | escrita pode usar tenant arbitrário |
+| `lib/supabase/supabase/current-company.ts` | primeira People por tenant/user com `.limit(1).maybeSingle()` | vínculo ambíguo é silenciosamente escolhido |
+| função `current_person_id` | `limit 1` por tenant/user | mesma ambiguidade na fronteira SQL |
+
+`getCurrentCompanyContext` aparece em 76 arquivos, sendo um a própria definição e
+75 consumers. `loadCurrentUserContext` aparece em cinco arquivos: definição,
+barrel e três consumers diretos (`current-company`, Activity e Notifications).
+Há quatro arquivos com query TypeScript direta a `company_members`: contexto
+atual, onboarding, criação legada de People e `companies.service`. Este último
+lista todas as empresas visíveis e não escolhe uma como atual.
+
+Todos os 75 consumers do contexto compartilhado são potencialmente afetados pela
+introdução de `tenant_selection_required`. A criação legada de People é um
+consumer adicional que contorna o helper e precisa de cutover próprio.
+
+### 25.4 Modelo persistente atual
+
+#### Companies
+
+- PK UUID, slug único, status `active|inactive|trial`;
+- RLS habilitada, não `FORCE ROW LEVEL SECURITY`;
+- membro ativo lê; owner/admin atualiza;
+- nenhuma proteção específica de existência do último owner.
+
+#### Company Members
+
+- PK UUID;
+- FK obrigatória para Company com cascade;
+- FK obrigatória para `auth.users` com cascade;
+- role fechada em `owner|admin|hr|manager|employee`;
+- status fechado em `active|inactive|invited`;
+- unique `(company_id, user_id)`;
+- índice adicional somente em `user_id`;
+- nenhum trigger;
+- RLS habilitada; membros ativos leem e owner/admin possuem policy permissiva
+  `ALL` baseada em role ativa;
+- não há audit trail, timestamps de mudança, proteção de owner ou transação
+  administrativa dedicada.
+
+#### People
+
+- PK UUID e candidate key `(id, company_id)`;
+- `company_id` obrigatório;
+- `user_id` nullable para `auth.users`, `ON DELETE SET NULL`;
+- nenhuma unique em `user_id` ou `(company_id, user_id)`;
+- e-mail nullable, sem unicidade ou normalização persistente;
+- FKs tenant-aware já protegem manager, team e position;
+- nenhum trigger de vínculo Auth/membership;
+- RLS habilitada; membros ativos leem e owner/admin/hr possuem policy permissiva
+  `ALL`.
+
+Não existe tabela `employees`; People é a entidade canônica atual. As referências
+organizacionais endurecidas pela migration 0064 não cobrem a relação lógica
+People–membership.
+
+#### Funções e fronteiras
+
+- `is_company_member`, `has_company_role`, `current_person_id` e
+  `create_company_with_owner` são `SECURITY DEFINER`;
+- as três primeiras fixam autorização em membership ativa;
+- `create_company_with_owner` deriva o ator de `auth.uid()` e cria o agregado
+  inicial atomicamente;
+- Development Template Application e Notifications possuem Trusted Persistence
+  server-only com service role e RPCs transacionais;
+- Global Competencies usa Auth global e executor service role separado;
+- nenhum uso de `auth.admin` ou `inviteUserByEmail` existe no projeto.
+
+### 25.5 Preflight de dados local
+
+O banco local está vazio. As contagens abaixo são reais para este ambiente em
+2026-08-08 e não podem ser extrapoladas para staging ou produção.
+
+| Classificação | Contagem local |
+| --- | ---: |
+| Companies | 0 |
+| Companies sem owner ativo | 0 |
+| Companies com múltiplos owners ativos | 0 |
+| Memberships total/active/inactive/invited | 0 / 0 / 0 / 0 |
+| Memberships sem Auth user | 0 |
+| Memberships sem Company | 0 |
+| Auth users | 0 |
+| Auth users sem membership / sem membership ativa | 0 / 0 |
+| Usuários com memberships ativas em múltiplos tenants | 0 |
+| People total/vinculada/sem vínculo Auth | 0 / 0 / 0 |
+| People sem Company ou com Auth user ausente | 0 / 0 |
+| People vinculada sem membership no mesmo tenant | 0 |
+| Membership sem People no mesmo tenant | 0 |
+| Grupos duplicados `(company,user)` em People | 0 |
+| Grupos de e-mail duplicado no mesmo tenant | 0 |
+| E-mails presentes em tenants diferentes | 0 |
+| People vinculada com e-mail diferente do Auth | 0 |
+
+Contagens de staging e produção: **UNKNOWN**. A Phase 1 é aditiva, mas nenhum
+backfill/enforcement da Phase 2 pode ser aprovado sem executar o mesmo preflight
+read-only no ambiente alvo.
+
+### 25.6 Authority model atual
+
+| Operação | Ator | Fonte de autoridade | Fonte do tenant | Executor | Fronteira de persistência |
+| --- | --- | --- | --- | --- | --- |
+| Login/signup | humano | Supabase Auth | nenhuma | cliente Auth | provedor Auth |
+| Abrir `/app` | humano | sessão Auth no middleware | nenhuma | authenticated | nenhuma mutação |
+| Resolver contexto | humano | membership `active`; role da membership | primeira membership retornada | authenticated + RLS | leitura direta |
+| Onboarding | humano | authenticated e ausência de membership ativa | Company criada pela RPC | `SECURITY DEFINER` sob authenticated | RPC atômica |
+| Ler Company/People | humano | membership ativa | contexto corrente | authenticated + RLS | leitura direta |
+| Criar/alterar People | owner/admin/hr pela RLS | role em membership | contexto; tela legada usa primeira membership | authenticated | escrita direta; tela legada pode ser multi-step |
+| Administrar membership | owner/admin pela policy atual | role em membership | `company_id` da linha | authenticated + RLS | escrita genérica permitida pela policy |
+| Assessment administrativo | owner/admin/hr | contexto + participação/capability | contexto corrente | authenticated/RPC | RLS e leitura segura auditada |
+| Notification persistence | ator humano resolvido pelo domínio | membership/producer registrado | evento resolvido | service role técnico | Trusted RPC atômica |
+| Template Application V2 | humano owner/admin/hr | contexto e revalidação DB | contexto corrente | service role técnico | Trusted Persistence atômica |
+| Catálogo global | autoridade global humana | delegação global, não membership | global/separado | service role técnico | RPC global confiável |
+
+People não concede role. Auth metadata não é consultada como fonte de role ou
+tenant. A role corporativa vem de `company_members.role`. O catálogo TypeScript
+concede todas as permissions atuais a owner/admin/hr e leitura de planejamento a
+manager/employee; policies específicas continuam sendo a defesa efetiva de
+diversos domínios.
+
+### 25.7 People ↔ Auth baseline
+
+Classificação: **EXPLICIT**, por `people.user_id → auth.users.id`.
+
+O vínculo não é email-based, mas está incompleto:
+
+- é nullable e permite People sem conta;
+- não é único por tenant;
+- não exige membership correspondente;
+- `current_person_id` e `getCurrentCompanyContext` escolhem a primeira People;
+- onboarding copia e-mail Auth para People apenas como dado inicial;
+- mudança de e-mail não quebra a FK, mas pode deixar os textos divergentes;
+- igualdade de e-mail não cria vínculo no código atual;
+- a ausência de constraint People–membership permite estado cross-model
+  inconsistente, embora o ambiente local vazio não contenha exemplo.
+
+### 25.8 Invitation baseline
+
+O significado real de `invited` é apenas um valor permitido no status da própria
+membership. Não foi encontrado produtor ou consumer TypeScript/SQL, além da
+declaração do check. O helper de membership ignora `invited` porque exige
+`active`.
+
+Não existem token, digest, expiry, generation, acceptance, revocation, resend,
+UI, Action, service, repository ou teste de convite. Como `company_members.user_id`
+é obrigatório, uma eventual linha `invited` exigiria Auth user previamente
+existente. Estruturalmente, invitation e membership estão misturadas no enum, mas
+funcionalmente o convite não existe. O banco local contém zero linhas `invited`.
+
+### 25.9 RLS e security baseline
+
+- Companies, Company Members e People têm RLS habilitada e não usam FORCE RLS;
+- policies relevantes são permissivas;
+- `is_company_member` e `has_company_role` usam `auth.uid()` e status `active`;
+- há 152 policies públicas no total: 61 referenciam `is_company_member` e 56
+  referenciam `has_company_role` em sua expressão `USING`;
+- Company Members permite `ALL` a owner/admin, sem distinguir administração de
+  owner;
+- People permite `ALL` a owner/admin/hr;
+- nenhuma policy substitui a ausência de unicidade People/user ou proteção do
+  último owner;
+- helpers `SECURITY DEFINER` evitam recursão direta das policies de membership,
+  mas precisam manter `search_path` fixo e grants mínimos;
+- service role aparece em Global Competencies, Notifications e Template
+  Application; não existe caminho de Auth Admin para convites;
+- operações confiáveis existentes revalidam membership/autoridade e mantêm ator
+  humano separado, mas essa garantia não cobre escrita genérica de membership.
+
+Existem precedentes de auditoria em Activity, Approval, Development Template
+Application, Notifications e Global Competencies. Não existe auditoria de
+membership/People-link. O `AuthorizationService` produz evento em memória por sink
+opcional; isso não constitui auditoria durável por padrão.
+
+### 25.10 Invariant gap matrix
+
+| ID | Estado | Evidência e risco | Fase de resolução |
+| --- | --- | --- | --- |
+| I1 | SATISFIED | Auth, contexto e FKs usam `auth.users.id` | preservar em todas |
+| I2 | PARTIAL | autorização usa user ID; e-mail ainda é dado solto e convite inexiste | 1, 5, 6 |
+| I3 | PARTIAL | núcleo Organization é tenant-aware; People–membership não possui vínculo físico same-tenant | 2 |
+| I4 | SATISFIED | unique `(company_id,user_id)` em memberships | preservar em 2–12 |
+| I5 | VIOLATED | nenhuma unique de People por usuário/tenant; `limit 1` mascara ambiguidade | 2 |
+| I6 | NOT IMPLEMENTED | membership ativa não exige People por constraint | 2 e 6 |
+| I7 | NOT IMPLEMENTED | convite/aceite não existem | 1, 5, 6 |
+| I8 | NOT IMPLEMENTED | expiração, revogação e geração não existem | 1, 5, 6 |
+| I9 | SATISFIED | role vem de membership; People/hierarquia/metadata não concedem role | preservar em 3–8 |
+| I10 | VIOLATED | admin pode operar owners pela policy ampla; último owner não é protegido | 2, 3, 8 |
+| I11 | NOT IMPLEMENTED | não existe preferência/tenant ativo explícito | 7 |
+| I12 | VIOLATED | três caminhos escolhem primeira membership/People | 7 e 11 |
+| I13 | PARTIAL | precedentes confiáveis separam executor; memberships não têm fronteira própria | 3, 5, 6 |
+| I14 | SATISFIED | autoridade global usa delegação separada da membership | preservar |
+| I15 | PARTIAL | onboarding e domínios maduros são atômicos; membership/People admin não é | 3 e 6 |
+| I16 | SATISFIED | helpers e RLS consultam membership ativa em cada operação, sem role em JWT | preservar/endurecer em 7–8 |
+| I17 | PARTIAL | auditorias append-only existem por domínio, não para membership/vínculo | 1, 3, 10 |
+
+`VIOLATED` significa que o schema/caminho atual permite quebrar a invariante,
+mesmo que o banco local vazio não contenha uma linha violadora.
+
+### 25.11 Backfill impact assessment
+
+| Classificação | Dados/ação provável |
+| --- | --- |
+| SAFE AUTOMATIC | nenhuma transformação declarada segura sem dados reais do ambiente alvo |
+| DETERMINISTIC WITH PRECONDITION | vínculo People–membership quando `(company,user)` já coincide univocamente; materialização tenant-aware por IDs; preferência inicial somente com uma membership ativa; baseline do owner quando existe ao menos um owner ativo inequívoco |
+| REQUIRES PRODUCT DECISION | nenhuma decisão nova comprovadamente necessária antes da estrutura aditiva da Phase 1 |
+| REQUIRES MANUAL REVIEW | People duplicada por usuário/tenant; membership sem People; People vinculada sem membership; e-mail divergente/duplicado; empresa sem owner; linhas `invited` com uso real; relação cross-tenant; owner inconsistente |
+| UNKNOWN | volume, locks, anomalias e contagens de staging/produção; uso externo direto das policies/RPCs |
+
+Backfill não deve criar People, escolher entre duplicatas, inferir identidade por
+e-mail, promover owner, ativar membership ou classificar `invited` sem evidência.
+
+### 25.12 Anomalias e desvios factuais
+
+1. Banco local vazio impede validar a qualidade dos dados reais; produção/staging
+   permanecem UNKNOWN.
+2. Tenant atual é arbitrário para usuário multi-tenant no helper central.
+3. A tela legada de criação de People repete a seleção arbitrária no cliente e
+   realiza writes diretos potencialmente multi-step.
+4. People por usuário/tenant pode ser duplicada e é mascarada por `limit 1` tanto
+   em TypeScript quanto em SQL.
+5. Admin possui policy genérica capaz de administrar owner; não há proteção do
+   último owner.
+6. Membership ativa e People vinculada não possuem integridade cruzada.
+7. `invited` existe somente como estado de membership e não representa fluxo real.
+8. O catálogo de permissões TypeScript agrupa owner/admin/hr amplamente, enquanto
+   policies de membership distinguem owner/admin; a Phase 4 deve evitar usar o
+   catálogo genérico como autorização suficiente para PD-019.
+9. `PROJECT_STATE`, `ROADMAP` e `NEXT_STEPS` ainda contêm estado anterior ao
+   encerramento da PR 3C; divergência documental preexistente, fora da Phase 0.
+
+### 25.13 Decisões antes da Phase 1
+
+Nenhuma nova decisão funcional é necessária. A PD-019 e a ADR-0015 cobrem o
+modelo aditivo.
+
+Gates obrigatórios antes de autorizar Phase 1:
+
+- Product Architect aprovar este baseline e a matriz I1–I17;
+- confirmar que a Phase 1 continuará estritamente aditiva e não incluirá
+  preferência de tenant, que permanece para a Phase 7;
+- exigir repetição do preflight no ambiente alvo antes de qualquer backfill ou
+  enforcement da Phase 2;
+- se o ambiente alvo possuir linhas `invited` ou anomalias, parar e classificar
+  seu tratamento antes da Phase 2, sem bloquear a criação aditiva da Phase 1.
+
+### 25.14 Evidências e comandos executados
+
+- branch, status e log;
+- inventário de migrations até `0069`;
+- buscas integrais por `limit(1)`, `single`, `maybeSingle`, company_members,
+  invites, Auth Admin, service role e Trusted Persistence;
+- contagem de 75 consumers do contexto compartilhado;
+- `supabase status` para disponibilidade local;
+- queries PostgreSQL em `BEGIN TRANSACTION READ ONLY` com `ROLLBACK`;
+- catálogo de constraints, indexes, triggers, policies, RLS e funções
+  `SECURITY DEFINER`;
+- contagens de dados e anomalias listadas acima;
+- nenhuma migration, backfill ou escrita funcional.
+
+**Classificação da Phase 0:** READY FOR PHASE 0 APPROVAL.

@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-set search_path=public,extensions;
+set local search_path = extensions, public, pg_temp;
 select plan(24);
 select has_table('platform_global_authorities');
 select has_table('platform_global_delegations');

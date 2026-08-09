@@ -1176,3 +1176,293 @@ Evidência aprovada: migration `0070`, commit funcional `a3221b4`, documentaçã
 TypeScript, lint, build e `git diff --check` verdes. A aprovação autoriza somente
 o fechamento Git da Phase 1 e a execução da Phase 2 sob o preflight obrigatório;
 não autoriza a Phase 3.
+
+## 27. Phase 2 — Constraints & persistent invariants — resultado
+
+**Status:** enforcement concluído e validado; aguardando aprovação final da Phase 2
+
+### 27.1 Fechamento da Phase 1 e baseline
+
+A Phase 1 foi integrada à `main` por merge `48d71fa`, após os commits aprovados
+`a3221b4` e `0d373a2` e o registro de aprovação `c30f01d`. A `main` foi publicada
+e confirmada igual a `origin/main`. A Phase 2 partiu dessa main integrada na
+branch `feat/mvp-pr1-phase2-persistent-invariants`, sem commit funcional adicional
+prévio.
+
+### 27.2 Preflight read-only
+
+O preflight local foi executado em transação `READ ONLY`, encerrada com
+`ROLLBACK`. O schema local estava aplicado até `0070` e continha:
+
+| Métrica | Local |
+| --- | ---: |
+| Companies | 0 |
+| Owners ativos | 0 |
+| Companies sem owner ativo | 0 |
+| Companies com múltiplos owners ativos | 0 |
+| People com `user_id` | 0 |
+| Grupos duplicados `(company_id,user_id)` em People | 0 |
+| People vinculada sem membership correspondente | 0 |
+| Membership ativa sem People correspondente | 0 |
+| Memberships `invited` | 0 |
+| Memberships inativas | 0 |
+| Auth users ativos em múltiplos tenants | 0 |
+| Referências órfãs de membership | 0 |
+| Referências órfãs de People | 0 |
+| Referências órfãs de invitation | 0 |
+
+Na primeira execução existia um projeto Supabase remoto legitimamente vinculado,
+mas a credencial de banco necessária não estava disponível. A conexão foi
+recusada antes de executar SQL e a documentação versionada não classificava o
+ambiente. Naquele momento:
+
+- staging: **UNKNOWN**;
+- produção: **UNKNOWN**;
+- remoto vinculado: acessibilidade de preflight **UNKNOWN**, sem query executada.
+
+Nenhuma contagem local é extrapolada para outro ambiente. Nenhum dado foi
+alterado e nenhum backfill foi executado.
+
+### 27.3 Classificação dos enforcements
+
+| Enforcement | Classificação | Resultado da Phase 2 |
+| --- | --- | --- |
+| FK People `(company,user)` → membership | SAFE NOW como `NOT VALID` | adicionada; protege linhas novas, sem varrer legado |
+| Proteção do último owner e administração de owner | SAFE NOW | adicionada na fronteira persistente com serialização por Company |
+| Unique parcial People `(company,user)` | SAFE NOW pelos dados | adicionada na migration 0072 |
+| Validar a FK People → membership | SAFE NOW pelos dados | validação incluída na migration 0072 |
+| Membership ativa → exatamente uma People | SAFE NOW pelos dados | constraint triggers diferíveis adicionados na migration 0072 |
+| Backfill People/membership | NOT APPLICABLE | nenhum dado alvo e nenhum backfill executado |
+| Transformar `company_members.status = invited` | NOT APPLICABLE | zero linhas em produção; nenhuma transformação executada |
+| Preferência de tenant | fase 7 / fora do escopo | não alterada |
+
+A interpretação normativa de I6 é: toda membership humana ativa deve possuir
+People coerente no mesmo tenant. O modelo atual de `company_members` referencia
+exclusivamente `auth.users`; não há identidade de sistema/service modelada como
+membership. Isso corresponde à alternativa A. O enforcement inverso ainda não foi
+materializado. O preflight posterior provou que os dados de produção não o
+bloqueiam, mas a implementação continua sujeita a aprovação e precisa tratar
+atomicamente criação, aceite, desativação e unlink.
+
+### 27.4 Migration 0071 e invariantes materializadas
+
+`0071_enforce_tenant_membership_invariants.sql` contém apenas enforcement seguro
+sem pressupor o conteúdo de ambientes desconhecidos:
+
+- FK composta tenant-aware de People para membership, `DEFERRABLE`, inicialmente
+  imediata e `NOT VALID`;
+- trigger restrito de ownership sobre `company_members`;
+- lock pessimista na Company apenas quando a mutação toca role owner;
+- somente owner ativo administra owner existente ou promove novo owner;
+- bootstrap do primeiro owner exige o próprio ator autenticado;
+- remoção, desativação ou rebaixamento que deixaria zero owners ativos falha com
+  `LAST_ACTIVE_OWNER_REQUIRED`;
+- `service_role` sem ator humano não consegue decidir ownership;
+- função `SECURITY DEFINER` com `search_path` fixo e execução direta revogada.
+
+A FK não transforma People em autoridade: ela apenas prova coerência física. Role
+e status continuam em membership. People sem `user_id` continua permitida; o
+mesmo Auth user em tenants diferentes continua estruturalmente permitido. Não
+houve alteração de RLS, grants de tabela, onboarding, Auth, Application Layer,
+tenant resolution ou convite legado.
+
+### 27.5 Backfill, invited e compatibilidade
+
+Nenhum `UPDATE`, `DELETE`, `INSERT ... SELECT` ou escolha de vínculo/owner foi
+adicionado. O estado legado `invited` não foi reinterpretado. O onboarding
+continua criando Company → owner membership → People na mesma RPC e satisfaz a
+FK em linhas novas. Criação de People sem Auth permanece compatível. A lifecycle
+de membership não-owner não foi alterada.
+
+### 27.6 Testes e concorrência
+
+O pgTAP específico possui 20 assertions para catálogo, FK tenant-aware, People
+sem Auth, cross-tenant linking, vínculo sem membership, owner/admin, último owner,
+executor técnico, lifecycle não-owner, ausência deliberada da unique People/Auth,
+`invited` legado e ausência de cutover RLS.
+
+O teste concorrente usou duas conexões e dois owners ativos tentando rebaixar-se
+simultaneamente. A primeira transação concluiu; a segunda esperou o lock da
+Company e falhou com `LAST_ACTIVE_OWNER_REQUIRED`. O estado final manteve
+exatamente um owner ativo. Os dados efêmeros locais foram removidos depois.
+
+### 27.7 Quality gates
+
+| Gate | Resultado | Classificação |
+| --- | --- | --- |
+| Reset local migrations 0001–0071 | passou | Phase 2 verde |
+| pgTAP específico | 20/20 | Phase 2 verde |
+| pgTAP completo | 284/284 em 10 arquivos | regressão verde |
+| Concorrência de último owner | 1 commit + 1 rejeição; 1 owner final | Phase 2 verde |
+| DB lint | `digest(text,unknown)` em `save_approval_request`/0046 | PREEXISTENTE |
+| TypeScript | passou após build | verde |
+| Lint | passou com quatro warnings conhecidos | PREEXISTENTES |
+| Build | passou; 30 páginas geradas | verde |
+| `git diff --check` | passou antes do registro documental | verde |
+
+A primeira execução de TypeScript ocorreu em paralelo ao build, enquanto `.next`
+era regenerado, e encontrou arquivos gerados ausentes. Repetida sequencialmente
+após o build, passou. É a mesma condição operacional já observada na Phase 1 e
+não um defeito funcional introduzido.
+
+O DB lint mantém exclusivamente a falha da migration 0046 já registrada na Phase
+1. Nenhum alerta aponta para 0070 ou 0071.
+
+### 27.8 Gates pendentes e decisão antes da Phase 3
+
+A Phase 2 não é declarada completa automaticamente. O preflight de produção
+removeu o bloqueio de dados e a migration 0072 materializou:
+
+1. unique parcial `(company_id,user_id)` de People;
+2. validação da FK People → membership;
+3. membership ativa → exatamente uma People conforme I6.
+
+Não há backfill ou reparação a executar sobre o estado observado. As migrations
+0071/0072 estão preparadas para rollout, mas não foram aplicadas manualmente em
+produção. A Phase 2 aguarda aprovação final do Product Architect e a execução de
+migrations continua responsabilidade humana. Não há autorização para Phase 3.
+
+**Classificação da Phase 2:** READY FOR PHASE 2 FINAL APPROVAL.
+
+### 27.9 Aprovação do safe subset e acesso aos ambientes alvo
+
+O Product Architect aprovou explicitamente o safe subset materializado na
+migration 0071: FK People → membership tenant-aware `NOT VALID`, enforcement de
+novas linhas, ownership guard, proteção concorrente do último owner e ausência
+deliberada de backfill, unique People/Auth prematura, transformação de `invited`
+ou cutover RLS. Essa aprovação não aprova a Phase 2 completa, não autoriza merge
+da branch e não autoriza a Phase 3.
+
+A auditoria de acesso encontrou:
+
+- um único projeto Supabase ativo e vinculado pela CLI;
+- nenhuma branch Supabase adicional que identifique staging;
+- URL pública e anon key no ambiente web, insuficientes para preflight agregado
+  sob RLS;
+- pooler/configuração de conexão local gerada pelo linkage, mas sem a credencial
+  de banco necessária;
+- nenhuma variável de ambiente de banco/Supabase administrativo disponível no
+  processo atual;
+- CI limitado a lint e build, sem secrets ou job de banco;
+- nenhuma configuração versionada de deploy, staging ou produção.
+
+A tentativa inicial de conexão ao banco remoto foi recusada antes da execução de SQL por
+ausência de senha. Nenhuma query remota, mutation, migration, backfill ou repair
+foi executada. Esse bloqueio operacional foi posteriormente resolvido pela role
+dedicada registrada em §27.11.
+
+### 27.10 Questão reservada para a Phase 3
+
+O owner invariant da migration 0071 deriva o ator humano por `auth.uid()`. A
+futura Trusted Persistence precisará transportar e revalidar confiavelmente:
+
+```text
+human actor → trusted server executor/service_role → persistence
+```
+
+preservando `ACTOR != EXECUTOR`. `service_role` nunca poderá adquirir autoridade
+própria de owner, e `actor_user_id` arbitrário vindo do client nunca poderá ser
+confiado. O mecanismo físico para comprovar a identidade humana na fronteira
+persistente será projetado e revisado na Phase 3, somente após autorização
+explícita. Nenhuma solução foi implementada nesta fase.
+
+### 27.11 Target preflight de produção
+
+O Dashboard Supabase confirmou o projeto `gzrrwyiqfbnyprkdeqvm` como
+**PRODUCTION**. Em `2026-08-09T14:54:10Z`, o preflight foi executado pela role
+dedicada `evol_preflight_readonly`. A conexão comprovou
+`default_transaction_read_only = on`; cada inspeção abriu explicitamente
+`BEGIN READ ONLY` e terminou em `ROLLBACK` ou, quando uma tentativa foi rejeitada
+por permissão, pelo encerramento da conexão abortada. Somente `SHOW`, `SELECT` e
+leitura de catálogo foram usados.
+
+| Métrica | Produção |
+| --- | ---: |
+| Companies | 0 |
+| Auth users | UNKNOWN — role sem `USAGE` efetivo no schema `auth` |
+| Memberships total/active/inactive/invited | 0 / 0 / 0 / 0 |
+| Owners ativos | 0 |
+| People total/com `user_id` | 0 / 0 |
+| Companies sem owner ativo | 0 |
+| Companies com múltiplos owners ativos | 0 |
+| Duplicidades `(company_id,user_id)` em People | 0 grupos / 0 linhas excedentes |
+| People vinculada sem membership same-tenant | 0 |
+| Membership ativa sem People same-tenant | 0 |
+| Membership ativa com múltiplas People | 0 |
+| People vinculada a membership não ativa | 0 |
+| Usuários com memberships ativas em múltiplos tenants | 0 |
+| Duplicidades de membership | 0 |
+| Referências órfãs para Company | 0 |
+| Owners ativos sem People | 0 |
+| Companies com inconsistência owner/People | 0 |
+
+As FKs existentes `company_members.user_id → auth.users.id` e
+`people.user_id → auth.users.id` estão validadas no catálogo. Como as tabelas
+tenant possuem zero linhas, não existe referência tenant-owned que possa estar
+órfã contra Auth, embora o total global de Auth users permaneça UNKNOWN.
+
+Produção ainda não contém as estruturas das migrations 0070 e 0071: invitation
+table, FK People → membership e unique People/Auth estão ausentes. Isso é estado
+de rollout, não anomalia de dados, e não autoriza aplicar migrations.
+
+Classificação após o preflight:
+
+- unique People/Auth `(company_id,user_id)`: **SAFE NOW** pelos dados;
+- aplicar e validar FK People → membership: **SAFE NOW** pelos dados;
+- membership humana ativa → exatamente uma People: **SAFE NOW** pelos dados;
+- backfills: **NOT APPLICABLE**;
+- `company_members.status = invited`: **NOT APPLICABLE**;
+- ownership guard da 0071: **SAFE NOW** pelos dados e já aprovado como safe subset;
+- anomalias de I1–I17 dependentes das tabelas tenant: nenhuma encontrada;
+- total de Auth users: **UNKNOWN**, sem impacto sobre o hard gate porque não há
+  Company, membership ou People em produção.
+
+O target preflight está completo para decisão do Product Architect. Nenhum
+enforcement adicional, migration, backfill, repair ou Phase 3 foi iniciado.
+
+### 27.12 Conclusão do enforcement da Phase 2
+
+Após aprovação explícita do target preflight, a migration
+`0072_complete_tenant_membership_invariants.sql` foi criada sem DML ou backfill.
+Ela:
+
+- adiciona a unique parcial `people_company_user_key` sobre
+  `(company_id,user_id)` quando `user_id is not null`;
+- valida a constraint `people_company_user_membership_fkey` introduzida na 0071;
+- adiciona constraint trigger diferível que exige exatamente uma People para o
+  estado final de toda membership humana `active`;
+- protege delete/unlink/reassociação de People quando deixaria uma membership
+  ativa sem vínculo;
+- permite membership + People e desativação + unlink na mesma transação;
+- mantém People sem Auth e o mesmo Auth user em tenants diferentes;
+- não usa e-mail como identidade, não altera role e não transforma `invited`;
+- preserva o ownership guard e não altera RLS ou grants de tabela.
+
+O modelo atual não possui membership de sistema: `company_members.user_id`
+referencia `auth.users.id`. Portanto, I6 é aplicado a todas as memberships
+persistidas; `service_role` continua executor técnico e não se torna ator humano.
+O transporte confiável de ator pela futura Trusted Persistence permanece questão
+reservada da Phase 3.
+
+#### Evidência de validação
+
+| Gate | Resultado | Classificação |
+| --- | --- | --- |
+| Reset local migrations 0001–0072 | passou | Phase 2 verde |
+| pgTAP específico da conclusão | 24/24 | Phase 2 verde |
+| pgTAP completo | 308/308 em 11 arquivos | regressão verde |
+| `create_company_with_owner` | owner + People coerentes; constraints imediatas passaram | regressão verde |
+| Concorrência de People/Auth | 1 insert + 1 violação unique; 1 vínculo final | Phase 2 verde |
+| Concorrência de último owner | 1 commit + 1 rejeição; 1 owner final | Phase 2 verde |
+| DB lint | `digest(text,unknown)` em `save_approval_request`/0046 | PREEXISTENTE |
+| TypeScript | passou | verde |
+| Lint | passou com quatro warnings conhecidos | PREEXISTENTES |
+| Build | passou; 30 páginas geradas | verde |
+| `git diff --check` | passou antes do registro documental | verde |
+
+As expectativas pgTAP das Phases 1 e 2 safe subset foram reconciliadas com o
+estado final: o índice lookup aditivo permanece, a FK agora está validada e a
+unique aprovada está presente. Nenhuma regra anterior foi removida.
+
+Nenhuma migration foi aplicada em produção. A Phase 2 aguarda aprovação final;
+Phase 3 continua não autorizada.

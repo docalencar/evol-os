@@ -1179,7 +1179,7 @@ não autoriza a Phase 3.
 
 ## 27. Phase 2 — Constraints & persistent invariants — resultado
 
-**Status:** execução parcial segura; BLOCKED BY TARGET PREFLIGHT
+**Status:** safe subset Approved; Phase 2 completa BLOCKED BY TARGET PREFLIGHT
 
 ### 27.1 Fechamento da Phase 1 e baseline
 
@@ -1327,3 +1327,47 @@ rollout desses enforcements adicionais permanece bloqueado. Não há autorizaç�
 para Phase 3.
 
 **Classificação da Phase 2:** BLOCKED BY TARGET PREFLIGHT.
+
+### 27.9 Aprovação do safe subset e acesso aos ambientes alvo
+
+O Product Architect aprovou explicitamente o safe subset materializado na
+migration 0071: FK People → membership tenant-aware `NOT VALID`, enforcement de
+novas linhas, ownership guard, proteção concorrente do último owner e ausência
+deliberada de backfill, unique People/Auth prematura, transformação de `invited`
+ou cutover RLS. Essa aprovação não aprova a Phase 2 completa, não autoriza merge
+da branch e não autoriza a Phase 3.
+
+A auditoria de acesso encontrou:
+
+- um único projeto Supabase ativo e vinculado pela CLI;
+- nenhuma branch Supabase adicional que identifique staging;
+- URL pública e anon key no ambiente web, insuficientes para preflight agregado
+  sob RLS;
+- pooler/configuração de conexão local gerada pelo linkage, mas sem a credencial
+  de banco necessária;
+- nenhuma variável de ambiente de banco/Supabase administrativo disponível no
+  processo atual;
+- CI limitado a lint e build, sem secrets ou job de banco;
+- nenhuma configuração versionada de deploy, staging ou produção.
+
+A tentativa de conexão ao banco remoto foi recusada antes da execução de SQL por
+ausência de senha. Nenhuma query remota, mutation, migration, backfill ou repair
+foi executada. Como o projeto vinculado não é classificado documentalmente como
+staging ou produção, ambos permanecem **UNKNOWN**. O preflight requer que o Human
+Reviewer disponibilize acesso SQL read-only ao ambiente correto ou execute as
+queries aprovadas e devolva as contagens.
+
+### 27.10 Questão reservada para a Phase 3
+
+O owner invariant da migration 0071 deriva o ator humano por `auth.uid()`. A
+futura Trusted Persistence precisará transportar e revalidar confiavelmente:
+
+```text
+human actor → trusted server executor/service_role → persistence
+```
+
+preservando `ACTOR != EXECUTOR`. `service_role` nunca poderá adquirir autoridade
+própria de owner, e `actor_user_id` arbitrário vindo do client nunca poderá ser
+confiado. O mecanismo físico para comprovar a identidade humana na fronteira
+persistente será projetado e revisado na Phase 3, somente após autorização
+explícita. Nenhuma solução foi implementada nesta fase.

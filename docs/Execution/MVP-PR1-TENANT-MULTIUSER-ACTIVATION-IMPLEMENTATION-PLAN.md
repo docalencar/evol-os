@@ -1003,7 +1003,7 @@ Gates obrigatórios antes de autorizar Phase 1:
 
 ## 26. Phase 1 — Additive persistence model — resultado
 
-**Status:** Executada e validada localmente; aguardando aprovação do Product Architect
+**Status:** Approved pelo Product Architect
 
 ### 26.1 Baseline e escopo efetivo
 
@@ -1169,4 +1169,10 @@ integralmente.
 
 Nenhuma Phase 2+ está autorizada por este registro.
 
-**Classificação da Phase 1:** READY FOR PHASE 1 APPROVAL.
+**Classificação da Phase 1:** APPROVED pelo Product Architect.
+
+Evidência aprovada: migration `0070`, commit funcional `a3221b4`, documentação
+`0d373a2`, pgTAP específico 41/41, pgTAP completo 264/264, reset 0001–0070,
+TypeScript, lint, build e `git diff --check` verdes. A aprovação autoriza somente
+o fechamento Git da Phase 1 e a execução da Phase 2 sob o preflight obrigatório;
+não autoriza a Phase 3.

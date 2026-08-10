@@ -67,6 +67,39 @@ test("maps idempotent retry", async () => {
   )
 })
 
+test("maps enriched resend context and rejects the legacy incomplete result", async () => {
+  const enrichedResult = {
+    invitationId: "invitation-1",
+    status: "pending",
+    generation: 2,
+    destinationEmail: "member@example.com",
+    intendedRole: "employee",
+    expiresAt: "2026-08-16T20:00:00Z",
+  } as const
+  const database = new RpcClientMock([
+    success(enrichedResult, "idempotent_retry"),
+    success({ invitationId: "invitation-1", status: "pending", generation: 2 }),
+  ])
+  const persistence = createSupabaseTenantAccessTrustedPersistence(database)
+  const intent = {
+    ...context,
+    companyId: "company-1",
+    invitationId: "invitation-1",
+    expectedGeneration: 1,
+    tokenDigestHex: "digest-2",
+  }
+
+  assert.deepEqual(await persistence.resendInvitation(intent), {
+    status: "idempotent_retry",
+    operationId: "operation-1",
+    result: enrichedResult,
+  })
+  assert.deepEqual(await persistence.resendInvitation(intent), {
+    status: "unexpected_persistence_failure",
+    code: "TENANT_ACCESS_INVALID_RESULT",
+  })
+})
+
 test("maps conflict, denied and known failure without exposing SQL text", async () => {
   const database = new RpcClientMock([
     rpcResult({ status: "conflict", operationId: "operation-1", code: "TENANT_CONFLICT" }),
@@ -148,7 +181,14 @@ test("fails closed on thrown adapter error and malformed result", async () => {
 test("maps all remaining RPC parameters including ownership expected state", async () => {
   const database = new RpcClientMock([
     success({ membershipId: "membership-1", role: "manager" }),
-    success({ invitationId: "invitation-1", status: "pending", generation: 2 }),
+    success({
+      invitationId: "invitation-1",
+      status: "pending",
+      generation: 2,
+      destinationEmail: "member@example.com",
+      intendedRole: "employee",
+      expiresAt: "2026-08-16T20:00:00Z",
+    }),
     success({ invitationId: "invitation-1", status: "revoked" }),
     success({ membershipId: "membership-1", status: "inactive", personId: null }),
     success({ targetMembershipId: "membership-2", targetRole: "owner", actorDemoted: true }),

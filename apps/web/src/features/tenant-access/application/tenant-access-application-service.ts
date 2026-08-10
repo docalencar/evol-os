@@ -8,6 +8,7 @@ import type {
   MembershipDeactivationPersistenceResult,
   MembershipRolePersistenceResult,
   OwnershipTransferPersistenceResult,
+  ResentInvitationPersistenceResult,
   ResendTenantInvitationIntent,
   RevokeTenantInvitationIntent,
   TenantAccessApplicationResult,
@@ -26,7 +27,7 @@ export class TenantAccessApplicationService {
 
   resendInvitation(
     intent: ResendTenantInvitationIntent,
-  ): Promise<TenantAccessApplicationResult<InvitationPersistenceResult>> {
+  ): Promise<TenantAccessApplicationResult<ResentInvitationPersistenceResult>> {
     return this.persistence.resendInvitation(intent)
   }
 

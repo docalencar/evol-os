@@ -60,6 +60,15 @@ export type InvitationPersistenceResult = Readonly<{
   expiresAt?: string
 }>
 
+export type ResentInvitationPersistenceResult = Readonly<{
+  invitationId: string
+  status: "pending"
+  generation: number
+  destinationEmail: string
+  intendedRole: TenantMembershipRole
+  expiresAt: string
+}>
+
 export type InvitationAcceptancePersistenceResult = Readonly<{
   invitationId: string
   membershipId: string

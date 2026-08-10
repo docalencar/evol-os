@@ -1,6 +1,7 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js"
 
 import { isCorporateRole, type CorporateRole } from "./roles"
+import { resolveActiveTenantMemberships } from "./tenant-resolution"
 
 export type CurrentUserContext = Readonly<{
   userId: string
@@ -10,7 +11,11 @@ export type CurrentUserContext = Readonly<{
 
 export class CurrentUserContextError extends Error {
   constructor(
-    readonly code: "unauthenticated" | "membership_not_found" | "invalid_role",
+    readonly code:
+      | "unauthenticated"
+      | "membership_not_found"
+      | "tenant_selection_required"
+      | "invalid_role",
     message: string
   ) {
     super(message)
@@ -21,6 +26,7 @@ export class CurrentUserContextError extends Error {
 type MembershipRow = Readonly<{
   company_id: string
   role: string
+  status: "active" | "inactive" | "invited"
 }>
 
 export async function loadCurrentUserContext(
@@ -38,11 +44,8 @@ export async function loadCurrentUserContext(
 
   const { data, error } = await supabase
     .from("company_members")
-    .select("company_id, role")
+    .select("company_id, role, status")
     .eq("user_id", user.id)
-    .eq("status", "active")
-    .limit(1)
-    .maybeSingle()
 
   if (error) {
     throw new CurrentUserContextError(
@@ -51,24 +54,45 @@ export async function loadCurrentUserContext(
     )
   }
 
-  const membership = data as MembershipRow | null
-  if (!membership) {
-    throw new CurrentUserContextError(
-      "membership_not_found",
-      "O usuário não possui vínculo ativo com uma empresa."
-    )
-  }
+  const memberships = (data ?? []) as MembershipRow[]
 
-  if (!isCorporateRole(membership.role)) {
+  if (
+    memberships.some(
+      (membership) =>
+        membership.status === "active" && !isCorporateRole(membership.role)
+    )
+  ) {
     throw new CurrentUserContextError(
       "invalid_role",
       "O vínculo do usuário possui um papel corporativo inválido."
     )
   }
 
+  const resolution = resolveActiveTenantMemberships(
+    memberships.map((membership) => ({
+      companyId: membership.company_id,
+      role: membership.role as CorporateRole,
+      status: membership.status,
+    }))
+  )
+
+  if (resolution.status === "no_membership") {
+    throw new CurrentUserContextError(
+      "membership_not_found",
+      "O usuário não possui vínculo ativo com uma empresa."
+    )
+  }
+
+  if (resolution.status === "tenant_selection_required") {
+    throw new CurrentUserContextError(
+      "tenant_selection_required",
+      "O usuário precisa selecionar uma empresa antes de continuar."
+    )
+  }
+
   return Object.freeze({
     userId: user.id,
-    companyId: membership.company_id,
-    role: membership.role,
+    companyId: resolution.companyId,
+    role: resolution.membership.role,
   })
 }

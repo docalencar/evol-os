@@ -22,6 +22,12 @@ export {
 export { resolvePermissions, roleHasPermission } from "./permission-resolver"
 export { CORPORATE_ROLES, isCorporateRole, type CorporateRole } from "./roles"
 export {
+  resolveActiveTenantMemberships,
+  type ActiveTenantMembership,
+  type TenantMembershipCandidate,
+  type TenantResolution,
+} from "./tenant-resolution"
+export {
   SecureAdministrativeReadService,
   isAdministrativeRole,
   type AdministrativeReadGateway,

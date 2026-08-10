@@ -60,7 +60,6 @@ export async function getCurrentCompanyContext() {
     .select("*")
     .eq("company_id", company.id)
     .eq("user_id", user.id)
-    .limit(1)
     .maybeSingle()
 
   if (personError) {

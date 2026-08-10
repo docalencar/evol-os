@@ -4,6 +4,7 @@ import type {
   MembershipDeactivationPersistenceResult,
   MembershipRolePersistenceResult,
   OwnershipTransferPersistenceResult,
+  ResentInvitationPersistenceResult,
   TenantAccessApplicationResult,
   TenantAccessStableErrorCode,
 } from "../application/contracts"
@@ -92,9 +93,11 @@ function mapEnvelope<T>(data: unknown, validResult: (value: unknown) => value is
 const isIssuedInvitation = (value: unknown): value is InvitationPersistenceResult =>
   isRecord(value) && typeof value.invitationId === "string" && value.status === "pending" &&
   value.generation === 1 && typeof value.expiresAt === "string"
-const isResentInvitation = (value: unknown): value is InvitationPersistenceResult =>
+const isResentInvitation = (value: unknown): value is ResentInvitationPersistenceResult =>
   isRecord(value) && typeof value.invitationId === "string" && value.status === "pending" &&
-  typeof value.generation === "number"
+  typeof value.generation === "number" && typeof value.destinationEmail === "string" &&
+  ["owner", "admin", "hr", "manager", "employee"].includes(String(value.intendedRole)) &&
+  typeof value.expiresAt === "string"
 const isRevokedInvitation = (value: unknown): value is InvitationPersistenceResult =>
   isRecord(value) && typeof value.invitationId === "string" && value.status === "revoked"
 const isAcceptance = (value: unknown): value is InvitationAcceptancePersistenceResult =>

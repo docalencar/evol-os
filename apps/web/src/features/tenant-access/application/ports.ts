@@ -8,6 +8,7 @@ import type {
   MembershipDeactivationPersistenceResult,
   MembershipRolePersistenceResult,
   OwnershipTransferPersistenceResult,
+  ResentInvitationPersistenceResult,
   ResendTenantInvitationIntent,
   RevokeTenantInvitationIntent,
   TenantAccessApplicationResult,
@@ -16,7 +17,7 @@ import type {
 
 export interface TenantAccessTrustedPersistence {
   issueInvitation(intent: IssueTenantInvitationIntent): Promise<TenantAccessApplicationResult<InvitationPersistenceResult>>
-  resendInvitation(intent: ResendTenantInvitationIntent): Promise<TenantAccessApplicationResult<InvitationPersistenceResult>>
+  resendInvitation(intent: ResendTenantInvitationIntent): Promise<TenantAccessApplicationResult<ResentInvitationPersistenceResult>>
   revokeInvitation(intent: RevokeTenantInvitationIntent): Promise<TenantAccessApplicationResult<InvitationPersistenceResult>>
   acceptInvitation(intent: AcceptTenantInvitationIntent): Promise<TenantAccessApplicationResult<InvitationAcceptancePersistenceResult>>
   changeMembershipRole(intent: ChangeTenantMembershipRoleIntent): Promise<TenantAccessApplicationResult<MembershipRolePersistenceResult>>

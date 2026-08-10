@@ -159,9 +159,9 @@ export function JobOpeningTable({
           render: (jobOpening) => (
             <div className="flex items-center gap-2">
               <Button
-                type="button"
                 variant="outline"
                 size="sm"
+                nativeButton={false}
                 render={
                   <Link
                     href={`/app/recruitment/job-openings/${jobOpening.id}`}

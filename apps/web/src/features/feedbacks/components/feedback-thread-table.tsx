@@ -150,6 +150,7 @@ export function FeedbackThreadTable({
             <Button
               variant="outline"
               size="sm"
+              nativeButton={false}
               render={
                 <Link
                   href={`/app/feedbacks/${thread.id}`}

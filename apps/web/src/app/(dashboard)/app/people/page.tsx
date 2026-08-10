@@ -56,6 +56,7 @@ export default async function PeoplePage() {
           <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="secondary"
+              nativeButton={false}
               render={
                 <Link href="/app/people/import" />
               }

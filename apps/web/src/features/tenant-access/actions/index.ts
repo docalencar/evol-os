@@ -8,3 +8,8 @@ export {
   type ResendCompanyMemberInvitationInput,
   type ResendCompanyMemberInvitationResult,
 } from "./resend-company-member-invitation-action"
+export {
+  revokeCompanyMemberInvitationAction,
+  type RevokeCompanyMemberInvitationInput,
+  type RevokeCompanyMemberInvitationResult,
+} from "./revoke-company-member-invitation-action"

@@ -23,7 +23,7 @@ export function TimelineHeader({ workspaceId, includeArchived = false }: Timelin
       </div>
 
       <div className="flex items-center gap-3">
-      <Button variant="outline" render={<Link href={`/app/organization/planning/timeline?workspaceId=${workspaceId}${includeArchived ? "" : "&includeArchived=true"}`} />}>
+      <Button variant="outline" nativeButton={false} render={<Link href={`/app/organization/planning/timeline?workspaceId=${workspaceId}${includeArchived ? "" : "&includeArchived=true"}`} />}>
         {includeArchived ? "Ocultar arquivados" : "Ver arquivados"}
       </Button>
       <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm">

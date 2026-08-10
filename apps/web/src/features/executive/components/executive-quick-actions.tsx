@@ -45,6 +45,7 @@ export function ExecutiveQuickActions() {
           <Button
             key={action.href}
             variant="outline"
+            nativeButton={false}
             render={<Link href={action.href} />}
           >
             {action.label}

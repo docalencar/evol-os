@@ -492,6 +492,7 @@ export function EmployeeTable({
                 <Button
                   variant="secondary"
                   size="sm"
+                  nativeButton={false}
                   render={
                     <Link
                       href={`/app/people/${employee.id}`}

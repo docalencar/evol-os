@@ -33,8 +33,8 @@ export async function createEmployeeRepository() {
         .from("people")
         .select(`
           *,
-          teams!people_team_id_fkey(name),
-          positions(name)
+          teams!people_team_company_fkey(name),
+          positions!people_position_company_fkey(name)
         `)
         .eq(...scopeCompany(companyId))
         .neq("status", "terminated")
@@ -46,8 +46,8 @@ export async function createEmployeeRepository() {
         .from("people")
         .select(`
           *,
-          teams!people_team_id_fkey(name),
-          positions(name)
+          teams!people_team_company_fkey(name),
+          positions!people_position_company_fkey(name)
         `)
         .eq(...scopeCompany(companyId))
         .eq("id", employeeId)

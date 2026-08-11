@@ -1,14 +1,23 @@
-import Link from "next/link"
-
 import { buttonVariants } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
 import type { InvitationEntryState } from "../presentation/present-invitation-entry-state"
 
-// Presentational only. Receives a coarse state and never any invitation data or
-// secret. It does not trigger acceptance in this PR.
-export function InvitationEntryCard({ state }: { state: InvitationEntryState }) {
+type ContinuationFormAction = (formData: FormData) => void | Promise<void>
+
+// Presentational only. Receives a coarse state and, for the authentication step,
+// two server-action references (bound server-side). It never receives any
+// invitation data or secret, and does not trigger acceptance.
+export function InvitationEntryCard({
+  state,
+  loginAction,
+  signupAction,
+}: {
+  state: InvitationEntryState
+  loginAction: ContinuationFormAction
+  signupAction: ContinuationFormAction
+}) {
   if (state === "invalid") {
     return (
       <Card className="space-y-2">
@@ -35,15 +44,25 @@ export function InvitationEntryCard({ state }: { state: InvitationEntryState }) 
           </p>
         </div>
         <div className="flex gap-2">
-          <Link href="/login" className={cn(buttonVariants({ variant: "default" }))}>
-            Entrar
-          </Link>
-          <Link href="/signup" className={cn(buttonVariants({ variant: "outline" }))}>
-            Criar conta
-          </Link>
+          <form action={loginAction}>
+            <button
+              type="submit"
+              className={cn(buttonVariants({ variant: "default" }))}
+            >
+              Entrar
+            </button>
+          </form>
+          <form action={signupAction}>
+            <button
+              type="submit"
+              className={cn(buttonVariants({ variant: "outline" }))}
+            >
+              Criar conta
+            </button>
+          </form>
         </div>
         <p className="text-xs text-slate-500">
-          Após autenticar, volte ao link original do convite.
+          Após autenticar, você volta automaticamente para este convite.
         </p>
       </Card>
     )

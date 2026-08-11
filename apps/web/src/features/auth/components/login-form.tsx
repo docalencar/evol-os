@@ -31,7 +31,8 @@ export function LoginForm() {
       return;
     }
 
-    router.push("/app");
+    // Resume any pending invitation continuation (falls back to /app).
+    router.push("/auth/continue");
     router.refresh();
   }
 

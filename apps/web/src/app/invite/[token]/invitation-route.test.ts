@@ -35,8 +35,12 @@ test("route does not use tenant membership resolution or privileged access", () 
   assert.doesNotMatch(routeSource, /service_role/)
 })
 
-test("route hands only the coarse state to the card — never the token", () => {
-  assert.match(routeSource, /<InvitationEntryCard\s+state=\{state\}\s*\/>/)
+test("route renders the card with coarse state and bound continuation actions — never a token prop", () => {
+  assert.match(routeSource, /<InvitationEntryCard/)
+  assert.match(routeSource, /state=\{state\}/)
+  assert.match(routeSource, /loginAction=\{loginAction\}/)
+  assert.match(routeSource, /signupAction=\{signupAction\}/)
+  assert.doesNotMatch(routeSource, /token=\{/)
 })
 
 test("route never forwards the token to query params, storage, cookies or logs", () => {
@@ -53,9 +57,11 @@ test("card exposes no token, tenant, email, role or invitation identity", () => 
   assert.doesNotMatch(cardSource, /acceptCompanyMemberInvitationAction/)
 })
 
-test("card login and signup links are plain and carry no secret or return handoff", () => {
-  assert.match(cardSource, /href="\/login"/)
-  assert.match(cardSource, /href="\/signup"/)
+test("card auth handoff uses bound server-action forms, not token-bearing links", () => {
+  assert.match(cardSource, /action=\{loginAction\}/)
+  assert.match(cardSource, /action=\{signupAction\}/)
+  assert.doesNotMatch(cardSource, /href="\/login"/)
+  assert.doesNotMatch(cardSource, /href="\/signup"/)
   assert.doesNotMatch(cardSource, /returnTo|callbackUrl|[?&]next=|\?token=/)
 })
 

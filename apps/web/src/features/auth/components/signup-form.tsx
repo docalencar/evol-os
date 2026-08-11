@@ -27,6 +27,9 @@ export function SignupForm() {
       email,
       password,
       options: {
+        // Fixed internal callback. Carries no invitation token or return path;
+        // the same-browser continuation cookie resolves the invite afterwards.
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
         data: {
           full_name: name
         }
@@ -40,7 +43,8 @@ export function SignupForm() {
     }
 
     if (data.session) {
-      router.push("/app");
+      // Resume any pending invitation continuation (falls back to /app).
+      router.push("/auth/continue");
       router.refresh();
       return;
     }

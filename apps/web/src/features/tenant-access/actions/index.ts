@@ -13,3 +13,8 @@ export {
   type RevokeCompanyMemberInvitationInput,
   type RevokeCompanyMemberInvitationResult,
 } from "./revoke-company-member-invitation-action"
+export {
+  acceptCompanyMemberInvitationAction,
+  type AcceptCompanyMemberInvitationInput,
+  type AcceptCompanyMemberInvitationResult,
+} from "./accept-company-member-invitation-action"

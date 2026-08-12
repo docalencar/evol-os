@@ -40,6 +40,7 @@ test("route renders the card with coarse state and bound continuation actions â€
   assert.match(routeSource, /state=\{state\}/)
   assert.match(routeSource, /loginAction=\{loginAction\}/)
   assert.match(routeSource, /signupAction=\{signupAction\}/)
+  assert.match(routeSource, /acceptAction=\{acceptAction\}/)
   assert.doesNotMatch(routeSource, /token=\{/)
 })
 

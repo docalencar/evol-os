@@ -3,20 +3,28 @@ import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
 import type { InvitationEntryState } from "../presentation/present-invitation-entry-state"
+import type { AcceptInvitationFormState } from "../presentation/present-invitation-acceptance-result"
+import { InvitationAcceptPanel } from "./invitation-accept-panel"
 
 type ContinuationFormAction = (formData: FormData) => void | Promise<void>
+type AcceptFormAction = (
+  previousState: AcceptInvitationFormState,
+  formData: FormData,
+) => Promise<AcceptInvitationFormState>
 
-// Presentational only. Receives a coarse state and, for the authentication step,
-// two server-action references (bound server-side). It never receives any
-// invitation data or secret, and does not trigger acceptance.
+// Presentational only. Receives a coarse state and server-action references
+// (bound server-side). It never receives any invitation data or secret. The
+// functional acceptance lives in a client panel and runs only on human submit.
 export function InvitationEntryCard({
   state,
   loginAction,
   signupAction,
+  acceptAction,
 }: {
   state: InvitationEntryState
   loginAction: ContinuationFormAction
   signupAction: ContinuationFormAction
+  acceptAction: AcceptFormAction
 }) {
   if (state === "invalid") {
     return (
@@ -78,13 +86,7 @@ export function InvitationEntryCard({
           Você está autenticado e pode continuar com este convite.
         </p>
       </div>
-      <button
-        type="button"
-        disabled
-        className={cn(buttonVariants({ variant: "default" }))}
-      >
-        Aceite será habilitado no próximo passo
-      </button>
+      <InvitationAcceptPanel acceptAction={acceptAction} />
     </Card>
   )
 }

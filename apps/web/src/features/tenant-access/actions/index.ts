@@ -18,3 +18,4 @@ export {
   type AcceptCompanyMemberInvitationInput,
   type AcceptCompanyMemberInvitationResult,
 } from "./accept-company-member-invitation-action"
+export { acceptInvitationFormAction } from "./accept-invitation-form-action"

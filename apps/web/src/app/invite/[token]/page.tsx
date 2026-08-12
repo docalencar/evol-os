@@ -1,5 +1,6 @@
 import {
   InvitationEntryCard,
+  acceptInvitationFormAction,
   presentInvitationEntryState,
 } from "@/features/tenant-access"
 // Server-only format guard is intentionally kept out of the general feature
@@ -35,6 +36,9 @@ export default async function InvitationEntryPage({
 
   const loginAction = startInvitationContinuationAction.bind(null, token, "/login")
   const signupAction = startInvitationContinuationAction.bind(null, token, "/signup")
+  // Token is bound server-side (Next encrypts bound action args); the client
+  // panel receives only this action reference, never the token.
+  const acceptAction = acceptInvitationFormAction.bind(null, token)
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-evol-surface px-4">
@@ -43,6 +47,7 @@ export default async function InvitationEntryPage({
           state={state}
           loginAction={loginAction}
           signupAction={signupAction}
+          acceptAction={acceptAction}
         />
       </div>
     </main>

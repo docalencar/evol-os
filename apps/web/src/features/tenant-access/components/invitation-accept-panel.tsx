@@ -1,5 +1,6 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { useActionState } from "react"
 
 import { buttonVariants } from "@/components/ui/button"
@@ -11,6 +12,11 @@ import {
 } from "../presentation/present-invitation-acceptance-result"
 
 const INITIAL_STATE: AcceptInvitationFormState = { status: "idle" }
+
+// Fixed internal destination after a successful acceptance. The server-side
+// tenant resolver derives the company from the newly-created active membership;
+// the browser never chooses a tenant and carries no secret or identifier here.
+const POST_ACCEPT_DESTINATION = "/app"
 
 // Interactive acceptance. Receives ONLY the server-bound action reference; it
 // has no access to any invitation secret or tenant authority. Acceptance runs
@@ -25,10 +31,19 @@ export function InvitationAcceptPanel({
     formData: FormData,
   ) => Promise<AcceptInvitationFormState>
 }) {
+  const router = useRouter()
   const [state, formAction, pending] = useActionState(acceptAction, INITIAL_STATE)
   const view = presentAcceptanceResult(state)
 
   if (state.status === "invitation_accepted") {
+    // Human-triggered navigation only. router.refresh() invalidates any stale
+    // client Router Cache for /app (e.g. a page previously fetched before this
+    // membership existed) so the resolver sees the new active membership.
+    const handleContinue = () => {
+      router.refresh()
+      router.push(POST_ACCEPT_DESTINATION)
+    }
+
     return (
       <div className="space-y-3" role="status">
         <div className="space-y-1">
@@ -37,10 +52,10 @@ export function InvitationAcceptPanel({
         </div>
         <button
           type="button"
-          disabled
+          onClick={handleContinue}
           className={cn(buttonVariants({ variant: "default" }))}
         >
-          Continuar
+          Continuar para o Evol OS
         </button>
       </div>
     )

@@ -19,11 +19,11 @@ test("accept panel is a client component that only receives a bound action refer
   assert.doesNotMatch(panel, /rawToken|tokenDigest|\bdigest\b|companyId|personId|targetEmail|intendedRole/i)
 })
 
-test("accept panel requires a human submit, guards double-submit and never auto-runs or navigates", () => {
+test("accept panel requires a human submit, guards double-submit and never auto-runs", () => {
   assert.match(panel, /<form action=\{formAction\}/)
   assert.match(panel, /disabled=\{pending\}/)
+  // No effect-driven acceptance or navigation on render.
   assert.doesNotMatch(panel, /useEffect/)
-  assert.doesNotMatch(panel, /redirect\(|router\.(push|replace)/)
 })
 
 test("accept panel does not call the RPC, service_role or protected tables directly", () => {

@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation"
 
 import { Card } from "@/components/ui/card"
 import { loadTenantSelectionOptions } from "@/features/authorization/load-tenant-selection-options"
+import { TenantSelectionForm } from "@/features/tenant-access"
 import { isTenantPreferenceResolutionEnabled } from "@/features/tenant-access/preferences/tenant-preference-flag"
 import { createClient } from "@/lib/supabase/supabase/server"
 
@@ -9,7 +10,8 @@ import { createClient } from "@/lib/supabase/supabase/server"
 // a user has multiple active memberships and no valid preference (flag ON). It
 // uses its own auth-only membership loader (not the shared company-context
 // resolver) so it can never redirect back to itself, and it chooses no tenant
-// implicitly. The interactive selector is deferred to Phase 9.
+// implicitly. Phase 9 PR 9A connects this safe state to the existing trusted
+// tenant-selection Action without moving any authority into the browser.
 export default async function SelectCompanyPage() {
   if (!isTenantPreferenceResolutionEnabled()) {
     notFound()
@@ -44,20 +46,7 @@ export default async function SelectCompanyPage() {
             </p>
           </div>
 
-          <ul className="space-y-2">
-            {result.options.map((option) => (
-              <li
-                key={option.companyId}
-                className="rounded border border-slate-200 px-3 py-2 text-sm text-slate-900"
-              >
-                {option.companyName}
-              </li>
-            ))}
-          </ul>
-
-          <p className="text-xs text-slate-500">
-            A seleção de empresa será habilitada em breve.
-          </p>
+          <TenantSelectionForm options={result.options} />
         </Card>
       </div>
     </main>

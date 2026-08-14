@@ -66,20 +66,19 @@ O PROJECT_STATE.md é uma fotografia oficial do estado do programa. Ele não cri
 | ADR-0013 — Platform Global Authority and Trusted Execution | ✅ Accepted e implementada na PR 3B |
 | ADR-0014 — Deterministic Development Template Application and Snapshots | ✅ Accepted e implementada; PR 3C encerrada em `5c2675b` |
 | ADR-0015 — Tenant Multiuser Activation Architecture | ✅ Accepted; MVP-PR1 em andamento |
+| ADR-0016 — Invitation Delivery Architecture | ✅ Accepted e implementada nas Phases 5/6 |
 
 O status normativo e o conteúdo completo permanecem no
 [índice de ADRs](./adr/README.md).
 
 ### Roadmap e execução
 
-- [ROADMAP](./ROADMAP.md): Fundação confiável continua sendo a prioridade.
-- [NEXT_STEPS](./NEXT_STEPS.md): obter autorização explícita para a Phase 5 do
-  MVP-PR1 e fechar previamente seus gates de token e entrega de e-mail.
+- [ROADMAP](./ROADMAP.md): Phase 9 Multiuser UI/UX é a execução vigente.
+- [NEXT_STEPS](./NEXT_STEPS.md): PR 9A — Functional Tenant Selection.
 - [MVP Plan](./MVP_PLAN.md): jornada completa até o MVP.
 - [EPICS](./EPICS.md): estado funcional das capacidades.
 - [Implementation Plan do MVP-PR1](./Execution/MVP-PR1-TENANT-MULTIUSER-ACTIVATION-IMPLEMENTATION-PLAN.md):
-  Phases 1, 2 e 3 concluídas; Phase 4 encerrada como Complete by Prior Delivery;
-  Phase 5 não iniciada.
+  Phases 1–8 concluídas; Phase 9 iniciada pela PR 9A.
 
 ## 5. Programa ADR-0012
 
@@ -93,71 +92,30 @@ O status normativo e o conteúdo completo permanecem no
 
 ## 6. Próxima etapa
 
-A PR 3C foi concluída historicamente no merge `5c2675b` e não é mais o gate
-ativo. Seus contratos legados continuam preservados por compatibilidade, sem
-autorizar cleanup automático.
+A execução vigente é a Phase 9 — Multiuser UI/UX. As Phases 1–8 estão
+concluídas: a fundação persistente, Trusted Persistence, delivery/aceite,
+preferência de tenant e o cutover de autorização já estão incorporados. A Phase
+8 foi encerrada pela caracterização 8A e pelas migrations 0077/0078.
 
-O gate ativo é o MVP-PR1 — Tenant Multiuser Activation, regido pela PD-019 e
-ADR-0015. A Phase 1 — Persistence Foundation foi incorporada pela migration 0070.
-A Phase 2 — Persistent Invariants foi incorporada pelas migrations 0071/0072 e
-merge `dbf592c`. A migration 0073 corrigiu de forma forward-only a resolução de
-extensões e foi incorporada pelo merge `f77b229`.
+O recorte ativo é a PR 9A — Functional Tenant Selection. Ela conecta a tela
+segura já existente em `/select-company` à Action e à RPC
+`select_active_tenant_v1`, sem criar nova autoridade no cliente. O próximo
+recorte, após aprovação da 9A, é a PR 9B — tenant switcher e resolução
+consistente da preferência ativa nas Actions multiempresa.
 
-Um novo projeto Supabase canônico e vazio foi reconstruído exclusivamente pela
-cadeia `0001`–`0073`, com migration history Local/Remote alinhado. O projeto
-antigo divergente deixou de ser autoridade canônica. Fresh reset local passou;
-pgTAP local passou 312/312; a validação remota direcionada da 0073 passou. A suíte
-pgTAP remota completa permanece inconclusiva por privilégios da role técnica
-`cli_login_postgres`, sem regressão funcional confirmada e sem grant permanente.
+Resumo de encerramento das fases anteriores:
 
-A Phase 3 — Trusted Persistence / Actor != Executor foi concluída e incorporada
-à `main` pelo merge `3559a9b`. A migration 0074 foi aplicada ao projeto Supabase
-canônico e está alinhada Local/Remote. Ela materializa sete RPCs v1 estreitas,
-`SECURITY DEFINER`, com `search_path = public, pg_temp`, owner PostgreSQL e
-`EXECUTE` funcional somente para `authenticated`; `anon`, `service_role` e
-`PUBLIC` não possuem `EXECUTE`. O executor PostgreSQL `postgres` decorre do
-ownership/superuser e não é caminho funcional da aplicação.
+- Phases 1/2: migrations 0070–0072 e invariantes persistentes;
+- Phase 3: migration 0074, sete RPCs confiáveis e `ACTOR != EXECUTOR`;
+- Phase 4: **Complete by Prior Delivery**;
+- Phase 5: emissão, reenvio, revogação, token lifecycle e delivery;
+- Phase 6: aceite, integração Auth e continuidade login/signup;
+- Phase 7: resolver determinístico, preferência persistida e Action de seleção;
+- Phase 8: caracterização de autorização e hardening 0077/0078.
 
-O caminho aprovado preserva `ACTOR != EXECUTOR`: a autoridade humana é derivada
-exclusivamente de `auth.uid()`, o tenant é revalidado na fronteira persistente e
-nenhuma intenção aceita `actorUserId` como autoridade. Idempotência, fingerprint,
-auditoria, owner invitation e ownership são transacionais; locks possuem ordem
-determinística. O serviço mínimo de aplicação, port, adapter Supabase autenticado
-e Composition Root server-only foram incorporados sem consumidor funcional e sem
-uso de `service_role`.
-
-Fresh reset `0001`–`0074`, pgTAP local 362/362, Tenant Access pgTAP 50/50,
-testes TypeScript Tenant Access 8/8, regressões relevantes 18/18, DB lint local,
-TypeScript, lint, build e quatro cenários reais de concorrência passaram. O lint
-teve quatro warnings preexistentes fora do escopo. O pgTAP/lint remoto completo
-continua limitado pelo schema `extensions` e pela role técnica
-`cli_login_postgres`; isso não foi introduzido pela 0074, não indica falha nas
-RPCs Tenant Access e não autoriza grant permanente.
-
-A Phase 4 — Application Layer — foi formalmente encerrada como **Complete by
-Prior Delivery**. Ela não foi executada como fase autônoma: sua fundação
-estrutural foi antecipada de maneira controlada durante a Phase 3 para validar a
-Trusted Persistence ponta a ponta. Intents, results, port, Application Service,
-adapter autenticado, Composition Root server-only e testes já estão integrados.
-Não existe dívida que justifique criar uma segunda Application Layer.
-
-Nenhum consumer funcional foi conectado. Token lifecycle, entrega e Actions de
-issue/resend/revoke permanecem na Phase 5; aceite e Auth integration, na Phase 6;
-resolver, preferência e seleção/troca de tenant, na Phase 7. RLS cutover, UI,
-E2E e observabilidade permanecem em suas fases posteriores.
-
-O próximo gate é a **Phase 5 — Invitation issuance, revocation & resend**, ainda
-não iniciada nem autorizada. Antes de implementação, exige autorização explícita
-do Product Architect e confirmação dos gates operacionais de token e e-mail.
-
-Antes desse gate, devem ser lidos:
-
-- [MASTER_PROMPT](./Prompts/MASTER_PROMPT.md);
-- [PD-019](./Product/PRODUCT_DECISIONS.md);
-- [ADR-0015](./adr/0015-tenant-multiuser-activation-architecture.md);
-- [Discovery do MVP-PR1](./Execution/MVP-PR1-TENANT-MULTIUSER-ACTIVATION-DISCOVERY.md);
-- [Implementation Plan do MVP-PR1](./Execution/MVP-PR1-TENANT-MULTIUSER-ACTIVATION-IMPLEMENTATION-PLAN.md);
-- [ROADMAP](./ROADMAP.md) e [NEXT_STEPS](./NEXT_STEPS.md).
+As fronteiras vigentes continuam `SECURITY DEFINER`, `auth.uid()` como ator
+humano, tenant revalidado no banco e nenhuma operação humana baseada em
+`service_role`.
 
 ## 7. Arquitetura consolidada
 

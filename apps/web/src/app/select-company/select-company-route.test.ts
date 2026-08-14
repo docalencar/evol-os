@@ -25,8 +25,10 @@ test("route routes no_membership -> onboarding, single -> /app, and never picks 
   assert.doesNotMatch(page, /options\[0\]|\.find\(|first/i)
 })
 
-test("route renders the safe selection state and introduces no privileged access", () => {
+test("route renders the functional safe selection state and introduces no privileged access", () => {
   assert.match(page, /Selecione uma empresa/)
+  assert.match(page, /<TenantSelectionForm options=\{result\.options\} \/>/)
+  assert.doesNotMatch(page, /seleção de empresa será habilitada em breve/i)
   assert.doesNotMatch(page, /service_role/)
   assert.doesNotMatch(page, /searchParams|companyId:\s*(request|params|body)/)
 })

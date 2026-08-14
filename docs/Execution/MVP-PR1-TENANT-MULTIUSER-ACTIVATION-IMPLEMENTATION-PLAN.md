@@ -1920,3 +1920,18 @@ Acceptance/Auth permanece na Phase 6; resolver, preferência e seleção/troca d
 tenant permanecem na Phase 7; RLS cutover, UI, E2E e observabilidade permanecem
 em suas fases originais. Não há nova Product Decision, ADR ou amendment
 arquitetural identificado como necessário.
+
+## 29. Estado vigente — Phase 9
+
+As Phases 5–8 foram posteriormente concluídas e incorporadas à `main`. A Phase 8
+encerrou o cutover de autorização pela caracterização 8A e pelas migrations
+0077/0078, preservando `auth.uid()` e membership ativa como autoridade tenant.
+
+A execução vigente é a **Phase 9 — Multiuser UI/UX**. Seu primeiro recorte é a
+**PR 9A — Functional Tenant Selection**, que torna interativa a fronteira segura
+de `/select-company` usando exclusivamente a Action e a RPC
+`select_active_tenant_v1` existentes. Nenhuma migration, nova RPC, mudança de RLS
+ou grant faz parte da 9A.
+
+Depois da aprovação da 9A, o próximo recorte previsto é a **PR 9B — tenant
+switcher e resolução consistente da preferência ativa nas Actions multiempresa**.

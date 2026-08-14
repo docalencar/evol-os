@@ -4,9 +4,9 @@
 
 ### MVP Closure — ativação multiusuário do tenant
 
-1. Obter aprovação explícita do Product Architect para iniciar a Phase 5 —
-   Invitation issuance, revocation & resend — do MVP-PR1, após fechar seus gates
-   de token lifecycle e entrega de e-mail.
+1. Executar a Phase 9 — Multiuser UI/UX — do MVP-PR1. O primeiro recorte é a
+   PR 9A, Functional Tenant Selection; depois dela, a PR 9B adiciona o tenant
+   switcher e torna a resolução das Actions consistente com a preferência ativa.
 
 O primeiro slice está concluído pela migration 0064: as 14 relações de
 Organization, People e Competencies agora preservam fisicamente o tenant. O
@@ -55,12 +55,11 @@ fundação prevista — contracts, port, Application Service, adapter autenticad
 Composition Root server-only e testes — já havia sido incorporada de forma
 controlada na Phase 3. Nenhuma segunda Application Layer deve ser criada.
 
-A Phase 5 passa a ser o próximo gate, mas não está iniciada nem automaticamente
-autorizada. Seu escopo permanece token lifecycle server-only, boundary de
-Invitation Delivery, adapter somente após escolha humana do provider e consumers
-de issue/resend/revoke integrados pela Application Layer existente. Aceite/Auth
-permanece na Phase 6; resolver/preferência/switch, na Phase 7; RLS cutover, UI,
-E2E e observabilidade permanecem nas fases posteriores.
+As Phases 5, 6 e 7 entregaram, respectivamente, emissão/entrega de convites,
+aceite integrado ao Auth e resolução/preferência de tenant. A Phase 8 encerrou o
+cutover de autorização pelas migrations 0077/0078 e pela caracterização de suas
+fronteiras. A execução vigente é a Phase 9 — Multiuser UI/UX, iniciando pela PR
+9A — Functional Tenant Selection.
 
 ## Evidência da prioridade
 
@@ -74,8 +73,8 @@ E2E e observabilidade permanecem nas fases posteriores.
   e o Implementation Plan aprovado recorta sua entrega em PRs 3B e 3C.
 - PD-019 e ADR-0015 definem a ativação multiusuário, identidade, ownership,
   Trusted Persistence e separação entre ator humano e executor técnico.
-- as Phases 1/2 do MVP-PR1 materializam a fundação e os invariantes persistentes;
-  a Phase 3 materializa as fronteiras confiáveis necessárias às fases seguintes.
+- as Phases 1–8 do MVP-PR1 materializam a fundação, os fluxos confiáveis e o
+  cutover de autorização necessários à UI multiusuário da Phase 9.
 
 Este documento é a fonte oficial de priorização. O plano completo está em
 `MVP_PLAN.md`; `NEXT_STEPS.md` contém somente a primeira entrega acima.

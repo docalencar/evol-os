@@ -35,11 +35,20 @@ export async function getCurrentCompanyContext() {
   try {
     currentUser = await loadCurrentUserContext(supabase, user, preferredCompanyId)
   } catch (error) {
-    if (
-      error instanceof CurrentUserContextError &&
-      error.code === "membership_not_found"
-    ) {
-      redirect("/onboarding")
+    if (error instanceof CurrentUserContextError) {
+      if (error.code === "membership_not_found") {
+        redirect("/onboarding")
+      }
+      // PR 7D: with preference resolution ON, a user with multiple active
+      // memberships and no valid preference is routed to an explicit, safe
+      // selection state instead of erroring. No tenant is chosen implicitly.
+      // With the flag OFF this falls through to the pre-7C behavior (rethrow).
+      if (
+        error.code === "tenant_selection_required" &&
+        isTenantPreferenceResolutionEnabled()
+      ) {
+        redirect("/select-company")
+      }
     }
     throw error
   }

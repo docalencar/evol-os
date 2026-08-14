@@ -31,7 +31,8 @@ type MembershipRow = Readonly<{
 
 export async function loadCurrentUserContext(
   supabase: SupabaseClient,
-  authenticatedUser?: User
+  authenticatedUser?: User,
+  preferredCompanyId?: string | null
 ): Promise<CurrentUserContext> {
   const user = authenticatedUser ?? (await supabase.auth.getUser()).data.user
 
@@ -73,7 +74,8 @@ export async function loadCurrentUserContext(
       companyId: membership.company_id,
       role: membership.role as CorporateRole,
       status: membership.status,
-    }))
+    })),
+    preferredCompanyId
   )
 
   if (resolution.status === "no_membership") {

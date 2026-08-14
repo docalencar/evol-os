@@ -4,6 +4,10 @@ import {
   CurrentUserContextError,
   loadCurrentUserContext,
 } from "@/features/authorization"
+// Deep imports keep the tenant-access `server-only` preference read/flag out of
+// the feature's public barrel and avoid an authorization <-> tenant-access cycle.
+import { isTenantPreferenceResolutionEnabled } from "@/features/tenant-access/preferences/tenant-preference-flag"
+import { readActiveTenantPreference } from "@/features/tenant-access/preferences/tenant-preference-repository"
 
 import { createClient } from "./server"
 
@@ -18,9 +22,18 @@ export async function getCurrentCompanyContext() {
     redirect("/login")
   }
 
+  // PR 7C: when the flag is ON, read the protected tenant preference and pass it
+  // to the resolver as CONTEXT. It only selects among the user's active
+  // memberships; the resolver ignores a stale/foreign/absent preference. With
+  // the flag OFF (default), no read happens and behavior is unchanged.
+  let preferredCompanyId: string | null = null
+  if (isTenantPreferenceResolutionEnabled()) {
+    preferredCompanyId = (await readActiveTenantPreference(supabase, user.id)).preferredCompanyId
+  }
+
   let currentUser
   try {
-    currentUser = await loadCurrentUserContext(supabase, user)
+    currentUser = await loadCurrentUserContext(supabase, user, preferredCompanyId)
   } catch (error) {
     if (
       error instanceof CurrentUserContextError &&

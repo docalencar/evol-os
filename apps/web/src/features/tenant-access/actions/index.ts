@@ -19,3 +19,8 @@ export {
   type AcceptCompanyMemberInvitationResult,
 } from "./accept-company-member-invitation-action"
 export { acceptInvitationFormAction } from "./accept-invitation-form-action"
+export {
+  selectActiveTenantAction,
+  type SelectActiveTenantInput,
+  type SelectActiveTenantResult,
+} from "./select-active-tenant-action"

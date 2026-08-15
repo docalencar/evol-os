@@ -24,3 +24,18 @@ export {
   type SelectActiveTenantInput,
   type SelectActiveTenantResult,
 } from "./select-active-tenant-action"
+export {
+  changeCompanyMembershipRoleAction,
+  type ChangeCompanyMembershipRoleInput,
+  type ChangeCompanyMembershipRoleResult,
+} from "./change-company-membership-role-action"
+export {
+  deactivateCompanyMembershipAction,
+  type DeactivateCompanyMembershipInput,
+  type DeactivateCompanyMembershipResult,
+} from "./deactivate-company-membership-action"
+export {
+  transferCompanyOwnershipAction,
+  type TransferCompanyOwnershipInput,
+  type TransferCompanyOwnershipResult,
+} from "./transfer-company-ownership-action"

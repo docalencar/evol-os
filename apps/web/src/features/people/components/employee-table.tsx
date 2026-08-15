@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   InvitationIssueDialog,
+  MembershipManagementActions,
   PeopleAccessActions,
   type InvitationRoleOption,
   type PeopleAccessStateViewModel,
@@ -556,6 +557,11 @@ export function EmployeeTable({
                     canRevoke={employee.accessState.canRevoke}
                   />
                 ) : null}
+
+                <MembershipManagementActions
+                  personName={employee.full_name}
+                  accessState={employee.accessState}
+                />
 
                 <ArchiveEmployeeButton
                   companyId={employee.company_id}

@@ -57,6 +57,7 @@ export default async function PeoplePage() {
         accessStateByPersonId.get(employee.id) ?? null,
         currentUser.role,
         accessStateResult.status === "available",
+        employee.user_id === currentUser.userId,
       ),
     })
   )

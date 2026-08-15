@@ -74,11 +74,11 @@ O status normativo e o conteúdo completo permanecem no
 ### Roadmap e execução
 
 - [ROADMAP](./ROADMAP.md): Phase 9 Multiuser UI/UX é a execução vigente.
-- [NEXT_STEPS](./NEXT_STEPS.md): validação e aprovação da PR 9E1 — Secure Membership Management Target Identity.
+- [NEXT_STEPS](./NEXT_STEPS.md): validação e aprovação da PR 9E — Membership Management UI.
 - [MVP Plan](./MVP_PLAN.md): jornada completa até o MVP.
 - [EPICS](./EPICS.md): estado funcional das capacidades.
 - [Implementation Plan do MVP-PR1](./Execution/MVP-PR1-TENANT-MULTIUSER-ACTIVATION-IMPLEMENTATION-PLAN.md):
-  Phases 1–8 e PRs 9A–9D2 concluídas; PR 9E1 implementada e aguardando aprovação.
+  Phases 1–8 e PRs 9A–9E1 concluídas; PR 9E implementada e aguardando aprovação.
 
 ## 5. Programa ADR-0012
 
@@ -105,13 +105,14 @@ sem SELECT autenticado, sem policy de leitura e sem `service_role` no caminho
 humano. A PR 9D2 foi concluída no merge `3f13bbc`: a People UI apresenta o estado
 de acesso e usa as Actions existentes para resend/revoke. A discovery da PR 9E
 confirmou que suas mutações exigem `membership_id`, que a projeção v1 não expõe.
-O recorte ativo é a PR 9E1: migration 0080 e RPC v2 aditiva, sem ampliar acesso às
-tabelas protegidas.
+O recorte 9E1 foi concluído no merge `1e4ccbb`: migration 0080 e RPC v2 aditiva,
+sem ampliar acesso às tabelas protegidas. O recorte ativo é a PR 9E, implementada
+e aguardando aprovação: role change, membership deactivation e ownership transfer
+na People UI por Server Actions e RPCs trusted existentes.
 
-Após a aprovação da 9E1, o próximo recorte é retomar a PR 9E — Membership
-Management UI, usando a identidade operacional segura para role change,
-membership deactivation e ownership transfer já suportados pela Trusted
-Persistence.
+Após a aprovação da 9E, o próximo recorte é a PR 9F — Multiuser E2E Validation +
+UX/Compatibility Polish. O progresso funcional do MVP passa de 93% para 96%; o
+saldo permanece reservado à validação E2E e ao fechamento dos gaps observados.
 
 Resumo de encerramento das fases anteriores:
 

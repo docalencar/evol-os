@@ -6,6 +6,7 @@ import type { PeopleAccessStateRow } from "../types/people-access-state"
 
 const base: PeopleAccessStateRow = {
   personId: "79000000-0000-4000-8000-000000000001",
+  membershipId: null,
   membershipRole: null,
   membershipStatus: null,
   invitationId: null,
@@ -28,6 +29,51 @@ test("membership has precedence over invitation and displays its role", () => {
   assert.equal(view.status, "access_active")
   assert.equal(view.roleLabel, "Admin")
   assert.equal(view.canResend, false)
+})
+
+test("membership management permissions follow actor and target roles", () => {
+  const activeAdmin = {
+    ...base,
+    membershipId: "79000000-0000-4000-8000-000000000003",
+    membershipRole: "admin" as const,
+    membershipStatus: "active" as const,
+  }
+  const ownerView = presentPeopleAccessState(activeAdmin, "owner")
+  assert.equal(ownerView.canChangeRole, true)
+  assert.equal(ownerView.canDeactivate, true)
+  assert.equal(ownerView.canTransferOwnership, true)
+  assert.equal(ownerView.roleOptions.some((option) => option.value === "owner"), true)
+
+  const adminView = presentPeopleAccessState(activeAdmin, "admin")
+  assert.equal(adminView.canChangeRole, true)
+  assert.equal(adminView.canDeactivate, true)
+  assert.equal(adminView.canTransferOwnership, false)
+  assert.equal(adminView.roleOptions.some((option) => option.value === "owner"), false)
+})
+
+test("owner targets and self targets preserve backend semantics", () => {
+  const ownerTarget = {
+    ...base,
+    membershipId: "79000000-0000-4000-8000-000000000004",
+    membershipRole: "owner" as const,
+    membershipStatus: "active" as const,
+  }
+  assert.equal(presentPeopleAccessState(ownerTarget, "admin").canChangeRole, false)
+  assert.equal(presentPeopleAccessState(ownerTarget, "owner").canChangeRole, true)
+  assert.equal(presentPeopleAccessState(ownerTarget, "owner").canTransferOwnership, false)
+  assert.equal(presentPeopleAccessState({ ...ownerTarget, membershipRole: "admin" }, "owner", true, true).canTransferOwnership, false)
+})
+
+test("membership management fails closed for missing, inactive and unavailable state", () => {
+  for (const view of [
+    presentPeopleAccessState(base, "owner"),
+    presentPeopleAccessState({ ...base, membershipId: "79000000-0000-4000-8000-000000000005", membershipRole: "employee", membershipStatus: "inactive" }, "owner"),
+    presentPeopleAccessState(null, "owner", false),
+  ]) {
+    assert.equal(view.canChangeRole, false)
+    assert.equal(view.canDeactivate, false)
+    assert.equal(view.canTransferOwnership, false)
+  }
 })
 
 test("presenter covers inactive, legacy invited and invitation lifecycle", () => {

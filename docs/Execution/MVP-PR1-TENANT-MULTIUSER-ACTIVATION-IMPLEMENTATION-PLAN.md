@@ -1998,12 +1998,24 @@ role change, deactivation e ownership transfer recebem `membership_id`, mas a
 projeção segura v1 da 9D1 não expõe esse identificador e o papel `authenticated`
 não possui SELECT direto em `company_members`.
 
-A PR 9E1 está implementada e aguardando aprovação. A migration 0080 adiciona a
+A PR 9E1 foi concluída no merge `1e4ccbb`. A migration 0080 adiciona a
 RPC `get_people_access_state_v2(uuid)`, aditiva e `SECURITY DEFINER`, que preserva
 integralmente a v1 e acrescenta apenas `membership_id`. O ID é selector
 operacional, não autoridade: `auth.uid()`, membership owner/admin ativa e tenant
 continuam revalidados no banco. Nenhuma policy, RLS ou grant de tabela é alterado.
 
-Após aprovação da 9E1, o próximo recorte é retomar a **PR 9E — Membership
-Management UI (Role Change, Deactivation & Ownership Transfer)** sobre as
-operações trusted existentes.
+### 29.6 PR 9E — Membership Management UI
+
+A PR 9E está implementada e aguardando aprovação. O consumer People migra para a
+RPC v2 com validação estrita e usa `membership_id` somente como selector. Thin
+Server Actions derivam tenant e role do ator pelo contexto preference-aware,
+geram idempotency/correlation IDs no servidor e chamam as operações trusted de
+role change, deactivation e ownership transfer existentes.
+
+A UI antecipa a matriz owner/admin, falha fechada para estados incoerentes e
+preserva expected role/status, conflito concorrente e proteção do último owner.
+Não há migration, RPC, policy, grant, escrita direta ou `service_role` novo.
+
+Após aprovação da 9E, o próximo recorte é a **PR 9F — Multiuser E2E Validation +
+UX/Compatibility Polish**. O progresso funcional do MVP passa de 93% para 96%,
+mantendo o saldo para validação E2E e fechamento dos gaps observados.

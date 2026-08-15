@@ -1,33 +1,32 @@
 # Evol OS — Próxima entrega
 
-## MVP-PR1 Phase 9 — PR 9B Tenant Switcher
+## MVP-PR1 Phase 9 — PR 9C Invitation Issuance UI
 
 ### Objetivo
 
-Exibir a empresa atual no app, permitir a troca explícita entre memberships
-ativas e fazer todos os consumers server-side diretos usarem a mesma resolução
-preference-aware.
+Permitir que owner/admin autorizado emita, pela experiência de People, um convite
+real para uma Person existente usando a Action e a Trusted Persistence atuais.
 
 ### Estado confirmado
 
 - Phases 1–8 concluídas;
-- PR 9A — Functional Tenant Selection — concluída no merge `b4aae86`;
-- seleção inicial já persiste a preferência por `select_active_tenant_v1`;
-- PR 9B implementada e aguardando aprovação;
+- PR 9A concluída no merge `b4aae86`;
+- PR 9B concluída no merge `3070855`;
+- emissão, persistência e delivery de convite já existem no servidor;
+- PR 9C implementada e aguardando aprovação;
 - nenhuma migration, nova RPC, alteração de RLS ou grants.
 
 ### Gate atual
 
-Validar e aprovar a PR 9B:
+Validar e aprovar a PR 9C:
 
-1. empresa atual visível no header;
-2. single-tenant sem seletor ambíguo;
-3. multi-tenant com troca explícita e reconstrução em `/app`;
-4. resolução preference-aware compartilhada por current company, Tenant Access,
-   Activity e Notifications;
-5. membership ativa e `auth.uid()` preservados como autoridade.
+1. ação contextual somente para owner/admin e Person obviamente elegível;
+2. e-mail visível e não editável;
+3. roles permitidas projetadas conforme o ator server-side;
+4. envio exclusivo de `personId` e `intendedRole` à Action existente;
+5. pending, proteção contra double submit e feedback acessível.
 
-### Próximo passo após 9B
+### Próximo passo após 9C
 
-PR 9C — Invitation Issuance UI para Person existente, reutilizando a Action e a
-Trusted Persistence atuais.
+PR 9D — read model autenticado seguro de convites/memberships e UI de status,
+reenvio e revogação.

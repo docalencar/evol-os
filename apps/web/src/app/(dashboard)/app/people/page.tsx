@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/shared/page-header"
 import { Button } from "@/components/ui/button"
 import { getPositions } from "@/features/organization/positions"
 import { getTeams } from "@/features/organization/teams"
+import { getInvitationRoleOptionsForActor } from "@/features/tenant-access"
 import {
   EmployeeCreateDialog,
   EmployeeTable,
@@ -14,7 +15,8 @@ import {
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 export default async function PeoplePage() {
-  const { companyId } = await getCurrentCompanyContext()
+  const { companyId, currentUser } = await getCurrentCompanyContext()
+  const invitationRoleOptions = getInvitationRoleOptionsForActor(currentUser.role)
 
   const [employees, teams, positions] = await Promise.all([
     getEmployees(companyId),
@@ -81,6 +83,7 @@ export default async function PeoplePage() {
         teams={teams ?? []}
         positions={positions ?? []}
         managers={managerOptions}
+        invitationRoleOptions={invitationRoleOptions}
       />
     </div>
   )

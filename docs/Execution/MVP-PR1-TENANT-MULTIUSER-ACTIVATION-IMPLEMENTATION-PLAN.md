@@ -1951,3 +1951,18 @@ migration, RPC, policy ou grant.
 
 Após aprovação da 9B, o próximo recorte previsto é a **PR 9C — Invitation
 Issuance UI para Person existente**.
+
+### 29.2 PR 9C — Invitation Issuance UI
+
+A PR 9B foi concluída no merge `3070855`. A PR 9C foi implementada e aguarda
+aprovação: owner/admin recebe uma ação contextual em People para emitir convite
+para uma Person ativa, sem vínculo Auth e com e-mail cadastrado. O diálogo exibe
+o e-mail não editável, limita as roles conforme o ator server-side e envia somente
+`personId` e `intendedRole` à Action existente.
+
+A Action, a Application Layer, a Trusted Persistence e o delivery permanecem
+inalterados e como autoridade final. Não foi criada leitura autenticada de
+`company_member_invitations`, migration, RPC, policy ou grant.
+
+Após aprovação da 9C, o próximo recorte previsto é a **PR 9D — secure
+invitation/membership read model e UI de status, reenvio e revogação**.

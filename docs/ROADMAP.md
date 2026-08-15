@@ -4,9 +4,8 @@
 
 ### MVP Closure — ativação multiusuário do tenant
 
-1. Concluir a PR 9B da Phase 9 — Tenant Switcher + Consistent Active-Tenant
-   Resolution. A PR 9A — Functional Tenant Selection — foi concluída no merge
-   `b4aae86`.
+1. Concluir a PR 9C da Phase 9 — Invitation Issuance UI para Person existente.
+   A PR 9A foi concluída no merge `b4aae86` e a PR 9B no merge `3070855`.
 
 O primeiro slice está concluído pela migration 0064: as 14 relações de
 Organization, People e Competencies agora preservam fisicamente o tenant. O
@@ -58,9 +57,9 @@ controlada na Phase 3. Nenhuma segunda Application Layer deve ser criada.
 As Phases 5, 6 e 7 entregaram, respectivamente, emissão/entrega de convites,
 aceite integrado ao Auth e resolução/preferência de tenant. A Phase 8 encerrou o
 cutover de autorização pelas migrations 0077/0078 e pela caracterização de suas
-fronteiras. A execução vigente é a Phase 9 — Multiuser UI/UX. A PR 9A foi
-concluída no merge `b4aae86`; a PR 9B implementa o switcher e unifica a resolução
-preference-aware dos consumers server-side, sem migration ou nova RPC.
+fronteiras. A execução vigente é a Phase 9 — Multiuser UI/UX. As PRs 9A e 9B
+foram concluídas; a PR 9C conecta a experiência de People à emissão real de
+convites existente, sem migration, nova RPC ou leitura da tabela de convites.
 
 ## Evidência da prioridade
 

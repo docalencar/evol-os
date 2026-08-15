@@ -10,6 +10,10 @@ import {
 import { DataTable } from "@/components/shared/data-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  InvitationIssueDialog,
+  type InvitationRoleOption,
+} from "@/features/tenant-access/client"
 
 import {
   EMPLOYEE_STATUS_LABELS,
@@ -195,6 +199,7 @@ type EmployeeTableProps = {
   teams: EmployeeSelectOption[]
   positions: EmployeeSelectOption[]
   managers: EmployeeSelectOption[]
+  invitationRoleOptions: readonly InvitationRoleOption[]
 }
 
 export function EmployeeTable({
@@ -202,6 +207,7 @@ export function EmployeeTable({
   teams,
   positions,
   managers,
+  invitationRoleOptions,
 }: EmployeeTableProps) {
   const [filters, setFilters] =
     useState<EmployeeWorkspaceFilters>(
@@ -509,6 +515,18 @@ export function EmployeeTable({
                   positions={positions}
                   managers={managers}
                 />
+
+                {invitationRoleOptions.length > 0 &&
+                employee.status === "active" &&
+                employee.user_id === null &&
+                employee.email ? (
+                  <InvitationIssueDialog
+                    personId={employee.id}
+                    personName={employee.full_name}
+                    email={employee.email}
+                    roleOptions={invitationRoleOptions}
+                  />
+                ) : null}
 
                 <ArchiveEmployeeButton
                   companyId={employee.company_id}

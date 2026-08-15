@@ -1,14 +1,12 @@
 import "server-only"
 
 import {
-  loadCurrentUserContext,
-} from "@/features/authorization"
-import {
   createActivityNotificationProcessor,
 } from "@/features/notifications/server"
 import {
   createServerDatabase,
 } from "@/lib/database/server-database"
+import { loadPreferenceAwareCurrentUserContext } from "@/lib/supabase/supabase/preference-aware-current-user-context"
 
 import {
   presentActivity,
@@ -32,7 +30,7 @@ export async function recordActivity(
   const parsedInput =
     recordActivitySchema.parse(input)
 
-  const currentUser = await loadCurrentUserContext(
+  const currentUser = await loadPreferenceAwareCurrentUserContext(
     await createServerDatabase()
   )
   if (currentUser.companyId !== parsedInput.companyId) {

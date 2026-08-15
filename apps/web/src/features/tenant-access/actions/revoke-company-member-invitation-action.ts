@@ -2,7 +2,8 @@
 
 import { randomUUID } from "node:crypto"
 
-import { CurrentUserContextError, loadCurrentUserContext } from "@/features/authorization"
+import { CurrentUserContextError } from "@/features/authorization"
+import { loadPreferenceAwareCurrentUserContext } from "@/lib/supabase/supabase/preference-aware-current-user-context"
 import { createClient } from "@/lib/supabase/supabase/server"
 
 import {
@@ -19,7 +20,7 @@ async function loadRevokeInvitationTenantContext(): Promise<RevokeInvitationTena
   if (error || !user) return { status: "session_expired" }
 
   try {
-    const currentUser = await loadCurrentUserContext(supabase, user)
+    const currentUser = await loadPreferenceAwareCurrentUserContext(supabase, user)
     return { status: "resolved", companyId: currentUser.companyId }
   } catch (caught) {
     if (caught instanceof CurrentUserContextError) {

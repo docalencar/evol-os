@@ -74,11 +74,11 @@ O status normativo e o conteúdo completo permanecem no
 ### Roadmap e execução
 
 - [ROADMAP](./ROADMAP.md): Phase 9 Multiuser UI/UX é a execução vigente.
-- [NEXT_STEPS](./NEXT_STEPS.md): PR 9A — Functional Tenant Selection.
+- [NEXT_STEPS](./NEXT_STEPS.md): validação e aprovação da PR 9B — Tenant Switcher.
 - [MVP Plan](./MVP_PLAN.md): jornada completa até o MVP.
 - [EPICS](./EPICS.md): estado funcional das capacidades.
 - [Implementation Plan do MVP-PR1](./Execution/MVP-PR1-TENANT-MULTIUSER-ACTIVATION-IMPLEMENTATION-PLAN.md):
-  Phases 1–8 concluídas; Phase 9 iniciada pela PR 9A.
+  Phases 1–8 e PR 9A concluídas; PR 9B implementada e aguardando aprovação.
 
 ## 5. Programa ADR-0012
 
@@ -97,11 +97,14 @@ concluídas: a fundação persistente, Trusted Persistence, delivery/aceite,
 preferência de tenant e o cutover de autorização já estão incorporados. A Phase
 8 foi encerrada pela caracterização 8A e pelas migrations 0077/0078.
 
-O recorte ativo é a PR 9A — Functional Tenant Selection. Ela conecta a tela
-segura já existente em `/select-company` à Action e à RPC
-`select_active_tenant_v1`, sem criar nova autoridade no cliente. O próximo
-recorte, após aprovação da 9A, é a PR 9B — tenant switcher e resolução
-consistente da preferência ativa nas Actions multiempresa.
+A PR 9A — Functional Tenant Selection — foi concluída no merge `b4aae86`. O
+recorte ativo é a PR 9B — Tenant Switcher + Consistent Active-Tenant Resolution,
+implementada e aguardando aprovação. Ela exibe a empresa atual, permite troca
+explícita e unifica a composição preference-aware dos consumers server-side sem
+criar autoridade no cliente, migration ou nova RPC.
+
+Após a aprovação da 9B, o próximo recorte é a PR 9C — Invitation Issuance UI
+para Person existente.
 
 Resumo de encerramento das fases anteriores:
 

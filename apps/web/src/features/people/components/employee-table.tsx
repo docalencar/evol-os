@@ -12,7 +12,9 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   InvitationIssueDialog,
+  PeopleAccessActions,
   type InvitationRoleOption,
+  type PeopleAccessStateViewModel,
 } from "@/features/tenant-access/client"
 
 import {
@@ -51,6 +53,7 @@ type EmployeeTableItem = Employee & {
   teams?: Relation
   positions?: Relation
   manager_name?: string | null
+  accessState: PeopleAccessStateViewModel
 }
 
 const INITIAL_FILTERS: EmployeeWorkspaceFilters = {
@@ -491,6 +494,20 @@ export function EmployeeTable({
             ),
           },
           {
+            key: "access",
+            header: "Acesso",
+            render: (employee) => (
+              <div className="flex min-w-32 flex-col items-start gap-1">
+                <Badge>{employee.accessState.label}</Badge>
+                {employee.accessState.roleLabel ? (
+                  <span className="text-xs text-slate-600">
+                    {employee.accessState.roleLabel}
+                  </span>
+                ) : null}
+              </div>
+            ),
+          },
+          {
             key: "actions",
             header: "Ações",
             render: (employee) => (
@@ -519,12 +536,24 @@ export function EmployeeTable({
                 {invitationRoleOptions.length > 0 &&
                 employee.status === "active" &&
                 employee.user_id === null &&
+                employee.accessState.canIssue &&
                 employee.email ? (
                   <InvitationIssueDialog
                     personId={employee.id}
                     personName={employee.full_name}
                     email={employee.email}
                     roleOptions={invitationRoleOptions}
+                  />
+                ) : null}
+
+                {employee.accessState.invitationId &&
+                employee.accessState.invitationGeneration &&
+                (employee.accessState.canResend || employee.accessState.canRevoke) ? (
+                  <PeopleAccessActions
+                    invitationId={employee.accessState.invitationId}
+                    expectedGeneration={employee.accessState.invitationGeneration}
+                    canResend={employee.accessState.canResend}
+                    canRevoke={employee.accessState.canRevoke}
                   />
                 ) : null}
 

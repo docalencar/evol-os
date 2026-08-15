@@ -4,7 +4,11 @@ import { PageHeader } from "@/components/shared/page-header"
 import { Button } from "@/components/ui/button"
 import { getPositions } from "@/features/organization/positions"
 import { getTeams } from "@/features/organization/teams"
-import { getInvitationRoleOptionsForActor } from "@/features/tenant-access"
+import {
+  getInvitationRoleOptionsForActor,
+  getPeopleAccessStates,
+  presentPeopleAccessState,
+} from "@/features/tenant-access"
 import {
   EmployeeCreateDialog,
   EmployeeTable,
@@ -15,14 +19,21 @@ import {
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 export default async function PeoplePage() {
-  const { companyId, currentUser } = await getCurrentCompanyContext()
+  const { companyId, currentUser, supabase } = await getCurrentCompanyContext()
   const invitationRoleOptions = getInvitationRoleOptionsForActor(currentUser.role)
 
-  const [employees, teams, positions] = await Promise.all([
+  const [employees, teams, positions, accessStateResult] = await Promise.all([
     getEmployees(companyId),
     getTeams(companyId),
     getPositions(companyId),
+    getPeopleAccessStates(supabase, companyId),
   ])
+
+  const accessStateByPersonId = new Map(
+    accessStateResult.status === "available"
+      ? accessStateResult.rows.map((row) => [row.personId, row] as const)
+      : [],
+  )
 
   const managerOptions = (employees ?? []).map((employee) => ({
     id: employee.id,
@@ -42,6 +53,11 @@ export default async function PeoplePage() {
       manager_name: employee.manager_id
         ? managerNameById.get(employee.manager_id) ?? null
         : null,
+      accessState: presentPeopleAccessState(
+        accessStateByPersonId.get(employee.id) ?? null,
+        currentUser.role,
+        accessStateResult.status === "available",
+      ),
     })
   )
 

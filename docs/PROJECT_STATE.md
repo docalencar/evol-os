@@ -74,11 +74,11 @@ O status normativo e o conteúdo completo permanecem no
 ### Roadmap e execução
 
 - [ROADMAP](./ROADMAP.md): Phase 9 Multiuser UI/UX é a execução vigente.
-- [NEXT_STEPS](./NEXT_STEPS.md): validação e aprovação da PR 9D1 — secure People access-state read boundary.
+- [NEXT_STEPS](./NEXT_STEPS.md): validação e aprovação da PR 9D2 — People Access-State UI + Invitation Resend/Revoke.
 - [MVP Plan](./MVP_PLAN.md): jornada completa até o MVP.
 - [EPICS](./EPICS.md): estado funcional das capacidades.
 - [Implementation Plan do MVP-PR1](./Execution/MVP-PR1-TENANT-MULTIUSER-ACTIVATION-IMPLEMENTATION-PLAN.md):
-  Phases 1–8 e PRs 9A–9C concluídas; PR 9D dividida em 9D1/9D2 e 9D1 implementada.
+  Phases 1–8 e PRs 9A–9C/9D1 concluídas; PR 9D2 implementada e aguardando aprovação.
 
 ## 5. Programa ADR-0012
 
@@ -98,14 +98,17 @@ preferência de tenant e o cutover de autorização já estão incorporados. A P
 8 foi encerrada pela caracterização 8A e pelas migrations 0077/0078.
 
 A PR 9A foi concluída no merge `b4aae86`, a PR 9B no merge `3070855` e a PR 9C
-no merge `4d7b037`. A PR 9D foi dividida em dois recortes. O recorte ativo é a
-PR 9D1: migration 0079 e RPC `get_people_access_state_v1`, uma projeção
+no merge `4d7b037`. A PR 9D foi dividida em dois recortes. A PR 9D1 foi concluída
+no merge `02168b9`: migration 0079 e RPC `get_people_access_state_v1`, uma projeção
 `SECURITY DEFINER` mínima para owner/admin ativo. A tabela de invitations segue
 sem SELECT autenticado, sem policy de leitura e sem `service_role` no caminho
-humano.
+humano. O recorte ativo é a PR 9D2, implementada e aguardando aprovação: a People
+UI apresenta o estado de acesso e usa as Actions existentes para resend/revoke,
+preservando generation e autoridade server-side, sem migration ou RPC nova.
 
-Após a aprovação da 9D1, o próximo recorte é a PR 9D2 — People Access-State UI +
-Invitation Resend/Revoke, consumindo a fronteira segura sem expor a tabela bruta.
+Após a aprovação da 9D2, o próximo recorte é a PR 9E — Membership Management UI,
+pois o source ainda não possui consumers para role change, membership deactivation
+e ownership transfer já suportados pela Trusted Persistence.
 
 Resumo de encerramento das fases anteriores:
 

@@ -1966,7 +1966,8 @@ inalterados e como autoridade final. Não foi criada leitura autenticada de
 
 ### 29.3 PR 9D1 — Secure People Access-State Read Boundary
 
-A PR 9D foi dividida em 9D1 e 9D2. A 9D1 adiciona a migration 0079 e a RPC
+A PR 9D foi dividida em 9D1 e 9D2. A 9D1 foi concluída no merge `02168b9` e
+adicionou a migration 0079 e a RPC
 `get_people_access_state_v1(uuid)`, uma projeção mínima de Person, membership e
 invitation state autorizada por `auth.uid()` e membership owner/admin ativa. O
 `company_id` é apenas selector; a função reutiliza
@@ -1977,5 +1978,19 @@ sem nova policy. A projeção não retorna e-mail, digest, token, Auth IDs ou ID
 operacionais, e nenhum `service_role` participa do caminho humano. Expiração
 efetiva de invitation pending é calculada no relógio do banco, sem UPDATE.
 
-Após aprovação da 9D1, o próximo recorte é a **PR 9D2 — People Access-State UI +
-Invitation Resend/Revoke**, consumer app da fronteira segura criada na 9D1.
+### 29.4 PR 9D2 — People Access-State UI + Invitation Resend/Revoke
+
+A 9D2 está implementada e aguardando aprovação. A People Server Page consome a
+RPC segura da 9D1 com tenant derivado no servidor, valida defensivamente a
+projeção e apresenta estados de membership/invitation com precedência fail-closed.
+Resend e revoke enviam somente invitation ID e generation às Server Actions
+existentes; stale generation exige refresh e falha de delivery não oculta a
+mutação persistida.
+
+Não há migration, RPC, policy ou grant novo. A tabela de invitations permanece
+fechada a leitura direta, nenhum client acessa Supabase e `service_role` continua
+fora do caminho humano.
+
+Após aprovação da 9D2, o próximo recorte é a **PR 9E — Membership Management UI
+(Role Change, Deactivation & Ownership Transfer)**. O source contém as operações
+trusted correspondentes, mas ainda não possui Server Actions ou UI consumidoras.

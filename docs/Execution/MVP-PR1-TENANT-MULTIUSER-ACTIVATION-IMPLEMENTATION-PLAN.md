@@ -1954,8 +1954,8 @@ Issuance UI para Person existente**.
 
 ### 29.2 PR 9C — Invitation Issuance UI
 
-A PR 9B foi concluída no merge `3070855`. A PR 9C foi implementada e aguarda
-aprovação: owner/admin recebe uma ação contextual em People para emitir convite
+A PR 9B foi concluída no merge `3070855`. A PR 9C foi concluída no merge
+`4d7b037`: owner/admin recebe uma ação contextual em People para emitir convite
 para uma Person ativa, sem vínculo Auth e com e-mail cadastrado. O diálogo exibe
 o e-mail não editável, limita as roles conforme o ator server-side e envia somente
 `personId` e `intendedRole` à Action existente.
@@ -1964,5 +1964,18 @@ A Action, a Application Layer, a Trusted Persistence e o delivery permanecem
 inalterados e como autoridade final. Não foi criada leitura autenticada de
 `company_member_invitations`, migration, RPC, policy ou grant.
 
-Após aprovação da 9C, o próximo recorte previsto é a **PR 9D — secure
-invitation/membership read model e UI de status, reenvio e revogação**.
+### 29.3 PR 9D1 — Secure People Access-State Read Boundary
+
+A PR 9D foi dividida em 9D1 e 9D2. A 9D1 adiciona a migration 0079 e a RPC
+`get_people_access_state_v1(uuid)`, uma projeção mínima de Person, membership e
+invitation state autorizada por `auth.uid()` e membership owner/admin ativa. O
+`company_id` é apenas selector; a função reutiliza
+`require_tenant_access_administrator` e preserva isolamento tenant.
+
+A tabela `company_member_invitations` permanece fechada a SELECT autenticado,
+sem nova policy. A projeção não retorna e-mail, digest, token, Auth IDs ou IDs
+operacionais, e nenhum `service_role` participa do caminho humano. Expiração
+efetiva de invitation pending é calculada no relógio do banco, sem UPDATE.
+
+Após aprovação da 9D1, o próximo recorte é a **PR 9D2 — People Access-State UI +
+Invitation Resend/Revoke**, consumer app da fronteira segura criada na 9D1.

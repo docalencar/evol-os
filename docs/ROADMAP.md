@@ -4,8 +4,10 @@
 
 ### MVP Closure — ativação multiusuário do tenant
 
-1. Concluir a PR 9C da Phase 9 — Invitation Issuance UI para Person existente.
-   A PR 9A foi concluída no merge `b4aae86` e a PR 9B no merge `3070855`.
+1. Concluir a PR 9D1 da Phase 9 — secure People access-state read boundary.
+   As PRs 9A, 9B e 9C foram concluídas nos merges `b4aae86`, `3070855` e
+   `4d7b037`, respectivamente. A 9D foi dividida em 9D1 (fronteira DB-first) e
+   9D2 (consumer app e UI).
 
 O primeiro slice está concluído pela migration 0064: as 14 relações de
 Organization, People e Competencies agora preservam fisicamente o tenant. O
@@ -57,9 +59,11 @@ controlada na Phase 3. Nenhuma segunda Application Layer deve ser criada.
 As Phases 5, 6 e 7 entregaram, respectivamente, emissão/entrega de convites,
 aceite integrado ao Auth e resolução/preferência de tenant. A Phase 8 encerrou o
 cutover de autorização pelas migrations 0077/0078 e pela caracterização de suas
-fronteiras. A execução vigente é a Phase 9 — Multiuser UI/UX. As PRs 9A e 9B
-foram concluídas; a PR 9C conecta a experiência de People à emissão real de
-convites existente, sem migration, nova RPC ou leitura da tabela de convites.
+fronteiras. A execução vigente é a Phase 9 — Multiuser UI/UX. As PRs 9A–9C foram
+concluídas. A PR 9D1 cria uma fronteira `SECURITY DEFINER` mínima para o estado de
+membership/invitation de People; a tabela de invitations permanece fechada e o
+caminho humano não usa `service_role`. A PR 9D2 consumirá essa fronteira na
+aplicação e entregará status, reenvio e revogação.
 
 ## Evidência da prioridade
 

@@ -74,11 +74,11 @@ O status normativo e o conteúdo completo permanecem no
 ### Roadmap e execução
 
 - [ROADMAP](./ROADMAP.md): Phase 9 Multiuser UI/UX é a execução vigente.
-- [NEXT_STEPS](./NEXT_STEPS.md): validação e aprovação da PR 9C — Invitation Issuance UI.
+- [NEXT_STEPS](./NEXT_STEPS.md): validação e aprovação da PR 9D1 — secure People access-state read boundary.
 - [MVP Plan](./MVP_PLAN.md): jornada completa até o MVP.
 - [EPICS](./EPICS.md): estado funcional das capacidades.
 - [Implementation Plan do MVP-PR1](./Execution/MVP-PR1-TENANT-MULTIUSER-ACTIVATION-IMPLEMENTATION-PLAN.md):
-  Phases 1–8 e PRs 9A/9B concluídas; PR 9C implementada e aguardando aprovação.
+  Phases 1–8 e PRs 9A–9C concluídas; PR 9D dividida em 9D1/9D2 e 9D1 implementada.
 
 ## 5. Programa ADR-0012
 
@@ -97,13 +97,15 @@ concluídas: a fundação persistente, Trusted Persistence, delivery/aceite,
 preferência de tenant e o cutover de autorização já estão incorporados. A Phase
 8 foi encerrada pela caracterização 8A e pelas migrations 0077/0078.
 
-A PR 9A foi concluída no merge `b4aae86` e a PR 9B no merge `3070855`. O recorte
-ativo é a PR 9C — Invitation Issuance UI para Person existente, implementada e
-aguardando aprovação. Ela reutiliza a Action, Application Service, Trusted
-Persistence e delivery atuais sem criar autoridade no cliente, migration ou RPC.
+A PR 9A foi concluída no merge `b4aae86`, a PR 9B no merge `3070855` e a PR 9C
+no merge `4d7b037`. A PR 9D foi dividida em dois recortes. O recorte ativo é a
+PR 9D1: migration 0079 e RPC `get_people_access_state_v1`, uma projeção
+`SECURITY DEFINER` mínima para owner/admin ativo. A tabela de invitations segue
+sem SELECT autenticado, sem policy de leitura e sem `service_role` no caminho
+humano.
 
-Após a aprovação da 9C, o próximo recorte previsto é a PR 9D — read model seguro
-de convites/memberships e UI de status, reenvio e revogação.
+Após a aprovação da 9D1, o próximo recorte é a PR 9D2 — People Access-State UI +
+Invitation Resend/Revoke, consumindo a fronteira segura sem expor a tabela bruta.
 
 Resumo de encerramento das fases anteriores:
 

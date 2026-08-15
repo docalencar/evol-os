@@ -78,6 +78,7 @@ export function InvitationIssueDialog({
             tone: "success",
             message: `Convite enviado para ${email}.`,
           })
+          router.refresh()
           return
         }
 
@@ -102,6 +103,7 @@ export function InvitationIssueDialog({
             tone: "error",
             message: "O convite foi criado, mas o envio do e-mail não foi confirmado.",
           })
+          router.refresh()
           return
         }
 
@@ -111,6 +113,7 @@ export function InvitationIssueDialog({
             tone: "error",
             message: "O convite foi criado, mas não foi possível confirmar a entrega do e-mail.",
           })
+          router.refresh()
           return
         }
 
@@ -120,6 +123,7 @@ export function InvitationIssueDialog({
             tone: "error",
             message: "O convite foi criado, mas o envio não está disponível no momento.",
           })
+          router.refresh()
           return
         }
 

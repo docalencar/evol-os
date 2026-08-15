@@ -38,6 +38,7 @@ test("success, safe errors, and session/tenant navigation are accessible", () =>
   assert.match(source, /feedbackRef\.current\?\.focus\(\)/)
   assert.match(source, /router\.replace\("\/login"\)/)
   assert.match(source, /router\.replace\("\/select-company"\)/)
+  assert.match(source, /router\.refresh\(\)/)
 })
 
 test("client boundary contains no database, secret, or browser authority path", () => {

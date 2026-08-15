@@ -7,6 +7,7 @@ import type { PeopleAccessStateRow } from "../types/people-access-state"
 
 const rowSchema = z.object({
   person_id: z.string().uuid(),
+  membership_id: z.string().uuid().nullable(),
   membership_role: z.enum(["owner", "admin", "hr", "manager", "employee"]).nullable(),
   membership_status: z.enum(["active", "inactive", "invited"]).nullable(),
   invitation_id: z.string().uuid().nullable(),
@@ -22,6 +23,7 @@ function parseRows(payload: unknown): readonly PeopleAccessStateRow[] | null {
 
   return parsed.data.map((row) => ({
     personId: row.person_id,
+    membershipId: row.membership_id,
     membershipRole: row.membership_role,
     membershipStatus: row.membership_status,
     invitationId: row.invitation_id,
@@ -35,7 +37,7 @@ function parseRows(payload: unknown): readonly PeopleAccessStateRow[] | null {
 export function createPeopleAccessStateRepository(supabase: SupabaseClient) {
   return {
     async findAllByCompany(companyId: string): Promise<readonly PeopleAccessStateRow[] | null> {
-      const { data, error } = await supabase.rpc("get_people_access_state_v1", {
+      const { data, error } = await supabase.rpc("get_people_access_state_v2", {
         p_company_id: companyId,
       })
 

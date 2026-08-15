@@ -1,12 +1,12 @@
 # Evol OS — Próxima entrega
 
-## MVP-PR1 Phase 9 — PR 9E1 Secure Membership Management Target Identity
+## MVP-PR1 Phase 9 — PR 9E Membership Management UI
 
 ### Objetivo
 
-Adicionar uma projeção DB-first, tenant-safe e retrocompatível que permita à
-futura UI de gestão identificar a membership alvo sem liberar SELECT direto nas
-tabelas protegidas.
+Permitir que owner/admin autorizado altere role e desative memberships existentes,
+e que owner transfira ownership, usando exclusivamente a projeção v2 e as RPCs
+trusted existentes.
 
 ### Estado confirmado
 
@@ -18,22 +18,23 @@ tabelas protegidas.
 - PR 9D2 concluída no merge `3f13bbc`;
 - PR 9E descobriu que as mutações existentes exigem `membership_id`, ausente na
   projeção segura v1;
-- PR 9E1 implementada e aguardando aprovação;
-- progresso funcional do MVP permanece em 93%; esta PR habilita o próximo recorte
-  sem antecipar a UI;
+- PR 9E1 concluída no merge `1e4ccbb`;
+- PR 9E implementada e aguardando aprovação;
+- progresso funcional do MVP: 96%;
 - emissão, persistência, delivery e aceite continuam nas fronteiras existentes.
 
 ### Gate atual
 
-Validar e aprovar a PR 9E1:
+Validar e aprovar a PR 9E:
 
-1. migration 0080 cria `get_people_access_state_v2(uuid)` sem alterar a v1;
-2. v2 acrescenta somente `membership_id` à projeção aprovada;
-3. owner/admin ativo continua sendo revalidado no banco;
-4. nenhum SELECT de tabela, policy, RLS ou grant de tabela é ampliado;
-5. a suíte pgTAP prova isolamento tenant e paridade da projeção v1/v2.
+1. app consome `get_people_access_state_v2(uuid)` com parser estrito;
+2. role change e deactivation respeitam a matriz owner/admin;
+3. ownership transfer é apresentada somente a owner e exige escolha explícita
+   sobre a role posterior do ator;
+4. estado esperado, último owner e autoridade continuam revalidados pelas RPCs;
+5. nenhum SELECT direto, client Supabase, migration, RPC, RLS ou grant novo.
 
-### Próximo passo após 9E1
+### Próximo passo após 9E
 
-Retomar a PR 9E — Membership Management UI: mudança de role, desativação de
-membership e transferência de ownership sobre as operações trusted existentes.
+PR 9F — Multiuser E2E Validation + UX/Compatibility Polish, confirmando os fluxos
+com múltiplos usuários e tenants antes do fechamento do MVP-PR1.

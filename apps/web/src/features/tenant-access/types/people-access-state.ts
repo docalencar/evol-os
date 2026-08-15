@@ -2,6 +2,7 @@ import type { TenantMembershipRole } from "../application"
 
 export type PeopleAccessStateRow = Readonly<{
   personId: string
+  membershipId: string | null
   membershipRole: TenantMembershipRole | null
   membershipStatus: "active" | "inactive" | "invited" | null
   invitationId: string | null
@@ -29,6 +30,13 @@ export type PeopleAccessStateViewModel = Readonly<{
   status: PeopleAccessStatus
   label: string
   roleLabel: string | null
+  membershipId: string | null
+  membershipRole: TenantMembershipRole | null
+  membershipStatus: "active" | "inactive" | "invited" | null
+  roleOptions: readonly Readonly<{ value: TenantMembershipRole; label: string }>[]
+  canChangeRole: boolean
+  canDeactivate: boolean
+  canTransferOwnership: boolean
   canIssue: boolean
   canResend: boolean
   canRevoke: boolean

@@ -1935,3 +1935,19 @@ ou grant faz parte da 9A.
 
 Depois da aprovação da 9A, o próximo recorte previsto é a **PR 9B — tenant
 switcher e resolução consistente da preferência ativa nas Actions multiempresa**.
+
+### 29.1 PR 9B — Tenant Switcher
+
+A PR 9A foi concluída no merge `b4aae86`. A PR 9B foi implementada e aguarda
+aprovação: o header passa a exibir a empresa atual e oferece troca explícita para
+usuários com múltiplas memberships ativas. A troca reutiliza
+`selectActiveTenantAction` e `select_active_tenant_v1`, retornando a `/app` para
+reconstrução server-side do novo contexto.
+
+A composição preference-aware foi unificada e aplicada aos consumers diretos de
+Tenant Access, Activity e Notifications. Preferência continua sendo contexto;
+`auth.uid()` e membership ativa continuam sendo autoridade. A PR não cria
+migration, RPC, policy ou grant.
+
+Após aprovação da 9B, o próximo recorte previsto é a **PR 9C — Invitation
+Issuance UI para Person existente**.

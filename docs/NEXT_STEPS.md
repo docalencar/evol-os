@@ -1,37 +1,33 @@
 # Evol OS — Próxima entrega
 
-## MVP-PR1 Phase 9 — PR 9A Functional Tenant Selection
+## MVP-PR1 Phase 9 — PR 9B Tenant Switcher
 
 ### Objetivo
 
-Tornar funcional a seleção explícita de empresa em `/select-company` para o
-usuário com múltiplas memberships ativas e sem preferência válida.
+Exibir a empresa atual no app, permitir a troca explícita entre memberships
+ativas e fazer todos os consumers server-side diretos usarem a mesma resolução
+preference-aware.
 
 ### Estado confirmado
 
-- Phases 1–7 do MVP-PR1 concluídas;
-- Phase 8 encerrada pela caracterização 8A e migrations 0077/0078;
-- autoridade tenant continua derivada de `auth.uid()` e membership ativa;
-- `select_active_tenant_v1` e sua Action server-side já existem;
-- preferência é persistida em `tenant_membership_preferences` e revalidada no
-  SSR;
-- a rota já trata zero, uma e múltiplas memberships, mas o estado multiempresa
-  ainda não permite interação.
+- Phases 1–8 concluídas;
+- PR 9A — Functional Tenant Selection — concluída no merge `b4aae86`;
+- seleção inicial já persiste a preferência por `select_active_tenant_v1`;
+- PR 9B implementada e aguardando aprovação;
+- nenhuma migration, nova RPC, alteração de RLS ou grants.
 
 ### Gate atual
 
-Implementar exclusivamente a PR 9A:
+Validar e aprovar a PR 9B:
 
-1. apresentar as opções autorizadas carregadas no servidor;
-2. enviar somente o `companyId` pretendido à Action existente;
-3. persistir a escolha pela RPC confiável;
-4. navegar para `/app` apenas após sucesso confirmado;
-5. preservar feature flag, acessibilidade e comportamento single-tenant.
+1. empresa atual visível no header;
+2. single-tenant sem seletor ambíguo;
+3. multi-tenant com troca explícita e reconstrução em `/app`;
+4. resolução preference-aware compartilhada por current company, Tenant Access,
+   Activity e Notifications;
+5. membership ativa e `auth.uid()` preservados como autoridade.
 
-Não fazem parte deste gate: switcher no header, convites, administração de
-memberships, novas RPCs, migration, RLS ou grants.
+### Próximo passo após 9B
 
-### Próximo passo após 9A
-
-PR 9B — tenant switcher e resolução consistente da preferência ativa nas
-Actions multiempresa.
+PR 9C — Invitation Issuance UI para Person existente, reutilizando a Action e a
+Trusted Persistence atuais.

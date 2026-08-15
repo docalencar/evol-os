@@ -8,14 +8,9 @@ const source = readFileSync(
   "utf8",
 )
 
-test("preference read is flag-gated and defaults to no preference", () => {
-  assert.match(source, /let preferredCompanyId: string \| null = null/)
-  assert.match(source, /if \(isTenantPreferenceResolutionEnabled\(\)\) \{/)
-  assert.match(source, /readActiveTenantPreference\(supabase, user\.id\)/)
-})
-
-test("the resolved preference is passed to loadCurrentUserContext as context", () => {
-  assert.match(source, /loadCurrentUserContext\(supabase, user, preferredCompanyId\)/)
+test("current company delegates preference-aware resolution to the canonical helper", () => {
+  assert.match(source, /loadPreferenceAwareCurrentUserContext\(supabase, user\)/)
+  assert.doesNotMatch(source, /readActiveTenantPreference|loadCurrentUserContext/)
 })
 
 test("preference wiring introduces no browser authority, service_role or first-row fallback", () => {

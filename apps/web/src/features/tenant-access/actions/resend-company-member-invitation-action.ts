@@ -2,7 +2,8 @@
 
 import { randomUUID } from "node:crypto"
 
-import { CurrentUserContextError, loadCurrentUserContext } from "@/features/authorization"
+import { CurrentUserContextError } from "@/features/authorization"
+import { loadPreferenceAwareCurrentUserContext } from "@/lib/supabase/supabase/preference-aware-current-user-context"
 import { createClient } from "@/lib/supabase/supabase/server"
 
 import { createServerTenantInvitationDelivery } from "../delivery/server"
@@ -21,7 +22,7 @@ async function loadResendInvitationTenantContext(): Promise<ResendInvitationTena
   if (error || !user) return { status: "session_expired" }
 
   try {
-    const currentUser = await loadCurrentUserContext(supabase, user)
+    const currentUser = await loadPreferenceAwareCurrentUserContext(supabase, user)
     const [{ data: company }, { data: inviter }] = await Promise.all([
       supabase.from("companies").select("id, name").eq("id", currentUser.companyId).maybeSingle(),
       supabase.from("people").select("name").eq("company_id", currentUser.companyId).eq("user_id", user.id).maybeSingle(),

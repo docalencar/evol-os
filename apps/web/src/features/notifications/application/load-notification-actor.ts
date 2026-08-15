@@ -1,11 +1,11 @@
 import "server-only"
 
 import {
-  loadCurrentUserContext,
   type CurrentUserContext,
 } from "@/features/authorization"
 import { createServerDatabase } from "@/lib/database/server-database"
+import { loadPreferenceAwareCurrentUserContext } from "@/lib/supabase/supabase/preference-aware-current-user-context"
 
 export async function loadNotificationActor(): Promise<CurrentUserContext> {
-  return loadCurrentUserContext(await createServerDatabase())
+  return loadPreferenceAwareCurrentUserContext(await createServerDatabase())
 }

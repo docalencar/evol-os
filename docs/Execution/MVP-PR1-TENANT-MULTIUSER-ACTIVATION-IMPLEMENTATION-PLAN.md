@@ -1980,7 +1980,7 @@ efetiva de invitation pending é calculada no relógio do banco, sem UPDATE.
 
 ### 29.4 PR 9D2 — People Access-State UI + Invitation Resend/Revoke
 
-A 9D2 está implementada e aguardando aprovação. A People Server Page consome a
+A 9D2 foi concluída no merge `3f13bbc`. A People Server Page consome a
 RPC segura da 9D1 com tenant derivado no servidor, valida defensivamente a
 projeção e apresenta estados de membership/invitation com precedência fail-closed.
 Resend e revoke enviam somente invitation ID e generation às Server Actions
@@ -1991,6 +1991,19 @@ Não há migration, RPC, policy ou grant novo. A tabela de invitations permanece
 fechada a leitura direta, nenhum client acessa Supabase e `service_role` continua
 fora do caminho humano.
 
-Após aprovação da 9D2, o próximo recorte é a **PR 9E — Membership Management UI
-(Role Change, Deactivation & Ownership Transfer)**. O source contém as operações
-trusted correspondentes, mas ainda não possui Server Actions ou UI consumidoras.
+### 29.5 PR 9E1 — Secure Membership Management Target Identity
+
+A discovery da PR 9E confirmou um bloqueio de contrato: as operações trusted de
+role change, deactivation e ownership transfer recebem `membership_id`, mas a
+projeção segura v1 da 9D1 não expõe esse identificador e o papel `authenticated`
+não possui SELECT direto em `company_members`.
+
+A PR 9E1 está implementada e aguardando aprovação. A migration 0080 adiciona a
+RPC `get_people_access_state_v2(uuid)`, aditiva e `SECURITY DEFINER`, que preserva
+integralmente a v1 e acrescenta apenas `membership_id`. O ID é selector
+operacional, não autoridade: `auth.uid()`, membership owner/admin ativa e tenant
+continuam revalidados no banco. Nenhuma policy, RLS ou grant de tabela é alterado.
+
+Após aprovação da 9E1, o próximo recorte é retomar a **PR 9E — Membership
+Management UI (Role Change, Deactivation & Ownership Transfer)** sobre as
+operações trusted existentes.

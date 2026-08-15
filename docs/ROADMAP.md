@@ -4,11 +4,12 @@
 
 ### MVP Closure — ativação multiusuário do tenant
 
-1. Validar e aprovar a PR 9D2 da Phase 9 — People Access-State UI + Invitation
-   Resend/Revoke.
+1. Validar e aprovar a PR 9E1 da Phase 9 — Secure Membership Management Target
+   Identity.
    As PRs 9A, 9B e 9C foram concluídas nos merges `b4aae86`, `3070855` e
-   `4d7b037`, respectivamente. A 9D1 foi concluída no merge `02168b9`; a 9D2
-   consome sua fronteira segura sem nova migration ou RPC.
+   `4d7b037`, respectivamente. A 9D1 foi concluída no merge `02168b9` e a 9D2
+   no merge `3f13bbc`. A 9E1 adiciona a fronteira DB-first mínima necessária para
+   a futura UI de gestão identificar a membership alvo sem abrir SELECT de tabela.
 
 O primeiro slice está concluído pela migration 0064: as 14 relações de
 Organization, People e Competencies agora preservam fisicamente o tenant. O
@@ -62,10 +63,10 @@ aceite integrado ao Auth e resolução/preferência de tenant. A Phase 8 encerro
 cutover de autorização pelas migrations 0077/0078 e pela caracterização de suas
 fronteiras. A execução vigente é a Phase 9 — Multiuser UI/UX. As PRs 9A–9C foram
 concluídas. A PR 9D1 criou uma fronteira `SECURITY DEFINER` mínima para o estado de
-membership/invitation de People; a tabela de invitations permanece fechada e o
-caminho humano não usa `service_role`. A PR 9D2 está implementada e aguardando
-aprovação: consome essa fronteira na People UI e entrega status, reenvio e
-revogação usando as Actions existentes.
+membership/invitation de People; a PR 9D2 foi concluída no merge `3f13bbc`. A PR
+9E1 está implementada e aguardando aprovação: a RPC v2 aditiva expõe somente o
+`membership_id` operacional, preserva a v1 e mantém as tabelas fechadas. O caminho
+humano não usa `service_role`.
 
 ## Evidência da prioridade
 

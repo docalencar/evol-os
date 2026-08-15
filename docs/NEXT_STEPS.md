@@ -1,11 +1,12 @@
 # Evol OS — Próxima entrega
 
-## MVP-PR1 Phase 9 — PR 9D2 People Access-State UI + Invitation Resend/Revoke
+## MVP-PR1 Phase 9 — PR 9E1 Secure Membership Management Target Identity
 
 ### Objetivo
 
-Apresentar o estado de acesso na People UI e permitir resend/revoke autorizados,
-consumindo exclusivamente a fronteira segura criada pela 9D1.
+Adicionar uma projeção DB-first, tenant-safe e retrocompatível que permita à
+futura UI de gestão identificar a membership alvo sem liberar SELECT direto nas
+tabelas protegidas.
 
 ### Estado confirmado
 
@@ -14,20 +15,25 @@ consumindo exclusivamente a fronteira segura criada pela 9D1.
 - PR 9B concluída no merge `3070855`;
 - PR 9C concluída no merge `4d7b037`;
 - PR 9D1 concluída no merge `02168b9`;
-- PR 9D2 implementada e aguardando aprovação;
+- PR 9D2 concluída no merge `3f13bbc`;
+- PR 9E descobriu que as mutações existentes exigem `membership_id`, ausente na
+  projeção segura v1;
+- PR 9E1 implementada e aguardando aprovação;
+- progresso funcional do MVP permanece em 93%; esta PR habilita o próximo recorte
+  sem antecipar a UI;
 - emissão, persistência, delivery e aceite continuam nas fronteiras existentes.
 
 ### Gate atual
 
-Validar e aprovar a PR 9D2:
+Validar e aprovar a PR 9E1:
 
-1. People carrega e apresenta a projeção segura de access-state;
-2. issue/resend/revoke aparecem somente nos estados e roles permitidos;
-3. generation stale falha fechado e exige refresh;
-4. client chama apenas Server Actions e não recebe `companyId` como autoridade;
-5. nenhuma migration/RPC/policy/grant e tabela de invitations ainda fechada.
+1. migration 0080 cria `get_people_access_state_v2(uuid)` sem alterar a v1;
+2. v2 acrescenta somente `membership_id` à projeção aprovada;
+3. owner/admin ativo continua sendo revalidado no banco;
+4. nenhum SELECT de tabela, policy, RLS ou grant de tabela é ampliado;
+5. a suíte pgTAP prova isolamento tenant e paridade da projeção v1/v2.
 
-### Próximo passo após 9D2
+### Próximo passo após 9E1
 
-PR 9E — Membership Management UI: mudança de role, desativação de membership e
-transferência de ownership sobre as operações trusted já existentes.
+Retomar a PR 9E — Membership Management UI: mudança de role, desativação de
+membership e transferência de ownership sobre as operações trusted existentes.

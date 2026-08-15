@@ -74,11 +74,11 @@ O status normativo e o conteúdo completo permanecem no
 ### Roadmap e execução
 
 - [ROADMAP](./ROADMAP.md): Phase 9 Multiuser UI/UX é a execução vigente.
-- [NEXT_STEPS](./NEXT_STEPS.md): validação e aprovação da PR 9D2 — People Access-State UI + Invitation Resend/Revoke.
+- [NEXT_STEPS](./NEXT_STEPS.md): validação e aprovação da PR 9E1 — Secure Membership Management Target Identity.
 - [MVP Plan](./MVP_PLAN.md): jornada completa até o MVP.
 - [EPICS](./EPICS.md): estado funcional das capacidades.
 - [Implementation Plan do MVP-PR1](./Execution/MVP-PR1-TENANT-MULTIUSER-ACTIVATION-IMPLEMENTATION-PLAN.md):
-  Phases 1–8 e PRs 9A–9C/9D1 concluídas; PR 9D2 implementada e aguardando aprovação.
+  Phases 1–8 e PRs 9A–9D2 concluídas; PR 9E1 implementada e aguardando aprovação.
 
 ## 5. Programa ADR-0012
 
@@ -102,13 +102,16 @@ no merge `4d7b037`. A PR 9D foi dividida em dois recortes. A PR 9D1 foi concluí
 no merge `02168b9`: migration 0079 e RPC `get_people_access_state_v1`, uma projeção
 `SECURITY DEFINER` mínima para owner/admin ativo. A tabela de invitations segue
 sem SELECT autenticado, sem policy de leitura e sem `service_role` no caminho
-humano. O recorte ativo é a PR 9D2, implementada e aguardando aprovação: a People
-UI apresenta o estado de acesso e usa as Actions existentes para resend/revoke,
-preservando generation e autoridade server-side, sem migration ou RPC nova.
+humano. A PR 9D2 foi concluída no merge `3f13bbc`: a People UI apresenta o estado
+de acesso e usa as Actions existentes para resend/revoke. A discovery da PR 9E
+confirmou que suas mutações exigem `membership_id`, que a projeção v1 não expõe.
+O recorte ativo é a PR 9E1: migration 0080 e RPC v2 aditiva, sem ampliar acesso às
+tabelas protegidas.
 
-Após a aprovação da 9D2, o próximo recorte é a PR 9E — Membership Management UI,
-pois o source ainda não possui consumers para role change, membership deactivation
-e ownership transfer já suportados pela Trusted Persistence.
+Após a aprovação da 9E1, o próximo recorte é retomar a PR 9E — Membership
+Management UI, usando a identidade operacional segura para role change,
+membership deactivation e ownership transfer já suportados pela Trusted
+Persistence.
 
 Resumo de encerramento das fases anteriores:
 

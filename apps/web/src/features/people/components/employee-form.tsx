@@ -178,10 +178,7 @@ export function EmployeeForm({
             employee.id,
             input
           )
-        : await createEmployeeAction(
-            companyId,
-            input
-          )
+        : await createEmployeeAction(input)
 
       if (!result.success) {
         toast.error(result.message)

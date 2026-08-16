@@ -23,7 +23,19 @@ type JobOpeningEmployeeOption = {
 }
 
 type JobOpeningTableProps = {
-  jobOpenings: JobOpening[]
+  jobOpenings: Pick<
+    JobOpening,
+    | "id"
+    | "title"
+    | "status"
+    | "priority"
+    | "departmentId"
+    | "positionId"
+    | "requestingManagerId"
+    | "recruiterId"
+    | "targetHireDate"
+    | "updatedAt"
+  >[]
   positions: JobOpeningRelationOption[]
   departments: JobOpeningRelationOption[]
   employees: JobOpeningEmployeeOption[]

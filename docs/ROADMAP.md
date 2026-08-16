@@ -4,8 +4,8 @@
 
 ### MVP Closure — ativação multiusuário do tenant
 
-1. Validar e aprovar a PR 10F2 — Dashboard Domain Read Boundaries — e executar a
-   PR 10G para integrar todos os read contracts em `/app`.
+1. Aprovar a PR 10G — Dashboard Read Integration — e retomar o smoke autenticado
+   em `/app`.
    As PRs 9A, 9B e 9C foram concluídas nos merges `b4aae86`, `3070855` e
    `4d7b037`, respectivamente. A 9D1 foi concluída no merge `02168b9` e a 9D2
    no merge `3f13bbc`. A 9E1 foi concluída no merge `1e4ccbb`; a 9E consome sua
@@ -95,7 +95,10 @@ Competencies e Activity permanecem explicitamente no recorte 10F2.
 O merge `003e0b8` concluiu a PR 10F1. A migration 0084 da PR 10F2 fecha os
 contratos DB de Development, Competencies, Recruitment e Activity, validada por
 replay local integral sem abrir SELECT, RLS ou policy. A aplicação permanece para
-a PR 10G; o smoke ainda não deve ser retomado.
+a PR 10G. A PR 10F2 foi incorporada no merge `bebfa2f`; a 10G integra o path de
+`/app` por um read model server-only que consome as seis projections 0083/0084,
+valida seus outputs e não reabre acesso direto às tabelas. Após sua aprovação, o
+smoke deve ser retomado com refresh de `/app`.
 
 ## Evidência da prioridade
 

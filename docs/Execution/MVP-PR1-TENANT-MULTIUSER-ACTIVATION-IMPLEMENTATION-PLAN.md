@@ -2018,7 +2018,7 @@ Não há migration, RPC, policy, grant, escrita direta ou `service_role` novo.
 
 ### 29.7 PR 9F — Multiuser E2E Validation + UX/Compatibility Polish
 
-A PR 9F está implementada e aguardando aprovação. A validação reutilizou fixtures
+A PR 9F foi concluída no merge `a6188dd`. A validação reutilizou fixtures
 transacionais com dois tenants, todas as roles, invitations, preference e trusted
 membership mutations. As regressões app/DB e o smoke HTTP local passaram.
 
@@ -2031,3 +2031,20 @@ O progresso funcional passa de 96% para 98%. O repositório não possui harness 
 browser E2E, e a 9F não introduz framework pesado; por isso a jornada autenticada
 desktop/mobile/teclado permanece como gate humano explícito para 100%. Após esse
 smoke, o passo seguinte é o checklist operacional de release.
+
+### 29.8 MVP Closure PR 10A — Current User Active Tenants Read Boundary
+
+O smoke autenticado de fechamento encontrou um blocker real: onboarding,
+current-user-context e tenant selection ainda dependem de SELECT direto em
+`company_members`, mas `authenticated` intencionalmente não possui esse grant.
+
+A PR 10A é DB-first e adiciona pela migration 0081 a função
+`get_current_user_active_tenants_v1()`. A projeção não recebe parâmetros, deriva
+o ator de `auth.uid()` e retorna somente `company_id`, `company_name` e
+`membership_role` das memberships ativas do próprio ator, ordenadas por
+`company_id`. Nenhum grant de tabela, policy, preferência ou autoridade nova é
+introduzido.
+
+A integração de onboarding, resolução e seleção permanece explicitamente na PR
+10B — Application Integration of Active Tenant Read Boundary. O MVP permanece em
+98% até essa integração e o smoke autenticado desktop/mobile/teclado passarem.

@@ -1,11 +1,11 @@
 # Evol OS — Próxima entrega
 
-## MVP-PR1 Phase 9 — PR 9F Multiuser E2E Validation + UX/Compatibility Polish
+## MVP Closure — PR 10A Current User Active Tenants Read Boundary
 
 ### Objetivo
 
-Validar a composição multiusuário final, corrigir defeitos comprovados de UX e
-executar o smoke autenticado manual necessário ao fechamento do MVP.
+Entregar a projeção autenticada mínima que enumera os tenants ativos do ator sem
+restaurar SELECT direto em `company_members`.
 
 ### Estado confirmado
 
@@ -19,24 +19,27 @@ executar o smoke autenticado manual necessário ao fechamento do MVP.
   projeção segura v1;
 - PR 9E1 concluída no merge `1e4ccbb`;
 - PR 9E concluída no merge `f10d116`;
-- PR 9F implementada e aguardando aprovação;
+- PR 9F concluída no merge `a6188dd`;
+- o smoke autenticado comprovou que onboarding e resolução de tenant ainda tentam
+  ler diretamente `company_members`;
+- `authenticated` intencionalmente não possui SELECT nessa tabela;
+- PR 10A implementa `get_current_user_active_tenants_v1()` pela migration 0081;
 - progresso funcional do MVP: 98%;
 - emissão, persistência, delivery e aceite continuam nas fronteiras existentes.
 
 ### Gate atual
 
-Validar e aprovar a PR 9F:
+Validar e aprovar a PR 10A:
 
-1. regressões app e DB cobrem tenant selection, invitations, access-state,
-   membership management, concorrência e isolamento;
-2. feedback de revoke/deactivation permanece dentro do AlertDialog ativo;
-3. falhas de aceite são anunciadas como alerta;
-4. nenhum contrato DB ou boundary de segurança foi alterado;
-5. executar em browser real a matriz autenticada desktop/mobile/teclado antes de
-   declarar o MVP 100%.
+1. RPC sem parâmetros deriva o ator exclusivamente de `auth.uid()`;
+2. retorna apenas `company_id`, `company_name` e `membership_role` das
+   memberships ativas do próprio ator;
+3. grants permanecem mínimos e nenhum SELECT direto é aberto;
+4. zero, single, multi-tenant, status e isolamento são comprovados por pgTAP;
+5. integração dos consumers permanece fora desta PR DB-first.
 
-### Próximo passo após aprovação da 9F
+### Próximo passo após aprovação da 10A
 
-Smoke autenticado manual de fechamento com dois tenants e as roles previstas;
-depois, preparar o checklist operacional de release sem confundi-lo com o escopo
-funcional do MVP.
+MVP Closure PR 10B — Application Integration of Active Tenant Read Boundary —
+para migrar onboarding, current-user-context e tenant selection. Depois, retomar
+o smoke autenticado manual com dois tenants e as roles previstas.

@@ -15,10 +15,7 @@ export type TenantSwitcherContext = Readonly<{
 
 export async function getTenantSwitcherContext(): Promise<TenantSwitcherContext> {
   const current = await getCurrentCompanyContext()
-  const selection = await loadTenantSelectionOptions(
-    current.supabase,
-    current.user.id,
-  )
+  const selection = await loadTenantSelectionOptions(current.supabase)
 
   const options = selection.status === "options" ? selection.options : []
 

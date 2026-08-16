@@ -1,38 +1,43 @@
 import assert from "node:assert/strict"
+import { registerHooks } from "node:module"
 import test from "node:test"
 
 import type { SupabaseClient, User } from "@supabase/supabase-js"
 
-import {
-  CurrentUserContextError,
-  loadCurrentUserContext,
-} from "./current-user-context"
+registerHooks({
+  resolve(specifier, context, nextResolve) {
+    return specifier === "server-only"
+      ? { shortCircuit: true, url: "server-only:test" }
+      : nextResolve(specifier, context)
+  },
+  load(url, context, nextLoad) {
+    return url === "server-only:test"
+      ? { format: "module", shortCircuit: true, source: "export {}" }
+      : nextLoad(url, context)
+  },
+})
 
-type MembershipRow = Readonly<{
+const loadModule = () => import("./current-user-context")
+
+type ActiveTenantRow = Readonly<{
   company_id: string
-  role: string
-  status: "active" | "inactive" | "invited"
+  company_name: string
+  membership_role: string
 }>
 
-function createSupabase(rows: readonly MembershipRow[]): SupabaseClient {
-  const query = {
-    select: () => query,
-    eq: () => query,
-    then: (resolve: (value: unknown) => unknown) =>
-      Promise.resolve({ data: rows, error: null }).then(resolve),
-  }
-
+function createSupabase(rows: readonly ActiveTenantRow[]): SupabaseClient {
   return {
-    from: () => query,
+    rpc: async () => ({ data: rows, error: null }),
   } as unknown as SupabaseClient
 }
 
 const authenticatedUser = { id: "user-1" } as User
 
 test("preserves the legacy single-tenant context", async () => {
+  const { loadCurrentUserContext } = await loadModule()
   const context = await loadCurrentUserContext(
     createSupabase([
-      { company_id: "company-a", role: "owner", status: "active" },
+      { company_id: "company-a", company_name: "Alpha", membership_role: "owner" },
     ]),
     authenticatedUser
   )
@@ -45,6 +50,7 @@ test("preserves the legacy single-tenant context", async () => {
 })
 
 test("fails closed when the user has no active membership", async () => {
+  const { CurrentUserContextError, loadCurrentUserContext } = await loadModule()
   await assert.rejects(
     loadCurrentUserContext(createSupabase([]), authenticatedUser),
     (error) =>
@@ -54,11 +60,12 @@ test("fails closed when the user has no active membership", async () => {
 })
 
 test("fails closed instead of choosing an arbitrary tenant", async () => {
+  const { CurrentUserContextError, loadCurrentUserContext } = await loadModule()
   await assert.rejects(
     loadCurrentUserContext(
       createSupabase([
-        { company_id: "company-a", role: "owner", status: "active" },
-        { company_id: "company-b", role: "admin", status: "active" },
+        { company_id: "company-a", company_name: "Alpha", membership_role: "owner" },
+        { company_id: "company-b", company_name: "Beta", membership_role: "admin" },
       ]),
       authenticatedUser
     ),
@@ -69,10 +76,11 @@ test("fails closed instead of choosing an arbitrary tenant", async () => {
 })
 
 test("fails closed when an active membership has an invalid role", async () => {
+  const { CurrentUserContextError, loadCurrentUserContext } = await loadModule()
   await assert.rejects(
     loadCurrentUserContext(
       createSupabase([
-        { company_id: "company-a", role: "unknown", status: "active" },
+        { company_id: "company-a", company_name: "Alpha", membership_role: "unknown" },
       ]),
       authenticatedUser
     ),

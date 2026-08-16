@@ -4,9 +4,9 @@
 
 ### MVP Closure — ativação multiusuário do tenant
 
-1. Validar e aprovar a PR 10A — Current User Active Tenants Read Boundary — e
-   executar a PR 10B, que integra essa fronteira no onboarding e na resolução de
-   tenant antes de retomar o smoke autenticado manual de fechamento.
+1. Validar e aprovar a PR 10B — Application Integration of Active Tenant Read
+   Boundary — e executar a PR 10C para avaliar os consumers legados antes de
+   retomar o smoke autenticado manual de fechamento.
    As PRs 9A, 9B e 9C foram concluídas nos merges `b4aae86`, `3070855` e
    `4d7b037`, respectivamente. A 9D1 foi concluída no merge `02168b9` e a 9D2
    no merge `3f13bbc`. A 9E1 foi concluída no merge `1e4ccbb`; a 9E consome sua
@@ -71,10 +71,12 @@ membership/invitation de People; a PR 9D2 foi concluída no merge `3f13bbc` e a
 feedback/acessibilidade foram corrigidos. O smoke autenticado em browser real,
 incluindo mobile e teclado, encontrou um blocker real: os consumers ainda tentam
 ler `company_members`, embora `authenticated` intencionalmente não possua SELECT.
-A PR 10A adiciona pela migration 0081 a projeção mínima
+A PR 10A foi concluída no merge `9d2a7ec` e adicionou pela migration 0081 a projeção mínima
 `get_current_user_active_tenants_v1()` para enumerar somente os tenants ativos de
-`auth.uid()`. A integração da aplicação permanece separada na PR 10B, e o MVP
-continua em 98%.
+`auth.uid()`. A PR 10B integra essa fronteira no onboarding, current-user-context,
+tenant selection e switcher, eliminando nesses consumers o SELECT direto
+impossível. `/app/people/new` e `companies.service.ts` permanecem para avaliação
+na PR 10C. O MVP continua em 98% até o smoke autenticado passar.
 
 ## Evidência da prioridade
 

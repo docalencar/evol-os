@@ -58,9 +58,10 @@ test("current-company resolver sends membership-less users to onboarding, others
 // --- onboarding isolation --------------------------------------------------
 
 test("onboarding redirects any active-membership user to /app and only offers creation with no membership", () => {
-  assert.match(onboarding, /status.*active|\.eq\("status", "active"\)/)
-  assert.match(onboarding, /if \(membership\)\s*\{\s*redirect\("\/app"\)/)
+  assert.match(onboarding, /getOnboardingAccessState\(supabase\)/)
+  assert.match(onboarding, /accessState === "membership_exists"[\s\S]{0,40}redirect\("\/app"\)/)
   assert.match(onboarding, /CompanyOnboardingForm/)
+  assert.doesNotMatch(onboarding, /\.from\("company_members"\)/)
 })
 
 // --- middleware ------------------------------------------------------------

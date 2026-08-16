@@ -19,7 +19,8 @@ const header = readFileSync(
 test("read model composes current company with the existing authorized option loader", () => {
   assert.match(source, /import "server-only"/)
   assert.match(source, /getCurrentCompanyContext\(\)/)
-  assert.match(source, /loadTenantSelectionOptions\(/)
+  assert.match(source, /loadTenantSelectionOptions\(current\.supabase\)/)
+  assert.doesNotMatch(source, /current\.user\.id/)
   assert.match(source, /selection\.status === "options" \? selection\.options : \[\]/)
 })
 

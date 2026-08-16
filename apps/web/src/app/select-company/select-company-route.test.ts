@@ -15,7 +15,9 @@ test("route is auth-only and sends unauthenticated users to /login", () => {
 })
 
 test("route uses its own membership loader and never resolves the current company (loop prevention)", () => {
-  assert.match(page, /loadTenantSelectionOptions\(supabase, user\.id\)/)
+  assert.match(page, /loadTenantSelectionOptions\(supabase\)/)
+  assert.doesNotMatch(page, /loadTenantSelectionOptions\([^)]*user\.id/)
+  assert.doesNotMatch(page, /\.from\("company_members"\)/)
   assert.doesNotMatch(page, /getCurrentCompanyContext/)
 })
 

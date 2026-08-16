@@ -1,11 +1,11 @@
 # Evol OS — Próxima entrega
 
-## MVP Closure — PR 10A Current User Active Tenants Read Boundary
+## MVP Closure — PR 10B Application Integration of Active Tenant Read Boundary
 
 ### Objetivo
 
-Entregar a projeção autenticada mínima que enumera os tenants ativos do ator sem
-restaurar SELECT direto em `company_members`.
+Integrar a projeção autenticada de tenants ativos no onboarding e na resolução,
+seleção e troca de tenant sem restaurar SELECT direto em `company_members`.
 
 ### Estado confirmado
 
@@ -23,23 +23,26 @@ restaurar SELECT direto em `company_members`.
 - o smoke autenticado comprovou que onboarding e resolução de tenant ainda tentam
   ler diretamente `company_members`;
 - `authenticated` intencionalmente não possui SELECT nessa tabela;
-- PR 10A implementa `get_current_user_active_tenants_v1()` pela migration 0081;
+- PR 10A concluída no merge `9d2a7ec`, com
+  `get_current_user_active_tenants_v1()` pela migration 0081;
+- PR 10B migra os consumers centrais para a nova read boundary;
 - progresso funcional do MVP: 98%;
 - emissão, persistência, delivery e aceite continuam nas fronteiras existentes.
 
 ### Gate atual
 
-Validar e aprovar a PR 10A:
+Validar e aprovar a PR 10B:
 
-1. RPC sem parâmetros deriva o ator exclusivamente de `auth.uid()`;
-2. retorna apenas `company_id`, `company_name` e `membership_role` das
-   memberships ativas do próprio ator;
-3. grants permanecem mínimos e nenhum SELECT direto é aberto;
-4. zero, single, multi-tenant, status e isolamento são comprovados por pgTAP;
-5. integração dos consumers permanece fora desta PR DB-first.
+1. adapter server-only chama somente `get_current_user_active_tenants_v1()` sem
+   selectors;
+2. current-user-context, tenant selection, onboarding e switcher não leem mais
+   `company_members` diretamente;
+3. zero, single, multi-tenant, preferência e role inválida permanecem fail-closed;
+4. onboarding com membership existente redireciona ao fluxo normal;
+5. nenhuma migration, RPC ou autoridade nova é introduzida.
 
-### Próximo passo após aprovação da 10A
+### Próximo passo após aprovação da 10B
 
-MVP Closure PR 10B — Application Integration of Active Tenant Read Boundary —
-para migrar onboarding, current-user-context e tenant selection. Depois, retomar
-o smoke autenticado manual com dois tenants e as roles previstas.
+MVP Closure PR 10C — Legacy Tenant Consumer Cleanup — para avaliar
+`/app/people/new` e `companies.service.ts`. Depois, retomar o smoke autenticado a
+partir de signup → onboarding → criação da primeira empresa.

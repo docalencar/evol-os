@@ -2038,7 +2038,7 @@ O smoke autenticado de fechamento encontrou um blocker real: onboarding,
 current-user-context e tenant selection ainda dependem de SELECT direto em
 `company_members`, mas `authenticated` intencionalmente não possui esse grant.
 
-A PR 10A é DB-first e adiciona pela migration 0081 a função
+A PR 10A foi concluída no merge `9d2a7ec`. Ela é DB-first e adiciona pela migration 0081 a função
 `get_current_user_active_tenants_v1()`. A projeção não recebe parâmetros, deriva
 o ator de `auth.uid()` e retorna somente `company_id`, `company_name` e
 `membership_role` das memberships ativas do próprio ator, ordenadas por
@@ -2046,5 +2046,22 @@ o ator de `auth.uid()` e retorna somente `company_id`, `company_name` e
 introduzido.
 
 A integração de onboarding, resolução e seleção permanece explicitamente na PR
-10B — Application Integration of Active Tenant Read Boundary. O MVP permanece em
-98% até essa integração e o smoke autenticado desktop/mobile/teclado passarem.
+10B — Application Integration of Active Tenant Read Boundary.
+
+### 29.9 MVP Closure PR 10B — Application Integration
+
+A PR 10B adiciona um único adapter server-only que chama
+`get_current_user_active_tenants_v1()` sem `userId`, `companyId` ou qualquer
+selector. O retorno é validado no application layer e convertido para
+`companyId`, `companyName` e `CorporateRole` antes da resolução determinística.
+
+Onboarding, current-user-context, tenant selection e tenant switcher passam a
+consumir essa fronteira e deixam de executar SELECT direto em `company_members`.
+O onboarding volta a distinguir com segurança zero memberships de membership
+existente. `/app/people/new` e `companies.service.ts` permanecem deliberadamente
+fora deste recorte e seguem para avaliação na PR 10C — Legacy Tenant Consumer
+Cleanup.
+
+O MVP permanece em 98% até o smoke autenticado ser retomado em signup →
+onboarding → criação da primeira empresa e toda a matriz desktop/mobile/teclado
+passar.

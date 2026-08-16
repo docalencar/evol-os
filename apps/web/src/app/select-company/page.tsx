@@ -25,7 +25,7 @@ export default async function SelectCompanyPage() {
     redirect("/login")
   }
 
-  const result = await loadTenantSelectionOptions(supabase, user.id)
+  const result = await loadTenantSelectionOptions(supabase)
   if (result.status === "no_membership") {
     redirect("/onboarding")
   }

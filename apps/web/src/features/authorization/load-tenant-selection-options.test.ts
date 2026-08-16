@@ -16,20 +16,15 @@ registerHooks({
 const load = () => import("./load-tenant-selection-options")
 
 function createSupabase(rows: unknown, error: unknown = null): SupabaseClient {
-  const query = {
-    select: () => query,
-    eq: () => query,
-    then: (resolve: (value: unknown) => unknown) =>
-      Promise.resolve({ data: rows, error }).then(resolve),
-  }
-  return { from: () => query } as unknown as SupabaseClient
+  return {
+    rpc: async () => ({ data: rows, error }),
+  } as unknown as SupabaseClient
 }
 
 test("no active membership yields no_membership", async () => {
   const { loadTenantSelectionOptions } = await load()
   const result = await loadTenantSelectionOptions(
-    createSupabase([{ company_id: "company-a", status: "inactive", companies: { name: "A" } }]),
-    "user-1",
+    createSupabase([]),
   )
   assert.deepEqual(result, { status: "no_membership" })
 })
@@ -38,10 +33,8 @@ test("exactly one active membership yields single (no options list)", async () =
   const { loadTenantSelectionOptions } = await load()
   const result = await loadTenantSelectionOptions(
     createSupabase([
-      { company_id: "company-a", status: "active", companies: { name: "Alpha" } },
-      { company_id: "company-b", status: "inactive", companies: { name: "Beta" } },
+      { company_id: "company-a", company_name: "Alpha", membership_role: "owner" },
     ]),
-    "user-1",
   )
   assert.deepEqual(result, { status: "single", companyId: "company-a" })
 })
@@ -50,10 +43,9 @@ test("multiple active memberships yield deterministic options with company names
   const { loadTenantSelectionOptions } = await load()
   const result = await loadTenantSelectionOptions(
     createSupabase([
-      { company_id: "company-b", status: "active", companies: { name: "Beta" } },
-      { company_id: "company-a", status: "active", companies: { name: "Alpha" } },
+      { company_id: "company-b", company_name: "Beta", membership_role: "admin" },
+      { company_id: "company-a", company_name: "Alpha", membership_role: "owner" },
     ]),
-    "user-1",
   )
   assert.deepEqual(result, {
     status: "options",
@@ -64,26 +56,19 @@ test("multiple active memberships yield deterministic options with company names
   })
 })
 
-test("handles the embedded company as an array and falls back to the id when the name is missing", async () => {
+test("fails closed when the RPC returns a malformed company name", async () => {
   const { loadTenantSelectionOptions } = await load()
   const result = await loadTenantSelectionOptions(
     createSupabase([
-      { company_id: "company-a", status: "active", companies: [{ name: "Alpha" }] },
-      { company_id: "company-b", status: "active", companies: null },
+      { company_id: "company-a", company_name: "Alpha", membership_role: "owner" },
+      { company_id: "company-b", company_name: null, membership_role: "admin" },
     ]),
-    "user-1",
   )
-  assert.deepEqual(result, {
-    status: "options",
-    options: [
-      { companyId: "company-a", companyName: "Alpha" },
-      { companyId: "company-b", companyName: "company-b" },
-    ],
-  })
+  assert.deepEqual(result, { status: "no_membership" })
 })
 
 test("fail-closed: a read error yields no_membership, never fabricated options", async () => {
   const { loadTenantSelectionOptions } = await load()
-  const result = await loadTenantSelectionOptions(createSupabase(null, { message: "boom" }), "user-1")
+  const result = await loadTenantSelectionOptions(createSupabase(null, { message: "boom" }))
   assert.deepEqual(result, { status: "no_membership" })
 })

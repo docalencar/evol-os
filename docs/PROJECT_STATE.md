@@ -74,7 +74,7 @@ O status normativo e o conteúdo completo permanecem no
 ### Roadmap e execução
 
 - [ROADMAP](./ROADMAP.md): Phase 9 Multiuser UI/UX é a execução vigente.
-- [NEXT_STEPS](./NEXT_STEPS.md): validação da PR 10C antes de retomar o smoke autenticado.
+- [NEXT_STEPS](./NEXT_STEPS.md): validação DB-first da PR 10D antes da integração app na PR 10E.
 - [MVP Plan](./MVP_PLAN.md): jornada completa até o MVP.
 - [EPICS](./EPICS.md): estado funcional das capacidades.
 - [Implementation Plan do MVP-PR1](./Execution/MVP-PR1-TENANT-MULTIUSER-ACTIVATION-IMPLEMENTATION-PLAN.md):
@@ -110,7 +110,7 @@ sem ampliar acesso às tabelas protegidas. O recorte ativo é a PR 9E, implement
 e posteriormente concluído no merge `f10d116`: role change, membership
 deactivation e ownership transfer na People UI por Server Actions e RPCs trusted.
 
-O recorte ativo é a PR 10C — Legacy Tenant Consumer Cleanup. O smoke
+O recorte ativo é a PR 10D — Tenant-Scoped Person Contact Read Boundary. O smoke
 autenticado comprovou que onboarding e resolução de tenant dependiam de SELECT
 direto em `company_members`, indisponível por desenho para `authenticated`. A
 migration 0081 introduz `get_current_user_active_tenants_v1()`, uma projeção
@@ -119,8 +119,14 @@ migration 0081 introduz `get_current_user_active_tenants_v1()`, uma projeção
 em `fb4ae6f1c6c71337c5d28be77c88e01bae561fe8`. A PR 10C migra
 `/app/people/new` para contexto e queries server-side, reutiliza o fluxo canônico
 de Employee e remove o `companies.service.ts` sem consumers. Não há mudança de
-DB, RLS ou grants. O progresso funcional permanece em 98% até o smoke autenticado
-completo passar.
+DB, RLS ou grants. Após seu merge `419c89a`, o smoke encontrou SELECTs diretos
+bloqueados em Company/Person. A Company já é projetada pela 0081 e o Person ID
+por `current_person_id(company_id)`, mas a emissão inicial não possuía uma
+boundary para o e-mail persistido. A migration 0082 adiciona
+`get_tenant_person_invitation_contact_v1(company_id, person_id)`, restrita a
+owner/admin ativo, sem grant ou policy de tabela. A integração fica para a PR
+10E. O progresso funcional permanece em 98% até o smoke autenticado completo
+passar.
 
 Resumo de encerramento das fases anteriores:
 

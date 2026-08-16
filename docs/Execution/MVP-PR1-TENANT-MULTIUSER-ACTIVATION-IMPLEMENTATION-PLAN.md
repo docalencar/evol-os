@@ -2081,3 +2081,25 @@ suíte DB permanece em 21 arquivos/559 testes; TypeScript, lint e build passam. 
 MVP permanece em 98%. Após aprovação e merge, o smoke manual retoma em signup →
 onboarding → criação da primeira empresa → `/app` e segue pela matriz completa
 single/multi-tenant, People e gestão de acesso, mobile, teclado e session/logout.
+
+### 29.11 MVP Closure PR 10D — Tenant-Scoped Person Contact Read Boundary
+
+Após o merge da PR 10C em `419c89a`, o smoke autenticado comprovou que
+`getCurrentCompanyContext()` ainda lia `companies` e `people` diretamente, sem
+privilégio de tabela para `authenticated`. O nome da Company já pode vir da
+projeção 0081 e o Person ID de `current_person_id(company_id)`. A emissão inicial,
+porém, não possuía boundary para obter o e-mail persistido sem confiar no client.
+
+A migration 0082 cria
+`get_tenant_person_invitation_contact_v1(company_id, person_id)`, uma função
+`STABLE SECURITY DEFINER` com `search_path` hardened. Ela reutiliza
+`require_tenant_access_administrator`, projeta somente `person_id` e `email`,
+preserva `NULL` sem duplicar elegibilidade e torna Person estrangeira
+indistinguível de inexistente. Somente `authenticated` recebe EXECUTE; não há
+grant/policy de tabela, mutation ou `service_role` no caminho humano. O pgTAP
+dedicado possui 27 asserts e a suíte passa em 22 arquivos/586 testes.
+
+A PR 10D é exclusivamente DB-first. A PR 10E — Current Company + Invitation Read
+Integration — deve consumir 0081, `current_person_id` e a nova 0082 antes da
+retomada do smoke em signup/login → onboarding → primeira Company → `/app`. O MVP
+permanece em 98%.

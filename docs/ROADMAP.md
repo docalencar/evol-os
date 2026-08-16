@@ -4,8 +4,8 @@
 
 ### MVP Closure — ativação multiusuário do tenant
 
-1. Validar e aprovar a PR 10C — Legacy Tenant Consumer Cleanup — antes de retomar
-   o smoke autenticado manual de fechamento.
+1. Validar e aprovar a PR 10D — Tenant-Scoped Person Contact Read Boundary — e
+   integrar Company/Person/Invitation na PR 10E antes de retomar o smoke.
    As PRs 9A, 9B e 9C foram concluídas nos merges `b4aae86`, `3070855` e
    `4d7b037`, respectivamente. A 9D1 foi concluída no merge `02168b9` e a 9D2
    no merge `3f13bbc`. A 9E1 foi concluída no merge `1e4ccbb`; a 9E consome sua
@@ -78,6 +78,10 @@ impossível. `/app/people/new` e `companies.service.ts` permanecem para avaliaç
 A PR 10B foi mergeada em `fb4ae6f1c6c71337c5d28be77c88e01bae561fe8`.
 A PR 10C migra `/app/people/new` para o contexto server-side e fluxo canônico de
 Employee, e remove o `companies.service.ts` sem consumers, sem mudança de DB.
+A retomada do smoke encontrou reads diretos bloqueados de Company/Person. A
+migration 0082 da PR 10D cria uma projeção mínima de `person_id` e `email` para
+owner/admin ativo, sem SELECT grant em `people`; a aplicação permanece para a PR
+10E.
 O MVP continua em 98% até o smoke autenticado passar.
 
 ## Evidência da prioridade

@@ -4,8 +4,8 @@
 
 ### MVP Closure — ativação multiusuário do tenant
 
-1. Validar e aprovar a PR 10E — Current Company + Invitation Read Integration —
-   e retomar o smoke autenticado com refresh de `/app` após criar a primeira Company.
+1. Validar e aprovar a PR 10F1 — Organization + People Read Boundaries — e
+   executar a PR 10F2 para os demais domínios exigidos por `/app`.
    As PRs 9A, 9B e 9C foram concluídas nos merges `b4aae86`, `3070855` e
    `4d7b037`, respectivamente. A 9D1 foi concluída no merge `02168b9` e a 9D2
    no merge `3f13bbc`. A 9E1 foi concluída no merge `1e4ccbb`; a 9E consome sua
@@ -86,6 +86,12 @@ Company pela 0081, o Person ID por `current_person_id`, o contato de emissão pe
 0082 e mantém no resend o `destinationEmail` da operação trusted existente, sem
 SELECT direto crítico de Company/People nesses consumers.
 O MVP continua em 98% até o smoke autenticado passar.
+
+O smoke após a PR 10E chegou ao Organization summary e falhou em `getTeams()`:
+policies tenant-aware não substituem o SELECT ausente para `authenticated`. A PR
+10F1 cria pela migration 0083 projections estreitas de Organization e People,
+sem abrir grant de tabela, alterar RLS ou policies. Development, Recruitment,
+Competencies e Activity permanecem explicitamente no recorte 10F2.
 
 ## Evidência da prioridade
 

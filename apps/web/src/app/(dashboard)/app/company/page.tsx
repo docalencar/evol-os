@@ -1,5 +1,3 @@
-
-
 const ACTOR_LABELS = {
   user: "Usuário",
   system: "Sistema",
@@ -42,14 +40,16 @@ import { PageHeader } from "@/components/shared/page-header"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import {
+  getManagementCompanyTimeline,
+  getManagementDepartments,
+} from "@/features/dashboard-read"
+import {
   DepartmentCreateDialog,
   DepartmentTable,
-  getDepartments,
 } from "@/features/organization/departments"
 
 import {
   EntityTimelineSection,
-  getCompanyTimeline,
   type ActivityTimelineItemViewModel,
 } from "@/features/timeline"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
@@ -57,16 +57,9 @@ import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-compan
 export default async function CompanyPage() {
   const { companyId } = await getCurrentCompanyContext()
 
-  const [
-    departments,
-    companyTimeline,
-  ] = await Promise.all([
-    getDepartments(companyId),
-
-    getCompanyTimeline({
-      companyId,
-      limit: 20,
-    }),
+  const [departments, companyTimeline] = await Promise.all([
+    getManagementDepartments(companyId),
+    getManagementCompanyTimeline(companyId, 20),
   ])
 
   return (
@@ -74,11 +67,12 @@ export default async function CompanyPage() {
       <PageHeader
         title="Organização"
         description="Gerencie a estrutura organizacional da empresa."
-        actions={<DepartmentCreateDialog companyId={companyId} />}
+        actions={
+          <DepartmentCreateDialog companyId={companyId} />
+        }
       />
 
       <DepartmentTable departments={departments ?? []} />
-
 
       <Card>
         <EntityTimelineSection
@@ -95,15 +89,20 @@ export default async function CompanyPage() {
       <Card>
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold">Cargos</h3>
+            <h3 className="text-lg font-semibold">
+              Cargos
+            </h3>
 
             <p className="mt-2 text-sm text-slate-600">
-              Defina os cargos utilizados pelos colaboradores.
+              Defina os cargos utilizados pelos
+              colaboradores.
             </p>
           </div>
 
           <Link href="/app/company/positions">
-            <Button variant="secondary">Gerenciar cargos</Button>
+            <Button variant="secondary">
+              Gerenciar cargos
+            </Button>
           </Link>
         </div>
       </Card>

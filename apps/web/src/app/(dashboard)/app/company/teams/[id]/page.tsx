@@ -8,17 +8,15 @@ import {
   InfoCard,
 } from "@/components/dashboard"
 
+import { PageHeader } from "@/components/shared/page-header"
 import {
-  PageHeader,
-} from "@/components/shared/page-header"
+  getManagementDepartments,
+  getManagementEntityTimeline,
+  getManagementPeople,
+  getManagementTeams,
+} from "@/features/dashboard-read"
 
 import {
-  getDepartmentById,
-} from "@/features/organization/departments"
-
-import {
-  getTeamById,
-  getTeams,
   presentTeamDetails,
   presentTeamWorkspace,
   TeamEditDialog,
@@ -26,25 +24,16 @@ import {
 } from "@/features/organization/teams"
 
 import {
-  getEmployees,
-} from "@/features/people"
-
-import {
   ActivityIntelligenceCard,
   EntityTimelineSection,
   createActivityIntelligenceAIContext,
-  getEntityTimeline,
   presentActivityIntelligence,
   type ActivityTimelineItemViewModel,
 } from "@/features/timeline"
 
-import {
-  createExecutiveAiContext,
-} from "@/features/copilot/context"
+import { createExecutiveAiContext } from "@/features/copilot/context"
 
-import {
-  getCurrentCompanyContext,
-} from "@/lib/supabase/supabase/current-company"
+import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 type TeamDetailsPageProps = {
   params: Promise<{
@@ -72,9 +61,7 @@ function formatDate(date: string) {
 function formatLabel(value: string) {
   return value
     .replace(/[_-]+/g, " ")
-    .replace(/\b\w/g, (letter) =>
-      letter.toUpperCase()
-    )
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
 }
 
 function presentTeamTimelineItem(
@@ -83,14 +70,10 @@ function presentTeamTimelineItem(
   return {
     title: item.title,
     description: item.description,
-    actorLabel:
-      ACTOR_LABELS[item.actorType],
-    occurredAtLabel:
-      formatDate(item.occurredAt),
-    moduleLabel:
-      formatLabel(item.module),
-    activityTypeLabel:
-      formatLabel(item.activityType),
+    actorLabel: ACTOR_LABELS[item.actorType],
+    occurredAtLabel: formatDate(item.occurredAt),
+    moduleLabel: formatLabel(item.module),
+    activityTypeLabel: formatLabel(item.activityType),
   }
 }
 
@@ -99,8 +82,7 @@ export default async function TeamDetailsPage({
 }: TeamDetailsPageProps) {
   const { id } = await params
 
-  const teamIdResult =
-    z.string().uuid().safeParse(id)
+  const teamIdResult = z.string().uuid().safeParse(id)
 
   if (!teamIdResult.success) {
     redirect("/app/company/teams")
@@ -108,108 +90,80 @@ export default async function TeamDetailsPage({
 
   const teamId = teamIdResult.data
 
-  const { companyId } =
-    await getCurrentCompanyContext()
+  const { companyId } = await getCurrentCompanyContext()
 
-  const [
-    team,
-    teams,
-    employees,
-    teamTimeline,
-  ] = await Promise.all([
-    getTeamById(
-      companyId,
-      teamId
-    ),
-
-    getTeams(companyId),
-
-    getEmployees(companyId),
-
-    getEntityTimeline({
-      companyId,
-      entityType: "team",
-      entityId: teamId,
-      limit: 20,
-    }),
-  ])
+  const [team, teams, employees, teamTimeline] =
+    await Promise.all([
+      getManagementTeams(companyId).then(
+        (rows) =>
+          rows.find((row) => row.id === teamId) ?? null
+      ),
+      getManagementTeams(companyId),
+      getManagementPeople(companyId),
+      getManagementEntityTimeline(
+        companyId,
+        "team",
+        teamId,
+        20
+      ),
+    ])
 
   if (!team) {
     redirect("/app/company/teams")
   }
 
-  const department =
-    team.department_id
-      ? await getDepartmentById(
-          companyId,
-          team.department_id
-        )
-      : null
+  const department = team.department_id
+    ? ((await getManagementDepartments(companyId)).find(
+        (row) => row.id === team.department_id
+      ) ?? null)
+    : null
 
-  const parentTeam =
-    team.parent_team_id
-      ? (teams ?? []).find(
-          (candidateTeam) =>
-            candidateTeam.id ===
-            team.parent_team_id
-        ) ?? null
-      : null
+  const parentTeam = team.parent_team_id
+    ? ((teams ?? []).find(
+        (candidateTeam) =>
+          candidateTeam.id === team.parent_team_id
+      ) ?? null)
+    : null
 
-  const details =
-    presentTeamDetails(team)
+  const details = presentTeamDetails(team)
 
-  const workspace =
-    presentTeamWorkspace({
-      teamId,
-      leaderId:
-        team.manager_id ?? null,
-      childTeamsCount:
-        (teams ?? []).filter(
-          (candidateTeam) =>
-            candidateTeam.parent_team_id ===
-            teamId
-        ).length,
-      departmentName:
-        department?.name ?? null,
-      parentTeamName:
-        parentTeam?.name ?? null,
-      employees: employees ?? [],
-    })
+  const workspace = presentTeamWorkspace({
+    teamId,
+    leaderId: team.manager_id ?? null,
+    childTeamsCount: (teams ?? []).filter(
+      (candidateTeam) =>
+        candidateTeam.parent_team_id === teamId
+    ).length,
+    departmentName: department?.name ?? null,
+    parentTeamName: parentTeam?.name ?? null,
+    employees: employees ?? [],
+  })
 
-
-  const activityIntelligence =
-    presentActivityIntelligence({
-      activities:
-        teamTimeline.items,
-    })
+  const activityIntelligence = presentActivityIntelligence({
+    activities: teamTimeline.items,
+  })
 
   const activityAiContext =
     createActivityIntelligenceAIContext({
-      intelligence:
-        activityIntelligence,
+      intelligence: activityIntelligence,
     })
 
-  const executiveAiContext =
-    createExecutiveAiContext({
-      entityType: "team",
-      entityId: team.id,
-      companyId,
-      title: team.name,
-      metrics: workspace.metrics.map(
-        (metric) => ({
-          id: metric.id,
-          label: metric.label,
-          value: String(metric.value),
-        })
-      ),
-      metadata: {
-        departmentId:
-          team.department_id ?? "",
-        parentTeamId:
-          team.parent_team_id ?? "",
-      },
-      activity: activityAiContext,
-    })
+  const executiveAiContext = createExecutiveAiContext({
+    entityType: "team",
+    entityId: team.id,
+    companyId,
+    title: team.name,
+    metrics: workspace.metrics.map((metric) => ({
+      id: metric.id,
+      label: metric.label,
+      value: String(metric.value),
+    })),
+    metadata: {
+      departmentId: team.department_id ?? "",
+      parentTeamId: team.parent_team_id ?? "",
+    },
+    activity: activityAiContext,
+  })
 
   void executiveAiContext
 
@@ -217,9 +171,7 @@ export default async function TeamDetailsPage({
     <div className="space-y-8">
       <PageHeader
         title={details.name}
-        description={
-          details.description
-        }
+        description={details.description}
         actions={
           <TeamEditDialog
             companyId={companyId}
@@ -228,9 +180,7 @@ export default async function TeamDetailsPage({
         }
       />
 
-      <TeamWorkspaceOverview
-        workspace={workspace}
-      />
+      <TeamWorkspaceOverview workspace={workspace} />
 
       <DashboardSection
         title="Informações do time"
@@ -238,56 +188,38 @@ export default async function TeamDetailsPage({
       >
         <DashboardCard>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <InfoCard
-              label="Nome"
-              value={details.name}
-            />
+            <InfoCard label="Nome" value={details.name} />
 
             <InfoCard
               label="Liderança"
-              value={
-                details
-                  .leadershipStatusLabel
-              }
+              value={details.leadershipStatusLabel}
             />
 
             <InfoCard
               label="Estrutura"
-              value={
-                details
-                  .parentTeamStatusLabel
-              }
+              value={details.parentTeamStatusLabel}
             />
 
             <InfoCard
               label="Situação"
-              value={
-                details.statusLabel
-              }
+              value={details.statusLabel}
             />
 
             <InfoCard
               label="Criado em"
-              value={
-                details.createdAtLabel
-              }
+              value={details.createdAtLabel}
             />
 
             <InfoCard
               label="Última atualização"
-              value={
-                details.updatedAtLabel
-              }
+              value={details.updatedAtLabel}
             />
           </div>
         </DashboardCard>
       </DashboardSection>
 
-
       <ActivityIntelligenceCard
-        intelligence={
-          activityIntelligence
-        }
+        intelligence={activityIntelligence}
       />
 
       <DashboardSection

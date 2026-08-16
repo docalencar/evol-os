@@ -88,6 +88,12 @@ Company pela 0081, o Person ID por `current_person_id`, o contato de emissão pe
 SELECT direto crítico de Company/People nesses consumers.
 O MVP continua em 98% até o smoke autenticado passar.
 
+A integração People + Organization consome as boundaries 0085. A correção
+forward-only 0086 preserva o contrato `person` e inclui eventos persistidos com a
+terminologia histórica `employee`, sem data migration ou mudança de grants. Os
+writes, o privacy sign-off e o hardening da timeline 0084 continuam pendentes;
+Human Review permanece suspenso.
+
 O smoke após a PR 10E chegou ao Organization summary e falhou em `getTeams()`:
 policies tenant-aware não substituem o SELECT ausente para `authenticated`. A PR
 10F1 cria pela migration 0083 projections estreitas de Organization e People,

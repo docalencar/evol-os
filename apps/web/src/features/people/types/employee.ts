@@ -1,9 +1,11 @@
-export type EmployeeStatus = "active" | "inactive" | "on_leave" | "terminated"
+export type EmployeeStatus =
+  "active" | "inactive" | "on_leave" | "terminated"
 
 export type Employee = {
   id: string
   company_id: string
-  user_id: string | null
+  user_id?: string | null
+  has_user_access?: boolean
   full_name: string
   email: string | null
   phone: string | null

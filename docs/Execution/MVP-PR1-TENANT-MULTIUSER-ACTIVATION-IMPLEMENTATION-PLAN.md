@@ -2216,3 +2216,16 @@ deve confirmar explicitamente se employee/manager podem receber `phone`,
 `birth_date`, `disc_profile` e o restante do management profile. Esta correção não
 altera silenciosamente a matriz histórica. UI integration e writes seguem
 pendentes; Human Review permanece suspenso e o MVP em 98%.
+
+### 29.18 MVP Closure PR C/C1 — App Integration and People Timeline Alignment
+
+A PR C integra as oito projections 0085 nas rotas MVP de People e Organization
+por adapters server-only com validação estrita e sem fallback para SELECT direto.
+A PR C1 adiciona a migration forward-only 0086, sem alterar a 0085: o selector
+externo `person` passa a abranger eventos em que a pessoa foi persistida como
+entidade ou sujeito `person`/`employee`, normalizando a saída para `person`.
+
+Não há reescrita de histórico, nova RPC, grant, RLS, policy ou mudança de write
+path. A padronização futura dos produtores `employee`, o hardening da timeline
+tenant-wide 0084 e o privacy sign-off permanecem follow-ups. Writes continuam
+pendentes, Human Review permanece suspenso e o MVP em 98%.

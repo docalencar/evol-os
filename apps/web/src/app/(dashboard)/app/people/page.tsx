@@ -2,8 +2,11 @@ import Link from "next/link"
 
 import { PageHeader } from "@/components/shared/page-header"
 import { Button } from "@/components/ui/button"
-import { getPositions } from "@/features/organization/positions"
-import { getTeams } from "@/features/organization/teams"
+import {
+  getManagementPeople,
+  getManagementPositions,
+  getManagementTeams,
+} from "@/features/dashboard-read"
 import {
   getInvitationRoleOptionsForActor,
   getPeopleAccessStates,
@@ -13,32 +16,38 @@ import {
   EmployeeCreateDialog,
   EmployeeTable,
   PeopleWorkspaceSummary,
-  getEmployees,
   presentPeopleWorkspaceSummary,
 } from "@/features/people"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 export default async function PeoplePage() {
-  const { companyId, currentUser, supabase } = await getCurrentCompanyContext()
-  const invitationRoleOptions = getInvitationRoleOptionsForActor(currentUser.role)
+  const { companyId, currentUser, personId, supabase } =
+    await getCurrentCompanyContext()
+  const invitationRoleOptions =
+    getInvitationRoleOptionsForActor(currentUser.role)
 
-  const [employees, teams, positions, accessStateResult] = await Promise.all([
-    getEmployees(companyId),
-    getTeams(companyId),
-    getPositions(companyId),
-    getPeopleAccessStates(supabase, companyId),
-  ])
+  const [employees, teams, positions, accessStateResult] =
+    await Promise.all([
+      getManagementPeople(companyId),
+      getManagementTeams(companyId),
+      getManagementPositions(companyId),
+      getPeopleAccessStates(supabase, companyId),
+    ])
 
   const accessStateByPersonId = new Map(
     accessStateResult.status === "available"
-      ? accessStateResult.rows.map((row) => [row.personId, row] as const)
-      : [],
+      ? accessStateResult.rows.map(
+          (row) => [row.personId, row] as const
+        )
+      : []
   )
 
-  const managerOptions = (employees ?? []).map((employee) => ({
-    id: employee.id,
-    name: employee.full_name,
-  }))
+  const managerOptions = (employees ?? []).map(
+    (employee) => ({
+      id: employee.id,
+      name: employee.full_name,
+    })
+  )
 
   const managerNameById = new Map(
     managerOptions.map((manager) => [
@@ -51,13 +60,13 @@ export default async function PeoplePage() {
     (employee) => ({
       ...employee,
       manager_name: employee.manager_id
-        ? managerNameById.get(employee.manager_id) ?? null
+        ? (managerNameById.get(employee.manager_id) ?? null)
         : null,
       accessState: presentPeopleAccessState(
         accessStateByPersonId.get(employee.id) ?? null,
         currentUser.role,
         accessStateResult.status === "available",
-        employee.user_id === currentUser.userId,
+        employee.id === personId
       ),
     })
   )
@@ -76,9 +85,7 @@ export default async function PeoplePage() {
             <Button
               variant="secondary"
               nativeButton={false}
-              render={
-                <Link href="/app/people/import" />
-              }
+              render={<Link href="/app/people/import" />}
             >
               Sincronizar planilha
             </Button>

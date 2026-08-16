@@ -10,32 +10,26 @@ import {
 } from "@/components/dashboard"
 
 import { PageHeader } from "@/components/shared/page-header"
+import {
+  getManagementDepartments,
+  getManagementEntityTimeline,
+  getManagementPeople,
+  getManagementPositions,
+  getManagementTeams,
+} from "@/features/dashboard-read"
+
+import { DepartmentEditDialog } from "@/features/organization/departments"
 
 import {
-  DepartmentEditDialog,
-  getDepartmentById,
-} from "@/features/organization/departments"
-
-import { getPositions } from "@/features/organization/positions/queries/get-positions"
-import { getTeams } from "@/features/organization/teams/queries/get-teams"
-import { getEmployees } from "@/features/people/queries/get-employees"
-
-import {
-  ActivityIntelligenceCard,
   EntityTimelineSection,
   createActivityIntelligenceAIContext,
-  getEntityTimeline,
   presentActivityIntelligence,
   type ActivityTimelineItemViewModel,
 } from "@/features/timeline"
 
-import {
-  createExecutiveAiContext,
-} from "@/features/copilot/context"
+import { createExecutiveAiContext } from "@/features/copilot/context"
 
-import {
-  getCurrentCompanyContext,
-} from "@/lib/supabase/supabase/current-company"
+import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 type DepartmentDetailsPageProps = {
   params: Promise<{
@@ -63,9 +57,7 @@ function formatDate(date: string) {
 function formatLabel(value: string) {
   return value
     .replace(/[_-]+/g, " ")
-    .replace(/\b\w/g, (letter) =>
-      letter.toUpperCase()
-    )
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
 }
 
 function presentDepartmentTimelineItem(
@@ -74,14 +66,10 @@ function presentDepartmentTimelineItem(
   return {
     title: item.title,
     description: item.description,
-    actorLabel:
-      ACTOR_LABELS[item.actorType],
-    occurredAtLabel:
-      formatDate(item.occurredAt),
-    moduleLabel:
-      formatLabel(item.module),
-    activityTypeLabel:
-      formatLabel(item.activityType),
+    actorLabel: ACTOR_LABELS[item.actorType],
+    occurredAtLabel: formatDate(item.occurredAt),
+    moduleLabel: formatLabel(item.module),
+    activityTypeLabel: formatLabel(item.activityType),
   }
 }
 
@@ -89,15 +77,11 @@ function belongsToDepartment(
   item: unknown,
   departmentId: string
 ) {
-  if (
-    !item ||
-    typeof item !== "object"
-  ) {
+  if (!item || typeof item !== "object") {
     return false
   }
 
-  const record =
-    item as Record<string, unknown>
+  const record = item as Record<string, unknown>
 
   return (
     record.department_id === departmentId ||
@@ -145,18 +129,15 @@ export default async function DepartmentDetailsPage({
 }: DepartmentDetailsPageProps) {
   const { id } = await params
 
-  const departmentIdResult =
-    z.string().uuid().safeParse(id)
+  const departmentIdResult = z.string().uuid().safeParse(id)
 
   if (!departmentIdResult.success) {
     redirect("/app/company/departments")
   }
 
-  const departmentId =
-    departmentIdResult.data
+  const departmentId = departmentIdResult.data
 
-  const { companyId } =
-    await getCurrentCompanyContext()
+  const { companyId } = await getCurrentCompanyContext()
 
   const [
     department,
@@ -165,109 +146,82 @@ export default async function DepartmentDetailsPage({
     employees,
     departmentTimeline,
   ] = await Promise.all([
-    getDepartmentById(
-      companyId,
-      departmentId
+    getManagementDepartments(companyId).then(
+      (rows) =>
+        rows.find((row) => row.id === departmentId) ?? null
     ),
-
-    getTeams(companyId),
-
-    getPositions(companyId),
-
-    getEmployees(companyId),
-
-    getEntityTimeline({
+    getManagementTeams(companyId),
+    getManagementPositions(companyId),
+    getManagementPeople(companyId),
+    getManagementEntityTimeline(
       companyId,
-      entityType: "department",
-      entityId: departmentId,
-      limit: 20,
-    }),
+      "department",
+      departmentId,
+      20
+    ),
   ])
 
   if (!department) {
     redirect("/app/company/departments")
   }
 
-  const departmentTeams =
-    (teams ?? []).filter((team) =>
-      belongsToDepartment(
-        team,
-        departmentId
-      )
-    )
+  const departmentTeams = (teams ?? []).filter((team) =>
+    belongsToDepartment(team, departmentId)
+  )
 
-  const departmentPositions =
-    (positions ?? []).filter((position) =>
-      belongsToDepartment(
-        position,
-        departmentId
-      )
-    )
+  const departmentPositions = (positions ?? []).filter(
+    (position) =>
+      belongsToDepartment(position, departmentId)
+  )
 
-  const departmentEmployees =
-    (employees ?? []).filter((employee) =>
-      belongsToDepartment(
-        employee,
-        departmentId
-      )
-    )
+  const departmentEmployees = (employees ?? []).filter(
+    (employee) =>
+      belongsToDepartment(employee, departmentId)
+  )
 
-
-  const activityIntelligence =
-    presentActivityIntelligence({
-      activities:
-        departmentTimeline.items,
-    })
+  const activityIntelligence = presentActivityIntelligence({
+    activities: departmentTimeline.items,
+  })
 
   const activityAiContext =
     createActivityIntelligenceAIContext({
-      intelligence:
-        activityIntelligence,
+      intelligence: activityIntelligence,
     })
 
-  const executiveAiContext =
-    createExecutiveAiContext({
-      entityType: "department",
-      entityId: department.id,
-      companyId,
-      title: department.name,
-      metrics: [
-        {
-          id: "teams",
-          label: "Times",
-          value: String(
-            departmentTeams.length
-          ),
-        },
-        {
-          id: "positions",
-          label: "Cargos",
-          value: String(
-            departmentPositions.length
-          ),
-        },
-        {
-          id: "employees",
-          label: "Colaboradores",
-          value: String(
-            departmentEmployees.length
-          ),
-        },
-        {
-          id: "leadership",
-          label: "Liderança",
-          value:
-            department.leaderId
-              ? "Líder vinculado"
-              : "Sem líder definido",
-        },
-      ],
-      metadata: {
-        leaderId:
-          department.leaderId ?? "",
+  const executiveAiContext = createExecutiveAiContext({
+    entityType: "department",
+    entityId: department.id,
+    companyId,
+    title: department.name,
+    metrics: [
+      {
+        id: "teams",
+        label: "Times",
+        value: String(departmentTeams.length),
       },
-      activity: activityAiContext,
-    })
+      {
+        id: "positions",
+        label: "Cargos",
+        value: String(departmentPositions.length),
+      },
+      {
+        id: "employees",
+        label: "Colaboradores",
+        value: String(departmentEmployees.length),
+      },
+      {
+        id: "leadership",
+        label: "Liderança",
+        value: department.leaderId
+          ? "Líder vinculado"
+          : "Sem líder definido",
+      },
+    ],
+    metadata: {
+      leaderId: department.leaderId ?? "",
+    },
+    activity: activityAiContext,
+  })
 
   void executiveAiContext
 
@@ -295,23 +249,17 @@ export default async function DepartmentDetailsPage({
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <InfoCard
               label="Times"
-              value={String(
-                departmentTeams.length
-              )}
+              value={String(departmentTeams.length)}
             />
 
             <InfoCard
               label="Cargos"
-              value={String(
-                departmentPositions.length
-              )}
+              value={String(departmentPositions.length)}
             />
 
             <InfoCard
               label="Colaboradores"
-              value={String(
-                departmentEmployees.length
-              )}
+              value={String(departmentEmployees.length)}
             />
 
             <InfoCard

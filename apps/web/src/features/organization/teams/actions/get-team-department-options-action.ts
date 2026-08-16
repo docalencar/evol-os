@@ -1,8 +1,7 @@
 "use server"
 
-import {
-  createDepartmentRepository,
-} from "../../departments/repositories/department-repository"
+import { getManagementDepartments } from "@/features/dashboard-read"
+import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 export type TeamDepartmentOption = {
   value: string
@@ -20,39 +19,25 @@ type GetTeamDepartmentOptionsActionResult =
       options: TeamDepartmentOption[]
     }
 
-export async function getTeamDepartmentOptionsAction(
-  companyId: string
-): Promise<GetTeamDepartmentOptionsActionResult> {
-  const repository =
-    await createDepartmentRepository()
+export async function getTeamDepartmentOptionsAction(): Promise<GetTeamDepartmentOptionsActionResult> {
+  try {
+    const { companyId } = await getCurrentCompanyContext()
+    const departments =
+      await getManagementDepartments(companyId)
 
-  const {
-    data,
-    error,
-  } = await repository.findAllByCompany(
-    companyId
-  )
-
-  if (error) {
-    console.error(
-      "Erro ao carregar departamentos do formulário de time:",
-      error
-    )
-
+    return {
+      success: true,
+      options: departments.map((department) => ({
+        value: department.id,
+        label: department.name,
+      })),
+    }
+  } catch {
     return {
       success: false,
       message:
         "Não foi possível carregar os departamentos.",
       options: [],
     }
-  }
-
-  return {
-    success: true,
-    options:
-      data?.map((department) => ({
-        value: department.id,
-        label: department.name,
-      })) ?? [],
   }
 }

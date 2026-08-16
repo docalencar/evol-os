@@ -1,11 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import {
-  useEffect,
-  useMemo,
-  useState,
-} from "react"
+import { useEffect, useMemo, useState } from "react"
 
 import { DataTable } from "@/components/shared/data-table"
 import { Badge } from "@/components/ui/badge"
@@ -18,21 +14,15 @@ import {
   type PeopleAccessStateViewModel,
 } from "@/features/tenant-access/client"
 
-import {
-  EMPLOYEE_STATUS_LABELS,
-} from "../constants/employee-status"
+import { EMPLOYEE_STATUS_LABELS } from "../constants/employee-status"
 import type {
   Employee,
   EmployeeStatus,
 } from "../types/employee"
 import { ArchiveEmployeeButton } from "./archive-employee-button"
-import {
-  EmployeeBulkActionsBar,
-} from "./employee-bulk-actions-bar"
+import { EmployeeBulkActionsBar } from "./employee-bulk-actions-bar"
 import { EmployeeEditDialog } from "./employee-edit-dialog"
-import {
-  EmployeeWorkspacePagination,
-} from "./employee-workspace-pagination"
+import { EmployeeWorkspacePagination } from "./employee-workspace-pagination"
 import {
   EmployeeWorkspaceToolbar,
   type EmployeeWorkspaceFilters,
@@ -45,10 +35,7 @@ type EmployeeSelectOption = {
   name: string
 }
 
-type Relation =
-  | { name: string }
-  | { name: string }[]
-  | null
+type Relation = { name: string } | { name: string }[] | null
 
 type EmployeeTableItem = Employee & {
   teams?: Relation
@@ -106,9 +93,7 @@ function matchesSearch(
   ]
 
   return searchableValues.some((value) =>
-    normalizeSearchValue(value).includes(
-      normalizedSearch
-    )
+    normalizeSearchValue(value).includes(normalizedSearch)
   )
 }
 
@@ -121,22 +106,13 @@ function matchesFilters(
       employee,
       normalizeSearchValue(filters.search)
     ) &&
-    (
-      !filters.positionId ||
-      employee.position_id === filters.positionId
-    ) &&
-    (
-      !filters.teamId ||
-      employee.team_id === filters.teamId
-    ) &&
-    (
-      !filters.managerId ||
-      employee.manager_id === filters.managerId
-    ) &&
-    (
-      !filters.status ||
-      employee.status === filters.status
-    )
+    (!filters.positionId ||
+      employee.position_id === filters.positionId) &&
+    (!filters.teamId ||
+      employee.team_id === filters.teamId) &&
+    (!filters.managerId ||
+      employee.manager_id === filters.managerId) &&
+    (!filters.status || employee.status === filters.status)
   )
 }
 
@@ -185,14 +161,10 @@ function sortEmployees(
       )
 
       return (
-        firstValue.localeCompare(
-          secondValue,
-          "pt-BR",
-          {
-            numeric: true,
-            sensitivity: "base",
-          }
-        ) * direction
+        firstValue.localeCompare(secondValue, "pt-BR", {
+          numeric: true,
+          sensitivity: "base",
+        }) * direction
       )
     }
   )
@@ -214,9 +186,7 @@ export function EmployeeTable({
   invitationRoleOptions,
 }: EmployeeTableProps) {
   const [filters, setFilters] =
-    useState<EmployeeWorkspaceFilters>(
-      INITIAL_FILTERS
-    )
+    useState<EmployeeWorkspaceFilters>(INITIAL_FILTERS)
 
   const [sortBy, setSortBy] =
     useState<EmployeeWorkspaceSortBy>("fullName")
@@ -226,8 +196,9 @@ export function EmployeeTable({
 
   const [currentPage, setCurrentPage] = useState(1)
 
-  const [pageSize, setPageSize] =
-    useState(INITIAL_PAGE_SIZE)
+  const [pageSize, setPageSize] = useState(
+    INITIAL_PAGE_SIZE
+  )
 
   const [selectedEmployeeIds, setSelectedEmployeeIds] =
     useState<Set<string>>(() => new Set())
@@ -247,11 +218,7 @@ export function EmployeeTable({
         sortBy,
         sortDirection
       ),
-    [
-      filteredEmployees,
-      sortBy,
-      sortDirection,
-    ]
+    [filteredEmployees, sortBy, sortDirection]
   )
 
   const totalPages = Math.max(
@@ -259,13 +226,9 @@ export function EmployeeTable({
     Math.ceil(sortedEmployees.length / pageSize)
   )
 
-  const safeCurrentPage = Math.min(
-    currentPage,
-    totalPages
-  )
+  const safeCurrentPage = Math.min(currentPage, totalPages)
 
-  const firstItemIndex =
-    (safeCurrentPage - 1) * pageSize
+  const firstItemIndex = (safeCurrentPage - 1) * pageSize
 
   const paginatedEmployees = useMemo(
     () =>
@@ -273,11 +236,7 @@ export function EmployeeTable({
         firstItemIndex,
         firstItemIndex + pageSize
       ),
-    [
-      sortedEmployees,
-      firstItemIndex,
-      pageSize,
-    ]
+    [sortedEmployees, firstItemIndex, pageSize]
   )
 
   const pageEmployeeIds = paginatedEmployees.map(
@@ -294,10 +253,9 @@ export function EmployeeTable({
     [employees, selectedEmployeeIds]
   )
 
-  const selectedOnCurrentPageCount =
-    pageEmployeeIds.filter((employeeId) =>
-      selectedEmployeeIds.has(employeeId)
-    ).length
+  const selectedOnCurrentPageCount = pageEmployeeIds.filter(
+    (employeeId) => selectedEmployeeIds.has(employeeId)
+  ).length
 
   const allCurrentPageSelected =
     pageEmployeeIds.length > 0 &&
@@ -308,9 +266,7 @@ export function EmployeeTable({
     !allCurrentPageSelected
 
   const firstItem =
-    sortedEmployees.length === 0
-      ? 0
-      : firstItemIndex + 1
+    sortedEmployees.length === 0 ? 0 : firstItemIndex + 1
 
   const lastItem = Math.min(
     firstItemIndex + pageSize,
@@ -319,12 +275,7 @@ export function EmployeeTable({
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [
-    filters,
-    pageSize,
-    sortBy,
-    sortDirection,
-  ])
+  }, [filters, pageSize, sortBy, sortDirection])
 
   useEffect(() => {
     const availableEmployeeIds = new Set(
@@ -440,7 +391,9 @@ export function EmployeeTable({
               <input
                 type="checkbox"
                 aria-label={`Selecionar ${employee.full_name}`}
-                checked={selectedEmployeeIds.has(employee.id)}
+                checked={selectedEmployeeIds.has(
+                  employee.id
+                )}
                 onChange={() =>
                   toggleEmployeeSelection(employee.id)
                 }
@@ -536,7 +489,7 @@ export function EmployeeTable({
 
                 {invitationRoleOptions.length > 0 &&
                 employee.status === "active" &&
-                employee.user_id === null &&
+                !employee.has_user_access &&
                 employee.accessState.canIssue &&
                 employee.email ? (
                   <InvitationIssueDialog
@@ -549,12 +502,22 @@ export function EmployeeTable({
 
                 {employee.accessState.invitationId &&
                 employee.accessState.invitationGeneration &&
-                (employee.accessState.canResend || employee.accessState.canRevoke) ? (
+                (employee.accessState.canResend ||
+                  employee.accessState.canRevoke) ? (
                   <PeopleAccessActions
-                    invitationId={employee.accessState.invitationId}
-                    expectedGeneration={employee.accessState.invitationGeneration}
-                    canResend={employee.accessState.canResend}
-                    canRevoke={employee.accessState.canRevoke}
+                    invitationId={
+                      employee.accessState.invitationId
+                    }
+                    expectedGeneration={
+                      employee.accessState
+                        .invitationGeneration
+                    }
+                    canResend={
+                      employee.accessState.canResend
+                    }
+                    canRevoke={
+                      employee.accessState.canRevoke
+                    }
                   />
                 ) : null}
 

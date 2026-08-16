@@ -7,6 +7,7 @@ import type { Position } from "@/features/organization/positions"
 import {
   createTenantDashboardReadRepository,
   type TenantOrganizationDirectoryRow,
+  type TenantPeopleDirectoryRow,
 } from "../repositories/tenant-dashboard-read-repository"
 import type { DashboardJobOpening } from "./get-app-dashboard-read-model"
 
@@ -75,6 +76,13 @@ export async function getPeopleCreationOptions(companyId: string): Promise<Peopl
     })),
     managers: people.map((row) => ({ id: row.person_id, name: row.full_name })),
   }
+}
+
+export async function getTenantPeopleDirectory(
+  companyId: string,
+): Promise<readonly TenantPeopleDirectoryRow[]> {
+  const database = await createServerDatabase()
+  return createTenantDashboardReadRepository(database).loadPeople(companyId)
 }
 
 export async function getRecruitmentWorkspaceReadModel(

@@ -6,7 +6,7 @@ export async function getPositions(companyId: string) {
   const { data, error } = await repository.findAllByCompany(companyId)
 
   if (error) {
-    throw error
+    throw new Error("Não foi possível carregar os cargos.")
   }
 
   return data ?? []

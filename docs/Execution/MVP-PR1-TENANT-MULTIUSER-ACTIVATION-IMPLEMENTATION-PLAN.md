@@ -2169,3 +2169,19 @@ browser novo.
 
 Após aprovação, o smoke autenticado deve retomar exatamente com refresh de
 `http://localhost:3000/app`. O MVP permanece em 98% até o Human Review passar.
+
+### 29.16 MVP Closure PR A — People + Organization MVP Read Integration
+
+Após o merge `8369b1e`, a auditoria confirmou que a 0083 não projeta todos os
+campos exigidos pelas UIs atuais. People list/detail exigem contato, identidade
+Auth e dados de perfil; Company, Teams, Positions e Department detail exigem
+descrições e modelos de edição/detalhe ausentes nos diretórios mínimos. Essas
+rotas permanecem `MISSING_BOUNDARY`, sem fallback para SELECT direto.
+
+Em Analytics, o headcount ativo passa a consumir
+`get_tenant_people_directory_v1` pelo adapter server-only existente. O restante
+da rota permanece bloqueado por dados históricos e de Recruitment/Approval fora
+do contrato 0083. O serviço browser morto `people.service.ts`, sem consumers, é
+removido, e os queries legados de Positions deixam de propagar erros PostgREST
+brutos. Writes permanecem fora do escopo. Human Review continua suspenso e o MVP
+permanece em 98%.

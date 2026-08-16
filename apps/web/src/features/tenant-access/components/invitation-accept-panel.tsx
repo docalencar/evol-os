@@ -72,7 +72,7 @@ export function InvitationAcceptPanel({
       </button>
 
       {view.tone === "error" ? (
-        <div role="status" className="space-y-1">
+        <div role="alert" className="space-y-1">
           <p className="text-sm font-medium text-slate-900">{view.heading}</p>
           <p className="text-sm text-slate-600">{view.body}</p>
         </div>

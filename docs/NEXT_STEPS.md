@@ -1,12 +1,11 @@
 # Evol OS — Próxima entrega
 
-## MVP-PR1 Phase 9 — PR 9E Membership Management UI
+## MVP-PR1 Phase 9 — PR 9F Multiuser E2E Validation + UX/Compatibility Polish
 
 ### Objetivo
 
-Permitir que owner/admin autorizado altere role e desative memberships existentes,
-e que owner transfira ownership, usando exclusivamente a projeção v2 e as RPCs
-trusted existentes.
+Validar a composição multiusuário final, corrigir defeitos comprovados de UX e
+executar o smoke autenticado manual necessário ao fechamento do MVP.
 
 ### Estado confirmado
 
@@ -19,22 +18,25 @@ trusted existentes.
 - PR 9E descobriu que as mutações existentes exigem `membership_id`, ausente na
   projeção segura v1;
 - PR 9E1 concluída no merge `1e4ccbb`;
-- PR 9E implementada e aguardando aprovação;
-- progresso funcional do MVP: 96%;
+- PR 9E concluída no merge `f10d116`;
+- PR 9F implementada e aguardando aprovação;
+- progresso funcional do MVP: 98%;
 - emissão, persistência, delivery e aceite continuam nas fronteiras existentes.
 
 ### Gate atual
 
-Validar e aprovar a PR 9E:
+Validar e aprovar a PR 9F:
 
-1. app consome `get_people_access_state_v2(uuid)` com parser estrito;
-2. role change e deactivation respeitam a matriz owner/admin;
-3. ownership transfer é apresentada somente a owner e exige escolha explícita
-   sobre a role posterior do ator;
-4. estado esperado, último owner e autoridade continuam revalidados pelas RPCs;
-5. nenhum SELECT direto, client Supabase, migration, RPC, RLS ou grant novo.
+1. regressões app e DB cobrem tenant selection, invitations, access-state,
+   membership management, concorrência e isolamento;
+2. feedback de revoke/deactivation permanece dentro do AlertDialog ativo;
+3. falhas de aceite são anunciadas como alerta;
+4. nenhum contrato DB ou boundary de segurança foi alterado;
+5. executar em browser real a matriz autenticada desktop/mobile/teclado antes de
+   declarar o MVP 100%.
 
-### Próximo passo após 9E
+### Próximo passo após aprovação da 9F
 
-PR 9F — Multiuser E2E Validation + UX/Compatibility Polish, confirmando os fluxos
-com múltiplos usuários e tenants antes do fechamento do MVP-PR1.
+Smoke autenticado manual de fechamento com dois tenants e as roles previstas;
+depois, preparar o checklist operacional de release sem confundi-lo com o escopo
+funcional do MVP.

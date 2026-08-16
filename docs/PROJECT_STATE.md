@@ -74,11 +74,11 @@ O status normativo e o conteúdo completo permanecem no
 ### Roadmap e execução
 
 - [ROADMAP](./ROADMAP.md): Phase 9 Multiuser UI/UX é a execução vigente.
-- [NEXT_STEPS](./NEXT_STEPS.md): validação e aprovação da PR 9E — Membership Management UI.
+- [NEXT_STEPS](./NEXT_STEPS.md): validação e aprovação da PR 9F e smoke autenticado manual de fechamento.
 - [MVP Plan](./MVP_PLAN.md): jornada completa até o MVP.
 - [EPICS](./EPICS.md): estado funcional das capacidades.
 - [Implementation Plan do MVP-PR1](./Execution/MVP-PR1-TENANT-MULTIUSER-ACTIVATION-IMPLEMENTATION-PLAN.md):
-  Phases 1–8 e PRs 9A–9E1 concluídas; PR 9E implementada e aguardando aprovação.
+  Phases 1–8 e PRs 9A–9E concluídas; PR 9F implementada e aguardando aprovação.
 
 ## 5. Programa ADR-0012
 
@@ -107,12 +107,14 @@ de acesso e usa as Actions existentes para resend/revoke. A discovery da PR 9E
 confirmou que suas mutações exigem `membership_id`, que a projeção v1 não expõe.
 O recorte 9E1 foi concluído no merge `1e4ccbb`: migration 0080 e RPC v2 aditiva,
 sem ampliar acesso às tabelas protegidas. O recorte ativo é a PR 9E, implementada
-e aguardando aprovação: role change, membership deactivation e ownership transfer
-na People UI por Server Actions e RPCs trusted existentes.
+e posteriormente concluído no merge `f10d116`: role change, membership
+deactivation e ownership transfer na People UI por Server Actions e RPCs trusted.
 
-Após a aprovação da 9E, o próximo recorte é a PR 9F — Multiuser E2E Validation +
-UX/Compatibility Polish. O progresso funcional do MVP passa de 93% para 96%; o
-saldo permanece reservado à validação E2E e ao fechamento dos gaps observados.
+O recorte ativo é a PR 9F — Multiuser E2E Validation + UX/Compatibility Polish,
+implementada e aguardando aprovação. A suíte automatizada cobre as fronteiras
+multiusuário e três defeitos MEDIUM de feedback/acessibilidade foram corrigidos.
+O progresso funcional passa de 96% para 98%. O smoke autenticado em browser real,
+incluindo viewport mobile e teclado, permanece necessário antes de declarar 100%.
 
 Resumo de encerramento das fases anteriores:
 

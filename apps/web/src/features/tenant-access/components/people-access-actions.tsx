@@ -22,6 +22,7 @@ import {
 } from "../actions"
 
 type Feedback = Readonly<{
+  operation: "resend" | "revoke"
   tone: "success" | "error"
   message: string
   stale?: boolean
@@ -70,7 +71,7 @@ export function PeopleAccessActions({
         if (redirectFor(actionResult.status)) return
 
         if (actionResult.status === "invitation_sent" || actionResult.status === "invitation_revoked") {
-          setFeedback({ tone: "success", message: operation === "resend" ? "Convite reenviado." : "Convite revogado." })
+          setFeedback({ operation, tone: "success", message: operation === "resend" ? "Convite reenviado." : "Convite revogado." })
           router.refresh()
           return
         }
@@ -79,6 +80,7 @@ export function PeopleAccessActions({
           actionResult.status === "invitation_updated_delivery_unknown" ||
           actionResult.status === "configuration_error") {
           setFeedback({
+            operation,
             tone: "error",
             message: "O convite foi atualizado, mas o envio do e-mail não pôde ser confirmado.",
           })
@@ -88,6 +90,7 @@ export function PeopleAccessActions({
 
         if (actionResult.status === "conflict" && actionResult.reason === "stale_generation") {
           setFeedback({
+            operation,
             tone: "error",
             stale: true,
             message: "O convite foi alterado por outra operação. Atualize a página e tente novamente.",
@@ -96,11 +99,12 @@ export function PeopleAccessActions({
         }
 
         setFeedback({
+          operation,
           tone: "error",
           message: "message" in actionResult ? actionResult.message : "Não foi possível concluir a operação.",
         })
       } catch {
-        setFeedback({ tone: "error", message: "Não foi possível concluir a operação." })
+        setFeedback({ operation, tone: "error", message: "Não foi possível concluir a operação." })
       } finally {
         submissionInFlight.current = false
       }
@@ -127,6 +131,15 @@ export function PeopleAccessActions({
                 Esta ação invalida o convite atual. Um novo acesso exigirá outro convite.
               </AlertDialogDescription>
             </AlertDialogHeader>
+            {feedback?.operation === "revoke" ? (
+              <div className="flex items-center gap-2">
+                <p ref={feedbackRef} tabIndex={-1} role={feedback.tone === "error" ? "alert" : "status"}
+                  className={feedback.tone === "error" ? "text-xs text-red-700" : "text-xs text-emerald-700"}>
+                  {feedback.message}
+                </p>
+                {feedback.stale ? <Button type="button" size="sm" variant="secondary" onClick={() => router.refresh()}>Atualizar</Button> : null}
+              </div>
+            ) : null}
             <AlertDialogFooter>
               <AlertDialogCancel disabled={isPending}>Cancelar</AlertDialogCancel>
               <AlertDialogAction variant="destructive" disabled={isPending} onClick={(event) => {
@@ -140,7 +153,7 @@ export function PeopleAccessActions({
         </AlertDialog>
       ) : null}
 
-      {feedback ? (
+      {feedback?.operation === "resend" ? (
         <div className="flex items-center gap-2">
           <p ref={feedbackRef} tabIndex={-1} role={feedback.tone === "error" ? "alert" : "status"}
             className={feedback.tone === "error" ? "text-xs text-red-700" : "text-xs text-emerald-700"}>

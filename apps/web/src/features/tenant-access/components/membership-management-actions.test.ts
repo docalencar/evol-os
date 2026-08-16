@@ -47,3 +47,14 @@ test("successful mutations refresh and context loss redirects explicitly", () =>
   assert.match(source, /replace\("\/select-company"\)/)
   assert.match(source, /replace\("\/onboarding"\)/)
 })
+
+test("deactivation feedback remains inside the open confirmation dialog", () => {
+  const deactivation = source.slice(
+    source.indexOf("function DeactivateMembershipDialog"),
+    source.indexOf("function TransferOwnershipDialog"),
+  )
+  assert.match(
+    deactivation,
+    /<AlertDialogContent>[\s\S]*<FeedbackMessage[\s\S]*<\/AlertDialogContent>/,
+  )
+})

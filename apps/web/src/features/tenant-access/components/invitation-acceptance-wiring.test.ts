@@ -26,6 +26,10 @@ test("accept panel requires a human submit, guards double-submit and never auto-
   assert.doesNotMatch(panel, /useEffect/)
 })
 
+test("acceptance failures are announced as alerts", () => {
+  assert.match(panel, /view\.tone === "error"[\s\S]*<div role="alert"/)
+})
+
 test("accept panel does not call the RPC, service_role or protected tables directly", () => {
   assert.doesNotMatch(panel, /\.rpc\(/)
   assert.doesNotMatch(panel, /service_role/)

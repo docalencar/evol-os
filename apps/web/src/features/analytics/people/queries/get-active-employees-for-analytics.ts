@@ -1,22 +1,13 @@
 import "server-only"
 
-import { createServerDatabase } from "@/lib/database/server-database"
+import { getTenantPeopleDirectory } from "@/features/dashboard-read"
 
 export async function getActiveEmployeesForAnalytics(
   companyId: string
 ) {
-  const database = await createServerDatabase()
-  const { data, error } = await database
-    .from("people")
-    .select("status")
-    .eq("company_id", companyId)
-    .eq("status", "active")
+  const people = await getTenantPeopleDirectory(companyId)
 
-  if (error) {
-    throw new Error(
-      "Não foi possível carregar o headcount."
-    )
-  }
-
-  return data ?? []
+  return people
+    .filter((person) => person.status === "active")
+    .map((person) => ({ status: person.status }))
 }

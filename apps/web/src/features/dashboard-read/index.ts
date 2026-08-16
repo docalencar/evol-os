@@ -7,6 +7,7 @@ export {
 export {
   getPeopleCreationOptions,
   getRecruitmentWorkspaceReadModel,
+  getTenantPeopleDirectory,
   type PeopleCreationOptions,
   type RecruitmentWorkspaceReadModel,
 } from "./queries/get-navigable-route-read-models"

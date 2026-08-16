@@ -74,11 +74,11 @@ O status normativo e o conteúdo completo permanecem no
 ### Roadmap e execução
 
 - [ROADMAP](./ROADMAP.md): Phase 9 Multiuser UI/UX é a execução vigente.
-- [NEXT_STEPS](./NEXT_STEPS.md): validação da PR 10A e integração da read boundary na PR 10B antes de retomar o smoke.
+- [NEXT_STEPS](./NEXT_STEPS.md): validação da PR 10B e avaliação dos consumers legados na PR 10C antes de retomar o smoke.
 - [MVP Plan](./MVP_PLAN.md): jornada completa até o MVP.
 - [EPICS](./EPICS.md): estado funcional das capacidades.
 - [Implementation Plan do MVP-PR1](./Execution/MVP-PR1-TENANT-MULTIUSER-ACTIVATION-IMPLEMENTATION-PLAN.md):
-  Phases 1–8 e PRs 9A–9F concluídas; blocker do smoke tratado pela PR 10A DB-first.
+  Phases 1–8 e PRs 9A–9F concluídas; PR 10A incorporada e integração app implementada na PR 10B.
 
 ## 5. Programa ADR-0012
 
@@ -110,13 +110,17 @@ sem ampliar acesso às tabelas protegidas. O recorte ativo é a PR 9E, implement
 e posteriormente concluído no merge `f10d116`: role change, membership
 deactivation e ownership transfer na People UI por Server Actions e RPCs trusted.
 
-O recorte ativo é a PR 10A — Current User Active Tenants Read Boundary. O smoke
+O recorte ativo é a PR 10B — Application Integration of Active Tenant Read
+Boundary. O smoke
 autenticado comprovou que onboarding e resolução de tenant dependiam de SELECT
 direto em `company_members`, indisponível por desenho para `authenticated`. A
 migration 0081 introduz `get_current_user_active_tenants_v1()`, uma projeção
 `SECURITY DEFINER` sem parâmetros que retorna apenas os tenants ativos de
-`auth.uid()`. A integração app permanece pendente na PR 10B. O progresso
-funcional permanece em 98% até o smoke autenticado completo passar.
+`auth.uid()`; a PR 10A foi incorporada no merge `9d2a7ec`. A PR 10B migra
+onboarding, current-user-context, tenant selection e switcher para essa projeção.
+Os consumers legados `/app/people/new` e `companies.service.ts` permanecem para a
+PR 10C. O progresso funcional permanece em 98% até o smoke autenticado completo
+passar.
 
 Resumo de encerramento das fases anteriores:
 

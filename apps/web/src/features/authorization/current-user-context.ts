@@ -1,6 +1,10 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js"
 
-import { isCorporateRole, type CorporateRole } from "./roles"
+import {
+  CurrentUserActiveTenantsError,
+  loadCurrentUserActiveTenants,
+} from "./current-user-active-tenants"
+import type { CorporateRole } from "./roles"
 import { resolveActiveTenantMemberships } from "./tenant-resolution"
 
 export type CurrentUserContext = Readonly<{
@@ -23,12 +27,6 @@ export class CurrentUserContextError extends Error {
   }
 }
 
-type MembershipRow = Readonly<{
-  company_id: string
-  role: string
-  status: "active" | "inactive" | "invited"
-}>
-
 export async function loadCurrentUserContext(
   supabase: SupabaseClient,
   authenticatedUser?: User,
@@ -43,37 +41,30 @@ export async function loadCurrentUserContext(
     )
   }
 
-  const { data, error } = await supabase
-    .from("company_members")
-    .select("company_id, role, status")
-    .eq("user_id", user.id)
-
-  if (error) {
+  let activeTenants
+  try {
+    activeTenants = await loadCurrentUserActiveTenants(supabase)
+  } catch (error) {
+    if (
+      error instanceof CurrentUserActiveTenantsError &&
+      error.code === "invalid_role"
+    ) {
+      throw new CurrentUserContextError(
+        "invalid_role",
+        "O vínculo do usuário possui um papel corporativo inválido.",
+      )
+    }
     throw new CurrentUserContextError(
       "membership_not_found",
       "Não foi possível identificar a empresa do usuário."
     )
   }
 
-  const memberships = (data ?? []) as MembershipRow[]
-
-  if (
-    memberships.some(
-      (membership) =>
-        membership.status === "active" && !isCorporateRole(membership.role)
-    )
-  ) {
-    throw new CurrentUserContextError(
-      "invalid_role",
-      "O vínculo do usuário possui um papel corporativo inválido."
-    )
-  }
-
   const resolution = resolveActiveTenantMemberships(
-    memberships.map((membership) => ({
-      companyId: membership.company_id,
-      role: membership.role as CorporateRole,
-      status: membership.status,
+    activeTenants.map((tenant) => ({
+      companyId: tenant.companyId,
+      role: tenant.role,
+      status: "active" as const,
     })),
     preferredCompanyId
   )

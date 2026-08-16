@@ -7,6 +7,8 @@ import {
 import { CompanyOnboardingForm } from "@/features/auth"
 import { createClient } from "@/lib/supabase/supabase/server"
 
+import { getOnboardingAccessState } from "./onboarding-access-state"
+
 export default async function OnboardingPage() {
   const supabase = await createClient()
 
@@ -18,24 +20,16 @@ export default async function OnboardingPage() {
     redirect("/login")
   }
 
-  const {
-    data: membership,
-    error: membershipError,
-  } = await supabase
-    .from("company_members")
-    .select("company_id")
-    .eq("user_id", user.id)
-    .eq("status", "active")
-    .limit(1)
-    .maybeSingle()
-
-  if (membershipError) {
+  let accessState
+  try {
+    accessState = await getOnboardingAccessState(supabase)
+  } catch {
     throw new Error(
       "Não foi possível verificar o onboarding."
     )
   }
 
-  if (membership) {
+  if (accessState === "membership_exists") {
     redirect("/app")
   }
 

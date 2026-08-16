@@ -19,18 +19,19 @@ registerHooks({
   },
 })
 
-type MembershipRow = Readonly<{
+type ActiveTenantRow = Readonly<{
   company_id: string
-  role: string
-  status: "active" | "inactive" | "invited"
+  company_name: string
+  membership_role: string
 }>
 
 function createSupabase(
-  memberships: readonly MembershipRow[],
+  activeTenants: readonly ActiveTenantRow[],
   preferredCompanyId: string | null,
   onPreferenceRead?: () => void,
 ): SupabaseClient {
   return {
+    rpc: async () => ({ data: activeTenants, error: null }),
     from(table: string) {
       if (table === "tenant_membership_preferences") {
         const preferenceQuery = {
@@ -49,22 +50,15 @@ function createSupabase(
         return preferenceQuery
       }
 
-      const membershipQuery = {
-        select: () => membershipQuery,
-        eq: () => membershipQuery,
-        then: (resolveResult: (value: unknown) => unknown) =>
-          Promise.resolve({ data: memberships, error: null }).then(resolveResult),
-      }
-      return membershipQuery
+      throw new Error(`Unexpected table read: ${table}`)
     },
   } as unknown as SupabaseClient
 }
 
 const user = { id: "user-1" } as User
-const memberships: readonly MembershipRow[] = [
-  { company_id: "company-a", role: "owner", status: "active" },
-  { company_id: "company-b", role: "admin", status: "active" },
-  { company_id: "company-c", role: "employee", status: "inactive" },
+const memberships: readonly ActiveTenantRow[] = [
+  { company_id: "company-a", company_name: "Alpha", membership_role: "owner" },
+  { company_id: "company-b", company_name: "Beta", membership_role: "admin" },
 ]
 
 async function withFlag<T>(value: string | undefined, run: () => Promise<T>) {

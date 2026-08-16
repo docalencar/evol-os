@@ -1,8 +1,23 @@
 import assert from "node:assert/strict"
+import { registerHooks } from "node:module"
 import test from "node:test"
 
 import type { Employee } from "../../types/employee"
-import { createEmployeeIntelligence } from "./create-employee-intelligence"
+
+registerHooks({
+  resolve(specifier, context, nextResolve) {
+    return specifier === "server-only"
+      ? { shortCircuit: true, url: "server-only:test" }
+      : nextResolve(specifier, context)
+  },
+  load(url, context, nextLoad) {
+    return url === "server-only:test"
+      ? { format: "module", shortCircuit: true, source: "export {}" }
+      : nextLoad(url, context)
+  },
+})
+
+const loadIntelligence = () => import("./create-employee-intelligence")
 
 const employee: Employee = {
   id: "employee-1", company_id: "company-1", user_id: null,
@@ -12,7 +27,8 @@ const employee: Employee = {
   created_at: "2026-01-01", updated_at: "2026-01-01",
 }
 
-test("createEmployeeIntelligence handles absence of workspace data", () => {
+test("createEmployeeIntelligence handles absence of workspace data", async () => {
+  const { createEmployeeIntelligence } = await loadIntelligence()
   const result = createEmployeeIntelligence(employee)
 
   assert.equal(result.assessments.completedAssessments, 0)
@@ -22,7 +38,8 @@ test("createEmployeeIntelligence handles absence of workspace data", () => {
   assert.deepEqual(result.insights.nextActions, [])
 })
 
-test("createEmployeeIntelligence composes development, competencies and multiple real actions", () => {
+test("createEmployeeIntelligence composes development, competencies and multiple real actions", async () => {
+  const { createEmployeeIntelligence } = await loadIntelligence()
   const result = createEmployeeIntelligence(employee, {
     assessments: {
       completedAssessments: 1,
@@ -60,7 +77,8 @@ test("createEmployeeIntelligence composes development, competencies and multiple
   )
 })
 
-test("createEmployeeIntelligence summarizes an active plan without competency gaps", () => {
+test("createEmployeeIntelligence summarizes an active plan without competency gaps", async () => {
+  const { createEmployeeIntelligence } = await loadIntelligence()
   const result = createEmployeeIntelligence(employee, {
     assessments: {
       completedAssessments: 0, pendingAssessments: 0,

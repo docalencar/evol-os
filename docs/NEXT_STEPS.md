@@ -1,11 +1,11 @@
 # Evol OS — Próxima entrega
 
-## MVP Closure — PR 10B Application Integration of Active Tenant Read Boundary
+## MVP Closure — PR 10C Legacy Tenant Consumer Cleanup
 
 ### Objetivo
 
-Integrar a projeção autenticada de tenants ativos no onboarding e na resolução,
-seleção e troca de tenant sem restaurar SELECT direto em `company_members`.
+Eliminar os consumers browser-side legados de tenant sem criar uma fronteira
+paralela ao contexto canônico já integrado pela PR 10B.
 
 ### Estado confirmado
 
@@ -25,24 +25,28 @@ seleção e troca de tenant sem restaurar SELECT direto em `company_members`.
 - `authenticated` intencionalmente não possui SELECT nessa tabela;
 - PR 10A concluída no merge `9d2a7ec`, com
   `get_current_user_active_tenants_v1()` pela migration 0081;
-- PR 10B migra os consumers centrais para a nova read boundary;
+- PR 10B mergeada em `fb4ae6f1c6c71337c5d28be77c88e01bae561fe8`;
+- PR 10C migra `/app/people/new` para o `EmployeeForm`, queries server-side e
+  `getCurrentCompanyContext()`, e remove `companies.service.ts` após confirmar
+  que não possuía consumers;
 - progresso funcional do MVP: 98%;
 - emissão, persistência, delivery e aceite continuam nas fronteiras existentes.
 
 ### Gate atual
 
-Validar e aprovar a PR 10B:
+Validar e aprovar a PR 10C:
 
-1. adapter server-only chama somente `get_current_user_active_tenants_v1()` sem
-   selectors;
-2. current-user-context, tenant selection, onboarding e switcher não leem mais
-   `company_members` diretamente;
-3. zero, single, multi-tenant, preferência e role inválida permanecem fail-closed;
-4. onboarding com membership existente redireciona ao fluxo normal;
-5. nenhuma migration, RPC ou autoridade nova é introduzida.
+1. `/app/people/new` deriva tenant no servidor e reutiliza o fluxo canônico de
+   criação de People;
+2. `createEmployeeAction` não aceita `companyId` do browser como autoridade;
+3. não há leitura browser-side de `company_members` nem fallback de primeira
+   membership nesses consumers;
+4. `companies.service.ts` permanece removido sem quebrar imports/barrels;
+5. nenhuma migration, RPC, policy, grant ou autoridade nova é introduzida.
 
-### Próximo passo após aprovação da 10B
+### Próximo passo após aprovação da 10C
 
-MVP Closure PR 10C — Legacy Tenant Consumer Cleanup — para avaliar
-`/app/people/new` e `companies.service.ts`. Depois, retomar o smoke autenticado a
-partir de signup → onboarding → criação da primeira empresa.
+Retomar o smoke autenticado a partir de signup → onboarding → criação da primeira
+empresa → `/app`, seguindo depois a matriz single tenant, multi-tenant,
+`/select-company`, A → B → A, People, invitations, gestão de roles, desativação,
+transferência de ownership, mobile, teclado e session/logout.

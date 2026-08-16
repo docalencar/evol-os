@@ -2065,3 +2065,19 @@ Cleanup.
 O MVP permanece em 98% até o smoke autenticado ser retomado em signup →
 onboarding → criação da primeira empresa e toda a matriz desktop/mobile/teclado
 passar.
+
+### 29.10 MVP Closure PR 10C — Legacy Tenant Consumer Cleanup
+
+A PR 10B foi mergeada em `fb4ae6f1c6c71337c5d28be77c88e01bae561fe8`.
+A PR 10C migra a rota ativa `/app/people/new` do Supabase browser-side, SELECT
+direto de `company_members`, fallback de primeira membership e inserts diretos
+para `getCurrentCompanyContext()`, queries server-side e o `EmployeeForm`/
+`createEmployeeAction` canônicos. A Action deriva `companyId` no servidor e não
+aceita selector tenant do payload do browser. `companies.service.ts` foi removido
+após busca confirmar ausência de consumers.
+
+Não há migration, RPC, policy, grant, `service_role` ou mudança de schema. A
+suíte DB permanece em 21 arquivos/559 testes; TypeScript, lint e build passam. O
+MVP permanece em 98%. Após aprovação e merge, o smoke manual retoma em signup →
+onboarding → criação da primeira empresa → `/app` e segue pela matriz completa
+single/multi-tenant, People e gestão de acesso, mobile, teclado e session/logout.

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 
 import { recordActivity } from "@/features/activity"
+import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 import { createEmployeeRepository } from "../repositories/employee-repository"
 import { createEmployeeSchema } from "../schemas/employee-schema"
@@ -13,7 +14,6 @@ type CreateEmployeeActionState = {
 }
 
 export async function createEmployeeAction(
-  companyId: string,
   input: unknown
 ): Promise<CreateEmployeeActionState> {
   const parsedInput =
@@ -27,6 +27,9 @@ export async function createEmployeeAction(
     }
   }
 
+  const { companyId } =
+    await getCurrentCompanyContext()
+
   const employeeRepository =
     await createEmployeeRepository()
 
@@ -39,9 +42,7 @@ export async function createEmployeeAction(
   if (error || !data) {
     return {
       success: false,
-      message:
-        error?.message ??
-        "Erro ao criar colaborador.",
+      message: "Erro ao criar colaborador.",
     }
   }
 

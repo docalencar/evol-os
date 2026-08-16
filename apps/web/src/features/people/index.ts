@@ -57,6 +57,7 @@ export { updateEmployeeAction } from "./actions/update-employee-action"
 export { archiveEmployeeAction } from "./actions/archive-employee-action"
 
 export { EmployeeForm } from "./components/employee-form"
+export { EmployeeCreatePage } from "./components/employee-create-page"
 export { EmployeeCreateDialog } from "./components/employee-create-dialog"
 export { EmployeeEditDialog } from "./components/employee-edit-dialog"
 export { ArchiveEmployeeButton } from "./components/archive-employee-button"

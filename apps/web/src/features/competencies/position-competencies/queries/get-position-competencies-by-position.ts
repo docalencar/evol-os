@@ -4,7 +4,8 @@ export async function getPositionCompetenciesByPosition(
   companyId: string,
   positionId: string
 ) {
-  const repository = await createPositionCompetencyRepository()
+  const repository =
+    await createPositionCompetencyRepository()
 
   const { data, error } = await repository.findByPosition(
     companyId,
@@ -12,7 +13,9 @@ export async function getPositionCompetenciesByPosition(
   )
 
   if (error) {
-    throw error
+    throw new Error(
+      "Não foi possível carregar as competências do cargo."
+    )
   }
 
   return data

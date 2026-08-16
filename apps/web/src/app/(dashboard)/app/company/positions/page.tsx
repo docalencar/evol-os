@@ -1,8 +1,10 @@
 import { PageHeader } from "@/components/shared/page-header"
-import { getPositionCompetencies } from "@/features/competencies/position-competencies"
-import { getDepartments } from "@/features/organization/departments"
 import {
-  getPositions,
+  getManagementDepartments,
+  getManagementPositionCompetencies,
+  getManagementPositions,
+} from "@/features/dashboard-read"
+import {
   PositionCreateDialog,
   PositionTable,
 } from "@/features/organization/positions"
@@ -11,16 +13,27 @@ import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-compan
 export default async function PositionsPage() {
   const { companyId } = await getCurrentCompanyContext()
 
-  const [positions, positionCompetencies, departments] = await Promise.all([
-    getPositions(companyId),
-    getPositionCompetencies(companyId),
-    getDepartments(companyId),
+  const [positions, departments] = await Promise.all([
+    getManagementPositions(companyId),
+    getManagementDepartments(companyId),
   ])
+  const positionCompetencies = (
+    await Promise.all(
+      positions.map((position) =>
+        getManagementPositionCompetencies(
+          companyId,
+          position.id
+        )
+      )
+    )
+  ).flat()
 
-  const departmentOptions = (departments ?? []).map((department) => ({
-    id: department.id,
-    name: department.name,
-  }))
+  const departmentOptions = (departments ?? []).map(
+    (department) => ({
+      id: department.id,
+      name: department.name,
+    })
+  )
 
   return (
     <div className="space-y-6">

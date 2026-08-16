@@ -60,10 +60,11 @@ Nenhum grant, RLS, policy, RPC ou migration é criado.
 
 ### Próximo passo
 
-Revisar a PR B DB-first: a migration 0085 fecha os contratos de leitura de gestão
-de People e Organization sem integrar páginas ou abrir SELECT. Após aprovação e
-merge, executar uma PR separada de adapters/UI antes de retomar o smoke. Writes e
-Human Review permanecem suspensos; o MVP continua em 98%.
+Revisar a integração da PR C: as rotas MVP de People e Organization consomem as
+boundaries 0085 sem fallback para SELECT direto. A migration forward-only 0086
+preserva a 0085 e normaliza para `person` eventos persistidos como `employee`,
+desbloqueando a timeline de People sem reescrever histórico. Writes e Human
+Review permanecem suspensos; o MVP continua em 98%.
 
 Gate adicional: obter sign-off de privacidade para o management profile de People
 e planejar hardening forward-only da timeline tenant-wide 0084, sem alterar a

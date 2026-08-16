@@ -163,6 +163,14 @@ contrato legado e requer correção forward-only coordenada. Também permanece
 pendente sign-off de privacidade sobre exposição do perfil People completo a
 employee/manager antes de produção.
 
+A PR C integra as oito boundaries 0085 nas rotas MVP de People e Organization.
+A migration forward-only 0086 preserva a 0085 e alinha o selector externo
+`person` aos eventos históricos e correntes persistidos como `employee`, inclusive
+quando a pessoa é o sujeito do evento. A saída permanece normalizada como
+`person`, sem reescrever histórico. Writes continuam pendentes, o hardening da
+0084 e o sign-off de privacidade permanecem follow-ups, Human Review segue
+suspenso e o MVP continua em 98%.
+
 Resumo de encerramento das fases anteriores:
 
 - Phases 1/2: migrations 0070–0072 e invariantes persistentes;

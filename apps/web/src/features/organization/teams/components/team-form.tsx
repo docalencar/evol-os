@@ -1,10 +1,6 @@
 "use client"
 
-import {
-  useEffect,
-  useState,
-  useTransition,
-} from "react"
+import { useEffect, useState, useTransition } from "react"
 
 import { toast } from "sonner"
 
@@ -13,18 +9,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 
-import {
-  createTeamAction,
-} from "../actions/create-team-action"
+import { createTeamAction } from "../actions/create-team-action"
 
 import {
   getTeamDepartmentOptionsAction,
   type TeamDepartmentOption,
 } from "../actions/get-team-department-options-action"
 
-import {
-  updateTeamAction,
-} from "../actions/update-team-action"
+import { updateTeamAction } from "../actions/update-team-action"
 
 type TeamFormTeam = {
   id: string
@@ -47,20 +39,12 @@ export function TeamForm({
   team,
   onSuccess,
 }: TeamFormProps) {
-  const [
-    isPending,
-    startTransition,
-  ] = useTransition()
+  const [isPending, startTransition] = useTransition()
 
-  const [
-    isLoadingDepartments,
-    setIsLoadingDepartments,
-  ] = useState(true)
+  const [isLoadingDepartments, setIsLoadingDepartments] =
+    useState(true)
 
-  const [
-    departments,
-    setDepartments,
-  ] = useState<
+  const [departments, setDepartments] = useState<
     TeamDepartmentOption[]
   >([])
 
@@ -72,10 +56,7 @@ export function TeamForm({
     async function loadDepartments() {
       setIsLoadingDepartments(true)
 
-      const result =
-        await getTeamDepartmentOptionsAction(
-          companyId
-        )
+      const result = await getTeamDepartmentOptionsAction()
 
       if (!isMounted) {
         return
@@ -96,25 +77,15 @@ export function TeamForm({
     }
   }, [companyId])
 
-  function handleSubmit(
-    formData: FormData
-  ) {
+  function handleSubmit(formData: FormData) {
     const departmentId =
-      String(
-        formData.get(
-          "departmentId"
-        ) ?? ""
-      ) || null
+      String(formData.get("departmentId") ?? "") || null
 
     const input = {
-      name: String(
-        formData.get("name") ?? ""
-      ),
+      name: String(formData.get("name") ?? ""),
 
       description: String(
-        formData.get(
-          "description"
-        ) ?? ""
+        formData.get("description") ?? ""
       ),
 
       departmentId,
@@ -125,15 +96,8 @@ export function TeamForm({
 
     startTransition(async () => {
       const result = team
-        ? await updateTeamAction(
-            companyId,
-            team.id,
-            input
-          )
-        : await createTeamAction(
-            companyId,
-            input
-          )
+        ? await updateTeamAction(companyId, team.id, input)
+        : await createTeamAction(companyId, input)
 
       if (!result.success) {
         toast.error(result.message)
@@ -146,77 +110,50 @@ export function TeamForm({
   }
 
   return (
-    <form
-      action={handleSubmit}
-      className="space-y-4"
-    >
+    <form action={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="name">
-          Nome
-        </Label>
+        <Label htmlFor="name">Nome</Label>
 
         <Input
           id="name"
           name="name"
           placeholder="Ex: Atendimento"
-          defaultValue={
-            team?.name ?? ""
-          }
+          defaultValue={team?.name ?? ""}
           required
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="description">
-          Descrição
-        </Label>
+        <Label htmlFor="description">Descrição</Label>
 
         <Textarea
           id="description"
           name="description"
           placeholder="Descreva a responsabilidade deste time."
-          defaultValue={
-            team?.description ?? ""
-          }
+          defaultValue={team?.description ?? ""}
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="departmentId">
-          Departamento
-        </Label>
+        <Label htmlFor="departmentId">Departamento</Label>
 
         <select
           id="departmentId"
           name="departmentId"
-          className={
-            SELECT_CLASS_NAME
-          }
-          defaultValue={
-            team?.department_id ?? ""
-          }
-          disabled={
-            isLoadingDepartments
-          }
+          className={SELECT_CLASS_NAME}
+          defaultValue={team?.department_id ?? ""}
+          disabled={isLoadingDepartments}
         >
-          <option value="">
-            Sem departamento
-          </option>
+          <option value="">Sem departamento</option>
 
-          {departments.map(
-            (department) => (
-              <option
-                key={
-                  department.value
-                }
-                value={
-                  department.value
-                }
-              >
-                {department.label}
-              </option>
-            )
-          )}
+          {departments.map((department) => (
+            <option
+              key={department.value}
+              value={department.value}
+            >
+              {department.label}
+            </option>
+          ))}
         </select>
 
         <p className="text-xs text-slate-500">
@@ -226,7 +163,8 @@ export function TeamForm({
         {!isLoadingDepartments &&
         departments.length === 0 ? (
           <p className="text-xs text-amber-700">
-            Nenhum departamento cadastrado. O time poderá ser salvo sem departamento.
+            Nenhum departamento cadastrado. O time poderá
+            ser salvo sem departamento.
           </p>
         ) : null}
       </div>
@@ -234,10 +172,7 @@ export function TeamForm({
       <div className="flex justify-end gap-2">
         <Button
           type="submit"
-          disabled={
-            isPending ||
-            isLoadingDepartments
-          }
+          disabled={isPending || isLoadingDepartments}
         >
           {isPending
             ? "Salvando..."

@@ -11,3 +11,15 @@ export {
   type PeopleCreationOptions,
   type RecruitmentWorkspaceReadModel,
 } from "./queries/get-navigable-route-read-models"
+export {
+  getManagementDepartments,
+  getManagementCompanyTimeline,
+  getManagementEntityTimeline,
+  getManagementPeople,
+  getManagementPerson,
+  getManagementPositionCompetencies,
+  getManagementPositionRequirements,
+  getManagementPositions,
+  getManagementTeams,
+  ManagementRouteReadError,
+} from "./queries/get-management-route-read-models"

@@ -2103,3 +2103,17 @@ A PR 10D é exclusivamente DB-first. A PR 10E — Current Company + Invitation R
 Integration — deve consumir 0081, `current_person_id` e a nova 0082 antes da
 retomada do smoke em signup/login → onboarding → primeira Company → `/app`. O MVP
 permanece em 98%.
+
+### 29.12 MVP Closure PR 10E — Current Company + Invitation Read Integration
+
+Após o merge da PR 10D em `06622e2`, os consumers críticos foram alinhados às
+fronteiras existentes: Company ID/nome vêm da projeção 0081, o Person ID atual
+vem de `current_person_id(company_id)` e a emissão resolve somente `person_id` e
+`email` pela 0082. O resend continua usando o `destinationEmail` retornado pela
+operação trusted persistente, sem lookup adicional.
+
+Não há migration, RPC, policy, grant ou `service_role` novo. Os consumers de
+current-company, issue e resend não mantêm SELECT direto crítico em `companies`
+ou `people`. A suíte app relevante passa em 603 testes e a suíte DB em 22
+arquivos/586 testes; TypeScript, lint e build passam. O MVP permanece em 98% até
+o smoke autenticado ser retomado com refresh de `/app` após a primeira Company.

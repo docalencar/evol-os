@@ -45,6 +45,7 @@ test("preserves the legacy single-tenant context", async () => {
   assert.deepEqual(context, {
     userId: "user-1",
     companyId: "company-a",
+    companyName: "Alpha",
     role: "owner",
   })
 })

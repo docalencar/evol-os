@@ -5,7 +5,7 @@ import type { SupabaseClient, User } from "@supabase/supabase-js"
 import {
   CurrentUserContextError,
   loadCurrentUserContext,
-  type CurrentUserContext,
+  type CurrentUserCompanyContext,
 } from "@/features/authorization"
 import { isTenantPreferenceResolutionEnabled } from "@/features/tenant-access/preferences/tenant-preference-flag"
 import { readActiveTenantPreference } from "@/features/tenant-access/preferences/tenant-preference-repository"
@@ -13,7 +13,7 @@ import { readActiveTenantPreference } from "@/features/tenant-access/preferences
 export async function loadPreferenceAwareCurrentUserContext(
   supabase: SupabaseClient,
   authenticatedUser?: User,
-): Promise<CurrentUserContext> {
+): Promise<CurrentUserCompanyContext> {
   const user = authenticatedUser ?? (await supabase.auth.getUser()).data.user
 
   if (!user) {

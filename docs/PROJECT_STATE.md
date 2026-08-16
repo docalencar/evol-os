@@ -74,11 +74,11 @@ O status normativo e o conteúdo completo permanecem no
 ### Roadmap e execução
 
 - [ROADMAP](./ROADMAP.md): Phase 9 Multiuser UI/UX é a execução vigente.
-- [NEXT_STEPS](./NEXT_STEPS.md): validação DB-first da PR 10D antes da integração app na PR 10E.
+- [NEXT_STEPS](./NEXT_STEPS.md): aprovação da PR 10E e retomada do smoke autenticado.
 - [MVP Plan](./MVP_PLAN.md): jornada completa até o MVP.
 - [EPICS](./EPICS.md): estado funcional das capacidades.
 - [Implementation Plan do MVP-PR1](./Execution/MVP-PR1-TENANT-MULTIUSER-ACTIVATION-IMPLEMENTATION-PLAN.md):
-  Phases 1–8 e PRs 9A–9F concluídas; PR 10A incorporada, PR 10B mergeada e cleanup legado implementado na PR 10C.
+  Phases 1–8 e PRs 9A–9F concluídas; PRs 10A–10D incorporadas e integração app da PR 10E implementada.
 
 ## 5. Programa ADR-0012
 
@@ -110,7 +110,7 @@ sem ampliar acesso às tabelas protegidas. O recorte ativo é a PR 9E, implement
 e posteriormente concluído no merge `f10d116`: role change, membership
 deactivation e ownership transfer na People UI por Server Actions e RPCs trusted.
 
-O recorte ativo é a PR 10D — Tenant-Scoped Person Contact Read Boundary. O smoke
+O recorte ativo é a PR 10E — Current Company + Invitation Read Integration. O smoke
 autenticado comprovou que onboarding e resolução de tenant dependiam de SELECT
 direto em `company_members`, indisponível por desenho para `authenticated`. A
 migration 0081 introduz `get_current_user_active_tenants_v1()`, uma projeção
@@ -125,8 +125,12 @@ por `current_person_id(company_id)`, mas a emissão inicial não possuía uma
 boundary para o e-mail persistido. A migration 0082 adiciona
 `get_tenant_person_invitation_contact_v1(company_id, person_id)`, restrita a
 owner/admin ativo, sem grant ou policy de tabela. A integração fica para a PR
-10E. O progresso funcional permanece em 98% até o smoke autenticado completo
-passar.
+10E consome Company pela projeção 0081, Person ID por `current_person_id` e o
+contato da emissão pela 0082; resend reutiliza o `destinationEmail` retornado
+pela operação trusted existente. A PR 10D foi incorporada no merge `06622e2` e
+não resta SELECT direto crítico de Company/People nesses consumers. O progresso
+funcional permanece em 98% até o smoke autenticado completo passar, retomando
+com refresh de `/app` após a criação da primeira Company.
 
 Resumo de encerramento das fases anteriores:
 

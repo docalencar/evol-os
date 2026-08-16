@@ -16,7 +16,8 @@ const organizationRowSchema = z.object({
   department_id: nullableUuid,
   parent_entity_id: nullableUuid,
 }).strict().superRefine((row, context) => {
-  const validPositionStatus = row.status === "active" || row.status === "inactive"
+  const validPositionStatus = ["draft", "active", "inactive", "obsolete"]
+    .includes(row.status ?? "")
   if (
     (row.entity_type === "position" && !validPositionStatus)
     || (row.entity_type !== "position" && row.status !== null)
@@ -186,37 +187,83 @@ function parseResponse<Output>(
 }
 
 export function createTenantDashboardReadRepository(supabase: SupabaseClient) {
+  async function loadProjection<Output>(
+    rpcName: string,
+    parameters: Readonly<Record<string, unknown>>,
+    schema: z.ZodType<Output>,
+  ): Promise<Output> {
+    let response: Readonly<{ data: unknown; error: unknown }>
+
+    try {
+      response = await supabase.rpc(rpcName, parameters)
+    } catch {
+      throw new TenantDashboardReadError("read_failed")
+    }
+
+    if (response.error) {
+      throw new TenantDashboardReadError("read_failed")
+    }
+
+    return parseResponse(schema, response.data)
+  }
+
+  const loadOrganization = (companyId: string) => loadProjection(
+    "get_tenant_organization_directory_v1",
+    { p_company_id: companyId },
+    responseSchemas.organization,
+  )
+  const loadPeople = (companyId: string) => loadProjection(
+    "get_tenant_people_directory_v1",
+    { p_company_id: companyId },
+    responseSchemas.people,
+  )
+  const loadDevelopment = (companyId: string) => loadProjection(
+    "get_tenant_development_dashboard_v1",
+    { p_company_id: companyId },
+    responseSchemas.development,
+  )
+  const loadCompetencies = (companyId: string) => loadProjection(
+    "get_tenant_competency_directory_v1",
+    { p_company_id: companyId },
+    responseSchemas.competencies,
+  )
+  const loadRecruitment = (companyId: string) => loadProjection(
+    "get_tenant_recruitment_job_openings_v1",
+    { p_company_id: companyId },
+    responseSchemas.recruitment,
+  )
+  const loadActivity = (companyId: string, limit: number) => loadProjection(
+    "get_tenant_activity_timeline_v1",
+    { p_company_id: companyId, p_limit: limit },
+    responseSchemas.activity,
+  )
+
   return {
+    loadOrganization,
+    loadPeople,
+    loadDevelopment,
+    loadCompetencies,
+    loadRecruitment,
+    loadActivity,
+
     async load(companyId: string, activityLimit = 20): Promise<TenantDashboardReadRows> {
-      let responses: readonly Readonly<{ data: unknown; error: unknown }>[]
-
-      try {
-        responses = await Promise.all([
-          supabase.rpc("get_tenant_organization_directory_v1", { p_company_id: companyId }),
-          supabase.rpc("get_tenant_people_directory_v1", { p_company_id: companyId }),
-          supabase.rpc("get_tenant_development_dashboard_v1", { p_company_id: companyId }),
-          supabase.rpc("get_tenant_competency_directory_v1", { p_company_id: companyId }),
-          supabase.rpc("get_tenant_recruitment_job_openings_v1", { p_company_id: companyId }),
-          supabase.rpc("get_tenant_activity_timeline_v1", {
-            p_company_id: companyId,
-            p_limit: activityLimit,
-          }),
+      const [organization, people, development, competencies, recruitment, activity] =
+        await Promise.all([
+          loadOrganization(companyId),
+          loadPeople(companyId),
+          loadDevelopment(companyId),
+          loadCompetencies(companyId),
+          loadRecruitment(companyId),
+          loadActivity(companyId, activityLimit),
         ])
-      } catch {
-        throw new TenantDashboardReadError("read_failed")
-      }
-
-      if (responses.some((response) => response.error)) {
-        throw new TenantDashboardReadError("read_failed")
-      }
 
       return Object.freeze({
-        organization: parseResponse(responseSchemas.organization, responses[0].data),
-        people: parseResponse(responseSchemas.people, responses[1].data),
-        development: parseResponse(responseSchemas.development, responses[2].data),
-        competencies: parseResponse(responseSchemas.competencies, responses[3].data),
-        recruitment: parseResponse(responseSchemas.recruitment, responses[4].data),
-        activity: parseResponse(responseSchemas.activity, responses[5].data),
+        organization,
+        people,
+        development,
+        competencies,
+        recruitment,
+        activity,
       })
     },
   }

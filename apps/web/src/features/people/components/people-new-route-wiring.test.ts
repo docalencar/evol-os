@@ -19,9 +19,8 @@ const createPage = readFileSync(
 test("new People route resolves tenant and form options on the server", () => {
   assert.doesNotMatch(page, /["']use client["']/)
   assert.match(page, /getCurrentCompanyContext\(\)/)
-  assert.match(page, /getEmployees\(companyId\)/)
-  assert.match(page, /getTeams\(companyId\)/)
-  assert.match(page, /getPositions\(companyId\)/)
+  assert.match(page, /getPeopleCreationOptions\(companyId\)/)
+  assert.doesNotMatch(page, /getEmployees|getTeams|getPositions/)
   assert.match(page, /<EmployeeCreatePage/)
   assert.doesNotMatch(page, /createClient|company_members|memberships\?\.\[0\]|\.from\(/)
 })

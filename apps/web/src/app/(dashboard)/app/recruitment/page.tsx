@@ -1,9 +1,8 @@
 import { StatCard } from "@/components/dashboard/stat-card"
 import { EmptyState } from "@/components/empty-state/empty-state"
 import { PageHeader } from "@/components/shared/page-header"
+import { getRecruitmentWorkspaceReadModel } from "@/features/dashboard-read"
 import {
-  getJobOpeningFormOptions,
-  getJobOpenings,
   JobOpeningTable,
   RecruitmentWorkspaceToolbar,
 } from "@/features/recruitment"
@@ -12,10 +11,8 @@ import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-compan
 export default async function RecruitmentPage() {
   const { companyId } = await getCurrentCompanyContext()
 
-  const [jobOpenings, options] = await Promise.all([
-    getJobOpenings(companyId),
-    getJobOpeningFormOptions(companyId),
-  ])
+  const { jobOpenings, options } =
+    await getRecruitmentWorkspaceReadModel(companyId)
 
   return (
     <div className="space-y-6">

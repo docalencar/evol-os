@@ -60,6 +60,11 @@ Nenhum grant, RLS, policy, RPC ou migration é criado.
 
 ### Próximo passo
 
-Após aprovação da PR 10G, retomar o smoke em `http://localhost:3000/app` com a
-sessão autenticada e tenant recém-criado. O MVP permanece em 98% até o Human
-Review completo passar.
+Revisar a PR B DB-first: a migration 0085 fecha os contratos de leitura de gestão
+de People e Organization sem integrar páginas ou abrir SELECT. Após aprovação e
+merge, executar uma PR separada de adapters/UI antes de retomar o smoke. Writes e
+Human Review permanecem suspensos; o MVP continua em 98%.
+
+Gate adicional: obter sign-off de privacidade para o management profile de People
+e planejar hardening forward-only da timeline tenant-wide 0084, sem alterar a
+migration já publicada.

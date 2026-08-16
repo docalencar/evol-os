@@ -4,8 +4,9 @@
 
 ### MVP Closure — ativação multiusuário do tenant
 
-1. Aprovar a PR 10G — Dashboard Read Integration — e retomar o smoke autenticado
-   em `/app`.
+1. Aprovar a PR B DB-first — People + Organization Management Read Boundaries —
+   e integrar seus contratos em uma PR app separada antes de retomar o smoke
+   autenticado em `/app`.
    As PRs 9A, 9B e 9C foram concluídas nos merges `b4aae86`, `3070855` e
    `4d7b037`, respectivamente. A 9D1 foi concluída no merge `02168b9` e a 9D2
    no merge `3f13bbc`. A 9E1 foi concluída no merge `1e4ccbb`; a 9E consome sua

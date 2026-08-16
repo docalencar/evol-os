@@ -74,11 +74,11 @@ O status normativo e o conteúdo completo permanecem no
 ### Roadmap e execução
 
 - [ROADMAP](./ROADMAP.md): Phase 9 Multiuser UI/UX é a execução vigente.
-- [NEXT_STEPS](./NEXT_STEPS.md): aprovação DB-first da PR 10F1 e recorte 10F2.
+- [NEXT_STEPS](./NEXT_STEPS.md): aprovação DB-first da PR 10F2 e integração na PR 10G.
 - [MVP Plan](./MVP_PLAN.md): jornada completa até o MVP.
 - [EPICS](./EPICS.md): estado funcional das capacidades.
 - [Implementation Plan do MVP-PR1](./Execution/MVP-PR1-TENANT-MULTIUSER-ACTIVATION-IMPLEMENTATION-PLAN.md):
-  Phases 1–8 e PRs 9A–9F concluídas; PRs 10A–10E incorporadas e PR 10F1 implementada DB-first.
+  Phases 1–8 e PRs 9A–9F concluídas; PRs 10A–10F1 incorporadas e PR 10F2 implementada DB-first.
 
 ## 5. Programa ADR-0012
 
@@ -140,6 +140,13 @@ em Organization/People. A PR 10F1 adiciona pela migration 0083 somente
 `auth.uid()`, exigem membership ativa e não alteram grants de tabela, RLS ou
 policies. Development, Recruitment, Competencies e Activity permanecem para a
 PR 10F2; o MVP continua em 98%.
+
+A PR 10F1 foi incorporada no merge `003e0b8`. A PR 10F2 adiciona pela migration
+0084 quatro boundaries estreitas para Development, inputs de Competencies,
+Recruitment e Activity. A cadeia 0001–0084 foi reexecutada integralmente no banco
+local e passa em 28 arquivos/732 testes. Nenhum grant de tabela, RLS ou policy foi
+aberto e a aplicação permanece sem integração; o próximo recorte é a PR 10G. O
+smoke ainda não deve ser retomado e o MVP permanece em 98%.
 
 Resumo de encerramento das fases anteriores:
 

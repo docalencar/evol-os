@@ -4,8 +4,8 @@
 
 ### MVP Closure — ativação multiusuário do tenant
 
-1. Validar e aprovar a PR 10F1 — Organization + People Read Boundaries — e
-   executar a PR 10F2 para os demais domínios exigidos por `/app`.
+1. Validar e aprovar a PR 10F2 — Dashboard Domain Read Boundaries — e executar a
+   PR 10G para integrar todos os read contracts em `/app`.
    As PRs 9A, 9B e 9C foram concluídas nos merges `b4aae86`, `3070855` e
    `4d7b037`, respectivamente. A 9D1 foi concluída no merge `02168b9` e a 9D2
    no merge `3f13bbc`. A 9E1 foi concluída no merge `1e4ccbb`; a 9E consome sua
@@ -92,6 +92,10 @@ policies tenant-aware não substituem o SELECT ausente para `authenticated`. A P
 10F1 cria pela migration 0083 projections estreitas de Organization e People,
 sem abrir grant de tabela, alterar RLS ou policies. Development, Recruitment,
 Competencies e Activity permanecem explicitamente no recorte 10F2.
+O merge `003e0b8` concluiu a PR 10F1. A migration 0084 da PR 10F2 fecha os
+contratos DB de Development, Competencies, Recruitment e Activity, validada por
+replay local integral sem abrir SELECT, RLS ou policy. A aplicação permanece para
+a PR 10G; o smoke ainda não deve ser retomado.
 
 ## Evidência da prioridade
 

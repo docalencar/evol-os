@@ -1,11 +1,11 @@
 # Evol OS — Próxima entrega
 
-## MVP Closure — PR 10F1 Organization + People Read Boundaries
+## MVP Closure — PR 10F2 Dashboard Domain Read Boundaries
 
 ### Objetivo
 
-Criar contratos DB-first mínimos de diretório para Organization e People sem
-reabrir SELECT direto nas tabelas protegidas.
+Fechar os contratos DB-first restantes de Development, Competencies, Recruitment
+e Activity sem reabrir SELECT direto nas tabelas protegidas.
 
 ### Estado confirmado
 
@@ -44,14 +44,16 @@ reabrir SELECT direto nas tabelas protegidas.
   `getTeams()` porque `authenticated` não possui SELECT em Organization/People;
 - PR 10F1 cria pela migration 0083 os diretórios tenant-scoped de Organization e
   People, autorizados por `auth.uid()` e membership ativa;
-- Development, Recruitment, Competencies e Activity permanecem bloqueados e são
-  o recorte da PR 10F2;
+- PR 10F1 concluída no merge `003e0b8`;
+- PR 10F2 cria pela migration 0084 quatro projections tenant-scoped para
+  Development, Competencies, Recruitment e Activity;
+- replay integral local e 28 arquivos/732 testes DB validam a cadeia 0001–0084;
 - progresso funcional do MVP: 98%;
 - emissão, persistência, delivery e aceite continuam nas fronteiras existentes.
 
 ### Gate atual
 
-Validar e aprovar a PR 10F1:
+Validar e aprovar a PR 10F2:
 
 1. todos os papéis com membership ativa podem ler somente o próprio tenant;
 2. Organization projeta somente identidade, nome, status e relações estruturais;
@@ -59,7 +61,7 @@ Validar e aprovar a PR 10F1:
 4. `authenticated` continua sem SELECT direto nas quatro tabelas;
 5. nenhum RLS/policy ou grant de tabela é alterado.
 
-### Próximo passo após aprovação da 10F1
+### Próximo passo após aprovação da 10F2
 
-Executar a PR 10F2 — Development + Recruitment + Activity Read Boundaries — antes
-da integração app e da retomada do smoke em `/app`.
+Executar a PR 10G — Dashboard Read Integration. O smoke ainda não deve ser
+retomado antes dessa integração.

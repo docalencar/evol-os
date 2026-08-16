@@ -2137,3 +2137,17 @@ Os pgTAP dedicados adicionam 63 asserts e a suíte completa passa em 24 arquivos
 649 testes. A aplicação permanece intocada nesta PR DB-first. Development,
 Recruitment, Competencies e Activity continuam bloqueados e formam a PR 10F2. O
 MVP permanece em 98%.
+
+### 29.14 MVP Closure PR 10F2 — Dashboard Domain Read Boundaries
+
+Após o merge da PR 10F1 em `003e0b8`, a migration 0084 cria quatro projections
+DB-first separadas por domínio: Development dashboard, inputs de Competencies,
+Recruitment job openings e Activity timeline limitada. Todas são `STABLE
+SECURITY DEFINER`, derivam o ator por `auth.uid()`, exigem membership ativa e
+concedem somente EXECUTE a `authenticated`, sem grant de tabela, policy ou
+alteração de RLS.
+
+A 0084 foi validada por reset e replay integral local de 0001–0084. Quatro pgTAP
+dedicados adicionam 83 asserts; a suíte completa passa em 28 arquivos/732 testes.
+Nenhum arquivo app é integrado nesta PR. O próximo passo é a PR 10G — Dashboard
+Read Integration; o smoke ainda não deve ser retomado e o MVP permanece em 98%.

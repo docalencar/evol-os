@@ -1,11 +1,11 @@
 # Evol OS — Próxima entrega
 
-## MVP Closure — retomar smoke autenticado
+## MVP Closure — PR 10F1 Organization + People Read Boundaries
 
 ### Objetivo
 
-Retomar o smoke em signup/login → onboarding → criar primeira Company → `/app`,
-agora que os consumers críticos usam somente as fronteiras de leitura autorizadas.
+Criar contratos DB-first mínimos de diretório para Organization e People sem
+reabrir SELECT direto nas tabelas protegidas.
 
 ### Estado confirmado
 
@@ -40,20 +40,26 @@ agora que os consumers críticos usam somente as fronteiras de leitura autorizad
 - resend preserva o e-mail retornado pela operação trusted existente, sem novo
   SELECT em Company ou People;
 - não resta SELECT direto crítico de Company/People nesses consumers;
+- o smoke chegou a `/app`, mas `getOrganizationSummary()` falha primeiro em
+  `getTeams()` porque `authenticated` não possui SELECT em Organization/People;
+- PR 10F1 cria pela migration 0083 os diretórios tenant-scoped de Organization e
+  People, autorizados por `auth.uid()` e membership ativa;
+- Development, Recruitment, Competencies e Activity permanecem bloqueados e são
+  o recorte da PR 10F2;
 - progresso funcional do MVP: 98%;
 - emissão, persistência, delivery e aceite continuam nas fronteiras existentes.
 
 ### Gate atual
 
-Validar e aprovar a PR 10E:
+Validar e aprovar a PR 10F1:
 
-1. Company name vem da projeção 0081 já autorizada;
-2. Person ID vem de `current_person_id(company_id)`;
-3. emissão resolve somente `person_id` e `email` pela 0082;
-4. resend reutiliza o `destinationEmail` da operação persistente;
-5. nenhum grant/policy, migration, RPC novo ou caminho `service_role` é introduzido.
+1. todos os papéis com membership ativa podem ler somente o próprio tenant;
+2. Organization projeta somente identidade, nome, status e relações estruturais;
+3. People não expõe e-mail, Auth IDs nem dados pessoais adicionais;
+4. `authenticated` continua sem SELECT direto nas quatro tabelas;
+5. nenhum RLS/policy ou grant de tabela é alterado.
 
-### Próximo passo após aprovação da 10E
+### Próximo passo após aprovação da 10F1
 
-Atualizar `/app` após a criação da primeira Company e continuar a matriz de smoke
-single/multi-tenant, People, convites, gestão de acesso, mobile e teclado.
+Executar a PR 10F2 — Development + Recruitment + Activity Read Boundaries — antes
+da integração app e da retomada do smoke em `/app`.

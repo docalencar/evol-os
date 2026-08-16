@@ -2117,3 +2117,23 @@ current-company, issue e resend não mantêm SELECT direto crítico em `companie
 ou `people`. A suíte app relevante passa em 603 testes e a suíte DB em 22
 arquivos/586 testes; TypeScript, lint e build passam. O MVP permanece em 98% até
 o smoke autenticado ser retomado com refresh de `/app` após a primeira Company.
+
+### 29.13 MVP Closure PR 10F1 — Organization + People Read Boundaries
+
+O smoke autenticado chegou ao Organization summary e falhou primeiro em
+`getTeams()`. Organization e People mantêm RLS e policies tenant-aware, mas sem
+SELECT direto para `authenticated`; portanto o problema é de read model, não de
+policy.
+
+A migration 0083 adiciona dois contratos DB-first:
+`get_tenant_organization_directory_v1(company_id)` para departments, teams e
+positions ativos, e `get_tenant_people_directory_v1(company_id)` para identidade
+funcional mínima e nomes estruturais de People não desligada. Ambos são `STABLE
+SECURITY DEFINER`, derivam o ator de `auth.uid()`, exigem membership ativa por
+`is_company_member` e concedem apenas EXECUTE a `authenticated`. Não há e-mail,
+Auth ID, grant de tabela, policy ou alteração de RLS.
+
+Os pgTAP dedicados adicionam 63 asserts e a suíte completa passa em 24 arquivos e
+649 testes. A aplicação permanece intocada nesta PR DB-first. Development,
+Recruitment, Competencies e Activity continuam bloqueados e formam a PR 10F2. O
+MVP permanece em 98%.

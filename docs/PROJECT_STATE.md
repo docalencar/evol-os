@@ -74,11 +74,11 @@ O status normativo e o conteúdo completo permanecem no
 ### Roadmap e execução
 
 - [ROADMAP](./ROADMAP.md): Phase 9 Multiuser UI/UX é a execução vigente.
-- [NEXT_STEPS](./NEXT_STEPS.md): aprovação da PR 10E e retomada do smoke autenticado.
+- [NEXT_STEPS](./NEXT_STEPS.md): aprovação DB-first da PR 10F1 e recorte 10F2.
 - [MVP Plan](./MVP_PLAN.md): jornada completa até o MVP.
 - [EPICS](./EPICS.md): estado funcional das capacidades.
 - [Implementation Plan do MVP-PR1](./Execution/MVP-PR1-TENANT-MULTIUSER-ACTIVATION-IMPLEMENTATION-PLAN.md):
-  Phases 1–8 e PRs 9A–9F concluídas; PRs 10A–10D incorporadas e integração app da PR 10E implementada.
+  Phases 1–8 e PRs 9A–9F concluídas; PRs 10A–10E incorporadas e PR 10F1 implementada DB-first.
 
 ## 5. Programa ADR-0012
 
@@ -131,6 +131,15 @@ pela operação trusted existente. A PR 10D foi incorporada no merge `06622e2` e
 não resta SELECT direto crítico de Company/People nesses consumers. O progresso
 funcional permanece em 98% até o smoke autenticado completo passar, retomando
 com refresh de `/app` após a criação da primeira Company.
+
+O smoke chegou ao Organization summary e comprovou novo gap sistêmico: as
+policies tenant-aware permanecem, mas `authenticated` não possui SELECT direto
+em Organization/People. A PR 10F1 adiciona pela migration 0083 somente
+`get_tenant_organization_directory_v1(company_id)` e
+`get_tenant_people_directory_v1(company_id)`. Ambas derivam o ator de
+`auth.uid()`, exigem membership ativa e não alteram grants de tabela, RLS ou
+policies. Development, Recruitment, Competencies e Activity permanecem para a
+PR 10F2; o MVP continua em 98%.
 
 Resumo de encerramento das fases anteriores:
 

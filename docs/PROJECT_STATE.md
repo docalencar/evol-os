@@ -74,11 +74,11 @@ O status normativo e o conteúdo completo permanecem no
 ### Roadmap e execução
 
 - [ROADMAP](./ROADMAP.md): Phase 9 Multiuser UI/UX é a execução vigente.
-- [NEXT_STEPS](./NEXT_STEPS.md): validação e aprovação da PR 9F e smoke autenticado manual de fechamento.
+- [NEXT_STEPS](./NEXT_STEPS.md): validação da PR 10A e integração da read boundary na PR 10B antes de retomar o smoke.
 - [MVP Plan](./MVP_PLAN.md): jornada completa até o MVP.
 - [EPICS](./EPICS.md): estado funcional das capacidades.
 - [Implementation Plan do MVP-PR1](./Execution/MVP-PR1-TENANT-MULTIUSER-ACTIVATION-IMPLEMENTATION-PLAN.md):
-  Phases 1–8 e PRs 9A–9E concluídas; PR 9F implementada e aguardando aprovação.
+  Phases 1–8 e PRs 9A–9F concluídas; blocker do smoke tratado pela PR 10A DB-first.
 
 ## 5. Programa ADR-0012
 
@@ -110,11 +110,13 @@ sem ampliar acesso às tabelas protegidas. O recorte ativo é a PR 9E, implement
 e posteriormente concluído no merge `f10d116`: role change, membership
 deactivation e ownership transfer na People UI por Server Actions e RPCs trusted.
 
-O recorte ativo é a PR 9F — Multiuser E2E Validation + UX/Compatibility Polish,
-implementada e aguardando aprovação. A suíte automatizada cobre as fronteiras
-multiusuário e três defeitos MEDIUM de feedback/acessibilidade foram corrigidos.
-O progresso funcional passa de 96% para 98%. O smoke autenticado em browser real,
-incluindo viewport mobile e teclado, permanece necessário antes de declarar 100%.
+O recorte ativo é a PR 10A — Current User Active Tenants Read Boundary. O smoke
+autenticado comprovou que onboarding e resolução de tenant dependiam de SELECT
+direto em `company_members`, indisponível por desenho para `authenticated`. A
+migration 0081 introduz `get_current_user_active_tenants_v1()`, uma projeção
+`SECURITY DEFINER` sem parâmetros que retorna apenas os tenants ativos de
+`auth.uid()`. A integração app permanece pendente na PR 10B. O progresso
+funcional permanece em 98% até o smoke autenticado completo passar.
 
 Resumo de encerramento das fases anteriores:
 

@@ -4,8 +4,9 @@
 
 ### MVP Closure — ativação multiusuário do tenant
 
-1. Validar e aprovar a PR 9F da Phase 9 — Multiuser E2E Validation +
-   UX/Compatibility Polish, seguida do smoke autenticado manual de fechamento.
+1. Validar e aprovar a PR 10A — Current User Active Tenants Read Boundary — e
+   executar a PR 10B, que integra essa fronteira no onboarding e na resolução de
+   tenant antes de retomar o smoke autenticado manual de fechamento.
    As PRs 9A, 9B e 9C foram concluídas nos merges `b4aae86`, `3070855` e
    `4d7b037`, respectivamente. A 9D1 foi concluída no merge `02168b9` e a 9D2
    no merge `3f13bbc`. A 9E1 foi concluída no merge `1e4ccbb`; a 9E consome sua
@@ -65,10 +66,15 @@ cutover de autorização pelas migrations 0077/0078 e pela caracterização de s
 fronteiras. A execução vigente é a Phase 9 — Multiuser UI/UX. As PRs 9A–9C foram
 concluídas. A PR 9D1 criou uma fronteira `SECURITY DEFINER` mínima para o estado de
 membership/invitation de People; a PR 9D2 foi concluída no merge `3f13bbc` e a
-9E1 no merge `1e4ccbb` e a 9E no merge `f10d116`. A PR 9F está implementada e
-aguardando aprovação: regressões multiusuário/DB estão verdes e três defeitos de
+9E1 no merge `1e4ccbb` e a 9E no merge `f10d116`. A PR 9F foi concluída no merge
+`a6188dd`: regressões multiusuário/DB estão verdes e três defeitos de
 feedback/acessibilidade foram corrigidos. O smoke autenticado em browser real,
-incluindo mobile e teclado, permanece como gate humano para declarar 100%.
+incluindo mobile e teclado, encontrou um blocker real: os consumers ainda tentam
+ler `company_members`, embora `authenticated` intencionalmente não possua SELECT.
+A PR 10A adiciona pela migration 0081 a projeção mínima
+`get_current_user_active_tenants_v1()` para enumerar somente os tenants ativos de
+`auth.uid()`. A integração da aplicação permanece separada na PR 10B, e o MVP
+continua em 98%.
 
 ## Evidência da prioridade
 

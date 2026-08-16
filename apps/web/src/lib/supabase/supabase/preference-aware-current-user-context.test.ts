@@ -86,6 +86,7 @@ test("valid preference resolves the matching active membership", async () => {
     assert.deepEqual(result, {
       userId: "user-1",
       companyId: "company-b",
+      companyName: "Beta",
       role: "admin",
     })
   })

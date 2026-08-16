@@ -23,17 +23,11 @@ async function loadResendInvitationTenantContext(): Promise<ResendInvitationTena
 
   try {
     const currentUser = await loadPreferenceAwareCurrentUserContext(supabase, user)
-    const [{ data: company }, { data: inviter }] = await Promise.all([
-      supabase.from("companies").select("id, name").eq("id", currentUser.companyId).maybeSingle(),
-      supabase.from("people").select("name").eq("company_id", currentUser.companyId).eq("user_id", user.id).maybeSingle(),
-    ])
-    if (!company) return { status: "no_membership" }
 
     return {
       status: "resolved",
-      companyId: company.id,
-      companyName: company.name,
-      inviterName: inviter?.name ?? undefined,
+      companyId: currentUser.companyId,
+      companyName: currentUser.companyName,
     }
   } catch (caught) {
     if (caught instanceof CurrentUserContextError) {

@@ -44,33 +44,11 @@ export async function getCurrentCompanyContext() {
   const companyId = currentUser.companyId
 
   const {
-    data: company,
-    error: companyError,
-  } = await supabase
-    .from("companies")
-    .select("id, name")
-    .eq("id", companyId)
-    .maybeSingle()
-
-  if (companyError) {
-    throw new Error(
-      "Não foi possível carregar os dados da empresa."
-    )
-  }
-
-  if (!company) {
-    redirect("/onboarding")
-  }
-
-  const {
-    data: person,
+    data: personId,
     error: personError,
-  } = await supabase
-    .from("people")
-    .select("*")
-    .eq("company_id", company.id)
-    .eq("user_id", user.id)
-    .maybeSingle()
+  } = await supabase.rpc("current_person_id", {
+    target_company_id: companyId,
+  })
 
   if (personError) {
     throw new Error(
@@ -81,10 +59,9 @@ export async function getCurrentCompanyContext() {
   return {
     supabase,
     user,
-    companyId: company.id,
-    companyName: company.name,
+    companyId,
+    companyName: currentUser.companyName,
     currentUser,
-    person,
-    personId: person?.id ?? null,
+    personId: personId ?? null,
   }
 }

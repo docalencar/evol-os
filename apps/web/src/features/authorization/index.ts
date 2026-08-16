@@ -12,6 +12,7 @@ export { AuthorizationError } from "./authorization-error"
 export {
   loadCurrentUserContext,
   CurrentUserContextError,
+  type CurrentUserCompanyContext,
   type CurrentUserContext,
 } from "./current-user-context"
 export {

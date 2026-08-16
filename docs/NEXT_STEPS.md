@@ -1,11 +1,11 @@
 # Evol OS — Próxima entrega
 
-## MVP Closure — PR 10D Tenant-Scoped Person Contact Read Boundary
+## MVP Closure — retomar smoke autenticado
 
 ### Objetivo
 
-Criar a projeção DB mínima que permite à emissão inicial de convite resolver o
-e-mail tenant-scoped de uma Person sem SELECT direto em `people`.
+Retomar o smoke em signup/login → onboarding → criar primeira Company → `/app`,
+agora que os consumers críticos usam somente as fronteiras de leitura autorizadas.
 
 ### Estado confirmado
 
@@ -34,20 +34,26 @@ e-mail tenant-scoped de uma Person sem SELECT direto em `people`.
   `current_person_id(company_id)`, mas o e-mail de emissão não possuía boundary;
 - PR 10D adiciona pela migration 0082 somente `person_id` e `email`, autorizados
   por membership owner/admin ativa;
+- PR 10D concluída no merge `06622e2`;
+- PR 10E integra Company por 0081, Person ID por `current_person_id(company_id)`
+  e contato de emissão pela 0082;
+- resend preserva o e-mail retornado pela operação trusted existente, sem novo
+  SELECT em Company ou People;
+- não resta SELECT direto crítico de Company/People nesses consumers;
 - progresso funcional do MVP: 98%;
 - emissão, persistência, delivery e aceite continuam nas fronteiras existentes.
 
 ### Gate atual
 
-Validar e aprovar a PR 10D:
+Validar e aprovar a PR 10E:
 
-1. RPC `STABLE SECURITY DEFINER` deriva o ator de `auth.uid()`;
-2. somente owner/admin ativo pode ler o contato da Person no tenant autorizado;
-3. Person inexistente ou estrangeira falha fechada;
-4. somente `person_id` e e-mail persistido são projetados;
-5. nenhum grant/policy de tabela ou caminho `service_role` é introduzido.
+1. Company name vem da projeção 0081 já autorizada;
+2. Person ID vem de `current_person_id(company_id)`;
+3. emissão resolve somente `person_id` e `email` pela 0082;
+4. resend reutiliza o `destinationEmail` da operação persistente;
+5. nenhum grant/policy, migration, RPC novo ou caminho `service_role` é introduzido.
 
-### Próximo passo após aprovação da 10D
+### Próximo passo após aprovação da 10E
 
-Executar a PR 10E — Current Company + Invitation Read Integration — e então
-retomar o smoke em signup/login → onboarding → criar primeira Company → `/app`.
+Atualizar `/app` após a criação da primeira Company e continuar a matriz de smoke
+single/multi-tenant, People, convites, gestão de acesso, mobile e teclado.

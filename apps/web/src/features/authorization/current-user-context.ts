@@ -13,6 +13,10 @@ export type CurrentUserContext = Readonly<{
   role: CorporateRole
 }>
 
+export type CurrentUserCompanyContext = CurrentUserContext & Readonly<{
+  companyName: string
+}>
+
 export class CurrentUserContextError extends Error {
   constructor(
     readonly code:
@@ -31,7 +35,7 @@ export async function loadCurrentUserContext(
   supabase: SupabaseClient,
   authenticatedUser?: User,
   preferredCompanyId?: string | null
-): Promise<CurrentUserContext> {
+): Promise<CurrentUserCompanyContext> {
   const user = authenticatedUser ?? (await supabase.auth.getUser()).data.user
 
   if (!user) {
@@ -83,9 +87,21 @@ export async function loadCurrentUserContext(
     )
   }
 
+  const activeTenant = activeTenants.find(
+    (tenant) => tenant.companyId === resolution.companyId,
+  )
+
+  if (!activeTenant) {
+    throw new CurrentUserContextError(
+      "membership_not_found",
+      "Não foi possível identificar a empresa do usuário.",
+    )
+  }
+
   return Object.freeze({
     userId: user.id,
     companyId: resolution.companyId,
+    companyName: activeTenant.companyName,
     role: resolution.membership.role,
   })
 }

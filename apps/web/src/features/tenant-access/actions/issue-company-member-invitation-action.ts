@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/supabase/server"
 import { createServerTenantAccessApplication } from "../server"
 import { generateInvitationToken } from "../token"
 import { createServerTenantInvitationDelivery } from "../delivery/server"
+import { loadTenantPersonInvitationContact } from "../queries/load-tenant-person-invitation-contact"
 import {
   issueCompanyMemberInvitation,
   type IssueCompanyMemberInvitationInput,
@@ -23,27 +24,18 @@ async function loadIssueInvitationTenantContext(): Promise<IssueInvitationTenant
 
   try {
     const currentUser = await loadPreferenceAwareCurrentUserContext(supabase, user)
-    const [{ data: company }, { data: inviter }] = await Promise.all([
-      supabase.from("companies").select("id, name").eq("id", currentUser.companyId).maybeSingle(),
-      supabase.from("people").select("name").eq("company_id", currentUser.companyId).eq("user_id", user.id).maybeSingle(),
-    ])
-    if (!company) return { status: "no_membership" }
 
     return {
       status: "resolved",
-      companyId: company.id,
-      companyName: company.name,
-      inviterName: inviter?.name ?? undefined,
+      companyId: currentUser.companyId,
+      companyName: currentUser.companyName,
       findPersonEmail: async personId => {
-        const { data, error } = await supabase
-          .from("people")
-          .select("id, email")
-          .eq("company_id", currentUser.companyId)
-          .eq("id", personId)
-          .maybeSingle()
-
-        if (error || !data?.email) return null
-        return data.email
+        const contact = await loadTenantPersonInvitationContact(
+          supabase,
+          currentUser.companyId,
+          personId,
+        )
+        return contact?.email ?? null
       },
     }
   } catch (caught) {

@@ -48,7 +48,12 @@ test("single active membership resolves identically with and without a preferenc
   const withoutPreference = await loadCurrentUserContext(createSupabase(singleActive), user)
   const withPreference = await loadCurrentUserContext(createSupabase(singleActive), user, "company-a")
   const withForeignPreference = await loadCurrentUserContext(createSupabase(singleActive), user, "company-zzz")
-  assert.deepEqual(withoutPreference, { userId: "user-1", companyId: "company-a", role: "owner" })
+  assert.deepEqual(withoutPreference, {
+    userId: "user-1",
+    companyId: "company-a",
+    companyName: "Alpha",
+    role: "owner",
+  })
   assert.deepEqual(withPreference, withoutPreference)
   assert.deepEqual(withForeignPreference, withoutPreference)
 })
@@ -67,7 +72,12 @@ test("multiple active memberships without a preference still require selection",
 test("multiple active memberships with a valid preference resolve to it (preserving role)", async () => {
   const { loadCurrentUserContext } = await loadModule()
   const context = await loadCurrentUserContext(createSupabase(multiActive), user, "company-b")
-  assert.deepEqual(context, { userId: "user-1", companyId: "company-b", role: "admin" })
+  assert.deepEqual(context, {
+    userId: "user-1",
+    companyId: "company-b",
+    companyName: "Beta",
+    role: "admin",
+  })
 })
 
 test("a foreign preference (no active membership) requires selection", async () => {

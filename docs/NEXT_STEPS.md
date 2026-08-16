@@ -1,11 +1,11 @@
 # Evol OS — Próxima entrega
 
-## MVP Closure — PR 10C Legacy Tenant Consumer Cleanup
+## MVP Closure — PR 10D Tenant-Scoped Person Contact Read Boundary
 
 ### Objetivo
 
-Eliminar os consumers browser-side legados de tenant sem criar uma fronteira
-paralela ao contexto canônico já integrado pela PR 10B.
+Criar a projeção DB mínima que permite à emissão inicial de convite resolver o
+e-mail tenant-scoped de uma Person sem SELECT direto em `people`.
 
 ### Estado confirmado
 
@@ -29,24 +29,25 @@ paralela ao contexto canônico já integrado pela PR 10B.
 - PR 10C migra `/app/people/new` para o `EmployeeForm`, queries server-side e
   `getCurrentCompanyContext()`, e remove `companies.service.ts` após confirmar
   que não possuía consumers;
+- o smoke real após a PR 10C encontrou reads diretos bloqueados de Company e
+  Person: Company já está projetada pela 0081 e o Person ID por
+  `current_person_id(company_id)`, mas o e-mail de emissão não possuía boundary;
+- PR 10D adiciona pela migration 0082 somente `person_id` e `email`, autorizados
+  por membership owner/admin ativa;
 - progresso funcional do MVP: 98%;
 - emissão, persistência, delivery e aceite continuam nas fronteiras existentes.
 
 ### Gate atual
 
-Validar e aprovar a PR 10C:
+Validar e aprovar a PR 10D:
 
-1. `/app/people/new` deriva tenant no servidor e reutiliza o fluxo canônico de
-   criação de People;
-2. `createEmployeeAction` não aceita `companyId` do browser como autoridade;
-3. não há leitura browser-side de `company_members` nem fallback de primeira
-   membership nesses consumers;
-4. `companies.service.ts` permanece removido sem quebrar imports/barrels;
-5. nenhuma migration, RPC, policy, grant ou autoridade nova é introduzida.
+1. RPC `STABLE SECURITY DEFINER` deriva o ator de `auth.uid()`;
+2. somente owner/admin ativo pode ler o contato da Person no tenant autorizado;
+3. Person inexistente ou estrangeira falha fechada;
+4. somente `person_id` e e-mail persistido são projetados;
+5. nenhum grant/policy de tabela ou caminho `service_role` é introduzido.
 
-### Próximo passo após aprovação da 10C
+### Próximo passo após aprovação da 10D
 
-Retomar o smoke autenticado a partir de signup → onboarding → criação da primeira
-empresa → `/app`, seguindo depois a matriz single tenant, multi-tenant,
-`/select-company`, A → B → A, People, invitations, gestão de roles, desativação,
-transferência de ownership, mobile, teclado e session/logout.
+Executar a PR 10E — Current Company + Invitation Read Integration — e então
+retomar o smoke em signup/login → onboarding → criar primeira Company → `/app`.

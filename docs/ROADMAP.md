@@ -4,12 +4,13 @@
 
 ### MVP Closure — ativação multiusuário do tenant
 
-1. Validar e aprovar a PR 9E da Phase 9 — Membership Management UI: role change,
-   deactivation e ownership transfer.
+1. Validar e aprovar a PR 9F da Phase 9 — Multiuser E2E Validation +
+   UX/Compatibility Polish, seguida do smoke autenticado manual de fechamento.
    As PRs 9A, 9B e 9C foram concluídas nos merges `b4aae86`, `3070855` e
    `4d7b037`, respectivamente. A 9D1 foi concluída no merge `02168b9` e a 9D2
    no merge `3f13bbc`. A 9E1 foi concluída no merge `1e4ccbb`; a 9E consome sua
-   fronteira v2 e as operações trusted existentes, sem migration ou RPC nova.
+   fronteira v2 e as operações trusted existentes, sem migration ou RPC nova. A
+   9E foi concluída no merge `f10d116`.
 
 O primeiro slice está concluído pela migration 0064: as 14 relações de
 Organization, People e Competencies agora preservam fisicamente o tenant. O
@@ -64,9 +65,10 @@ cutover de autorização pelas migrations 0077/0078 e pela caracterização de s
 fronteiras. A execução vigente é a Phase 9 — Multiuser UI/UX. As PRs 9A–9C foram
 concluídas. A PR 9D1 criou uma fronteira `SECURITY DEFINER` mínima para o estado de
 membership/invitation de People; a PR 9D2 foi concluída no merge `3f13bbc` e a
-9E1 no merge `1e4ccbb`. A PR 9E está implementada e aguardando aprovação: People
-oferece role change, deactivation e ownership transfer por Server Actions e RPCs
-trusted. As tabelas permanecem fechadas e o caminho humano não usa `service_role`.
+9E1 no merge `1e4ccbb` e a 9E no merge `f10d116`. A PR 9F está implementada e
+aguardando aprovação: regressões multiusuário/DB estão verdes e três defeitos de
+feedback/acessibilidade foram corrigidos. O smoke autenticado em browser real,
+incluindo mobile e teclado, permanece como gate humano para declarar 100%.
 
 ## Evidência da prioridade
 

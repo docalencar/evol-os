@@ -195,6 +195,7 @@ function DeactivateMembershipDialog({ personName, accessState }: {
               Esta pessoa perderá o acesso à empresa. O cadastro da pessoa não será excluído.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <FeedbackMessage feedback={feedback} feedbackRef={feedbackRef} />
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isPending}>Cancelar</AlertDialogCancel>
             <AlertDialogAction variant="destructive" disabled={isPending} onClick={submit}>
@@ -203,7 +204,6 @@ function DeactivateMembershipDialog({ personName, accessState }: {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <FeedbackMessage feedback={feedback} feedbackRef={feedbackRef} />
     </div>
   )
 }

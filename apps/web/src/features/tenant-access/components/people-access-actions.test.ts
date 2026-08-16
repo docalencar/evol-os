@@ -31,3 +31,10 @@ test("success, stale state, delivery outcome and redirects are explicit", () => 
 test("client source contains no database or secret boundary", () => {
   assert.doesNotMatch(source, /createClient|Supabase|\.rpc\(|\.from\(|company_member_invitations|company_members|service_role|localStorage|auth\.jwt|request\.jwt|token|digest|correlationId|idempotencyKey/)
 })
+
+test("revoke feedback remains inside the open confirmation dialog", () => {
+  assert.match(
+    source,
+    /<AlertDialogContent>[\s\S]*feedback\?\.operation === "revoke"[\s\S]*<\/AlertDialogContent>/,
+  )
+})

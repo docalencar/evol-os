@@ -2006,7 +2006,7 @@ continuam revalidados no banco. Nenhuma policy, RLS ou grant de tabela é altera
 
 ### 29.6 PR 9E — Membership Management UI
 
-A PR 9E está implementada e aguardando aprovação. O consumer People migra para a
+A PR 9E foi concluída no merge `f10d116`. O consumer People migra para a
 RPC v2 com validação estrita e usa `membership_id` somente como selector. Thin
 Server Actions derivam tenant e role do ator pelo contexto preference-aware,
 geram idempotency/correlation IDs no servidor e chamam as operações trusted de
@@ -2016,6 +2016,18 @@ A UI antecipa a matriz owner/admin, falha fechada para estados incoerentes e
 preserva expected role/status, conflito concorrente e proteção do último owner.
 Não há migration, RPC, policy, grant, escrita direta ou `service_role` novo.
 
-Após aprovação da 9E, o próximo recorte é a **PR 9F — Multiuser E2E Validation +
-UX/Compatibility Polish**. O progresso funcional do MVP passa de 93% para 96%,
-mantendo o saldo para validação E2E e fechamento dos gaps observados.
+### 29.7 PR 9F — Multiuser E2E Validation + UX/Compatibility Polish
+
+A PR 9F está implementada e aguardando aprovação. A validação reutilizou fixtures
+transacionais com dois tenants, todas as roles, invitations, preference e trusted
+membership mutations. As regressões app/DB e o smoke HTTP local passaram.
+
+Foram corrigidos três defeitos MEDIUM comprovados test-first: feedback de revoke
+e deactivation agora permanece dentro do AlertDialog ativo, e falhas de aceite são
+anunciadas como `alert`. Não há migration, RPC, policy, grant ou mudança de
+autoridade.
+
+O progresso funcional passa de 96% para 98%. O repositório não possui harness de
+browser E2E, e a 9F não introduz framework pesado; por isso a jornada autenticada
+desktop/mobile/teclado permanece como gate humano explícito para 100%. Após esse
+smoke, o passo seguinte é o checklist operacional de release.

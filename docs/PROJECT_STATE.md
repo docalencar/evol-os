@@ -151,6 +151,18 @@ direto inevitável nas tabelas protegidas, sem grant/RLS/policy adicional e com
 validação fail-closed dos outputs. O próximo gate é retomar o smoke autenticado em
 `/app`; o MVP permanece em 98%.
 
+Na baseline `9b5bf9c`, a PR B adiciona pela migration 0085 oito read boundaries
+especializadas de gestão de People e Organization. Os contratos preservam
+membership ativa, não expõem `user_id` ou `company_id`, não abrem SELECT de
+tabela e ainda não possuem integração UI. Writes e Human Review permanecem
+suspensos; o MVP continua em 98%.
+
+A 0085 foi corrigida antes de publicação: a timeline especializada exclui Auth
+`actor_id`, metadata bruta e eventos `restricted`. A 0084 publicada conserva seu
+contrato legado e requer correção forward-only coordenada. Também permanece
+pendente sign-off de privacidade sobre exposição do perfil People completo a
+employee/manager antes de produção.
+
 Resumo de encerramento das fases anteriores:
 
 - Phases 1/2: migrations 0070–0072 e invariantes persistentes;

@@ -2185,3 +2185,34 @@ do contrato 0083. O serviço browser morto `people.service.ts`, sem consumers, �
 removido, e os queries legados de Positions deixam de propagar erros PostgREST
 brutos. Writes permanecem fora do escopo. Human Review continua suspenso e o MVP
 permanece em 98%.
+
+### 29.17 MVP Closure PR B — People + Organization Management Read Boundaries
+
+Na baseline `9b5bf9c`, a migration 0085 adiciona oito projections especializadas:
+People management, Person profile, Departments, Teams, Positions, Position
+Requirements, Position Competencies e timeline filtrada por entidade. Todas são
+`STABLE SECURITY DEFINER`, derivam o ator de `auth.uid()`, exigem membership
+ativa e concedem somente EXECUTE a `authenticated`.
+
+Os contratos excluem `company_id`, Auth `user_id`, soft-delete markers e dados
+não consumidos. O vínculo Auth é exposto apenas como `has_user_access`. Requisitos
+e competências permanecem separados do cargo base; timeline aceita somente
+`department`, `team`, `position` ou `person`, sem SQL dinâmico. Não há integração
+de UI, grant de tabela, policy, RLS, write boundary ou `service_role`. Analytics
+recebe `hire_date` como input futuro de People, mas Recruitment/Approval permanece
+fora do recorte. Human Review segue suspenso e o MVP permanece em 98%.
+
+Antes de publicação, a 0085 foi endurecida no ambiente local descartável: sua
+timeline por entidade não projeta `actor_id` de Auth nem `metadata` JSON bruto e
+retorna somente eventos `visibility = 'company'`. Não existe regra aprovada para
+expor `restricted` pela boundary geral de membros, portanto ela falha fechada.
+A RPC tenant-wide da 0084 mantém o contrato legado com `actor_id`/`metadata` e
+exige hardening forward-only coordenado com seu consumer em PR posterior; a 0084
+não foi alterada.
+
+**PRIVACY SIGN-OFF REQUIRED BEFORE PRODUCTION:** a autorização histórica permite
+a qualquer membro ativo ler o perfil People completo. Antes de produção, Produto
+deve confirmar explicitamente se employee/manager podem receber `phone`,
+`birth_date`, `disc_profile` e o restante do management profile. Esta correção não
+altera silenciosamente a matriz histórica. UI integration e writes seguem
+pendentes; Human Review permanece suspenso e o MVP em 98%.

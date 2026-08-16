@@ -62,6 +62,26 @@ test("loads all dashboard projections with server-supplied tenant scope", async 
   })
 })
 
+test("loads individual route projections without unrelated RPC duplication", async () => {
+  const { createTenantDashboardReadRepository } = await repositoryModule
+  const { calls, database } = createDatabase(() => ({ data: [], error: null }))
+  const repository = createTenantDashboardReadRepository(database)
+  const companyId = "11111111-1111-4111-8111-111111111111"
+
+  await repository.loadOrganization(companyId)
+  await repository.loadPeople(companyId)
+  await repository.loadRecruitment(companyId)
+
+  assert.deepEqual(calls.map((call) => call.name), [
+    "get_tenant_organization_directory_v1",
+    "get_tenant_people_directory_v1",
+    "get_tenant_recruitment_job_openings_v1",
+  ])
+  assert.ok(calls.every((call) =>
+    (call.parameters as { p_company_id?: string }).p_company_id === companyId,
+  ))
+})
+
 test("accepts valid empty tenants and fails closed for malformed RPC rows", async () => {
   const { createTenantDashboardReadRepository, TenantDashboardReadError } =
     await repositoryModule

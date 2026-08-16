@@ -1,12 +1,9 @@
 import {
   DevelopmentPrioritiesCard,
-  getDevelopmentExecutiveDashboard,
 } from "@/features/development"
 import { DashboardSection, StatCard } from "@/components/dashboard"
 import {
   getOrganizationalRisks,
-  getTalentOverview,
-  getWorkforceHealth,
   getWorkforceInsights,
   OrganizationalRisks,
   presentOrganizationalRisks,
@@ -15,39 +12,28 @@ import {
   WorkforceHealthHome,
   WorkforceInsights,
 } from "@/features/hr-intelligence"
-import { getOrganizationSummary } from "@/features/organization"
 import {
-  getJobOpeningFormOptions,
-  getJobOpenings,
   JobOpeningTable,
 } from "@/features/recruitment"
 import {
   ActivityIntelligenceCard,
-  getCompanyTimeline,
   presentActivityIntelligence,
 } from "@/features/timeline"
+import { getAppDashboardReadModel } from "@/features/dashboard-read"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 export default async function AppPage() {
   const { companyId } = await getCurrentCompanyContext()
 
-  const [
+  const {
     health,
     talentOverview,
-    development,
     organization,
+    developmentPriorities,
     jobOpenings,
     recruitmentOptions,
     companyTimeline,
-  ] = await Promise.all([
-    getWorkforceHealth(companyId),
-    getTalentOverview(companyId),
-    getDevelopmentExecutiveDashboard(companyId),
-    getOrganizationSummary(companyId),
-    getJobOpenings(companyId),
-    getJobOpeningFormOptions(companyId),
-    getCompanyTimeline({ companyId, limit: 20 }),
-  ])
+  } = await getAppDashboardReadModel(companyId)
 
   const [risks, insights] = await Promise.all([
     getOrganizationalRisks(health),
@@ -89,7 +75,7 @@ export default async function AppPage() {
       </DashboardSection>
 
       <DevelopmentPrioritiesCard
-        priorities={development.developmentPriorities}
+        priorities={developmentPriorities}
       />
 
       <OrganizationalRisks

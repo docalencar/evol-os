@@ -1,11 +1,11 @@
 # Evol OS — Próxima entrega
 
-## MVP Closure — PR 10F2 Dashboard Domain Read Boundaries
+## MVP Closure — retomar smoke autenticado após PR 10G
 
 ### Objetivo
 
-Fechar os contratos DB-first restantes de Development, Competencies, Recruitment
-e Activity sem reabrir SELECT direto nas tabelas protegidas.
+Validar em browser real o dashboard `/app` após a integração das read boundaries
+tenant-scoped aprovadas nas PRs 10F1 e 10F2.
 
 ### Estado confirmado
 
@@ -53,15 +53,13 @@ e Activity sem reabrir SELECT direto nas tabelas protegidas.
 
 ### Gate atual
 
-Validar e aprovar a PR 10F2:
+A PR 10F2 foi incorporada no merge `bebfa2f`. A PR 10G integra `/app` com as
+projections 0083/0084 por um read model server-only, valida todas as respostas e
+remove do grafo inevitável do dashboard os SELECTs diretos nas tabelas protegidas.
+Nenhum grant, RLS, policy, RPC ou migration é criado.
 
-1. todos os papéis com membership ativa podem ler somente o próprio tenant;
-2. Organization projeta somente identidade, nome, status e relações estruturais;
-3. People não expõe e-mail, Auth IDs nem dados pessoais adicionais;
-4. `authenticated` continua sem SELECT direto nas quatro tabelas;
-5. nenhum RLS/policy ou grant de tabela é alterado.
+### Próximo passo
 
-### Próximo passo após aprovação da 10F2
-
-Executar a PR 10G — Dashboard Read Integration. O smoke ainda não deve ser
-retomado antes dessa integração.
+Após aprovação da PR 10G, retomar o smoke em `http://localhost:3000/app` com a
+sessão autenticada e tenant recém-criado. O MVP permanece em 98% até o Human
+Review completo passar.

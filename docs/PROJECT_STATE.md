@@ -74,7 +74,7 @@ O status normativo e o conteúdo completo permanecem no
 ### Roadmap e execução
 
 - [ROADMAP](./ROADMAP.md): Phase 9 Multiuser UI/UX é a execução vigente.
-- [NEXT_STEPS](./NEXT_STEPS.md): aprovação DB-first da PR 10F2 e integração na PR 10G.
+- [NEXT_STEPS](./NEXT_STEPS.md): aprovação da integração 10G e retomada do smoke em `/app`.
 - [MVP Plan](./MVP_PLAN.md): jornada completa até o MVP.
 - [EPICS](./EPICS.md): estado funcional das capacidades.
 - [Implementation Plan do MVP-PR1](./Execution/MVP-PR1-TENANT-MULTIUSER-ACTIVATION-IMPLEMENTATION-PLAN.md):
@@ -145,8 +145,11 @@ A PR 10F1 foi incorporada no merge `003e0b8`. A PR 10F2 adiciona pela migration
 0084 quatro boundaries estreitas para Development, inputs de Competencies,
 Recruitment e Activity. A cadeia 0001–0084 foi reexecutada integralmente no banco
 local e passa em 28 arquivos/732 testes. Nenhum grant de tabela, RLS ou policy foi
-aberto e a aplicação permanece sem integração; o próximo recorte é a PR 10G. O
-smoke ainda não deve ser retomado e o MVP permanece em 98%.
+aberto. A PR 10F2 foi incorporada no merge `bebfa2f`. A PR 10G integra as seis
+projections 0083/0084 no grafo de `/app` por um read model server-only, sem SELECT
+direto inevitável nas tabelas protegidas, sem grant/RLS/policy adicional e com
+validação fail-closed dos outputs. O próximo gate é retomar o smoke autenticado em
+`/app`; o MVP permanece em 98%.
 
 Resumo de encerramento das fases anteriores:
 

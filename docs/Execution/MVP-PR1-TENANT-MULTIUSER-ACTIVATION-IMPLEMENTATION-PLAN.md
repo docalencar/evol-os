@@ -2151,3 +2151,21 @@ A 0084 foi validada por reset e replay integral local de 0001–0084. Quatro pgT
 dedicados adicionam 83 asserts; a suíte completa passa em 28 arquivos/732 testes.
 Nenhum arquivo app é integrado nesta PR. O próximo passo é a PR 10G — Dashboard
 Read Integration; o smoke ainda não deve ser retomado e o MVP permanece em 98%.
+
+### 29.15 MVP Closure PR 10G — Dashboard Read Integration
+
+Após o merge da PR 10F2 em `bebfa2f`, o grafo inevitável de `/app` passa a usar
+um read model composto server-only. Uma única carga por request consome os dois
+diretórios 0083 e as quatro projections 0084, valida estritamente os rows e
+mantém resultado vazio distinto de falha de autorização/PostgREST.
+
+Organization, People, Development, Competencies, Recruitment e Activity deixam
+de depender dos repositories de SELECT direto no path inicial do dashboard. Os
+joins de apresentação para vagas são feitos em memória com os diretórios já
+carregados. `companyId` continua derivado por `getCurrentCompanyContext()` e é
+apenas selector: `auth.uid()` e membership ativa permanecem como autoridade no
+banco. Não há migration, RPC, grant, RLS, policy, `service_role` ou Supabase no
+browser novo.
+
+Após aprovação, o smoke autenticado deve retomar exatamente com refresh de
+`http://localhost:3000/app`. O MVP permanece em 98% até o Human Review passar.

@@ -153,3 +153,14 @@ preservando evaluator ownership e HR somente em `visibility='hr'`. Writes seguem
 pendentes; privacy gates de People/Development, participant email do cycle sob o
 gate de People e hardening 0084 continuam abertos. Human Review segue suspenso e
 o MVP permanece em 98%.
+
+A auditoria de mutations na baseline `7854120` classificou People e Organization
+core como P0. A PR I1 DB-first adiciona pela migration 0089 boundaries trusted
+para create/update/archive de People, Departments, Teams e Positions, sem abrir
+grants DML nem integrar a aplicação. `owner`, `admin` e `hr` ativos preservam a
+matriz histórica; seletores estrangeiros falham fechados; Activity integra a
+mesma transação; creates são idempotentes; Person termination observa a PD-019 e
+desativa acesso vinculado sem apagar identidade. O próximo gate é integrar esses
+contratos em Actions/Repositories finos e validar o smoke core. Requirements,
+Competencies, Import, Development, Assessment admin, Feedback e Recruitment
+permanecem em PRs posteriores. Human Review segue suspenso e o MVP em 98%.

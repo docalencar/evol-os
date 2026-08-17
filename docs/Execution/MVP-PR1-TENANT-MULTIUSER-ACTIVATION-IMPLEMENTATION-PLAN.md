@@ -2278,3 +2278,35 @@ Não há reescrita de histórico, nova RPC, grant, RLS, policy ou mudança de wr
 path. A padronização futura dos produtores `employee`, o hardening da timeline
 tenant-wide 0084 e o privacy sign-off permanecem follow-ups. Writes continuam
 pendentes, Human Review permanece suspenso e o MVP em 98%.
+
+### 29.23 MVP Closure PR I1 — People + Organization Core Mutation Boundaries
+
+Na baseline `7854120`, uma auditoria completa dos writes navegáveis confirmou que
+os repositories de People e Organization ainda executavam DML direto contra
+tabelas sem grants para `authenticated`. O recorte P0 é create/update/archive de
+People, Departments, Teams e Positions. Position Requirements e Position
+Competencies não bloqueiam a jornada estrutural mínima e permanecem fora.
+
+A migration 0089 cria doze RPCs `VOLATILE SECURITY DEFINER` com `search_path`
+hardened. O ator vem exclusivamente de `auth.uid()`; o company selector não é
+autoridade; somente membership ativa `owner`, `admin` ou `hr` executa. Referências
+de manager, department, parent team, team e position são validadas no mesmo
+tenant, e o contrato não permite alterar `company_id`, `user_id` ou role.
+
+Creates usam uma chave idempotente e a unicidade de Activity como ledger atômico
+de intenção. Updates são contratos explícitos e repetíveis; archives preservam o
+soft delete histórico e retornam `already_archived` no retry. Cada sucesso grava
+Activity na mesma transação. Person termination mantém o vínculo histórico e
+desativa membership ativa conforme PD-019; ownership pode impedir a operação de
+forma fechada. A criação de Person não provisiona Auth nem membership.
+
+Somente `authenticated` recebe `EXECUTE` nas RPCs públicas. Helpers internos,
+`anon` e `service_role` não recebem execução, e os grants INSERT/UPDATE/DELETE em
+`people`, `departments`, `teams` e `positions` permanecem fechados. O pgTAP
+adversarial adiciona 94 asserts; a suíte completa passa em 33 arquivos/1.129
+testes e a regressão web permanece em 961 testes.
+
+Esta PR é DB-first: páginas, forms, Actions e repositories não mudam. A próxima
+PR deve integrar os consumers People/Organization às RPCs 0089 com contratos e
+erros seguros. Outros writes, os privacy gates People/Development e o hardening
+0084 permanecem pendentes. Human Review continua suspenso e o MVP em 98%.

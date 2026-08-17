@@ -2240,6 +2240,17 @@ writes permanecem `WRITE_BOUNDARY_MISSING`; privacy gates de People e
 Development, hardening da 0084 e Human Review continuam pendentes. O MVP
 permanece em 98%.
 
+### 29.21 MVP Closure — Assessment + Feedback Privacy and Read Boundaries
+
+Na baseline `cc926be`, a PD-020 define privacy by default para Feedback e separa
+o contrato aprovado das policies históricas mais permissivas. A migration 0088
+adiciona boundaries purpose-bound para Assessment administrativo/evaluator e
+Feedback participant/HR explícito, sem SELECT amplo, Auth IDs ou metadata bruta.
+
+Este gate entrega somente contratos DB e testes adversariais. As sete páginas
+permanecem sem integração, todos os writes anteriormente identificados continuam
+`WRITE_BOUNDARY_MISSING`, Human Review permanece suspenso e o MVP em 98%.
+
 ### 29.18 MVP Closure PR C/C1 — App Integration and People Timeline Alignment
 
 A PR C integra as oito projections 0085 nas rotas MVP de People e Organization

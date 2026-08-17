@@ -143,3 +143,9 @@ Concluído neste gate: autorização de Assessments conforme PD-016 e ADR-0010,
 incluindo RLS, leitura administrativa auditável e visibilidade do avaliado.
 Concluído também o hardening in-app de Notifications conforme PD-017, ADR-0011 e
 migration 0063.
+
+A PD-020 estabelece privacidade de conversas Feedback: participantes são os
+leitores normais, HR recebe somente `visibility='hr'`, e owner/admin/manager não
+herdam acesso universal. A migration 0088 cria as boundaries DB-first de
+Assessments e Feedback sem integrar páginas ou writes. App integration é o
+próximo gate; Human Review segue suspenso e o MVP permanece em 98%.

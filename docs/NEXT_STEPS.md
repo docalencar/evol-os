@@ -79,3 +79,8 @@ suspenso e o MVP em 98%.
 Gate adicional: **PRIVACY SIGN-OFF REQUIRED BEFORE PRODUCTION — DEVELOPMENT**.
 A leitura histórica de plans/goals/actions por qualquer membro ativo, inclusive
 employee, foi preservada pela 0087 e precisa de confirmação explícita de Produto.
+
+A PD-020 e a migration 0088 fecham o contrato DB-first de leitura para
+Assessments e Feedback. O próximo passo é integrar as sete rotas navegáveis por
+adapters server-only e validação estrita, sem fallback direto. Isso ainda não
+torna writes ou CRUD seguros; Human Review permanece suspenso e o MVP em 98%.

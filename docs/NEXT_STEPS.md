@@ -69,3 +69,12 @@ Review permanecem suspensos; o MVP continua em 98%.
 Gate adicional: obter sign-off de privacidade para o management profile de People
 e planejar hardening forward-only da timeline tenant-wide 0084, sem alterar a
 migration já publicada.
+
+A próxima integração deve consumir as sete boundaries DB-first da migration
+0087 nas rotas de Competencies e Development, sem fallback direto. Writes
+continuam `WRITE_BOUNDARY_MISSING`, Human Review permanece suspenso e o MVP em
+98%.
+
+Gate adicional: **PRIVACY SIGN-OFF REQUIRED BEFORE PRODUCTION — DEVELOPMENT**.
+A leitura histórica de plans/goals/actions por qualquer membro ativo, inclusive
+employee, foi preservada pela 0087 e precisa de confirmação explícita de Produto.

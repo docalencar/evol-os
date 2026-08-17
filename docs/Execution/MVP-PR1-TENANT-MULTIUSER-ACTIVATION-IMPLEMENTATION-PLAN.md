@@ -2217,6 +2217,20 @@ deve confirmar explicitamente se employee/manager podem receber `phone`,
 altera silenciosamente a matriz histórica. UI integration e writes seguem
 pendentes; Human Review permanece suspenso e o MVP em 98%.
 
+### 29.19 MVP Closure PR E — Competency + Development Read Boundaries
+
+Na baseline `b7ad3c5`, a migration 0087 adiciona sete projections separadas para
+Competency management, Development plans/goals/actions e Development
+templates/goals/actions. Elas preservam a leitura histórica de membership ativa,
+fazem joins tenant-safe, omitem `created_by` e não abrem SELECT, RLS ou policy.
+UI e write boundaries permanecem fora do recorte; privacy sign-off de People,
+hardening 0084 e Human Review seguem pendentes. O MVP permanece em 98%.
+
+**PRIVACY SIGN-OFF REQUIRED BEFORE PRODUCTION — DEVELOPMENT:** a 0087 preserva
+a policy histórica em que qualquer membro ativo, inclusive employee, pode ler
+plans, goals e actions de outras pessoas do tenant. Isso não é regressão da
+migration, mas requer confirmação de Produto antes de produção.
+
 ### 29.18 MVP Closure PR C/C1 — App Integration and People Timeline Alignment
 
 A PR C integra as oito projections 0085 nas rotas MVP de People e Organization

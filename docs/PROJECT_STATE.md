@@ -185,6 +185,18 @@ As fronteiras vigentes continuam `SECURITY DEFINER`, `auth.uid()` como ator
 humano, tenant revalidado no banco e nenhuma operação humana baseada em
 `service_role`.
 
+Na baseline `b7ad3c5`, a PR E adiciona pela migration 0087 sete read boundaries
+especializadas para catálogo de Competencies, plans/goals/actions de Development
+e templates/goals/actions. A matriz histórica de leitura é preservada para todas
+as memberships ativas, `created_by`/Auth IDs são excluídos e nenhum SELECT de
+tabela é reaberto. A integração UI e todos os writes permanecem pendentes;
+privacy gate de People, hardening 0084 e Human Review seguem suspensos. MVP 98%.
+
+**PRIVACY SIGN-OFF REQUIRED BEFORE PRODUCTION — DEVELOPMENT:** a policy
+histórica e a 0087 permitem que qualquer membership ativa, inclusive employee,
+leia plans, goals e actions de outras pessoas do tenant. A 0087 não amplia a
+matriz existente, mas essa exposição precisa de confirmação explícita de Produto.
+
 ## 7. Arquitetura consolidada
 
 - Clean Architecture e responsabilidades por camada;

@@ -2310,3 +2310,25 @@ Esta PR é DB-first: páginas, forms, Actions e repositories não mudam. A próx
 PR deve integrar os consumers People/Organization às RPCs 0089 com contratos e
 erros seguros. Outros writes, os privacy gates People/Development e o hardening
 0084 permanecem pendentes. Human Review continua suspenso e o MVP em 98%.
+
+### 29.24 MVP Closure PR I2 — People + Organization Core Mutation App Integration
+
+Na baseline `e71abce`, esta PR integra as doze mutation boundaries 0089 à
+aplicação. Um adapter server-only (`features/people-organization-mutations`,
+`import "server-only"`, cliente Supabase de servidor, RPC-only, sem `.from()`, sem
+browser client, sem `service_role`) expõe create/update/archive de Person,
+Department, Team e Position. As doze Server Actions passam a chamar esse adapter
+com `companyId` derivado do contexto canônico; o payload não carrega `company_id`,
+`user_id`, role nem metadata de autenticação. Removeu-se o DML direto protegido e
+o `recordActivity` duplicado — a 0089 já grava Activity atomicamente. Creates usam
+chave idempotente derivada da intenção; erros estáveis (`TENANT_AUTHORIZATION_DENIED`,
+`PERSON_ACCESS_CONFLICT`, `ORGANIZATION_HIERARCHY_CYCLE`, `IDEMPOTENCY_CONFLICT`,
+etc.) são mapeados para mensagens públicas seguras, sem SQLSTATE, nomes de tabela
+ou constraint; o retorno `{ success, message }` das Actions foi preservado. Um
+teste comportamental cobre o contrato de erro seguro e as colisões de substring.
+
+Validação: `tsc --noEmit` limpo, `next lint` sem novos avisos, regressão web
+`996/996`. A suíte DB (`npx supabase test db`) não muda (sem migration/RPC nova) e
+roda no operador. Nenhuma migration/RLS/policy/grant alterada; nenhum arquivo de
+outro domínio migrado. O smoke autenticado core, os writes P1/P2 e os gates de
+privacidade/0084 permanecem pendentes; não há CRUD-safe global e o MVP segue 98%.

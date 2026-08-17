@@ -164,3 +164,10 @@ desativa acesso vinculado sem apagar identidade. O próximo gate é integrar ess
 contratos em Actions/Repositories finos e validar o smoke core. Requirements,
 Competencies, Import, Development, Assessment admin, Feedback e Recruitment
 permanecem em PRs posteriores. Human Review segue suspenso e o MVP em 98%.
+
+Na baseline `e71abce`, a PR I2 integra os contratos 0089 nas doze Server Actions
+finas de People, Departments, Teams e Positions por um adapter server-only
+RPC-only, removendo o DML direto protegido dos write paths P0 e a Activity
+duplicada, sem browser authority nem `service_role`. TypeScript, lint e 996 testes
+web passam. Falta o smoke autenticado core; writes P1/P2 e gates de
+privacidade/0084 seguem pendentes; Human Review permanece suspenso e o MVP em 98%.

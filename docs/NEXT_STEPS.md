@@ -22,17 +22,21 @@ Departments, Teams e Positions às trusted mutation boundaries da migration 0089
 - páginas, Actions e repositories ainda não consomem as novas RPCs;
 - Human Review permanece suspenso e o MVP continua em 98%.
 
-### Gate atual
+### Gate atual — concluído nesta PR (I2)
 
-Implementar somente a integração app das mutações core 0089, mantendo o tenant
-server-derived, payload sem autoridade, validação estrita dos retornos e mensagens
-públicas estáveis. Não reabrir DML direto nem incluir Position Requirements,
-Competencies, Import ou outros domínios.
+A integração app das mutações core 0089 está entregue na baseline `e71abce`: as
+doze Server Actions de People/Departments/Teams/Positions consomem um adapter
+server-only RPC-only (`people-organization-mutations`), com `companyId`
+server-derived, payload sem autoridade, sem DML direto protegido, sem Activity
+duplicada e com erros públicos estáveis. `tsc`, `next lint` e 996 testes web
+passam; a suíte DB não muda (sem migration nova).
 
 ### Próximo passo após aprovação
 
-Executar smoke autenticado de create/update/archive em People e Organization.
-Human Review só pode retomar depois que a integração P0 estiver comprovada.
+Executar smoke autenticado de create/update/archive em People e Organization
+(incluindo os caminhos de erro: hierarchy cycle, last-owner/access conflict,
+referência inválida). Human Review global só retoma depois desse smoke e dos gates
+independentes.
 
 Permanecem gates independentes: privacy de People/Development, participant email
 de Assessment, hardening forward-only da timeline 0084 e writes P1/P2 dos demais

@@ -2,9 +2,13 @@
 
 import { revalidatePath } from "next/cache"
 
-import { recordActivity } from "@/features/activity"
+import {
+  createDepartment,
+  isValidSubmissionId,
+  PeopleOrganizationMutationError,
+  submissionIdFromInput,
+} from "@/features/people-organization-mutations"
 
-import { createDepartmentRepository } from "../repositories/department-repository"
 import { createDepartmentSchema } from "../schemas/department-schema"
 
 type CreateDepartmentActionState = {
@@ -16,75 +20,49 @@ export async function createDepartmentAction(
   companyId: string,
   input: unknown
 ): Promise<CreateDepartmentActionState> {
-  const parsedInput =
-    createDepartmentSchema.safeParse(input)
+  const parsedInput = createDepartmentSchema.safeParse(input)
 
   if (!parsedInput.success) {
     return {
       success: false,
-      message:
-        "Dados inválidos para criar departamento.",
+      message: "Dados inválidos para criar departamento.",
     }
   }
 
-  const departmentRepository =
-    await createDepartmentRepository()
+  const submissionId = submissionIdFromInput(input)
+  if (!isValidSubmissionId(submissionId)) {
+    return {
+      success: false,
+      message: "Dados inválidos para criar departamento.",
+    }
+  }
 
-  const { data, error } =
-    await departmentRepository.create({
+  let departmentId: string | undefined
+  try {
+    const result = await createDepartment(
       companyId,
-      name: parsedInput.data.name,
-      description:
-        parsedInput.data.description || null,
-      leaderId:
-        parsedInput.data.leaderId || null,
-    })
-
-  if (error || !data) {
-    console.error(
-      "Erro Supabase createDepartment:",
-      error
+      parsedInput.data,
+      submissionId
     )
-
+    departmentId = result.departmentId
+  } catch (error) {
     return {
       success: false,
       message:
-        error?.message ??
-        "Erro ao criar departamento.",
+        error instanceof PeopleOrganizationMutationError
+          ? error.message
+          : "Erro ao criar departamento.",
     }
   }
 
-  try {
-    await recordActivity({
-      companyId,
-      activityType: "department.created",
-      module: "organization",
-      title: "Departamento criado",
-      description: `O departamento ${data.name} foi criado.`,
-      actorType: "user",
-      entityType: "department",
-      entityId: data.id,
-      visibility: "company",
-      metadata: {
-        departmentId: data.id,
-        departmentName: data.name,
-      },
-    })
-  } catch (activityError) {
-    console.error(
-      "Erro ao registrar atividade de criação do departamento:",
-      activityError
-    )
-  }
-
   revalidatePath("/app/company")
-  revalidatePath(
-    `/app/company/departments/${data.id}`
-  )
+  revalidatePath("/app/company/departments")
+  if (departmentId) {
+    revalidatePath(`/app/company/departments/${departmentId}`)
+  }
 
   return {
     success: true,
-    message:
-      "Departamento criado com sucesso.",
+    message: "Departamento criado com sucesso.",
   }
 }

@@ -2,10 +2,14 @@
 
 import { revalidatePath } from "next/cache"
 
-import { recordActivity } from "@/features/activity"
+import {
+  createPerson,
+  isValidSubmissionId,
+  PeopleOrganizationMutationError,
+  submissionIdFromInput,
+} from "@/features/people-organization-mutations"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
-import { createEmployeeRepository } from "../repositories/employee-repository"
 import { createEmployeeSchema } from "../schemas/employee-schema"
 
 type CreateEmployeeActionState = {
@@ -16,77 +20,54 @@ type CreateEmployeeActionState = {
 export async function createEmployeeAction(
   input: unknown
 ): Promise<CreateEmployeeActionState> {
-  const parsedInput =
-    createEmployeeSchema.safeParse(input)
+  const parsedInput = createEmployeeSchema.safeParse(input)
 
   if (!parsedInput.success) {
     return {
       success: false,
-      message:
-        "Dados inválidos para criar colaborador.",
+      message: "Dados inválidos para criar colaborador.",
     }
   }
 
-  const { companyId } =
-    await getCurrentCompanyContext()
-
-  const employeeRepository =
-    await createEmployeeRepository()
-
-  const { data, error } =
-    await employeeRepository.create(
-      companyId,
-      parsedInput.data
-    )
-
-  if (error || !data) {
+  // A create requires an explicit submission identity (idempotency selector).
+  // Reject before any RPC — there is no content-derived fallback.
+  const submissionId = submissionIdFromInput(input)
+  if (!isValidSubmissionId(submissionId)) {
     return {
       success: false,
-      message: "Erro ao criar colaborador.",
+      message: "Dados inválidos para criar colaborador.",
     }
   }
 
+  const { companyId } = await getCurrentCompanyContext()
+
+  let personId: string | undefined
   try {
-    await recordActivity({
+    // The trusted mutation boundary persists the person and its activity event
+    // atomically; the application must not write people or activity directly.
+    const result = await createPerson(
       companyId,
-      activityType: "employee.created",
-      module: "people",
-      title: "Colaborador criado",
-      description:
-        `O colaborador ${data.full_name} foi criado.`,
-      actorType: "user",
-      entityType: "employee",
-      entityId: data.id,
-      subjectType: "employee",
-      subjectId: data.id,
-      visibility: "company",
-      metadata: {
-        employeeId: data.id,
-        employeeName: data.full_name,
-        status: parsedInput.data.status,
-        teamId:
-          parsedInput.data.teamId || null,
-        positionId:
-          parsedInput.data.positionId || null,
-        managerId:
-          parsedInput.data.managerId || null,
-        hireDate:
-          parsedInput.data.hireDate || null,
-      },
-    })
-  } catch (activityError) {
-    console.error(
-      "Erro ao registrar atividade de criação do colaborador:",
-      activityError
+      parsedInput.data,
+      submissionId
     )
+    personId = result.personId
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error instanceof PeopleOrganizationMutationError
+          ? error.message
+          : "Erro ao criar colaborador.",
+    }
   }
 
   revalidatePath("/app/people")
-  revalidatePath(`/app/people/${data.id}`)
+  if (personId) {
+    revalidatePath(`/app/people/${personId}`)
+  }
 
   return {
     success: true,
-    message:
-      "Colaborador criado com sucesso.",
+    message: "Colaborador criado com sucesso.",
   }
 }

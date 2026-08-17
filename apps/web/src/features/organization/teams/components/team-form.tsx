@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useTransition } from "react"
+import { useEffect, useRef, useState, useTransition } from "react"
 
 import { toast } from "sonner"
 
@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+
+import { newSubmissionId } from "@/features/people-organization-mutations/submission-id"
 
 import { createTeamAction } from "../actions/create-team-action"
 
@@ -49,6 +51,8 @@ export function TeamForm({
   >([])
 
   const isEditing = Boolean(team)
+  // Stable per-form-instance idempotency token (reset after a successful create).
+  const submissionIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     let isMounted = true
@@ -78,10 +82,17 @@ export function TeamForm({
   }, [companyId])
 
   function handleSubmit(formData: FormData) {
+    if (!isEditing && !submissionIdRef.current) {
+      submissionIdRef.current = newSubmissionId()
+    }
+
     const departmentId =
       String(formData.get("departmentId") ?? "") || null
 
     const input = {
+      idempotencyKey: isEditing
+        ? undefined
+        : submissionIdRef.current,
       name: String(formData.get("name") ?? ""),
 
       description: String(
@@ -102,6 +113,10 @@ export function TeamForm({
       if (!result.success) {
         toast.error(result.message)
         return
+      }
+
+      if (!isEditing) {
+        submissionIdRef.current = null
       }
 
       toast.success(result.message)

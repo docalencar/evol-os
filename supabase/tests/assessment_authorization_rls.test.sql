@@ -243,12 +243,22 @@ select lives_ok(
 
 reset role;
 select results_eq(
-  $$ select count(*) from public.activity_events where activity_type = 'assessments.administrative_read' $$,
+  $$
+    select count(*)
+    from public.activity_events
+    where activity_type = 'assessments.administrative_read'
+      and company_id = '20000000-0000-4000-8000-000000000001'::uuid
+  $$,
   array[3::bigint],
   'every administrative read created an audit event'
 );
 select results_eq(
-  $$ select count(*) from public.activity_events where metadata::text like '%Sensitive comment%' $$,
+  $$
+    select count(*)
+    from public.activity_events
+    where company_id = '20000000-0000-4000-8000-000000000001'::uuid
+      and metadata::text like '%Sensitive comment%'
+  $$,
   array[0::bigint],
   'audit metadata excludes sensitive content'
 );

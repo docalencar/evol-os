@@ -35,6 +35,35 @@ const personSchema = z
   })
   .strict()
 
+// Historical variant of the People read contract for the v2 boundary
+// (get_tenant_people_management_v2 / get_tenant_person_profile_v2). It differs
+// from personSchema in exactly two fields: `status` also admits "terminated"
+// (v2 returns all lifecycle statuses; v1 excludes terminated) and `disc_profile`
+// is a nullable string so legacy/combined DISC values on historical records do
+// not fail the read. All other columns are validated identically to v1.
+const historicalPersonSchema = z
+  .object({
+    person_id: uuid,
+    full_name: z.string().min(1),
+    email: nullableText,
+    phone: nullableText,
+    birth_date: nullableText,
+    hire_date: nullableText,
+    status: z.enum(["active", "inactive", "on_leave", "terminated"]),
+    has_user_access: z.boolean(),
+    manager_id: nullableUuid,
+    manager_name: nullableText,
+    team_id: nullableUuid,
+    team_name: nullableText,
+    position_id: nullableUuid,
+    position_name: nullableText,
+    disc_profile: nullableText,
+    avatar_url: nullableText,
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .strict()
+
 const departmentSchema = z
   .object({
     department_id: uuid,
@@ -247,6 +276,66 @@ export async function getManagementPerson(
   return (
     await getManagementPeopleFromRows(companyId, [row])
   )[0]
+}
+
+// Historical read contract — returns ALL lifecycle statuses, including
+// terminated people, via the additive v2 boundary. Existing v1 consumers are
+// intentionally left untouched; only callers that must show historical/all-status
+// people (e.g. the People "Desligados" view and headcount history) opt into this.
+export async function getManagementPeopleIncludingTerminated(
+  companyId: string
+) {
+  const rows = await rpcRows(
+    "get_tenant_people_management_v2",
+    { p_company_id: companyId },
+    z.array(historicalPersonSchema)
+  )
+  return getHistoricalPeopleFromRows(companyId, rows)
+}
+
+export async function getManagementPersonIncludingTerminated(
+  companyId: string,
+  personId: string
+) {
+  const rows = await rpcRows(
+    "get_tenant_person_profile_v2",
+    { p_company_id: companyId, p_person_id: personId },
+    z.array(historicalPersonSchema)
+  )
+  const row = rows[0]
+  if (!row) return null
+  return getHistoricalPeopleFromRows(companyId, [row])[0]
+}
+
+function getHistoricalPeopleFromRows(
+  companyId: string,
+  rows: z.infer<typeof historicalPersonSchema>[]
+) {
+  return rows.map((row) => ({
+    id: row.person_id,
+    company_id: companyId,
+    full_name: row.full_name,
+    email: row.email,
+    phone: row.phone,
+    birth_date: row.birth_date,
+    hire_date: row.hire_date,
+    status: row.status,
+    has_user_access: row.has_user_access,
+    manager_id: row.manager_id,
+    manager_name: row.manager_name,
+    team_id: row.team_id,
+    team_name: row.team_name,
+    position_id: row.position_id,
+    position_name: row.position_name,
+    teams: row.team_name ? { name: row.team_name } : null,
+    positions: row.position_name
+      ? { name: row.position_name }
+      : null,
+    disc_profile: row.disc_profile,
+    avatar_url: row.avatar_url,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  }))
 }
 
 async function getManagementPeopleFromRows(

@@ -1,6 +1,7 @@
 "use client"
 
 import {
+  useRef,
   useState,
   useTransition,
 } from "react"
@@ -15,6 +16,8 @@ import {
   useProductWizard,
   type ProductWizardStepDefinition,
 } from "@/components/product"
+
+import { newSubmissionId } from "@/features/people-organization-mutations/submission-id"
 
 import { createPositionAction } from "../../actions/create-position-action"
 import { updatePositionAction } from "../../actions/update-position-action"
@@ -92,6 +95,8 @@ export function PositionForm({
     useTransition()
 
   const isEditing = Boolean(position)
+  // Stable per-form-instance idempotency token (reset after a successful create).
+  const submissionIdRef = useRef<string | null>(null)
 
   const [name, setName] = useState(
     position?.name ?? ""
@@ -176,7 +181,14 @@ export function PositionForm({
     )?.label ?? "Não informado"
 
   function handleComplete() {
+    if (!isEditing && !submissionIdRef.current) {
+      submissionIdRef.current = newSubmissionId()
+    }
+
     const input = {
+      idempotencyKey: isEditing
+        ? undefined
+        : submissionIdRef.current,
       name: name.trim(),
       description: description.trim(),
       departmentId:
@@ -204,6 +216,10 @@ export function PositionForm({
       if (!result.success) {
         toast.error(result.message)
         return
+      }
+
+      if (!isEditing) {
+        submissionIdRef.current = null
       }
 
       toast.success(result.message)

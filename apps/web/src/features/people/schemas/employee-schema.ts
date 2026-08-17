@@ -60,6 +60,35 @@ export const createEmployeeSchema = z.object({
 
 export const updateEmployeeSchema = createEmployeeSchema.partial()
 
+// Full-overwrite contract for update_tenant_person_v1 (which rewrites every
+// column). Every field key MUST be present so a partial payload is rejected
+// instead of silently clearing data; nullable fields may be explicitly empty.
+// status is required WITHOUT a default, so an omitted status is never silently
+// coerced to "active".
+export const overwriteEmployeeSchema = z.object({
+  fullName: z
+    .string()
+    .trim()
+    .min(2, "Informe o nome do colaborador."),
+  email: z
+    .string()
+    .trim()
+    .email("Informe um e-mail válido.")
+    .or(z.literal("")),
+  phone: z.string().trim().or(z.literal("")),
+  birthDate: z.string().or(z.literal("")),
+  hireDate: z.string().or(z.literal("")),
+  status: employeeStatusSchema,
+  teamId: z.string().uuid("Time inválido.").or(z.literal("")),
+  positionId: z.string().uuid("Cargo inválido.").or(z.literal("")),
+  managerId: z.string().uuid("Gestor inválido.").or(z.literal("")),
+  discProfile: employeeDiscProfileSchema.or(z.literal("")),
+})
+
+export type OverwriteEmployeeInput = z.infer<
+  typeof overwriteEmployeeSchema
+>
+
 export type CreateEmployeeInput = z.infer<
   typeof createEmployeeSchema
 >

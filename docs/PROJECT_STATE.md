@@ -234,6 +234,15 @@ humano. A aplicação ainda usa repositories legados e será integrada em PR
 separada; writes dos demais domínios, privacy gates, hardening 0084 e Human Review
 permanecem pendentes. O MVP continua em 98%.
 
+Na baseline `e71abce`, a PR I2 integra essa camada à aplicação: as doze Server
+Actions de People, Departments, Teams e Positions consomem exclusivamente as RPCs
+0089 por um adapter server-only (`people-organization-mutations`), com `companyId`
+derivado do contexto canônico. Não há mais DML direto protegido nos write paths
+P0, nem Activity duplicada, nem browser authority; erros estáveis da 0089 viram
+mensagens públicas seguras. `tsc`, lint e 996 testes web passam. O smoke
+autenticado, os writes P1/P2 e os gates de privacidade/0084 permanecem pendentes;
+não há CRUD-safe global e o MVP segue em 98%.
+
 ## 7. Arquitetura consolidada
 
 - Clean Architecture e responsabilidades por camada;

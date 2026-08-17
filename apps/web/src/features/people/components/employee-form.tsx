@@ -17,6 +17,8 @@ import {
   type ProductWizardStepDefinition,
 } from "@/components/product"
 
+import { newSubmissionId } from "@/features/people-organization-mutations/submission-id"
+
 import { createEmployeeAction } from "../actions/create-employee-action"
 import { updateEmployeeAction } from "../actions/update-employee-action"
 import type { Employee } from "../types/employee"
@@ -88,6 +90,10 @@ export function EmployeeForm({
   onCancel,
 }: EmployeeFormProps) {
   const formRef = useRef<HTMLFormElement>(null)
+  // Stable per-form-instance idempotency token: the same submission (including
+  // double-click/retry) converges, while a new form instance — even with
+  // identical data — is a new intent. Reset after a successful create.
+  const submissionIdRef = useRef<string | null>(null)
   const [isPending, startTransition] =
     useTransition()
 
@@ -138,7 +144,14 @@ export function EmployeeForm({
   function handleSubmit(
     formData: FormData
   ) {
+    if (!isEditing && !submissionIdRef.current) {
+      submissionIdRef.current = newSubmissionId()
+    }
+
     const input = {
+      idempotencyKey: isEditing
+        ? undefined
+        : submissionIdRef.current,
       fullName: String(
         formData.get("fullName") ?? ""
       ),
@@ -183,6 +196,10 @@ export function EmployeeForm({
       if (!result.success) {
         toast.error(result.message)
         return
+      }
+
+      if (!isEditing) {
+        submissionIdRef.current = null
       }
 
       toast.success(result.message)

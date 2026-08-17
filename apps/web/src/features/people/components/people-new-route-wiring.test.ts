@@ -29,12 +29,17 @@ test("employee creation accepts no client-provided tenant selector", () => {
   assert.match(action, /createEmployeeAction\(\s*input: unknown/)
   assert.match(action, /createEmployeeSchema\.safeParse\(input\)/)
   assert.match(action, /getCurrentCompanyContext\(\)/)
-  assert.match(action, /employeeRepository\.create\(\s*companyId,/)
+  // Writes go through the trusted 0089 mutation boundary (RPC-only): no direct
+  // people DML and no duplicated activity event in the application layer.
+  assert.match(action, /createPerson\(/)
+  assert.match(action, /parsedInput\.data/)
+  assert.doesNotMatch(action, /employeeRepository|\.from\(|recordActivity/)
   assert.ok(
     action.indexOf("createEmployeeSchema.safeParse(input)") <
       action.indexOf("getCurrentCompanyContext()"),
   )
-  assert.match(action, /message: "Erro ao criar colaborador\."/)
+  assert.match(action, /"Erro ao criar colaborador\."/)
+  assert.match(action, /instanceof PeopleOrganizationMutationError/)
   assert.doesNotMatch(action, /error\?\.message/)
   assert.match(action, /revalidatePath\("\/app\/people"\)/)
   assert.match(action, /success: true/)

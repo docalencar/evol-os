@@ -1,12 +1,14 @@
 "use client"
 
-import { useTransition } from "react"
+import { useRef, useTransition } from "react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+
+import { newSubmissionId } from "@/features/people-organization-mutations/submission-id"
 
 import { createDepartmentAction } from "../actions/create-department-action"
 import { updateDepartmentAction } from "../actions/update-department-action"
@@ -29,9 +31,18 @@ export function DepartmentForm({
   const [isPending, startTransition] = useTransition()
 
   const isEditing = Boolean(department)
+  // Stable per-form-instance idempotency token (reset after a successful create).
+  const submissionIdRef = useRef<string | null>(null)
 
   function handleSubmit(formData: FormData) {
+    if (!isEditing && !submissionIdRef.current) {
+      submissionIdRef.current = newSubmissionId()
+    }
+
     const input = {
+      idempotencyKey: isEditing
+        ? undefined
+        : submissionIdRef.current,
       name: String(formData.get("name") ?? ""),
       description: String(formData.get("description") ?? ""),
       leaderId: null,
@@ -45,6 +56,10 @@ export function DepartmentForm({
       if (!result.success) {
         toast.error(result.message)
         return
+      }
+
+      if (!isEditing) {
+        submissionIdRef.current = null
       }
 
       toast.success(result.message)

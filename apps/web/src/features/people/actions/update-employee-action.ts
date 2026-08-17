@@ -2,10 +2,12 @@
 
 import { revalidatePath } from "next/cache"
 
-import { recordActivity } from "@/features/activity"
+import {
+  updatePerson,
+  PeopleOrganizationMutationError,
+} from "@/features/people-organization-mutations"
 
-import { createEmployeeRepository } from "../repositories/employee-repository"
-import { updateEmployeeSchema } from "../schemas/employee-schema"
+import { overwriteEmployeeSchema } from "../schemas/employee-schema"
 
 type UpdateEmployeeActionState = {
   success: boolean
@@ -17,96 +19,26 @@ export async function updateEmployeeAction(
   employeeId: string,
   input: unknown
 ): Promise<UpdateEmployeeActionState> {
-  const parsedInput =
-    updateEmployeeSchema.safeParse(input)
+  const parsedInput = overwriteEmployeeSchema.safeParse(input)
 
   if (!parsedInput.success) {
     return {
       success: false,
-      message:
-        "Dados inválidos para atualizar colaborador.",
+      message: "Dados inválidos para atualizar colaborador.",
     }
   }
 
-  const employeeRepository =
-    await createEmployeeRepository()
-
-  const { data: currentEmployee } =
-    await employeeRepository.findById(
-      companyId,
-      employeeId
-    )
-
-  const { error } =
-    await employeeRepository.update(
-      companyId,
-      employeeId,
-      parsedInput.data
-    )
-
-  if (error) {
+  try {
+    // Trusted boundary performs the full update and its activity event atomically.
+    await updatePerson(companyId, employeeId, parsedInput.data)
+  } catch (error) {
     return {
       success: false,
       message:
-        "Erro ao atualizar colaborador.",
+        error instanceof PeopleOrganizationMutationError
+          ? error.message
+          : "Erro ao atualizar colaborador.",
     }
-  }
-
-  const employeeName =
-    parsedInput.data.fullName ??
-    currentEmployee?.full_name ??
-    "Colaborador"
-
-  try {
-    await recordActivity({
-      companyId,
-      activityType: "employee.updated",
-      module: "people",
-      title: "Colaborador atualizado",
-      description:
-        `Os dados de ${employeeName} foram atualizados.`,
-      actorType: "user",
-      entityType: "employee",
-      entityId: employeeId,
-      subjectType: "employee",
-      subjectId: employeeId,
-      visibility: "company",
-      metadata: {
-        employeeId,
-        employeeName,
-        previousEmployeeName:
-          currentEmployee?.full_name ?? null,
-        status:
-          parsedInput.data.status ??
-          currentEmployee?.status ??
-          null,
-        previousStatus:
-          currentEmployee?.status ?? null,
-        teamId:
-          parsedInput.data.teamId ??
-          currentEmployee?.team_id ??
-          null,
-        previousTeamId:
-          currentEmployee?.team_id ?? null,
-        positionId:
-          parsedInput.data.positionId ??
-          currentEmployee?.position_id ??
-          null,
-        previousPositionId:
-          currentEmployee?.position_id ?? null,
-        managerId:
-          parsedInput.data.managerId ??
-          currentEmployee?.manager_id ??
-          null,
-        previousManagerId:
-          currentEmployee?.manager_id ?? null,
-      },
-    })
-  } catch (activityError) {
-    console.error(
-      "Erro ao registrar atividade de atualização do colaborador:",
-      activityError
-    )
   }
 
   revalidatePath("/app/people")
@@ -114,7 +46,6 @@ export async function updateEmployeeAction(
 
   return {
     success: true,
-    message:
-      "Colaborador atualizado com sucesso.",
+    message: "Colaborador atualizado com sucesso.",
   }
 }

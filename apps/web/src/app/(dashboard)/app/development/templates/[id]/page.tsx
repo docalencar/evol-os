@@ -9,7 +9,7 @@ import { PageHeader } from "@/components/shared/page-header"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 
-import { getCompetencies } from "@/features/competencies"
+import { getManagementCompetencies, getManagementDevelopmentTemplateActions, getManagementDevelopmentTemplateGoals, getManagementDevelopmentTemplates, getManagementPeople } from "@/features/dashboard-read"
 import {
   DEVELOPMENT_ACTION_TYPE_LABELS,
 } from "@/features/development/constants/development-action"
@@ -20,12 +20,8 @@ import {
   AddTemplateActionDialog,
   AddTemplateCompetencyDialog,
   ApplyDevelopmentTemplateDialog,
-  getDevelopmentTemplateActionsByGoalIds,
-  getDevelopmentTemplateById,
-  getDevelopmentTemplateGoals,
 } from "@/features/development/templates"
 import {
-  getEmployees,
   type Employee,
 } from "@/features/people"
 
@@ -84,11 +80,7 @@ export default async function DevelopmentTemplatePage({
     companyName,
   } = await getCurrentCompanyContext()
 
-  const template =
-    await getDevelopmentTemplateById(
-      companyId,
-      id
-    )
+  const template = (await getManagementDevelopmentTemplates(companyId, id))[0] ?? null
 
   if (!template) {
     notFound()
@@ -99,9 +91,9 @@ export default async function DevelopmentTemplatePage({
     competencies,
     employeesData,
   ] = await Promise.all([
-    getDevelopmentTemplateGoals(id),
-    getCompetencies(companyId),
-    getEmployees(companyId),
+    getManagementDevelopmentTemplateGoals(companyId, id),
+    getManagementCompetencies(companyId),
+    getManagementPeople(companyId),
   ])
 
   const employees =
@@ -110,14 +102,7 @@ export default async function DevelopmentTemplatePage({
   const templateGoals =
     goals as DevelopmentTemplateGoalView[]
 
-  const goalIds = templateGoals.map(
-    (goal) => goal.id
-  )
-
-  const allActions =
-    await getDevelopmentTemplateActionsByGoalIds(
-      goalIds
-    )
+  const allActions = await getManagementDevelopmentTemplateActions(companyId, id)
 
   const actionsByGoal = new Map<
     string,

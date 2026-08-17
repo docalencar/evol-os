@@ -2,14 +2,14 @@ import { PageHeader } from "@/components/shared/page-header"
 import {
   CompetencyCreateDialog,
   CompetencyTable,
-  getCompetencies,
 } from "@/features/competencies"
+import { getManagementCompetencies } from "@/features/dashboard-read"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 export default async function CompetenciesPage() {
   const { companyId } = await getCurrentCompanyContext()
 
-  const competencies = await getCompetencies(companyId)
+  const competencies = await getManagementCompetencies(companyId)
 
   return (
     <div className="space-y-6">

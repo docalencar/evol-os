@@ -17,7 +17,7 @@ export type DevelopmentTemplate = {
 
   active: boolean
 
-  createdBy: string | null
+  createdBy?: string | null
 
   createdAt: string
 

@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { redirect } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 
 import { z } from "zod"
 
@@ -13,13 +13,8 @@ import {
   AssessmentSectionCreateDialog,
   AssessmentSectionOverviewCard,
   AssessmentTemplateEditDialog,
-  getAssessmentQuestions,
-  getAssessmentSections,
-  getAssessmentTemplateById,
-  type AssessmentQuestion,
-  type AssessmentSection,
-  type AssessmentTemplate,
 } from "@/features/assessments"
+import { getAssessmentTemplateStructureReadModel } from "@/features/assessment-feedback-read"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 type AssessmentTemplateDetailsPageProps = {
@@ -42,36 +37,24 @@ export default async function AssessmentTemplateDetailsPage({
   const assessmentTemplateId = templateIdResult.data
   const { companyId } = await getCurrentCompanyContext()
 
-  const [templateData, sectionsData] = await Promise.all([
-    getAssessmentTemplateById(companyId, assessmentTemplateId),
-    getAssessmentSections(companyId, assessmentTemplateId),
-  ])
+  const { template, sections, questions } =
+    await getAssessmentTemplateStructureReadModel(
+      companyId,
+      assessmentTemplateId
+    )
 
-  if (!templateData) {
-    redirect("/app/assessments")
+  if (!template) {
+    notFound()
   }
 
-  const assessmentTemplate =
-    templateData as AssessmentTemplate
-
-  const sections = (sectionsData ?? []) as AssessmentSection[]
-
-  const questionsBySectionEntries = await Promise.all(
-    sections.map(async (section) => {
-      const questionsData = await getAssessmentQuestions(
-        companyId,
-        section.id
-      )
-
-      return [
-        section.id,
-        (questionsData ?? []) as AssessmentQuestion[],
-      ] as const
-    })
-  )
-
+  const assessmentTemplate = template
   const questionsBySection = new Map(
-    questionsBySectionEntries
+    sections.map((section) => [
+      section.id,
+      questions.filter((question) =>
+        question.assessment_section_id === section.id
+      ),
+    ])
   )
 
   return (

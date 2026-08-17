@@ -47,7 +47,7 @@ export async function addCycleParticipantsAction({
   if (error) {
     return {
       success: false,
-      message: error.message,
+      message: "Não foi possível adicionar os participantes.",
     }
   }
 

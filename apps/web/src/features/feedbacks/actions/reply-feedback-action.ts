@@ -204,10 +204,7 @@ export async function replyFeedbackAction(
 
     return {
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Não foi possível enviar a resposta.",
+      message: "Não foi possível enviar a resposta.",
     }
   }
 }

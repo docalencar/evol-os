@@ -12,17 +12,8 @@ import {
 } from "@/lib/supabase/supabase/current-company"
 
 import {
-  getEmployees,
-  type Employee,
-} from "@/features/people"
-
-import {
-  getFeedbackMessages,
-} from "../../queries/get-feedback-messages"
-
-import {
-  getFeedbackThreadById,
-} from "../../queries/get-feedback-thread-by-id"
+  getFeedbackThreadReadModel,
+} from "@/features/assessment-feedback-read"
 
 import {
   createFeedbackAiContext,
@@ -88,18 +79,19 @@ export async function generateFeedbackAiAnalysisAction(
       )
     }
 
-    const thread =
-      await getFeedbackThreadById({
+    const readModel =
+      await getFeedbackThreadReadModel(
         companyId,
-        threadId:
-          parsedInput.data.threadId,
-      })
+        parsedInput.data.threadId
+      )
 
-    if (!thread) {
+    if (!readModel) {
       return failureResult(
         "Conversa de feedback não encontrada."
       )
     }
+
+    const { thread, messages } = readModel
 
     const isParticipant =
       thread.senderEmployeeId ===
@@ -113,32 +105,17 @@ export async function generateFeedbackAiAnalysisAction(
       )
     }
 
-    const [
-      messages,
-      employeesData,
-    ] = await Promise.all([
-      getFeedbackMessages({
-        companyId,
-        threadId: thread.id,
-      }),
-
-      getEmployees(companyId),
-    ])
-
     if (messages.length === 0) {
       return failureResult(
         "A conversa ainda não possui mensagens para analisar."
       )
     }
 
-    const employees =
-      (employeesData ?? []) as Employee[]
-
     const context =
       createFeedbackAiContext({
         thread,
         messages,
-        employees,
+        employees: [],
         locale: "pt-BR",
         timeZone: "America/Sao_Paulo",
       })
@@ -168,16 +145,9 @@ export async function generateFeedbackAiAnalysisAction(
       "Análise inteligente gerada com sucesso.",
       data
     )
-  } catch (error) {
-    console.error(
-      "Erro ao gerar análise inteligente do feedback:",
-      error
-    )
-
+  } catch {
     return failureResult(
-      error instanceof Error
-        ? error.message
-        : "Não foi possível gerar a análise inteligente."
+      "Não foi possível gerar a análise inteligente."
     )
   }
 }

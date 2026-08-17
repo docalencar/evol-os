@@ -10,7 +10,7 @@ import {
   FEEDBACK_THREAD_TYPE_LABELS,
 } from "../constants/feedback-constants"
 import type {
-  FeedbackThread,
+  FeedbackThreadListItem,
 } from "../types/feedback"
 import {
   FeedbackPriorityBadge,
@@ -20,9 +20,8 @@ import {
 } from "./feedback-status-badge"
 
 type FeedbackThreadTableProps = {
-  threads: FeedbackThread[]
+  threads: FeedbackThreadListItem[]
   currentEmployeeId: string
-  employeeNameById: Map<string, string>
 }
 
 function formatDate(date: Date) {
@@ -36,20 +35,9 @@ function formatDate(date: Date) {
   ).format(date)
 }
 
-function getEmployeeName(
-  employeeId: string,
-  employeeNameById: Map<string, string>
-) {
-  return (
-    employeeNameById.get(employeeId) ??
-    "Colaborador não encontrado"
-  )
-}
-
 export function FeedbackThreadTable({
   threads,
   currentEmployeeId,
-  employeeNameById,
 }: FeedbackThreadTableProps) {
   const orderedThreads = [...threads].sort(
     (firstThread, secondThread) =>
@@ -72,9 +60,21 @@ export function FeedbackThreadTable({
               thread.senderEmployeeId ===
               currentEmployeeId
 
-            const otherEmployeeId = isSent
-              ? thread.receiverEmployeeId
-              : thread.senderEmployeeId
+            const isReceived =
+              thread.receiverEmployeeId ===
+              currentEmployeeId
+
+            const relationshipLabel = isSent
+              ? `Para ${thread.receiverName}`
+              : isReceived
+                ? `De ${thread.senderName}`
+                : `${thread.senderName} → ${thread.receiverName}`
+
+            const directionLabel = isSent
+              ? "Enviado"
+              : isReceived
+                ? "Recebido"
+                : "Visibilidade RH"
 
             return (
               <div className="min-w-64">
@@ -84,19 +84,11 @@ export function FeedbackThreadTable({
 
                 <div className="mt-1 flex flex-wrap items-center gap-2">
                   <Badge>
-                    {isSent
-                      ? "Enviado"
-                      : "Recebido"}
+                    {directionLabel}
                   </Badge>
 
                   <span className="text-xs text-slate-500">
-                    {isSent
-                      ? "Para"
-                      : "De"}{" "}
-                    {getEmployeeName(
-                      otherEmployeeId,
-                      employeeNameById
-                    )}
+                    {relationshipLabel}
                   </span>
                 </div>
               </div>

@@ -14,7 +14,7 @@ export type AssessmentSection = {
   display_order: number
   active: boolean
 
-  created_at: string
-  updated_at: string
-  deleted_at: string | null
+  created_at?: string
+  updated_at?: string
+  deleted_at?: string | null
 }

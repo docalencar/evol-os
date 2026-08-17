@@ -10,11 +10,11 @@ import {
 } from "@/components/dashboard"
 
 import type {
-  FeedbackThread,
+  FeedbackThreadListItem,
 } from "../types/feedback"
 
 type FeedbackDashboardKpiCardsProps = {
-  threads: FeedbackThread[]
+  threads: FeedbackThreadListItem[]
   currentEmployeeId: string
 }
 
@@ -46,7 +46,7 @@ export function FeedbackDashboardKpiCards({
       <StatCard
         label="Conversas"
         value={threads.length}
-        description="Total em que você participa"
+        description="Total visível para você"
         icon={
           <MessageSquareText size={20} />
         }

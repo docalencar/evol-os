@@ -1,17 +1,12 @@
 import Link from "next/link"
-import { redirect } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 
 import { z } from "zod"
 
 import {
   AssessmentTemplatePreview,
-  getAssessmentQuestions,
-  getAssessmentSections,
-  getAssessmentTemplateById,
-  type AssessmentQuestion,
-  type AssessmentSection,
-  type AssessmentTemplate,
 } from "@/features/assessments"
+import { getAssessmentTemplateStructureReadModel } from "@/features/assessment-feedback-read"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 type AssessmentTemplatePreviewPageProps = {
@@ -34,33 +29,24 @@ export default async function AssessmentTemplatePreviewPage({
   const assessmentTemplateId = templateIdResult.data
   const { companyId } = await getCurrentCompanyContext()
 
-  const [templateData, sectionsData] = await Promise.all([
-    getAssessmentTemplateById(companyId, assessmentTemplateId),
-    getAssessmentSections(companyId, assessmentTemplateId),
-  ])
+  const { template, sections, questions } =
+    await getAssessmentTemplateStructureReadModel(
+      companyId,
+      assessmentTemplateId
+    )
 
-  if (!templateData) {
-    redirect("/app/assessments")
+  if (!template) {
+    notFound()
   }
 
-  const template = templateData as AssessmentTemplate
-  const sections = (sectionsData ?? []) as AssessmentSection[]
-
-  const questionEntries = await Promise.all(
-    sections.map(async (section) => {
-      const questionsData = await getAssessmentQuestions(
-        companyId,
-        section.id
-      )
-
-      return [
-        section.id,
-        (questionsData ?? []) as AssessmentQuestion[],
-      ] as const
-    })
+  const questionsBySection = new Map(
+    sections.map((section) => [
+      section.id,
+      questions.filter((question) =>
+        question.assessment_section_id === section.id
+      ),
+    ])
   )
-
-  const questionsBySection = new Map(questionEntries)
 
   return (
     <div className="space-y-8">

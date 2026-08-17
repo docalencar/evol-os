@@ -50,7 +50,7 @@ export async function updateAssessmentSectionAction(
 
     return {
       success: false,
-      message: error.message,
+      message: "Não foi possível atualizar a seção.",
     }
   }
 

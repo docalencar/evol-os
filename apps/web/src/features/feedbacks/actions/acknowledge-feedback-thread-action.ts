@@ -104,10 +104,7 @@ export async function acknowledgeFeedbackThreadAction(
 
     return {
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Não foi possível confirmar o feedback.",
+      message: "Não foi possível confirmar o feedback.",
     }
   }
 }

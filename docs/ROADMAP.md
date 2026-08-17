@@ -147,5 +147,9 @@ migration 0063.
 A PD-020 estabelece privacidade de conversas Feedback: participantes são os
 leitores normais, HR recebe somente `visibility='hr'`, e owner/admin/manager não
 herdam acesso universal. A migration 0088 cria as boundaries DB-first de
-Assessments e Feedback sem integrar páginas ou writes. App integration é o
-próximo gate; Human Review segue suspenso e o MVP permanece em 98%.
+Assessments e Feedback. Na baseline `8ea0404`, a PR H integra as sete rotas MVP
+por adapters server-only, validação estrita, erros seguros e sem fallback direto,
+preservando evaluator ownership e HR somente em `visibility='hr'`. Writes seguem
+pendentes; privacy gates de People/Development, participant email do cycle sob o
+gate de People e hardening 0084 continuam abertos. Human Review segue suspenso e
+o MVP permanece em 98%.

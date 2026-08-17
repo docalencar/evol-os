@@ -3,16 +3,11 @@ import { notFound } from "next/navigation"
 import {
   AssessmentExecutionWorkspace,
   AssessmentFeedbackCard,
-  getAssessmentAnswers,
   getAssessmentFeedback,
-  getAssessmentResponseWorkspace,
-  getAssessmentTemplateById,
   presentAssessmentFeedback,
-  type AssessmentAnswer,
   type AssessmentQuestion,
-  type AssessmentSection,
-  type AssessmentTemplate,
 } from "@/features/assessments"
+import { getAssessmentResponsePageReadModel } from "@/features/assessment-feedback-read"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 type Props = {
@@ -31,38 +26,16 @@ export default async function AssessmentResponsePage({
 
   try {
     const workspace =
-      await getAssessmentResponseWorkspace(
+      await getAssessmentResponsePageReadModel(
         companyId,
         id
       )
 
-    const [templateData, answersData] =
-      await Promise.all([
-        getAssessmentTemplateById(
-          companyId,
-          workspace.response.assessment_template_id
-        ),
-        getAssessmentAnswers(
-          companyId,
-          workspace.response.id
-        ),
-      ])
-
-    if (!templateData) {
+    if (!workspace) {
       notFound()
     }
 
-    const template =
-      templateData as AssessmentTemplate
-
-    const sections =
-      workspace.sections as AssessmentSection[]
-
-    const questions =
-      workspace.questions as AssessmentQuestion[]
-
-    const answers =
-      (answersData ?? []) as AssessmentAnswer[]
+    const { template, sections, questions, answers } = workspace
 
     const questionsBySection = new Map<
       string,

@@ -82,6 +82,57 @@ export type FeedbackMessage = {
   updatedAt: Date
 }
 
+export type FeedbackThreadListItem = Pick<
+  FeedbackThread,
+  | "id"
+  | "senderEmployeeId"
+  | "receiverEmployeeId"
+  | "type"
+  | "status"
+  | "priority"
+  | "title"
+  | "updatedAt"
+> & {
+  senderName: string
+  receiverName: string
+}
+
+export type FeedbackThreadDetail = Pick<
+  FeedbackThread,
+  | "id"
+  | "companyId"
+  | "senderEmployeeId"
+  | "receiverEmployeeId"
+  | "type"
+  | "status"
+  | "priority"
+  | "visibility"
+  | "title"
+  | "requiresFollowUp"
+  | "followUpAt"
+  | "acknowledgedAt"
+  | "closedAt"
+  | "createdAt"
+  | "updatedAt"
+> & {
+  senderName: string
+  receiverName: string
+}
+
+export type FeedbackMessageDetail = Pick<
+  FeedbackMessage,
+  | "id"
+  | "companyId"
+  | "threadId"
+  | "authorEmployeeId"
+  | "type"
+  | "content"
+  | "editedAt"
+  | "createdAt"
+> & {
+  authorName: string | null
+}
+
 export type FeedbackAcknowledgement = {
   id: string
   companyId: string

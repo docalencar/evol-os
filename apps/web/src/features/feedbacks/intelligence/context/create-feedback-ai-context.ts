@@ -1,7 +1,9 @@
 import type {
   FeedbackMessage,
+  FeedbackMessageDetail,
   FeedbackMetadata,
   FeedbackThread,
+  FeedbackThreadDetail,
 } from "../../types/feedback"
 
 import type {
@@ -16,8 +18,8 @@ type EmployeeReference = {
 }
 
 export type CreateFeedbackAiContextInput = {
-  thread: FeedbackThread
-  messages: FeedbackMessage[]
+  thread: FeedbackThread | FeedbackThreadDetail
+  messages: Array<FeedbackMessage | FeedbackMessageDetail>
   employees: EmployeeReference[]
   generatedAt?: string
   locale?: string
@@ -56,14 +58,14 @@ function normalizeMetadata(
 }
 
 function createParticipants(
-  thread: FeedbackThread,
+  thread: FeedbackThread | FeedbackThreadDetail,
   employeeNames: Map<string, string>
 ): FeedbackAiContextParticipant[] {
   return [
     {
       employeeId:
         thread.senderEmployeeId,
-      name: getEmployeeName(
+      name: "senderName" in thread ? thread.senderName : getEmployeeName(
         employeeNames,
         thread.senderEmployeeId
       ),
@@ -72,7 +74,7 @@ function createParticipants(
     {
       employeeId:
         thread.receiverEmployeeId,
-      name: getEmployeeName(
+      name: "receiverName" in thread ? thread.receiverName : getEmployeeName(
         employeeNames,
         thread.receiverEmployeeId
       ),
@@ -82,7 +84,7 @@ function createParticipants(
 }
 
 function createMessages(
-  messages: FeedbackMessage[],
+  messages: Array<FeedbackMessage | FeedbackMessageDetail>,
   employeeNames: Map<string, string>
 ): FeedbackAiContextMessage[] {
   return [...messages]
@@ -96,7 +98,9 @@ function createMessages(
       type: message.type,
       authorEmployeeId:
         message.authorEmployeeId,
-      authorName: getEmployeeName(
+      authorName: "authorName" in message && message.authorName
+        ? message.authorName
+        : getEmployeeName(
         employeeNames,
         message.authorEmployeeId
       ),
@@ -106,15 +110,15 @@ function createMessages(
       editedAt:
         message.editedAt?.toISOString() ??
         null,
-      metadata: normalizeMetadata(
-        message.metadata
-      ),
+      metadata: "metadata" in message
+        ? normalizeMetadata(message.metadata)
+        : {},
     }))
 }
 
 function createMetrics(
-  thread: FeedbackThread,
-  messages: FeedbackMessage[]
+  thread: FeedbackThread | FeedbackThreadDetail,
+  messages: Array<FeedbackMessage | FeedbackMessageDetail>
 ): FeedbackAiContext["metrics"] {
   const uniqueAuthors = new Set(
     messages
@@ -234,12 +238,9 @@ export function createFeedbackAiContext({
     ),
 
     metadata: {
-      assessmentId:
-        thread.assessmentId,
-      developmentPlanId:
-        thread.developmentPlanId,
-      competencyId:
-        thread.competencyId,
+      assessmentId: "assessmentId" in thread ? thread.assessmentId : null,
+      developmentPlanId: "developmentPlanId" in thread ? thread.developmentPlanId : null,
+      competencyId: "competencyId" in thread ? thread.competencyId : null,
     },
   }
 }

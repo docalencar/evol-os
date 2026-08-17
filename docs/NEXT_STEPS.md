@@ -70,10 +70,11 @@ Gate adicional: obter sign-off de privacidade para o management profile de Peopl
 e planejar hardening forward-only da timeline tenant-wide 0084, sem alterar a
 migration já publicada.
 
-A próxima integração deve consumir as sete boundaries DB-first da migration
-0087 nas rotas de Competencies e Development, sem fallback direto. Writes
-continuam `WRITE_BOUNDARY_MISSING`, Human Review permanece suspenso e o MVP em
-98%.
+A PR F consome as sete boundaries DB-first da migration 0087 nas rotas de
+Competencies e Development, com validação estrita e sem fallback direto. Os
+writes continuam `WRITE_BOUNDARY_MISSING`; o hardening da 0084 e os privacy
+gates de People e Development permanecem pendentes. Human Review continua
+suspenso e o MVP em 98%.
 
 Gate adicional: **PRIVACY SIGN-OFF REQUIRED BEFORE PRODUCTION — DEVELOPMENT**.
 A leitura histórica de plans/goals/actions por qualquer membro ativo, inclusive

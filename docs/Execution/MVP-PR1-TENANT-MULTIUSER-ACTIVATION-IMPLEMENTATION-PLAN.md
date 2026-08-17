@@ -2231,6 +2231,15 @@ a policy histórica em que qualquer membro ativo, inclusive employee, pode ler
 plans, goals e actions de outras pessoas do tenant. Isso não é regressão da
 migration, mas requer confirmação de Produto antes de produção.
 
+### 29.20 MVP Closure PR F — Competency + Development App Integration
+
+Na baseline `035ef5f`, as rotas MVP de Competencies e Development passam a
+consumir as sete projections 0087 por adapters server-only com validação estrita,
+seletores tenant-scoped e erros seguros, sem fallback para SELECT direto. Os
+writes permanecem `WRITE_BOUNDARY_MISSING`; privacy gates de People e
+Development, hardening da 0084 e Human Review continuam pendentes. O MVP
+permanece em 98%.
+
 ### 29.18 MVP Closure PR C/C1 — App Integration and People Timeline Alignment
 
 A PR C integra as oito projections 0085 nas rotas MVP de People e Organization

@@ -23,3 +23,14 @@ export {
   getManagementTeams,
   ManagementRouteReadError,
 } from "./queries/get-management-route-read-models"
+export {
+  CompetencyDevelopmentReadError,
+  getManagementCompetencies,
+  getManagementCompetencyAssignments,
+  getManagementDevelopmentActions,
+  getManagementDevelopmentGoals,
+  getManagementDevelopmentPlans,
+  getManagementDevelopmentTemplateActions,
+  getManagementDevelopmentTemplateGoals,
+  getManagementDevelopmentTemplates,
+} from "./queries/get-competency-development-read-models"

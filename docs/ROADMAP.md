@@ -93,6 +93,11 @@ Development plans/goals/actions e templates/goals/actions. Nenhuma UI, mutation,
 policy, RLS ou tabela grant integra este recorte. A integração app é o próximo
 passo; Human Review continua suspenso e o MVP em 98%.
 
+Na baseline `035ef5f`, a PR F integra essas boundaries nas cinco rotas MVP de
+Competencies e Development, sem leitura direta protegida no read path. Writes
+continuam pendentes, assim como privacy gates de People/Development e hardening
+da 0084; Human Review permanece suspenso e o MVP em 98%.
+
 Antes de produção, Development exige privacy sign-off explícito: a matriz
 histórica preservada pela 0087 permite que employee ativo leia plans, goals e
 actions de outras pessoas do mesmo tenant.

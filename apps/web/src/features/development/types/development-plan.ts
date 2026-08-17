@@ -22,7 +22,7 @@ export type DevelopmentPlan = {
 
   priority: DevelopmentPlanPriority
 
-  createdBy: string
+  createdBy?: string
 
   startDate: string | null
 

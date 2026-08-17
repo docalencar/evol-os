@@ -197,6 +197,13 @@ histórica e a 0087 permitem que qualquer membership ativa, inclusive employee,
 leia plans, goals e actions de outras pessoas do tenant. A 0087 não amplia a
 matriz existente, mas essa exposição precisa de confirmação explícita de Produto.
 
+Na baseline `035ef5f`, a PR F integra as sete boundaries 0087 nas rotas MVP de
+Competencies e Development por adapters server-only, validação estrita e
+seletores tenant-scoped, sem fallback para leitura direta. Os writes continuam
+`WRITE_BOUNDARY_MISSING`; os privacy gates de People e Development e o hardening
+da 0084 permanecem pendentes. Human Review segue suspenso e o MVP permanece em
+98%.
+
 ## 7. Arquitetura consolidada
 
 - Clean Architecture e responsabilidades por camada;

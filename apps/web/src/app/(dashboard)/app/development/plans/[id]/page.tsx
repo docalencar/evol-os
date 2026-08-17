@@ -18,17 +18,12 @@ import {
   DEVELOPMENT_GOAL_STATUS_LABELS,
   DEVELOPMENT_PLAN_PRIORITY_LABELS,
   DEVELOPMENT_PLAN_STATUS_LABELS,
-  getDevelopmentActionsByGoalIds,
-  getDevelopmentGoalsByPlan,
-  getDevelopmentPlanById,
   type DevelopmentAction,
   type DevelopmentGoal,
 } from "@/features/development"
+import { getManagementDevelopmentActions, getManagementDevelopmentGoals, getManagementDevelopmentPlans, getManagementPeople } from "@/features/dashboard-read"
 
-import {
-  getEmployeeById,
-  type Employee,
-} from "@/features/people"
+import { type Employee } from "@/features/people"
 
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
@@ -66,43 +61,21 @@ export default async function DevelopmentPlanPage({
   const { companyId } =
     await getCurrentCompanyContext()
 
-  const plan =
-    await getDevelopmentPlanById(
-      companyId,
-      id
-    )
+  const plan = (await getManagementDevelopmentPlans(companyId, id))[0] ?? null
 
   if (!plan) {
     notFound()
   }
 
-  const [goals, employee, owner] =
+  const [goals, actions, people] =
     await Promise.all([
-      getDevelopmentGoalsByPlan(
-        companyId,
-        id
-      ),
-      getEmployeeById(
-        companyId,
-        plan.employeeId
-      ),
-      plan.ownerId
-        ? getEmployeeById(
-            companyId,
-            plan.ownerId
-          )
-        : Promise.resolve(null),
+      getManagementDevelopmentGoals(companyId, id),
+      getManagementDevelopmentActions(companyId, id),
+      getManagementPeople(companyId),
     ])
 
-  const goalIds = goals.map(
-    (goal) => goal.id
-  )
-
-  const actions =
-    await getDevelopmentActionsByGoalIds(
-      companyId,
-      goalIds
-    )
+  const employee = people.find((person) => person.id === plan.employeeId) ?? null
+  const owner = plan.ownerId ? people.find((person) => person.id === plan.ownerId) ?? null : null
 
   const actionsByGoal = new Map<
     string,

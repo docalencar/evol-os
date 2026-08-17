@@ -2,15 +2,15 @@ import { PageHeader } from "@/components/shared/page-header"
 import {
   CreateDevelopmentTemplateDialog,
   DevelopmentTemplateTable,
-  getDevelopmentTemplates,
 } from "@/features/development/templates"
+import { getManagementDevelopmentTemplates } from "@/features/dashboard-read"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 import { GlobalCompetencyMappingPanel, getPublishedGlobalCompetencies, getTenantCompetencyMappings } from "@/features/development/global-competencies"
 
 export default async function DevelopmentTemplatesPage() {
   const { companyId } = await getCurrentCompanyContext()
 
-  const templates = await getDevelopmentTemplates(companyId)
+  const templates = await getManagementDevelopmentTemplates(companyId)
   const [concepts, mappings] = await Promise.all([getPublishedGlobalCompetencies(), getTenantCompetencyMappings(companyId)])
 
   return (

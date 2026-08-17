@@ -221,6 +221,19 @@ Assessment e Feedback continuam `WRITE_BOUNDARY_MISSING`; privacy gates de
 People e Development, participant email no cycle sob o gate de People,
 hardening 0084 e Human Review permanecem pendentes. O MVP continua em 98%.
 
+Na baseline `7854120`, a auditoria de mutations confirmou como P0 o CRUD core de
+People, Departments, Teams e Positions. A PR I1 materializa pela migration 0089
+doze boundaries de create/update/archive para esses quatro roots tenant-owned.
+Todas derivam o ator de `auth.uid()`, exigem membership ativa `owner/admin/hr`,
+validam referências no tenant, persistem Activity atomicamente e concedem apenas
+`EXECUTE` a `authenticated`. Creates possuem chave idempotente; archives são
+soft e repetíveis. Encerrar uma Person desativa atomicamente sua membership ativa
+quando as proteções de ownership da PD-019 permitem, sem desvincular identidade ou
+criar Auth access. Grants DML continuam fechados e não há `service_role` no fluxo
+humano. A aplicação ainda usa repositories legados e será integrada em PR
+separada; writes dos demais domínios, privacy gates, hardening 0084 e Human Review
+permanecem pendentes. O MVP continua em 98%.
+
 ## 7. Arquitetura consolidada
 
 - Clean Architecture e responsabilidades por camada;

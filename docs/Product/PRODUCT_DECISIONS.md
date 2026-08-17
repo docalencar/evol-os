@@ -1079,3 +1079,51 @@ A ADR posterior deverá decidir, sem alterar esta política:
 - fronteira server-only e executor técnico de menor privilégio;
 - contrato de auditoria, retenção e observabilidade;
 - mensagens e códigos seguros entre Application Layer e experiência.
+
+---
+
+# PD-020 — Feedback Conversation Privacy and Administrative Access
+
+**Status:** Approved
+
+**Owner:** Product Owner
+
+Conversas de Feedback contêm conteúdo humano privado. Participar de uma empresa
+não autoriza ler todas as conversas do tenant, e uma role administrativa não
+transforma seu titular em participante universal.
+
+## Leitura normal
+
+- sender e receiver podem ler a thread da qual participam e suas mensagens;
+- a projeção expõe apenas os campos necessários à experiência atual;
+- conteúdo textual é autorizado no banco antes de ser projetado;
+- `company_id`, Auth IDs, metadata bruta e storage paths não integram o contrato.
+
+## Roles e visibility
+
+- owner e admin não recebem acesso universal a threads ou mensagens;
+- HR não recebe acesso universal;
+- `visibility = 'hr'` autoriza os participantes e membros HR ativos;
+- `visibility = 'hr'` não concede acesso automático a owner/admin;
+- hierarquia manager–report não concede leitura, inclusive para a semântica
+  histórica `management`;
+- employee sem participação não recebe acesso.
+
+As policies históricas mais permissivas não definem o novo contrato de produto.
+Esta diferença é deliberada: **historical policy != product privacy contract**.
+
+## Acesso administrativo extraordinário
+
+Uma futura leitura extraordinária deverá ser explicitamente aprovada, separada
+do reader normal, purpose-bound e auditada. Esta decisão não autoriza sua criação.
+
+Attachments e mentions permanecem fora do contrato enquanto não houver consumer
+navegável e matriz de autorização específica aprovada.
+
+## Invariantes
+
+- privacy by default e least privilege;
+- identidade derivada de `auth.uid()` e membership ativa;
+- isolamento tenant sem revelar existência de selector estrangeiro;
+- nenhum bypass por `service_role` ou grant amplo de tabela;
+- nenhum conteúdo textual sai da boundary antes da autorização por row.

@@ -197,6 +197,13 @@ histórica e a 0087 permitem que qualquer membership ativa, inclusive employee,
 leia plans, goals e actions de outras pessoas do tenant. A 0087 não amplia a
 matriz existente, mas essa exposição precisa de confirmação explícita de Produto.
 
+Na baseline `cc926be`, a PD-020 formaliza privacy by default para conversas de
+Feedback. A migration 0088 adiciona sete boundaries especializadas para catálogo,
+estrutura, cycle management e evaluator workspace de Assessment, além de
+directory/detail/messages de Feedback. Policies históricas mais permissivas não
+são promovidas ao novo contrato. A camada DB fica pronta, mas páginas continuam
+sem integração, writes permanecem pendentes, Human Review suspenso e MVP em 98%.
+
 Na baseline `035ef5f`, a PR F integra as sete boundaries 0087 nas rotas MVP de
 Competencies e Development por adapters server-only, validação estrita e
 seletores tenant-scoped, sem fallback para leitura direta. Os writes continuam

@@ -88,6 +88,15 @@ Company pela 0081, o Person ID por `current_person_id`, o contato de emissão pe
 SELECT direto crítico de Company/People nesses consumers.
 O MVP continua em 98% até o smoke autenticado passar.
 
+A PR E DB-first cria pela 0087 boundaries separadas de Competencies,
+Development plans/goals/actions e templates/goals/actions. Nenhuma UI, mutation,
+policy, RLS ou tabela grant integra este recorte. A integração app é o próximo
+passo; Human Review continua suspenso e o MVP em 98%.
+
+Antes de produção, Development exige privacy sign-off explícito: a matriz
+histórica preservada pela 0087 permite que employee ativo leia plans, goals e
+actions de outras pessoas do mesmo tenant.
+
 A integração People + Organization consome as boundaries 0085. A correção
 forward-only 0086 preserva o contrato `person` e inclui eventos persistidos com a
 terminologia histórica `employee`, sem data migration ou mudança de grants. Os

@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { redirect } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { z } from "zod"
 
@@ -13,20 +13,16 @@ import {
   FeedbackThreadHeader,
   FeedbackThreadSidebar,
   FeedbackThreadTable,
-  getFeedbackMessages,
-  getFeedbackThreadById,
-  getFeedbackThreads,
   presentFeedbackThread,
 } from "@/features/feedbacks"
+import {
+  getFeedbackDirectoryReadModel,
+  getFeedbackThreadReadModel,
+} from "@/features/assessment-feedback-read"
 
 import {
   FeedbackAiAnalysisCard,
 } from "@/features/feedbacks/intelligence"
-
-import {
-  getEmployees,
-  type Employee,
-} from "@/features/people"
 
 import {
   getCurrentCompanyContext,
@@ -57,63 +53,21 @@ export default async function FeedbackThreadPage({
     personId,
   } = await getCurrentCompanyContext()
 
-  if (!personId) {
-    redirect("/app/feedbacks")
-  }
-
-  const [
-    thread,
-    messages,
-    employeesData,
-    threads,
-  ] = await Promise.all([
-    getFeedbackThreadById({
-      companyId,
-      threadId,
-    }),
-
-    getFeedbackMessages({
-      companyId,
-      threadId,
-    }),
-
-    getEmployees(companyId),
-
-    getFeedbackThreads({
-      companyId,
-      employeeId: personId,
-    }),
+  const [threadReadModel, threads] = await Promise.all([
+    getFeedbackThreadReadModel(companyId, threadId),
+    getFeedbackDirectoryReadModel(companyId),
   ])
 
-  if (!thread) {
-    redirect("/app/feedbacks")
+  if (!threadReadModel) {
+    notFound()
   }
-
-  const isParticipant =
-    thread.senderEmployeeId === personId ||
-    thread.receiverEmployeeId === personId
-
-  if (!isParticipant) {
-    redirect("/app/feedbacks")
-  }
-
-  const employees =
-    (employeesData ?? []) as Employee[]
 
   const viewModel =
     presentFeedbackThread({
-      thread,
-      messages,
-      employees,
-      currentEmployeeId: personId,
+      thread: threadReadModel.thread,
+      messages: threadReadModel.messages,
+      currentEmployeeId: personId ?? "",
     })
-
-  const employeeNameById = new Map(
-    employees.map((employee) => [
-      employee.id,
-      employee.full_name,
-    ])
-  )
 
   return (
     <div className="space-y-6">
@@ -135,8 +89,7 @@ export default async function FeedbackThreadPage({
         <aside className="min-w-0">
           <FeedbackThreadTable
             threads={threads}
-            currentEmployeeId={personId}
-            employeeNameById={employeeNameById}
+            currentEmployeeId={personId ?? ""}
           />
         </aside>
 
@@ -145,9 +98,11 @@ export default async function FeedbackThreadPage({
             thread={viewModel}
           />
 
-          <FeedbackAiAnalysisCard
-            threadId={viewModel.id}
-          />
+          {viewModel.currentUserRole !== "hr_observer" ? (
+            <FeedbackAiAnalysisCard
+              threadId={viewModel.id}
+            />
+          ) : null}
 
           <FeedbackMessageList
             messages={viewModel.messages}

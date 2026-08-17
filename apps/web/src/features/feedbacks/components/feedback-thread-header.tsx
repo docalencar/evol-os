@@ -50,7 +50,9 @@ export function FeedbackThreadHeader({
             <span className="font-medium text-slate-700">
               {thread.currentUserRole === "sender"
                 ? "remetente"
-                : "destinatário"}
+                : thread.currentUserRole === "receiver"
+                  ? "destinatário"
+                  : "observador de RH"}
             </span>
             .
           </p>

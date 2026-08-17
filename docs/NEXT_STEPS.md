@@ -80,7 +80,9 @@ Gate adicional: **PRIVACY SIGN-OFF REQUIRED BEFORE PRODUCTION — DEVELOPMENT**.
 A leitura histórica de plans/goals/actions por qualquer membro ativo, inclusive
 employee, foi preservada pela 0087 e precisa de confirmação explícita de Produto.
 
-A PD-020 e a migration 0088 fecham o contrato DB-first de leitura para
-Assessments e Feedback. O próximo passo é integrar as sete rotas navegáveis por
-adapters server-only e validação estrita, sem fallback direto. Isso ainda não
-torna writes ou CRUD seguros; Human Review permanece suspenso e o MVP em 98%.
+A PR H, na baseline `8ea0404`, integra as sete rotas navegáveis de Assessments e
+Feedback às boundaries 0088 por adapters server-only e validação estrita, sem
+fallback direto e preservando PD-020. O próximo gate continua sendo fechar os
+writes `WRITE_BOUNDARY_MISSING`, os privacy gates de People e Development
+(incluindo o participant email do cycle no gate de People) e o hardening 0084.
+Isso não torna CRUD seguro; Human Review permanece suspenso e o MVP em 98%.

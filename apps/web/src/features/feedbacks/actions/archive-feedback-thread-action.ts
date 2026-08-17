@@ -88,10 +88,7 @@ export async function archiveFeedbackThreadAction(
 
     return {
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Não foi possível arquivar a conversa de feedback.",
+      message: "Não foi possível arquivar a conversa de feedback.",
     }
   }
 }

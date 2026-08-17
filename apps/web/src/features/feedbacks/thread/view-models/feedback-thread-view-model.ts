@@ -14,6 +14,7 @@ export type FeedbackThreadParticipantViewModel = {
 export type FeedbackThreadCurrentUserRole =
   | "sender"
   | "receiver"
+  | "hr_observer"
 
 export type FeedbackThreadMessageViewModel = {
   id: string

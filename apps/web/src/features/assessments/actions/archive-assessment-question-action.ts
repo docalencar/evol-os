@@ -22,7 +22,7 @@ export async function archiveAssessmentQuestionAction(
 
     return {
       success: false,
-      message: error.message,
+      message: "Não foi possível arquivar a pergunta.",
     }
   }
 

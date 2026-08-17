@@ -6,7 +6,9 @@ import {
 } from "../../constants/feedback-constants"
 import type {
   FeedbackMessage,
+  FeedbackMessageDetail,
   FeedbackThread,
+  FeedbackThreadDetail,
 } from "../../types/feedback"
 import type {
   FeedbackThreadMessageViewModel,
@@ -19,9 +21,9 @@ type FeedbackEmployeeInput = {
 }
 
 type PresentFeedbackThreadInput = {
-  thread: FeedbackThread
-  messages: FeedbackMessage[]
-  employees: FeedbackEmployeeInput[]
+  thread: FeedbackThread | FeedbackThreadDetail
+  messages: Array<FeedbackMessage | FeedbackMessageDetail>
+  employees?: FeedbackEmployeeInput[]
   currentEmployeeId: string
 }
 
@@ -36,7 +38,7 @@ function getEmployeeName(
 }
 
 function presentMessage(
-  message: FeedbackMessage,
+  message: FeedbackMessage | FeedbackMessageDetail,
   employeeNameById: Map<string, string>,
   currentEmployeeId: string
 ): FeedbackThreadMessageViewModel {
@@ -45,6 +47,8 @@ function presentMessage(
 
   const authorName = isSystemMessage
     ? "Sistema"
+    : "authorName" in message && message.authorName
+      ? message.authorName
     : message.authorEmployeeId
       ? getEmployeeName(
           message.authorEmployeeId,
@@ -71,7 +75,7 @@ function presentMessage(
 export function presentFeedbackThread({
   thread,
   messages,
-  employees,
+  employees = [],
   currentEmployeeId,
 }: PresentFeedbackThreadInput): FeedbackThreadViewModel {
   const isSender =
@@ -82,12 +86,6 @@ export function presentFeedbackThread({
     thread.receiverEmployeeId ===
     currentEmployeeId
 
-  if (!isSender && !isReceiver) {
-    throw new Error(
-      "O colaborador atual não participa desta conversa de feedback."
-    )
-  }
-
   const employeeNameById = new Map(
     employees.map((employee) => [
       employee.id,
@@ -95,7 +93,9 @@ export function presentFeedbackThread({
     ])
   )
 
-  const canReply =
+  const isParticipant = isSender || isReceiver
+
+  const canReply = isParticipant &&
     thread.status !== "closed" &&
     thread.status !== "archived"
 
@@ -104,11 +104,11 @@ export function presentFeedbackThread({
     thread.status ===
       "awaiting_acknowledgement"
 
-  const canClose =
+  const canClose = isParticipant &&
     thread.status !== "closed" &&
     thread.status !== "archived"
 
-  const canArchive =
+  const canArchive = isParticipant &&
     thread.status === "closed"
 
   const presentedMessages = messages
@@ -131,7 +131,7 @@ export function presentFeedbackThread({
 
     sender: {
       id: thread.senderEmployeeId,
-      name: getEmployeeName(
+      name: "senderName" in thread ? thread.senderName : getEmployeeName(
         thread.senderEmployeeId,
         employeeNameById
       ),
@@ -139,7 +139,7 @@ export function presentFeedbackThread({
 
     receiver: {
       id: thread.receiverEmployeeId,
-      name: getEmployeeName(
+      name: "receiverName" in thread ? thread.receiverName : getEmployeeName(
         thread.receiverEmployeeId,
         employeeNameById
       ),
@@ -147,7 +147,9 @@ export function presentFeedbackThread({
 
     currentUserRole: isSender
       ? "sender"
-      : "receiver",
+      : isReceiver
+        ? "receiver"
+        : "hr_observer",
 
     type: thread.type,
     typeLabel:

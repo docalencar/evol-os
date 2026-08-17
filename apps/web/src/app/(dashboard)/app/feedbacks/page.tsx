@@ -4,11 +4,8 @@ import {
 import {
   FeedbackDashboardKpiCards,
   FeedbackThreadTable,
-  getFeedbackThreads,
 } from "@/features/feedbacks"
-import {
-  getEmployees,
-} from "@/features/people"
+import { getFeedbackDirectoryReadModel } from "@/features/assessment-feedback-read"
 import {
   getCurrentCompanyContext,
 } from "@/lib/supabase/supabase/current-company"
@@ -19,22 +16,8 @@ export default async function FeedbacksPage() {
     personId,
   } = await getCurrentCompanyContext()
 
-  const employees =
-    (await getEmployees(companyId)) ?? []
-
-  const employeeNameById = new Map(
-    employees.map((employee) => [
-      employee.id,
-      employee.full_name,
-    ])
-  )
-
-  const threads = personId
-    ? await getFeedbackThreads({
-        companyId,
-        employeeId: personId,
-      })
-    : []
+  const threads =
+    await getFeedbackDirectoryReadModel(companyId)
 
   return (
     <div className="space-y-6">
@@ -43,19 +26,16 @@ export default async function FeedbacksPage() {
         description="Acompanhe conversas, reconhecimentos, feedforwards e alinhamentos profissionais."
       />
 
-      {personId ? (
+      {personId || threads.length > 0 ? (
         <>
           <FeedbackDashboardKpiCards
             threads={threads}
-            currentEmployeeId={personId}
+            currentEmployeeId={personId ?? ""}
           />
 
           <FeedbackThreadTable
             threads={threads}
-            currentEmployeeId={personId}
-            employeeNameById={
-              employeeNameById
-            }
+            currentEmployeeId={personId ?? ""}
           />
         </>
       ) : (

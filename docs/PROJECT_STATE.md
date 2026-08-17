@@ -211,6 +211,16 @@ seletores tenant-scoped, sem fallback para leitura direta. Os writes continuam
 da 0084 permanecem pendentes. Human Review segue suspenso e o MVP permanece em
 98%.
 
+Na baseline `8ea0404`, a PR H integra as sete boundaries 0088 nas sete rotas
+navegáveis de Assessments e Feedback. Adapters server-only validam respostas com
+Zod strict, preservam o workspace exclusivo do evaluator, compõem a leitura
+administrativa auditada quando aplicável e tratam a boundary DB como autoridade
+de PD-020. Não há fallback para SELECT direto nem erro PostgREST exposto nas
+rotas; nomes de participantes/autores vêm das projeções minimizadas. Writes de
+Assessment e Feedback continuam `WRITE_BOUNDARY_MISSING`; privacy gates de
+People e Development, participant email no cycle sob o gate de People,
+hardening 0084 e Human Review permanecem pendentes. O MVP continua em 98%.
+
 ## 7. Arquitetura consolidada
 
 - Clean Architecture e responsabilidades por camada;

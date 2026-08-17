@@ -10,20 +10,15 @@ import {
   AssessmentCycleResultsCard,
   AssessmentStatisticsCard,
   GenerateCycleAssessmentsButton,
-  getAssessmentCycleById,
-  getAssessmentCycleParticipants,
   getAssessmentResponsesByCycle,
   getAssessmentCycleStatistics,
   presentAssessmentCycleDashboard,
   presentAssessmentStatistics,
-  type AssessmentCycle,
   type AssessmentResponseStatus,
 } from "@/features/assessments"
 
-import {
-  getEmployees,
-  type Employee,
-} from "@/features/people"
+import { getAssessmentCycleReadModel } from "@/features/assessment-feedback-read"
+import { getManagementPeople } from "@/features/dashboard-read"
 
 import {
   ASSESSMENT_CYCLE_STATUS_LABELS,
@@ -109,32 +104,17 @@ export default async function AssessmentCyclePage({
   const { companyId } =
     await getCurrentCompanyContext()
 
-  const cycleData =
-    await getAssessmentCycleById(
-      companyId,
-      id
-    )
+  const { cycle, participants } =
+    await getAssessmentCycleReadModel(companyId, id)
 
-  if (!cycleData) {
+  if (!cycle) {
     notFound()
   }
 
-  const cycle = cycleData as AssessmentCycle
-
-  const employees =
-    (await getEmployees(companyId)) as Employee[]
-
-  const [participants, responsesData] =
-    await Promise.all([
-      getAssessmentCycleParticipants(
-        companyId,
-        cycle.id
-      ),
-      getAssessmentResponsesByCycle(
-        companyId,
-        cycle.id
-      ),
-    ])
+  const [employees, responsesData] = await Promise.all([
+    getManagementPeople(companyId),
+    getAssessmentResponsesByCycle(companyId, cycle.id),
+  ])
 
   const responses =
     responsesData as CycleAssessmentResponse[]

@@ -2251,6 +2251,21 @@ Este gate entrega somente contratos DB e testes adversariais. As sete páginas
 permanecem sem integração, todos os writes anteriormente identificados continuam
 `WRITE_BOUNDARY_MISSING`, Human Review permanece suspenso e o MVP em 98%.
 
+### 29.22 MVP Closure PR H — Assessment + Feedback App Integration
+
+Na baseline `8ea0404`, as sete rotas navegáveis de Assessments e Feedback passam
+a consumir as projections purpose-bound 0088 por adapters server-only com Zod
+strict, seletores tenant-scoped e erros públicos estáveis. O evaluator workspace
+continua sem bypass administrativo silencioso; o modo administrativo compõe a
+leitura auditada existente. Feedback mantém PD-020 como autoridade DB, inclusive
+RH observador somente para `visibility='hr'`, sem diretório completo de People.
+
+Não há direct protected-table fallback nos read paths integrados nem vazamento de
+erro bruto. Writes permanecem `WRITE_BOUNDARY_MISSING`; os privacy gates de
+People e Development, o participant email do Assessment cycle sob o gate de
+People, o hardening 0084 e Human Review continuam pendentes. A entrega não declara
+CRUD-safe e o MVP permanece em 98%.
+
 ### 29.18 MVP Closure PR C/C1 — App Integration and People Timeline Alignment
 
 A PR C integra as oito projections 0085 nas rotas MVP de People e Organization

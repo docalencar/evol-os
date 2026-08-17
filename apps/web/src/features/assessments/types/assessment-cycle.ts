@@ -56,7 +56,7 @@ export type AssessmentCycle = {
   anonymous: boolean
   assessment_visibility: AssessmentVisibility
 
-  created_at: string
-  updated_at: string
-  deleted_at: string | null
+  created_at?: string
+  updated_at?: string
+  deleted_at?: string | null
 }

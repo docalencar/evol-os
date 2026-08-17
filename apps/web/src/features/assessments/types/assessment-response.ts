@@ -20,6 +20,6 @@ export type AssessmentResponse = {
   started_at: string | null
   completed_at: string | null
   submitted_at: string | null
-  created_at: string
-  updated_at: string
+  created_at?: string
+  updated_at?: string
 }

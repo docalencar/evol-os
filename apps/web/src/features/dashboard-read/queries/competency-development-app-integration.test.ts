@@ -60,3 +60,18 @@ test("empty and foreign selectors preserve safe page behavior", () => {
   assert.match(adapter, /z\.array\(planSchema\)/)
   assert.match(adapter, /z\.array\(templateSchema\)/)
 })
+
+test("employee competency profile boundary is tenant- and subject-parametrized", () => {
+  // Full employee-competency detail (source/validated_at/notes) is served by the
+  // additive 0091 boundary, never by a direct employee_competencies read.
+  assert.match(adapter, /get_tenant_employee_competencies_v1/)
+  assert.match(adapter, /p_company_id: companyId, p_employee_id: employeeId/)
+  assert.match(adapter, /z\.array\(employeeCompetencySchema\)/)
+  // Preserves the legacy repository shape used by EmployeeCompetenciesCard.
+  for (const field of ["id:", "competency_id:", "current_level:", "source:", "validated_at:", "notes:", "competencies:"]) {
+    assert.ok(adapter.includes(field))
+  }
+  // Full nullable/enum fidelity: nothing is defaulted or dropped.
+  assert.match(adapter, /source: z\.enum\(\["manual", "assessment", "manager", "self"\]\)/)
+  assert.match(adapter, /validated_at: timestamp\.nullable\(\)/)
+})

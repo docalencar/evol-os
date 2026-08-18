@@ -3,7 +3,7 @@ import Link from "next/link"
 import { PageHeader } from "@/components/shared/page-header"
 import { Button } from "@/components/ui/button"
 import {
-  getManagementPeople,
+  getManagementPeopleIncludingTerminated,
   getManagementPositions,
   getManagementTeams,
 } from "@/features/dashboard-read"
@@ -26,9 +26,12 @@ export default async function PeoplePage() {
   const invitationRoleOptions =
     getInvitationRoleOptionsForActor(currentUser.role)
 
+  // Historical roster: includes terminated ("Desligado") people so the workspace
+  // summary counts and the status filter (which already offers "Desligado") match
+  // the real headcount. v1 excluded terminated people, hiding them everywhere.
   const [employees, teams, positions, accessStateResult] =
     await Promise.all([
-      getManagementPeople(companyId),
+      getManagementPeopleIncludingTerminated(companyId),
       getManagementTeams(companyId),
       getManagementPositions(companyId),
       getPeopleAccessStates(supabase, companyId),
@@ -42,12 +45,15 @@ export default async function PeoplePage() {
       : []
   )
 
-  const managerOptions = (employees ?? []).map(
-    (employee) => ({
+  // Manager selectors and manager-name resolution stay scoped to non-terminated
+  // people, preserving the prior (v1) behavior: a terminated person is never an
+  // assignable manager and reads back as an unresolved manager name.
+  const managerOptions = (employees ?? [])
+    .filter((employee) => employee.status !== "terminated")
+    .map((employee) => ({
       id: employee.id,
       name: employee.full_name,
-    })
-  )
+    }))
 
   const managerNameById = new Map(
     managerOptions.map((manager) => [

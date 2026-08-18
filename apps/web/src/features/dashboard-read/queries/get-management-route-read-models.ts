@@ -37,10 +37,11 @@ const personSchema = z
 
 // Historical variant of the People read contract for the v2 boundary
 // (get_tenant_people_management_v2 / get_tenant_person_profile_v2). It differs
-// from personSchema in exactly two fields: `status` also admits "terminated"
-// (v2 returns all lifecycle statuses; v1 excludes terminated) and `disc_profile`
-// is a nullable string so legacy/combined DISC values on historical records do
-// not fail the read. All other columns are validated identically to v1.
+// from personSchema in exactly one field: `status` also admits "terminated"
+// (v2 returns all lifecycle statuses; v1 excludes terminated). Every other
+// column — including the DISC profile enum — is validated identically to v1 so
+// the historical output stays structurally compatible with the shared Employee
+// contract consumed by the People workspace.
 const historicalPersonSchema = z
   .object({
     person_id: uuid,
@@ -57,7 +58,7 @@ const historicalPersonSchema = z
     team_name: nullableText,
     position_id: nullableUuid,
     position_name: nullableText,
-    disc_profile: nullableText,
+    disc_profile: z.enum(["D", "I", "S", "C"]).nullable(),
     avatar_url: nullableText,
     created_at: timestamp,
     updated_at: timestamp,

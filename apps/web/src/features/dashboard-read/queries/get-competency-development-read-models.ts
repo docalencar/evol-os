@@ -35,6 +35,10 @@ const templateGoalSchema = z.object({ template_goal_id: uuid, template_id: uuid,
 const templateActionSchema = z.object({ template_action_id: uuid, template_goal_id: uuid, title: text.min(1),
   description: nullableText, action_type: actionSchema.shape.action_type, suggested_due_days: z.number().int().nullable(),
   order_index: z.number().int(), created_at: timestamp, updated_at: timestamp }).strict()
+const employeeCompetencySchema = z.object({ employee_competency_id: uuid, employee_id: uuid, competency_id: uuid,
+  competency_name: text.min(1), current_level: z.number().int(),
+  source: z.enum(["manual", "assessment", "manager", "self"]),
+  validated_at: timestamp.nullable(), notes: nullableText }).strict()
 const assignmentSchema = z.object({ record_type: z.enum(["employee", "position"]), record_id: uuid,
   employee_id: nullableUuid, position_id: nullableUuid, competency_id: uuid, competency_name: text.min(1),
   current_level: z.number().int().nullable(), expected_level: z.number().int().nullable(),
@@ -111,4 +115,15 @@ export async function getManagementDevelopmentTemplateActions(companyId: string,
 
 export async function getManagementCompetencyAssignments(companyId: string) {
   return rows("get_tenant_competency_directory_v1", { p_company_id: companyId }, z.array(assignmentSchema))
+}
+
+// Full employee-competency detail (source, validated_at, notes) for the authorized
+// People profile — served by the additive 0091 boundary, not by a direct table read.
+// Shape mirrors the legacy repository row so it can replace getEmployeeCompetenciesByEmployee.
+export async function getManagementEmployeeCompetencies(companyId: string, employeeId: string) {
+  const data = await rows("get_tenant_employee_competencies_v1",
+    { p_company_id: companyId, p_employee_id: employeeId }, z.array(employeeCompetencySchema))
+  return data.map((r) => ({ id: r.employee_competency_id, company_id: companyId, employee_id: r.employee_id,
+    competency_id: r.competency_id, current_level: r.current_level, source: r.source,
+    validated_at: r.validated_at, notes: r.notes, competencies: { name: r.competency_name } }))
 }

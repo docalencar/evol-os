@@ -29,6 +29,7 @@ export {
   CompetencyDevelopmentReadError,
   getManagementCompetencies,
   getManagementCompetencyAssignments,
+  getManagementEmployeeCompetencies,
   getManagementDevelopmentActions,
   getManagementDevelopmentGoals,
   getManagementDevelopmentPlans,

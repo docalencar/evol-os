@@ -18,7 +18,10 @@ export function createEmployeeIntelligence(
   data?: Readonly<{
     assessments: EmployeeAssessmentSummary
     developmentPlans: readonly DevelopmentPlan[]
-    employeeCompetencies: readonly EmployeeCompetency[]
+    employeeCompetencies: readonly Pick<
+      EmployeeCompetency,
+      "competency_id" | "current_level" | "archived_at"
+    >[]
     competencies: readonly Competency[]
     competencyGaps: readonly CompetencyGap[]
   }>,

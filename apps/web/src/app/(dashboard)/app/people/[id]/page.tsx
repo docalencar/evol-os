@@ -7,24 +7,24 @@ import {
 
 import { getEmployeeAssessmentSummary } from "@/features/assessments"
 import {
+  getManagementCompetencies,
+  getManagementCompetencyAssignments,
+  getManagementDevelopmentPlans,
+  getManagementEmployeeCompetencies,
   getManagementEntityTimeline,
   getManagementPeople,
-  getManagementPerson,
+  getManagementPersonIncludingTerminated,
   getManagementPositions,
   getManagementTeams,
 } from "@/features/dashboard-read"
 
-import { getCompetencies } from "@/features/competencies"
-
 import {
   EmployeeCompetenciesCard,
-  getEmployeeCompetenciesByEmployee,
 } from "@/features/competencies/employee-competencies"
 
 import {
   DevelopmentPlanAiSuggestionDialog,
   getDevelopmentPlanAiContext,
-  getDevelopmentPlansByEmployee,
 } from "@/features/development"
 
 import {
@@ -47,9 +47,9 @@ import {
 } from "@/features/people/profile"
 
 import {
+  calculateCompetencyGap,
   CompetencyGapCard,
   createEmployeeInsights,
-  getEmployeeCompetencyGaps,
   TalentSummaryCard,
 } from "@/features/talent"
 
@@ -105,22 +105,22 @@ export default async function EmployeeProfilePage({
   const [
     employee,
     employeeCompetencies,
-    competencyGaps,
     competencies,
+    competencyAssignments,
     teams,
     positions,
     employees,
     employeeTimeline,
     assessmentSummary,
-    developmentPlans,
+    allDevelopmentPlans,
   ] = await Promise.all([
-    getManagementPerson(companyId, id),
+    getManagementPersonIncludingTerminated(companyId, id),
 
-    getEmployeeCompetenciesByEmployee(companyId, id),
+    getManagementEmployeeCompetencies(companyId, id),
 
-    getEmployeeCompetencyGaps(companyId, id),
+    getManagementCompetencies(companyId),
 
-    getCompetencies(companyId),
+    getManagementCompetencyAssignments(companyId),
 
     getManagementTeams(companyId),
     getManagementPositions(companyId),
@@ -134,12 +134,49 @@ export default async function EmployeeProfilePage({
 
     getEmployeeAssessmentSummary(companyId, id),
 
-    getDevelopmentPlansByEmployee(companyId, id),
+    getManagementDevelopmentPlans(companyId),
   ])
 
   if (!employee) {
     redirect("/app/people")
   }
+
+  // Development plans and competency gaps are derived from tenant-safe read
+  // models only: filter plans to this employee, and compute gaps from the
+  // subject's position requirements (competency directory) versus the
+  // employee's current levels, reusing the existing gap business rule.
+  const developmentPlans = allDevelopmentPlans.filter(
+    (plan) => plan.employeeId === id
+  )
+
+  const currentLevelByCompetency = new Map(
+    employeeCompetencies.map(
+      (competency) =>
+        [competency.competency_id, competency.current_level] as const
+    )
+  )
+
+  const competencyGaps = employee.position_id
+    ? competencyAssignments
+        .filter(
+          (assignment) =>
+            assignment.record_type === "position" &&
+            assignment.position_id === employee.position_id
+        )
+        .map((assignment) =>
+          calculateCompetencyGap({
+            competencyId: assignment.competency_id,
+            competencyName: assignment.competency_name,
+            currentLevel:
+              currentLevelByCompetency.get(
+                assignment.competency_id
+              ) ?? 0,
+            expectedLevel: assignment.expected_level ?? 0,
+            weight: assignment.weight ?? 0,
+            required: assignment.required ?? false,
+          })
+        )
+    : []
 
   const teamOptions = ((teams ?? []) as NamedEntity[]).map(
     (team) => ({

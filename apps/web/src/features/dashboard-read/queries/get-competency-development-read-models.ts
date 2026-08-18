@@ -123,7 +123,11 @@ export async function getManagementCompetencyAssignments(companyId: string) {
 export async function getManagementEmployeeCompetencies(companyId: string, employeeId: string) {
   const data = await rows("get_tenant_employee_competencies_v1",
     { p_company_id: companyId, p_employee_id: employeeId }, z.array(employeeCompetencySchema))
+  // The 0091 boundary returns only non-archived rows, so archived_at is always
+  // null here; surfacing it keeps the shape compatible with the shared
+  // EmployeeCompetency contract without a direct table read.
   return data.map((r) => ({ id: r.employee_competency_id, company_id: companyId, employee_id: r.employee_id,
     competency_id: r.competency_id, current_level: r.current_level, source: r.source,
-    validated_at: r.validated_at, notes: r.notes, competencies: { name: r.competency_name } }))
+    validated_at: r.validated_at, notes: r.notes, archived_at: null,
+    competencies: { name: r.competency_name } }))
 }

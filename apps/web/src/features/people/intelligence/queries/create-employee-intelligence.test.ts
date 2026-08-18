@@ -3,6 +3,7 @@ import { registerHooks } from "node:module"
 import test from "node:test"
 
 import type { Employee } from "../../types/employee"
+import type { EmployeeCompetency } from "@/features/competencies/employee-competencies"
 
 registerHooks({
   resolve(specifier, context, nextResolve) {
@@ -27,6 +28,14 @@ const employee: Employee = {
   created_at: "2026-01-01", updated_at: "2026-01-01",
 }
 
+const strongEmployeeCompetency: EmployeeCompetency = {
+  id: "employee-competency-1", company_id: "company-1",
+  employee_id: employee.id, competency_id: "competency-strong",
+  current_level: 5, source: "manager", validated_at: null,
+  notes: null, created_at: "2026-01-01", updated_at: "2026-01-01",
+  archived_at: null,
+}
+
 test("createEmployeeIntelligence handles absence of workspace data", async () => {
   const { createEmployeeIntelligence } = await loadIntelligence()
   const result = createEmployeeIntelligence(employee)
@@ -48,13 +57,7 @@ test("createEmployeeIntelligence composes development, competencies and multiple
       latestAssessmentAt: "2026-07-01",
     },
     developmentPlans: [],
-    employeeCompetencies: [{
-      id: "employee-competency-1", company_id: "company-1",
-      employee_id: employee.id, competency_id: "competency-strong",
-      current_level: 5, source: "manager", validated_at: null,
-      notes: null, created_at: "2026-01-01", updated_at: "2026-01-01",
-      archived_at: null,
-    }],
+    employeeCompetencies: [strongEmployeeCompetency],
     competencies: [{
       id: "competency-strong", company_id: "company-1",
       name: "Comunicação", description: null, category: "behavioral",

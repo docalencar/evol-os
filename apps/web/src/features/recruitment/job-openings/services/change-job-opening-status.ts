@@ -1,9 +1,6 @@
 import {
-  RejectRequest,
   buildApprovalDecisionSubmission,
   buildApprovalRequestSubmission,
-  createApprovalRequestRepository,
-  getApprovalRequests,
 } from "@/features/approval"
 
 import {
@@ -194,13 +191,13 @@ export async function changeJobOpeningStatus(
       )
     }
 
-    const approvalRepository =
-      await createApprovalRequestRepository()
-
+    // The framework builds the rejection decision (rehydrate + decide +
+    // serialize); the 0098 boundary persists it and transitions the opening
+    // pending_approval -> draft atomically. The rejection reason is a fixed
+    // comment for now (no rejection-reason UI yet — see report).
     return new RejectRecruitmentRequest(
       repository,
-      getApprovalRequests,
-      new RejectRequest(approvalRepository),
+      buildApprovalDecisionSubmission,
       crypto.randomUUID
     ).execute({
       companyId: input.companyId,

@@ -3,18 +3,9 @@ import test from "node:test"
 
 import type {
   ApprovalDecisionSubmissionPayload,
-  ApprovalRequestApplicationResult,
   ApprovalRequestPersistenceRecord,
   BuildApprovalDecisionInput,
-  RejectRequestCommand,
 } from "../../../../../approval/public-api"
-import {
-  ApprovalRequest,
-  createApprovalActor,
-  createApprovalContext,
-  createApprovalPlanSnapshot,
-  createApprovalSubjectRef,
-} from "../../../../../approval/domain"
 import type {
   JobOpening,
   JobOpeningStatus,
@@ -32,9 +23,6 @@ import {
 
 const companyId = "11111111-1111-4111-8111-111111111111"
 const jobOpeningId = "22222222-2222-4222-8222-222222222222"
-const approvalRequestId = "33333333-3333-4333-8333-333333333333"
-const stageId = "44444444-4444-4444-8444-444444444444"
-const assignmentId = "55555555-5555-4555-8555-555555555555"
 const approverPersonId = "66666666-6666-4666-8666-666666666666"
 const actorUserId = "77777777-7777-4777-8777-777777777777"
 const occurredAt = new Date("2026-01-10T14:00:00.000Z")
@@ -80,50 +68,6 @@ function createJobOpening(
   }
 }
 
-function createPendingApproval(): ApprovalRequest {
-  const request = ApprovalRequest.request({
-    id: approvalRequestId,
-    subject: createApprovalSubjectRef({
-      companyId,
-      module: "recruitment",
-      entityType: "job_opening",
-      entityId: jobOpeningId,
-      entityVersion: "2026-01-10T12:30:00.000Z",
-    }),
-    requester: createApprovalActor({
-      actorType: "user",
-      actorId: actorUserId,
-    }),
-    context: createApprovalContext({
-      schemaVersion: "1",
-      summary: "Aprovação da vaga",
-    }),
-    planSnapshot: createApprovalPlanSnapshot({
-      stages: [
-        {
-          stageId,
-          sequence: 1,
-          name: "Aprovação",
-          assignments: [
-            {
-              assignmentId,
-              principal: {
-                principalType: "person",
-                principalId: approverPersonId,
-                displayNameSnapshot: null,
-              },
-            },
-          ],
-        },
-      ],
-    }),
-    requestedAt: new Date("2026-01-10T13:00:00.000Z"),
-    idempotencyKey: "approval-key",
-  })
-  request.clearPendingDomainEvents()
-  return request
-}
-
 class FakeJobOpeningRepository
   implements RecruitmentApprovalJobOpeningRepository
 {
@@ -140,9 +84,15 @@ class FakeJobOpeningRepository
     events: unknown
     expectedVersion: number
   }> = []
+  rejections: Array<{
+    aggregate: unknown
+    events: unknown
+    expectedVersion: number
+  }> = []
   pendingRecord: ApprovalRequestPersistenceRecord | null = null
   failLoadPending = false
   failApprove = false
+  failReject = false
 
   constructor(jobOpening: JobOpening) {
     this.jobOpening = jobOpening
@@ -181,6 +131,32 @@ class FakeJobOpeningRepository
       status: "approved",
       approverId: approverPersonId,
       approvedAt: "2026-01-10T14:00:00.000Z",
+    }
+    return { data: this.jobOpening, error: null }
+  }
+
+  async reject(input: {
+    companyId: string
+    jobOpeningId: string
+    aggregate: unknown
+    events: unknown
+    expectedVersion: number
+  }) {
+    this.rejections.push({
+      aggregate: input.aggregate,
+      events: input.events,
+      expectedVersion: input.expectedVersion,
+    })
+
+    if (this.failReject) {
+      return { data: null, error: new Error("reject failed") }
+    }
+
+    this.jobOpening = {
+      ...this.jobOpening,
+      status: "draft",
+      approverId: null,
+      approvedAt: null,
     }
     return { data: this.jobOpening, error: null }
   }
@@ -224,28 +200,6 @@ class FakeJobOpeningRepository
       approvedAt: input.approvedAt,
     }
     return { data: this.jobOpening, error: null }
-  }
-}
-
-class FakeApprovalExecutor<TCommand> {
-  command: TCommand | null = null
-
-  constructor(
-    private readonly result: ApprovalRequestApplicationResult
-  ) {}
-
-  async execute(command: TCommand) {
-    this.command = command
-    return this.result
-  }
-}
-
-function successfulResult(
-  request = createPendingApproval()
-): ApprovalRequestApplicationResult {
-  return {
-    success: true,
-    data: { approvalRequest: request },
   }
 }
 
@@ -374,18 +328,32 @@ test("aprovação falha fechado sem approval request pendente", async () => {
   assert.equal(repository.approvals.length, 0)
 })
 
-test("rejeita pelo Approval e devolve a vaga para draft", async () => {
-  const request = createPendingApproval()
+test("rejeita pela read boundary + framework + reject boundary atômica", async () => {
   const repository = new FakeJobOpeningRepository(
     createJobOpening("pending_approval")
   )
-  const executor = new FakeApprovalExecutor<RejectRequestCommand>(
-    successfulResult(request)
-  )
+  repository.pendingRecord = {
+    version: 4,
+  } as unknown as ApprovalRequestPersistenceRecord
+
+  const decisionInputs: BuildApprovalDecisionInput[] = []
+  const buildDecision: BuildApprovalDecisionSubmission = (input) => {
+    decisionInputs.push(input)
+    return {
+      success: true,
+      data: {
+        aggregate: {
+          marker: "rejected",
+        } as unknown as ApprovalDecisionSubmissionPayload["aggregate"],
+        events: [],
+        expectedVersion: 4,
+      },
+    }
+  }
+
   const service = new RejectRecruitmentRequest(
     repository,
-    async () => [request],
-    executor,
+    buildDecision,
     idGenerator()
   )
 
@@ -395,13 +363,161 @@ test("rejeita pelo Approval e devolve a vaga para draft", async () => {
     actorUserId,
     actorPersonId: approverPersonId,
     occurredAt,
-    reason: "Orçamento não aprovado.",
+    reason: "Vaga devolvida para rascunho.",
   })
 
-  assert.equal(executor.command?.comment, "Orçamento não aprovado.")
+  // The framework decision is built from the loaded record, as a rejection,
+  // with the fixed comment preserved.
+  assert.equal(decisionInputs.length, 1)
+  const captured = decisionInputs[0]
+  assert.equal(captured?.outcome, "rejected")
+  assert.equal(captured?.comment, "Vaga devolvida para rascunho.")
+  assert.equal(captured?.actor.personId, approverPersonId)
+  assert.equal(
+    captured?.idempotencyKey,
+    `recruitment:job-opening:${jobOpeningId}:reject:4`
+  )
+  // The ORIGINAL expected_version is forwarded to the atomic reject boundary.
+  assert.equal(repository.rejections.length, 1)
+  assert.equal(repository.rejections[0]?.expectedVersion, 4)
+  assert.equal(
+    (repository.rejections[0]?.aggregate as { marker: string }).marker,
+    "rejected"
+  )
+  // No legacy status write path is used.
+  assert.equal(repository.updates.length, 0)
+  // The opening returns to draft.
   assert.equal(result.status, "draft")
   assert.equal(result.approverId, null)
   assert.equal(result.approvedAt, null)
+})
+
+test("rejeição falha fechado sem approval request pendente", async () => {
+  const repository = new FakeJobOpeningRepository(
+    createJobOpening("pending_approval")
+  )
+  repository.pendingRecord = null
+  const buildDecision: BuildApprovalDecisionSubmission = () => {
+    throw new Error("build should not run without a pending request")
+  }
+  const service = new RejectRecruitmentRequest(
+    repository,
+    buildDecision,
+    idGenerator()
+  )
+
+  await assert.rejects(
+    service.execute({
+      companyId,
+      jobOpeningId,
+      actorUserId,
+      actorPersonId: approverPersonId,
+      occurredAt,
+      reason: "Vaga devolvida para rascunho.",
+    }),
+    /Não existe uma solicitação de aprovação pendente/
+  )
+  assert.equal(repository.rejections.length, 0)
+})
+
+test("erro da read boundary da rejeição é reportado", async () => {
+  const repository = new FakeJobOpeningRepository(
+    createJobOpening("pending_approval")
+  )
+  repository.failLoadPending = true
+  const buildDecision: BuildApprovalDecisionSubmission = () => {
+    throw new Error("build should not run when the read boundary fails")
+  }
+  const service = new RejectRecruitmentRequest(
+    repository,
+    buildDecision,
+    idGenerator()
+  )
+
+  await assert.rejects(
+    service.execute({
+      companyId,
+      jobOpeningId,
+      actorUserId,
+      actorPersonId: approverPersonId,
+      occurredAt,
+      reason: "Vaga devolvida para rascunho.",
+    }),
+    /Não foi possível carregar a aprovação da vaga/
+  )
+  assert.equal(repository.rejections.length, 0)
+})
+
+test("decisão de rejeição inválida não devolve a vaga", async () => {
+  const repository = new FakeJobOpeningRepository(
+    createJobOpening("pending_approval")
+  )
+  repository.pendingRecord = {
+    version: 1,
+  } as unknown as ApprovalRequestPersistenceRecord
+  const buildDecision: BuildApprovalDecisionSubmission = () => ({
+    success: false,
+    error: {
+      code: "domain_error",
+      message: "Ator não autorizado.",
+    },
+  })
+  const service = new RejectRecruitmentRequest(
+    repository,
+    buildDecision,
+    idGenerator()
+  )
+
+  await assert.rejects(
+    service.execute({
+      companyId,
+      jobOpeningId,
+      actorUserId,
+      actorPersonId: "other-person",
+      occurredAt,
+      reason: "Vaga devolvida para rascunho.",
+    }),
+    /Ator não autorizado/
+  )
+  assert.equal(repository.rejections.length, 0)
+  assert.equal(repository.jobOpening.status, "pending_approval")
+})
+
+test("erro da reject boundary é reportado e não devolve a vaga", async () => {
+  const repository = new FakeJobOpeningRepository(
+    createJobOpening("pending_approval")
+  )
+  repository.pendingRecord = {
+    version: 1,
+  } as unknown as ApprovalRequestPersistenceRecord
+  repository.failReject = true
+  const buildDecision: BuildApprovalDecisionSubmission = () => ({
+    success: true,
+    data: {
+      aggregate:
+        {} as unknown as ApprovalDecisionSubmissionPayload["aggregate"],
+      events: [],
+      expectedVersion: 1,
+    },
+  })
+  const service = new RejectRecruitmentRequest(
+    repository,
+    buildDecision,
+    idGenerator()
+  )
+
+  await assert.rejects(
+    service.execute({
+      companyId,
+      jobOpeningId,
+      actorUserId,
+      actorPersonId: approverPersonId,
+      occurredAt,
+      reason: "Vaga devolvida para rascunho.",
+    }),
+    /Não foi possível rejeitar a vaga/
+  )
+  assert.equal(repository.jobOpening.status, "pending_approval")
 })
 
 test("decisão de domínio inválida não aprova a vaga", async () => {

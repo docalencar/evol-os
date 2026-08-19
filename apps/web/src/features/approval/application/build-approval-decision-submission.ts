@@ -32,6 +32,7 @@ export type BuildApprovalDecisionInput = {
   decisionId: string
   actor: ApprovalActor
   outcome: "approved" | "rejected"
+  comment?: string | null
   occurredAt: Date
   idempotencyKey: string
 }
@@ -69,6 +70,7 @@ export function buildApprovalDecisionSubmission(
       assignmentId: assignment.id,
       actor: input.actor,
       outcome: input.outcome,
+      comment: input.comment ?? null,
       decidedAt: input.occurredAt,
       subjectVersion: aggregate.subject.entityVersion,
       expectedVersion,

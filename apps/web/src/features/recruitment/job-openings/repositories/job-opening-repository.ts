@@ -383,6 +383,41 @@ export async function createJobOpeningRepository() {
       }
     },
 
+    async reject(input: {
+      companyId: string
+      jobOpeningId: string
+      aggregate: unknown
+      events: unknown
+      expectedVersion: number
+    }) {
+      // Atomic reject boundary (migration 0098): persists the rejection decision
+      // via the Approval Framework engine (save_approval_request, with
+      // expected_version) AND transitions pending_approval -> draft (clearing
+      // approver_id/approved_at) in one transaction. No direct protected DML in
+      // the reject path.
+      const { data, error } = await supabase.rpc(
+        "reject_tenant_job_opening_v1",
+        {
+          p_company_id: input.companyId,
+          p_job_opening_id: input.jobOpeningId,
+          p_aggregate: input.aggregate,
+          p_events: input.events,
+          p_expected_version: input.expectedVersion,
+        }
+      )
+
+      if (error) {
+        return { data: null, error }
+      }
+
+      return {
+        data: data
+          ? mapJobOpening(data as JobOpeningRow)
+          : null,
+        error: null,
+      }
+    },
+
     async open(input: {
       companyId: string
       jobOpeningId: string

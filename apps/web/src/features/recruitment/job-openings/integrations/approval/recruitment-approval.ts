@@ -7,7 +7,6 @@ import type {
   ApprovalRequestSubmissionPayload,
   BuildApprovalDecisionInput,
   CreateApprovalRequestCommand,
-  RejectRequestCommand,
 } from "../../../../approval/public-api"
 
 import type {
@@ -42,6 +41,13 @@ export type RecruitmentApprovalJobOpeningRepository = {
     events: unknown
     expectedVersion: number
   }): Promise<RepositoryResult<JobOpening>>
+  reject(input: {
+    companyId: string
+    jobOpeningId: string
+    aggregate: unknown
+    events: unknown
+    expectedVersion: number
+  }): Promise<RepositoryResult<JobOpening>>
   updateStatus(input: {
     companyId: string
     jobOpeningId: string
@@ -49,12 +55,6 @@ export type RecruitmentApprovalJobOpeningRepository = {
     approverId: string | null
     approvedAt: string | null
   }): Promise<RepositoryResult<JobOpening>>
-}
-
-type ApprovalExecutor<TCommand> = {
-  execute(
-    command: TCommand
-  ): Promise<ApprovalRequestApplicationResult>
 }
 
 // Builds the serialized approval aggregate + domain events from the framework
@@ -124,70 +124,6 @@ async function requireJobOpening(
   }
 
   return result.data
-}
-
-async function synchronizeStatus(
-  repository: RecruitmentApprovalJobOpeningRepository,
-  input: {
-    companyId: string
-    jobOpeningId: string
-    status: JobOpeningStatus
-    approverId: string | null
-    approvedAt: string | null
-  }
-): Promise<JobOpening> {
-  const result = await repository.updateStatus(input)
-
-  if (result.error || !result.data) {
-    throw new Error(
-      "A aprovação foi processada, mas não foi possível sincronizar o status da vaga."
-    )
-  }
-
-  return result.data
-}
-
-async function requirePendingApproval(
-  findApprovalRequests: FindRecruitmentApprovalRequests,
-  companyId: string,
-  jobOpeningId: string
-): Promise<ApprovalRequest> {
-  const requests = await findApprovalRequests({
-    companyId,
-    module: "recruitment",
-    entityType: "job_opening",
-    entityId: jobOpeningId,
-  })
-  const request = requests.find(
-    (candidate) => candidate.status === "pending"
-  )
-
-  if (!request) {
-    throw new Error(
-      "Não existe uma solicitação de aprovação pendente para esta vaga."
-    )
-  }
-
-  return request
-}
-
-function requireActiveAssignment(
-  request: ApprovalRequest
-) {
-  const activeStage = request.stages.find(
-    (stage) => stage.status === "active"
-  )
-  const assignment = activeStage?.assignments.find(
-    (candidate) => candidate.status === "assigned"
-  )
-
-  if (!assignment) {
-    throw new Error(
-      "A solicitação não possui um aprovador ativo."
-    )
-  }
-
-  return assignment
 }
 
 export class CreateRecruitmentApproval {
@@ -364,54 +300,69 @@ export class ApproveRecruitmentRequest {
 export class RejectRecruitmentRequest {
   constructor(
     private readonly jobOpenings: RecruitmentApprovalJobOpeningRepository,
-    private readonly findApprovalRequests: FindRecruitmentApprovalRequests,
-    private readonly rejectRequest: ApprovalExecutor<RejectRequestCommand>,
+    private readonly buildDecision: BuildApprovalDecisionSubmission,
     private readonly generateId: IdGenerator
   ) {}
 
   async execute(
     command: RejectRecruitmentApprovalCommand
   ): Promise<JobOpening> {
-    const jobOpening = await requireJobOpening(
-      this.jobOpenings,
+    // Load the pending approval aggregate via the safe read boundary (0096).
+    const loaded = await this.jobOpenings.loadPendingApproval(
       command.companyId,
       command.jobOpeningId
     )
-    const request = await requirePendingApproval(
-      this.findApprovalRequests,
-      command.companyId,
-      jobOpening.id
-    )
-    const assignment = requireActiveAssignment(request)
-    const result = await this.rejectRequest.execute({
-      companyId: command.companyId,
-      approvalRequestId: request.id,
-      expectedVersion: request.version,
+
+    if (loaded.error) {
+      throw new Error(
+        "Não foi possível carregar a aprovação da vaga."
+      )
+    }
+
+    const record = loaded.data
+
+    if (!record) {
+      throw new Error(
+        "Não existe uma solicitação de aprovação pendente para esta vaga."
+      )
+    }
+
+    // The framework rehydrates the aggregate, runs the rejection rule and
+    // serializes it; expectedVersion is the original (pre-decision) version.
+    const built = this.buildDecision({
+      record,
+      decisionId: this.generateId(),
       actor: {
         actorType: "user",
         actorId: command.actorUserId,
         personId: command.actorPersonId,
         displayNameSnapshot: null,
       },
-      occurredAt: command.occurredAt,
-      decisionId: this.generateId(),
-      assignmentId: assignment.id,
-      subjectVersion: request.subject.entityVersion,
-      idempotencyKey:
-        `recruitment:job-opening:${jobOpening.id}:reject:${request.version}`,
+      outcome: "rejected",
       comment: command.reason,
+      occurredAt: command.occurredAt,
+      idempotencyKey:
+        `recruitment:job-opening:${command.jobOpeningId}:reject:${record.version}`,
     })
 
-    if (result.success === false) {
-      throw applicationFailure(result)
+    if (built.success === false) {
+      throw applicationFailure(built)
     }
 
-    return synchronizeStatus(this.jobOpenings, {
+    // Single atomic boundary: persist the decision through the engine (with the
+    // original expected_version) AND transition pending_approval -> draft.
+    const result = await this.jobOpenings.reject({
       companyId: command.companyId,
-      jobOpeningId: jobOpening.id,
-      status: "draft",
-      approverId: null,
-      approvedAt: null,
+      jobOpeningId: command.jobOpeningId,
+      aggregate: built.data.aggregate,
+      events: built.data.events,
+      expectedVersion: built.data.expectedVersion,
     })
+
+    if (result.error || !result.data) {
+      throw new Error("Não foi possível rejeitar a vaga.")
+    }
+
+    return result.data
   }
 }

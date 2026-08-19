@@ -1,11 +1,12 @@
 "use client"
 
-import { useTransition } from "react"
+import { useRef, useTransition } from "react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { newSubmissionId } from "@/features/people-organization-mutations/submission-id"
 
 import { createCompetencyAction } from "../actions/create-competency-action"
 import { updateCompetencyAction } from "../actions/update-competency-action"
@@ -26,7 +27,16 @@ export function CompetencyForm({
 
   const isEditing = Boolean(competency)
 
+  // Stable per-submission identity for create idempotency: kept constant across
+  // retries of the SAME submission, and cleared after a success so the next
+  // create gets a fresh id.
+  const submissionIdRef = useRef<string | null>(null)
+
   function handleSubmit(formData: FormData) {
+    if (!isEditing && !submissionIdRef.current) {
+      submissionIdRef.current = newSubmissionId()
+    }
+
     const input = {
       name: String(formData.get("name") ?? ""),
       description: String(formData.get("description") ?? ""),
@@ -34,6 +44,7 @@ export function CompetencyForm({
       expectedLevel: Number(formData.get("expectedLevel") ?? 3),
       weight: Number(formData.get("weight") ?? 3),
       active: true,
+      idempotencyKey: isEditing ? undefined : submissionIdRef.current,
     }
 
     startTransition(async () => {
@@ -53,6 +64,8 @@ export function CompetencyForm({
         return
       }
 
+      // The submission succeeded — the next create is a new intent.
+      submissionIdRef.current = null
       toast.success(result.message)
       onSuccess?.()
     })

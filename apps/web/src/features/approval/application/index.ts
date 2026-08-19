@@ -3,6 +3,11 @@ export {
   buildApprovalRequestSubmission,
   type ApprovalRequestSubmissionPayload,
 } from "./build-approval-request-submission"
+export {
+  buildApprovalDecisionSubmission,
+  type ApprovalDecisionSubmissionPayload,
+  type BuildApprovalDecisionInput,
+} from "./build-approval-decision-submission"
 export { CancelRequest } from "./cancel-request"
 export { CreateApprovalRequest } from "./create-approval-request"
 export { ExpireRequest } from "./expire-request"

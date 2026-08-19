@@ -1,6 +1,6 @@
 import {
-  ApproveRequest,
   RejectRequest,
+  buildApprovalDecisionSubmission,
   buildApprovalRequestSubmission,
   createApprovalRequestRepository,
   getApprovalRequests,
@@ -169,13 +169,11 @@ export async function changeJobOpeningStatus(
       )
     }
 
-    const approvalRepository =
-      await createApprovalRequestRepository()
-
+    // The framework builds the decision (rehydrate + decide + serialize); the
+    // 0096 boundary persists it and transitions the opening atomically.
     return new ApproveRecruitmentRequest(
       repository,
-      getApprovalRequests,
-      new ApproveRequest(approvalRepository),
+      buildApprovalDecisionSubmission,
       crypto.randomUUID
     ).execute({
       companyId: input.companyId,

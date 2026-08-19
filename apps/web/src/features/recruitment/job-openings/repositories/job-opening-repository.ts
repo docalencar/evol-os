@@ -3,6 +3,10 @@ import {
 } from "@/lib/database/server-database"
 
 import type {
+  ApprovalRequestPersistenceRecord,
+} from "@/features/approval"
+
+import type {
   CreateJobOpeningInput,
 } from "../schemas/job-opening-schema"
 import type {
@@ -303,6 +307,67 @@ export async function createJobOpeningRepository() {
             values.estimatedMonthlyCost ?? null,
           p_is_budgeted: values.isBudgeted,
           p_idempotency_key: input.idempotencyKey,
+        }
+      )
+
+      if (error) {
+        return { data: null, error }
+      }
+
+      return {
+        data: data
+          ? mapJobOpening(data as JobOpeningRow)
+          : null,
+        error: null,
+      }
+    },
+
+    async loadPendingApproval(
+      companyId: string,
+      jobOpeningId: string
+    ) {
+      // Safe read boundary (migration 0096): returns the pending approval request
+      // aggregate (ApprovalRequestPersistenceRecord) for the app to rehydrate via
+      // mapApprovalRequestToDomain. No direct protected read of approval_requests.
+      const { data, error } = await supabase.rpc(
+        "get_tenant_job_opening_pending_approval_v1",
+        {
+          p_company_id: companyId,
+          p_job_opening_id: jobOpeningId,
+        }
+      )
+
+      if (error) {
+        return { data: null, error }
+      }
+
+      return {
+        data:
+          (data as ApprovalRequestPersistenceRecord | null) ??
+          null,
+        error: null,
+      }
+    },
+
+    async approve(input: {
+      companyId: string
+      jobOpeningId: string
+      aggregate: unknown
+      events: unknown
+      expectedVersion: number
+    }) {
+      // Atomic approve boundary (migration 0096): persists the decision aggregate
+      // via the Approval Framework engine (save_approval_request, with
+      // expected_version) AND transitions pending_approval -> approved in one
+      // transaction. No direct protected DML in the approve path.
+      const { data, error } = await supabase.rpc(
+        "approve_tenant_job_opening_v1",
+        {
+          p_company_id: input.companyId,
+          p_job_opening_id: input.jobOpeningId,
+          p_aggregate: input.aggregate,
+          p_events: input.events,
+          p_expected_version: input.expectedVersion,
         }
       )
 

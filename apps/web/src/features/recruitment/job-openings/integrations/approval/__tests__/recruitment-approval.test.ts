@@ -2,8 +2,10 @@ import assert from "node:assert/strict"
 import test from "node:test"
 
 import type {
+  ApprovalDecisionSubmissionPayload,
   ApprovalRequestApplicationResult,
-  ApproveRequestCommand,
+  ApprovalRequestPersistenceRecord,
+  BuildApprovalDecisionInput,
   RejectRequestCommand,
 } from "../../../../../approval/public-api"
 import {
@@ -22,6 +24,7 @@ import {
 } from "../../../../../approval/public-api"
 import {
   ApproveRecruitmentRequest,
+  type BuildApprovalDecisionSubmission,
   CreateRecruitmentApproval,
   RejectRecruitmentRequest,
   type RecruitmentApprovalJobOpeningRepository,
@@ -132,12 +135,53 @@ class FakeJobOpeningRepository
   }> = []
   failUpdate = false
   submissions: Array<{ aggregate: unknown; events: unknown }> = []
+  approvals: Array<{
+    aggregate: unknown
+    events: unknown
+    expectedVersion: number
+  }> = []
+  pendingRecord: ApprovalRequestPersistenceRecord | null = null
+  failLoadPending = false
+  failApprove = false
 
   constructor(jobOpening: JobOpening) {
     this.jobOpening = jobOpening
   }
 
   async findById() {
+    return { data: this.jobOpening, error: null }
+  }
+
+  async loadPendingApproval() {
+    if (this.failLoadPending) {
+      return { data: null, error: new Error("load failed") }
+    }
+    return { data: this.pendingRecord, error: null }
+  }
+
+  async approve(input: {
+    companyId: string
+    jobOpeningId: string
+    aggregate: unknown
+    events: unknown
+    expectedVersion: number
+  }) {
+    this.approvals.push({
+      aggregate: input.aggregate,
+      events: input.events,
+      expectedVersion: input.expectedVersion,
+    })
+
+    if (this.failApprove) {
+      return { data: null, error: new Error("approve failed") }
+    }
+
+    this.jobOpening = {
+      ...this.jobOpening,
+      status: "approved",
+      approverId: approverPersonId,
+      approvedAt: "2026-01-10T14:00:00.000Z",
+    }
     return { data: this.jobOpening, error: null }
   }
 
@@ -249,18 +293,32 @@ test("cria solicitação pelo Approval e sincroniza pending_approval", async () 
   assert.equal(result.status, "pending_approval")
 })
 
-test("aprova exclusivamente pelo Approval e sincroniza a vaga", async () => {
-  const request = createPendingApproval()
+test("aprova pela read boundary + framework + approve boundary atômica", async () => {
   const repository = new FakeJobOpeningRepository(
     createJobOpening("pending_approval")
   )
-  const executor = new FakeApprovalExecutor<ApproveRequestCommand>(
-    successfulResult(request)
-  )
+  repository.pendingRecord = {
+    version: 3,
+  } as unknown as ApprovalRequestPersistenceRecord
+
+  const decisionInputs: BuildApprovalDecisionInput[] = []
+  const buildDecision: BuildApprovalDecisionSubmission = (input) => {
+    decisionInputs.push(input)
+    return {
+      success: true,
+      data: {
+        aggregate: {
+          marker: "decided",
+        } as unknown as ApprovalDecisionSubmissionPayload["aggregate"],
+        events: [],
+        expectedVersion: 3,
+      },
+    }
+  }
+
   const service = new ApproveRecruitmentRequest(
     repository,
-    async () => [request],
-    executor,
+    buildDecision,
     idGenerator()
   )
 
@@ -272,11 +330,48 @@ test("aprova exclusivamente pelo Approval e sincroniza a vaga", async () => {
     occurredAt,
   })
 
-  assert.equal(executor.command?.approvalRequestId, approvalRequestId)
-  assert.equal(executor.command?.expectedVersion, 1)
-  assert.equal(executor.command?.assignmentId, assignmentId)
+  // The framework decision is built from the loaded record, as an approval.
+  assert.equal(decisionInputs.length, 1)
+  const captured = decisionInputs[0]
+  assert.equal(captured?.outcome, "approved")
+  assert.equal(captured?.actor.personId, approverPersonId)
+  assert.equal(
+    captured?.idempotencyKey,
+    `recruitment:job-opening:${jobOpeningId}:approve:3`
+  )
+  // The ORIGINAL expected_version is forwarded to the atomic approve boundary.
+  assert.equal(repository.approvals.length, 1)
+  assert.equal(repository.approvals[0]?.expectedVersion, 3)
+  // No legacy status write path is used.
+  assert.equal(repository.updates.length, 0)
   assert.equal(result.status, "approved")
-  assert.equal(result.approvedAt, occurredAt.toISOString())
+})
+
+test("aprovação falha fechado sem approval request pendente", async () => {
+  const repository = new FakeJobOpeningRepository(
+    createJobOpening("pending_approval")
+  )
+  repository.pendingRecord = null
+  const buildDecision: BuildApprovalDecisionSubmission = () => {
+    throw new Error("build should not run without a pending request")
+  }
+  const service = new ApproveRecruitmentRequest(
+    repository,
+    buildDecision,
+    idGenerator()
+  )
+
+  await assert.rejects(
+    service.execute({
+      companyId,
+      jobOpeningId,
+      actorUserId,
+      actorPersonId: approverPersonId,
+      occurredAt,
+    }),
+    /Não existe uma solicitação de aprovação pendente/
+  )
+  assert.equal(repository.approvals.length, 0)
 })
 
 test("rejeita pelo Approval e devolve a vaga para draft", async () => {
@@ -309,12 +404,14 @@ test("rejeita pelo Approval e devolve a vaga para draft", async () => {
   assert.equal(result.approvedAt, null)
 })
 
-test("erro de aprovação não altera o status da vaga", async () => {
-  const request = createPendingApproval()
+test("decisão de domínio inválida não aprova a vaga", async () => {
   const repository = new FakeJobOpeningRepository(
     createJobOpening("pending_approval")
   )
-  const executor = new FakeApprovalExecutor<ApproveRequestCommand>({
+  repository.pendingRecord = {
+    version: 1,
+  } as unknown as ApprovalRequestPersistenceRecord
+  const buildDecision: BuildApprovalDecisionSubmission = () => ({
     success: false,
     error: {
       code: "domain_error",
@@ -323,8 +420,7 @@ test("erro de aprovação não altera o status da vaga", async () => {
   })
   const service = new ApproveRecruitmentRequest(
     repository,
-    async () => [request],
-    executor,
+    buildDecision,
     idGenerator()
   )
 
@@ -338,23 +434,30 @@ test("erro de aprovação não altera o status da vaga", async () => {
     }),
     /Ator não autorizado/
   )
-  assert.equal(repository.updates.length, 0)
+  assert.equal(repository.approvals.length, 0)
   assert.equal(repository.jobOpening.status, "pending_approval")
 })
 
-test("falha de sincronização é reportada após sucesso da aprovação", async () => {
-  const request = createPendingApproval()
+test("erro da approve boundary é reportado e não aprova a vaga", async () => {
   const repository = new FakeJobOpeningRepository(
     createJobOpening("pending_approval")
   )
-  repository.failUpdate = true
-  const executor = new FakeApprovalExecutor<ApproveRequestCommand>(
-    successfulResult(request)
-  )
+  repository.pendingRecord = {
+    version: 1,
+  } as unknown as ApprovalRequestPersistenceRecord
+  repository.failApprove = true
+  const buildDecision: BuildApprovalDecisionSubmission = () => ({
+    success: true,
+    data: {
+      aggregate:
+        {} as unknown as ApprovalDecisionSubmissionPayload["aggregate"],
+      events: [],
+      expectedVersion: 1,
+    },
+  })
   const service = new ApproveRecruitmentRequest(
     repository,
-    async () => [request],
-    executor,
+    buildDecision,
     idGenerator()
   )
 
@@ -366,6 +469,7 @@ test("falha de sincronização é reportada após sucesso da aprovação", async
       actorPersonId: approverPersonId,
       occurredAt,
     }),
-    /não foi possível sincronizar o status/
+    /Não foi possível aprovar a vaga/
   )
+  assert.equal(repository.jobOpening.status, "pending_approval")
 })

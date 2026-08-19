@@ -74,10 +74,11 @@ O status normativo e o conteúdo completo permanecem no
 ### Roadmap e execução
 
 - [ROADMAP](./ROADMAP.md): programa MVP Closure — Mutation Boundaries; baseline
-  atual `c5a5451` com People historical reads (PR J1), Analytics safe reads e o
-  Recruitment trusted mutation program (create→reject) já incorporados.
-- [NEXT_STEPS](./NEXT_STEPS.md): Discovery pós-reconciliação para determinar o
-  próximo slice normativo do MVP Closure.
+  atual `d5db5b3` com People historical reads (PR J1), Analytics safe reads, o
+  Recruitment trusted mutation program (create→reject) e o Competency Catalog
+  trusted mutation boundary já incorporados; **authenticated core smoke = PASS**.
+- [NEXT_STEPS](./NEXT_STEPS.md): próxima entrega normativa é a Product Decision de
+  Career / Seniority + Position Taxonomy (raiz da faixa P1).
 - [MVP Plan](./MVP_PLAN.md): jornada completa até o MVP.
 - [EPICS](./EPICS.md): estado funcional das capacidades.
 - [Implementation Plan do MVP-PR1](./Execution/MVP-PR1-TENANT-MULTIUSER-ACTIVATION-IMPLEMENTATION-PLAN.md):
@@ -289,6 +290,51 @@ PD-020); as transições de Recruitment ainda no caminho legado (`cancelled`,
 `closed`, `paused`, `filled`), que continuam roteadas pelo `updateStatus` genérico
 e não por trusted boundary; e os gates pendentes de privacidade (People/Development)
 e o hardening forward-only da 0084. O MVP permanece na baseline de 98%.
+
+Na baseline `d5db5b3`, o **Competency Catalog Core Mutation Boundary** (migration
+0099) fecha a última escrita P0: create/update/archive de `competencies` passam a
+operar por trusted boundaries `SECURITY DEFINER` (gate `owner/admin/hr`, ator de
+`auth.uid()`, tenant-scoped, sem grant de tabela, Activity atômica, create
+idempotente por `intentKey` derivada server-side, archive soft via `active=false`,
+assignments intactos), removendo o DML direto protegido do catálogo. Human Review
+dedicado PASS; pgTAP 43/43 e full DB 1365/1365.
+
+Com People/Organization (0089), Competency Catalog (0099) e o ciclo de Recruitment
+(0093–0098) todos por trusted boundaries, o **AUTHENTICATED CORE SMOKE = PASS**:
+validados na UI Auth/Tenant, Departments, Positions/Cargos, People, Competency
+Catalog, Analytics e Recruitment (1 vaga OPEN + 1 DRAFT, indicador de vagas
+abertas correto, list/detail operando; os Human Reviews dedicados das transições
+de Recruitment permanecem válidos), sem `42501`/permission-denied/erro de servidor
+nas rotas core. **O Human Review core deixa de estar suspenso.** O percentual do
+MVP não é alterado aqui: sua atualização depende de decisão explícita do Product
+Owner.
+
+Reconciliação de backlog pós-smoke (registro consolidado; nenhum item iniciado,
+prioridade e governança detalhadas na Discovery). **Career/Organization:**
+senioridade (Jr/Pleno/Sênior) inexistente no schema e distinta de nível
+hierárquico (`positions.hierarchical_level` já existe); identidade/unicidade de
+Cargo a revisar (homônimos coexistem); Cargo já tem `department_id`, mas a
+listagem depende de Descrição para identificar; People precisa explicitar
+Departamento na lotação e filtrar Cargo por Departamento; papel/discoverability de
+Team a revisar (o CRUD de Team existe). **Competencies:** `position_competencies`
+já possui `expected_level`/`weight`/`required`/`type`, enquanto o catálogo global
+`competencies` ainda duplica `expected_level`/`weight` — a arquitetura precisa
+reconciliar essa duplicidade e considerar Cargo+Senioridade ↔ Competency; as
+escalas 1–5 de proficiência e de peso/importância precisam de semântica explícita
+e distinta; o gap deve comparar o esperado do Cargo/Senioridade com o nível
+demonstrado da pessoa. **Recruitment:** draft persistence/autosave/proteção de
+navegação; headcount como source-of-truth (hoje manual); replacement; quadro
+atual/ideal/gap; lifecycle remanescente (`cancelled/closed/paused/filled`);
+rejection reason UI (hoje comentário fixo); notifications; stat cards incompletos
+(Pendentes/Em andamento/Contratações); candidates/hiring e compensation/cost
+mantidos pós-MVP conforme a Discovery. **Activity UX:** a timeline cresce
+indefinidamente e empurra o conteúdo principal (visto em Cargo); avaliar padrão
+compartilhado (últimas ~10, histórico completo, busca/filtros, paginação/load-more)
+sem truncar histórico no banco. **P1 security/mutation program:** competency
+assignments, Import, Development authoring, Assessment admin e Feedback writes
+permanecem pendentes — Feedback bloqueado até a decisão de produto da matriz de
+transições de escrita (PD-020); privacy sign-offs (People/Development) e o
+hardening forward-only da 0084 seguem abertos.
 
 ## 7. Arquitetura consolidada
 

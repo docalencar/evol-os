@@ -187,3 +187,19 @@ Import, Development authoring, Assessment admin e Feedback), o smoke autenticado
 core, os gates de privacidade (People/Development) e o hardening forward-only da
 0084 seguem pendentes. Esta reconciliação registra fatos já entregues e não
 atribui nova prioridade nem define o próximo PR funcional.
+
+Na baseline `d5db5b3`, o **Competency Catalog Core Mutation Boundary** (migration
+0099) fecha a última escrita P0: create/update/archive de `competencies` por
+trusted boundaries, sem DML direto protegido, com Human Review dedicado PASS
+(pgTAP 43/43, full DB 1365/1365). Com People/Organization (0089), Competency
+Catalog (0099) e o ciclo de Recruitment (0093–0098) por trusted boundaries, o
+**authenticated core smoke = PASS** (Auth/Tenant, Departments, Positions/Cargos,
+People, Competency Catalog, Analytics e Recruitment validados na UI, sem `42501`),
+e o Human Review core deixa de estar suspenso. O percentual do MVP não é alterado
+aqui (depende de decisão explícita do Product Owner). A próxima entrega normativa,
+registrada em `NEXT_STEPS.md`, é a Product Decision de Career / Seniority +
+Position Taxonomy — raiz da faixa P1 (Cargo/Senioridade ↔ Competency → Competency
+Assignments → Gaps → Development/Promotion/Succession/Recruitment matching). O
+backlog reconciliado pós-smoke está consolidado no `PROJECT_STATE.md`. Este
+registro é factual e não define nova prioridade além da dependência de raiz
+declarada.

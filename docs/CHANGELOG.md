@@ -3,6 +3,25 @@
 Este changelog registra somente grandes entregas incorporadas à `main`. Commits
 locais e branches abertas não entram aqui.
 
+## 2026-08-19 — MVP Closure — Competency Catalog trusted mutations e core smoke PASS (baseline `d5db5b3`)
+
+- **Competency Catalog Core Mutation Boundary** (migration 0099, commit
+  `d5db5b3`): create/update/archive de `competencies` por trusted boundaries
+  `SECURITY DEFINER` (gate `owner/admin/hr`, ator de `auth.uid()`, tenant-scoped,
+  sem grant de tabela, Activity atômica, create idempotente por `intentKey`
+  derivada server-side, archive soft via `active=false`, assignments intactos),
+  removendo o DML direto protegido do catálogo;
+- Human Review dedicado PASS; pgTAP 43/43; full DB 1365/1365;
+- **AUTHENTICATED CORE SMOKE = PASS**: Auth/Tenant, Departments,
+  Positions/Cargos, People, Competency Catalog, Analytics e Recruitment (1 vaga
+  OPEN + 1 DRAFT, indicador de vagas abertas correto, list/detail operando)
+  validados na UI, sem `42501`/permission-denied/erro de servidor nas rotas core;
+  os Human Reviews dedicados das transições de Recruitment permanecem válidos;
+- o Human Review core deixa de estar suspenso; o percentual do MVP não é alterado
+  neste registro (depende de decisão do Product Owner);
+- backlog pós-smoke reconciliado no `PROJECT_STATE.md`; próxima entrega normativa:
+  Product Decision de Career / Seniority + Position Taxonomy (`NEXT_STEPS.md`).
+
 ## 2026-08-19 — MVP Closure — Recruitment trusted mutations (baseline `c5a5451`)
 
 - ciclo navegável de vaga migrado para trusted boundaries atômicas, com o Approval

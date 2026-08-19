@@ -1,43 +1,55 @@
 # Evol OS — Próxima entrega
 
-## Discovery pós-reconciliação — próximo slice do MVP Closure
+## Product Decision — Career / Seniority + Position Taxonomy
 
 ### Objetivo
 
-Determinar, a partir da governança versionada já reconciliada com `main`, qual é
-o próximo slice normativo do programa MVP Closure. Esta entrega é **apenas
-Discovery**: não implementa código, migration nem comportamento.
+Definir a taxonomia organizacional que serve de raiz para a faixa P1 do MVP
+Closure, antes de qualquer implementação. Esta é a próxima entrega normativa após
+a reconciliação do smoke autenticado core; ela é **uma Product Decision**, não
+implementação de código, migration ou comportamento.
 
-### Estado confirmado (baseline `c5a5451`)
+### Estado confirmado (baseline `d5db5b3`)
 
-Desde a baseline `e71abce` (PR I2 — integração app das mutações core 0089), foram
-incorporados a `main` os seguintes slices, agora reconciliados na documentação:
+- **Competency Catalog Core Mutation Boundary** concluída (commit `d5db5b3`,
+  migration `0099`): create/update/archive do catálogo por trusted boundaries,
+  Human Review dedicado PASS, pgTAP 43/43, full DB 1365/1365, zero DML direto
+  protegido no catálogo.
+- **AUTHENTICATED CORE SMOKE = PASS** — Auth/Tenant, Departments, Positions/Cargos,
+  People, Competency Catalog, Analytics e Recruitment validados na UI. O Human
+  Review core deixa de estar suspenso; os writes core (Organization, People,
+  Competency Catalog) e o ciclo de Recruitment operam por trusted boundaries sem
+  reads/writes diretos protegidos.
 
-- **PR J1 — People historical safe reads** (migrations 0090/0091, commits
-  `49e9ddc`, `fe1e604`, `7b6a85a`): boundaries `SECURITY DEFINER` aditivas que
-  expõem pessoas em todos os status de ciclo de vida (incluindo `terminated`) e o
-  detalhe de competências do perfil, removendo reads diretos protegidos (42501)
-  dos paths envolvidos.
-- **People Analytics safe reads** (migration 0092, commit `96f9ddf`): o dashboard
-  de Analytics passa a ler vagas abertas e contagem de aprovações pendentes por
-  boundaries seguras, sem abrir SELECT direto em tabelas protegidas.
-- **Recruitment trusted mutation program** (migrations 0093–0098, commits
-  `2ac18b8`, `cd65f40`, `9c3effd`, `2dd9794`, `c5a5451`): create → submit →
-  approve → open → reject de vagas por trusted boundaries atômicas, reutilizando o
-  Approval Framework como autoridade e consolidando a timeline de Job Opening.
-  Human Review aprovado para esses comportamentos.
+### A Product Decision deve resolver, antes de implementação
 
-### Próximo passo imediato
+- definição de Cargo/título;
+- Departamento;
+- Senioridade (Jr / Pleno / Sênior) — hoje inexistente no schema;
+- Nível hierárquico (já existe em `positions.hierarchical_level`) e por que é
+  distinto de senioridade;
+- identidade/unicidade de Cargo (hoje homônimos coexistem, sem constraint);
+- progressão horizontal (ex.: Analista Pleno → Sênior) vs promoção vertical
+  (ex.: Analista → Coordenador);
+- relação com People (Departamento explícito na lotação; Cargo filtrado por
+  Departamento);
+- relação com Competencies (Cargo + Senioridade ↔ Competency).
 
-Executar a **Discovery pós-reconciliação** para determinar o próximo slice
-normativo, sem iniciar implementação. Candidatos conhecidos (sem prioridade
-atribuída neste documento): o smoke autenticado core (P0) que retoma o Human
-Review; os writes P1 restantes (Competencies/assignments, Import, Development
-authoring, Assessment admin, Feedback — este último dependente de congelar a
-matriz de transições PD-020); os remanescentes de Recruitment (transições
-`cancelled`/`closed`/`paused`/`filled` ainda no caminho legado, que exigem
-Discovery separada); e os gates pendentes de privacidade (People/Development) e o
-hardening forward-only da 0084.
+### Ordem de dependência (registrada, não iniciada)
 
-A escolha entre esses candidatos é uma decisão de priorização a ser registrada
-após a Discovery. Nenhum deles está pré-selecionado aqui.
+```text
+Career/Seniority + Position Taxonomy   (esta Product Decision)
+        ↓
+Cargo/Senioridade ↔ Competency
+        ↓
+Competency Assignments
+        ↓
+Competency Gaps
+        ↓
+Development / Promotion / Succession / Recruitment matching
+```
+
+O backlog completo reconciliado após o smoke está registrado no
+[PROJECT_STATE](./PROJECT_STATE.md). Nenhum item P1 está pré-selecionado nem
+iniciado; a Product Decision acima é o próximo passo e não é criada neste
+documento.

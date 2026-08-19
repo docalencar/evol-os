@@ -3,6 +3,44 @@
 Este changelog registra somente grandes entregas incorporadas à `main`. Commits
 locais e branches abertas não entram aqui.
 
+## 2026-08-19 — MVP Closure — Recruitment trusted mutations (baseline `c5a5451`)
+
+- ciclo navegável de vaga migrado para trusted boundaries atômicas, com o Approval
+  Framework event-sourced como autoridade e sem DML direto protegido nos write
+  paths (migrations 0093–0098, commits `2ac18b8`, `cd65f40`, `9c3effd`,
+  `2dd9794`, `c5a5451`);
+- create (0093) persiste a vaga como rascunho; submit (0094) transiciona
+  rascunho → aguardando aprovação persistindo o aggregate de aprovação; 0095
+  habilita a timeline de `job_opening`; approve (0096) decide a aprovação com
+  `expected_version` e transiciona para aprovada; open (0097) transiciona
+  aprovada → aberta; reject (0098) decide a rejeição e devolve a vaga a rascunho
+  preservando o histórico da approval request;
+- timeline consolidada: Vaga criada, Vaga enviada para aprovação, Vaga aprovada,
+  Vaga aberta e Vaga rejeitada; `StatCard` "Vagas abertas" de Recruitment derivado
+  da source of truth segura;
+- Human Review aprovado para o fluxo positivo (Rascunho → … → Aberta) e para o
+  caminho negativo (Aguardando aprovação → Rejeitar → Rascunho);
+- boundaries `SECURITY DEFINER`, `search_path` endurecido, ator de `auth.uid()`,
+  gate `owner/admin/hr`, tenant-scoped, sem grant de tabela, RLS ou policy.
+
+Remanescentes factuais de Recruitment (caminho legado `updateStatus`, Discovery
+separada): transições `cancelled`, `closed`, `paused` e `filled`.
+
+## 2026-08-19 — MVP Closure — People historical reads (PR J1) e Analytics safe reads
+
+- PR J1 adiciona boundaries `SECURITY DEFINER` aditivas para leituras históricas
+  de People (migrations 0090/0091, commits `49e9ddc`, `fe1e604`, `7b6a85a`):
+  variantes `..._v2` que retornam todos os status de ciclo de vida (incluindo
+  `terminated`) para as visões de gestão históricas (Desligados) e o detalhe de
+  employee-competency do perfil, removendo reads diretos protegidos (42501);
+- People Analytics safe reads (migration 0092, commit `96f9ddf`): o dashboard passa
+  a obter vagas abertas e a contagem de aprovações pendentes por boundaries
+  membership-gated, sem abrir SELECT direto em tabelas protegidas e sem derrubar a
+  página no `Promise.all` all-or-nothing;
+- mesma postura de segurança da 0085: ator de `auth.uid()`, gate de membership
+  ativa, sem grant de tabela, RLS ou policy; Human Review global permanece
+  suspenso e o MVP na baseline de 98%.
+
 ## 2026-08-09 — MVP-PR1 Phase 4 — Complete by Prior Delivery
 
 - Phase 4 formalmente encerrada sem implementação adicional e sem execução como

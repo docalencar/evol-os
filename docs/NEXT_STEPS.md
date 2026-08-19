@@ -1,43 +1,43 @@
 # Evol OS — Próxima entrega
 
-## MVP Closure PR I2 — People + Organization Core Mutation App Integration
+## Discovery pós-reconciliação — próximo slice do MVP Closure
 
 ### Objetivo
 
-Integrar as páginas, Server Actions e repositories navegáveis de People,
-Departments, Teams e Positions às trusted mutation boundaries da migration 0089.
+Determinar, a partir da governança versionada já reconciliada com `main`, qual é
+o próximo slice normativo do programa MVP Closure. Esta entrega é **apenas
+Discovery**: não implementa código, migration nem comportamento.
 
-### Estado confirmado
+### Estado confirmado (baseline `c5a5451`)
 
-- PR H foi incorporada na baseline `7854120`;
-- a auditoria de mutations classificou People e Organization core como P0;
-- a migration 0089 entrega doze RPCs DB-first para create/update/archive;
-- o ator e a matriz `owner/admin/hr` são validados no banco;
-- referências tenant-owned falham fechadas;
-- creates são idempotentes, archives determinísticos e Activity é atômica;
-- encerrar uma Person desativa acesso vinculado conforme PD-019, sem apagar o
-  vínculo histórico;
-- grants DML continuam fechados e nenhum `service_role` participa do fluxo;
-- 33 arquivos/1.129 testes DB e 961 testes web passam;
-- páginas, Actions e repositories ainda não consomem as novas RPCs;
-- Human Review permanece suspenso e o MVP continua em 98%.
+Desde a baseline `e71abce` (PR I2 — integração app das mutações core 0089), foram
+incorporados a `main` os seguintes slices, agora reconciliados na documentação:
 
-### Gate atual — concluído nesta PR (I2)
+- **PR J1 — People historical safe reads** (migrations 0090/0091, commits
+  `49e9ddc`, `fe1e604`, `7b6a85a`): boundaries `SECURITY DEFINER` aditivas que
+  expõem pessoas em todos os status de ciclo de vida (incluindo `terminated`) e o
+  detalhe de competências do perfil, removendo reads diretos protegidos (42501)
+  dos paths envolvidos.
+- **People Analytics safe reads** (migration 0092, commit `96f9ddf`): o dashboard
+  de Analytics passa a ler vagas abertas e contagem de aprovações pendentes por
+  boundaries seguras, sem abrir SELECT direto em tabelas protegidas.
+- **Recruitment trusted mutation program** (migrations 0093–0098, commits
+  `2ac18b8`, `cd65f40`, `9c3effd`, `2dd9794`, `c5a5451`): create → submit →
+  approve → open → reject de vagas por trusted boundaries atômicas, reutilizando o
+  Approval Framework como autoridade e consolidando a timeline de Job Opening.
+  Human Review aprovado para esses comportamentos.
 
-A integração app das mutações core 0089 está entregue na baseline `e71abce`: as
-doze Server Actions de People/Departments/Teams/Positions consomem um adapter
-server-only RPC-only (`people-organization-mutations`), com `companyId`
-server-derived, payload sem autoridade, sem DML direto protegido, sem Activity
-duplicada e com erros públicos estáveis. `tsc`, `next lint` e 996 testes web
-passam; a suíte DB não muda (sem migration nova).
+### Próximo passo imediato
 
-### Próximo passo após aprovação
+Executar a **Discovery pós-reconciliação** para determinar o próximo slice
+normativo, sem iniciar implementação. Candidatos conhecidos (sem prioridade
+atribuída neste documento): o smoke autenticado core (P0) que retoma o Human
+Review; os writes P1 restantes (Competencies/assignments, Import, Development
+authoring, Assessment admin, Feedback — este último dependente de congelar a
+matriz de transições PD-020); os remanescentes de Recruitment (transições
+`cancelled`/`closed`/`paused`/`filled` ainda no caminho legado, que exigem
+Discovery separada); e os gates pendentes de privacidade (People/Development) e o
+hardening forward-only da 0084.
 
-Executar smoke autenticado de create/update/archive em People e Organization
-(incluindo os caminhos de erro: hierarchy cycle, last-owner/access conflict,
-referência inválida). Human Review global só retoma depois desse smoke e dos gates
-independentes.
-
-Permanecem gates independentes: privacy de People/Development, participant email
-de Assessment, hardening forward-only da timeline 0084 e writes P1/P2 dos demais
-domínios.
+A escolha entre esses candidatos é uma decisão de priorização a ser registrada
+após a Discovery. Nenhum deles está pré-selecionado aqui.

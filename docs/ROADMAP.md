@@ -171,3 +171,19 @@ RPC-only, removendo o DML direto protegido dos write paths P0 e a Activity
 duplicada, sem browser authority nem `service_role`. TypeScript, lint e 996 testes
 web passam. Falta o smoke autenticado core; writes P1/P2 e gates de
 privacidade/0084 seguem pendentes; Human Review permanece suspenso e o MVP em 98%.
+
+Reconciliação factual até a baseline `c5a5451` (sem alterar prioridades): desde
+`e71abce` foram incorporados a `main` a PR J1 — People historical safe reads
+(migrations 0090/0091), as People Analytics safe reads (migration 0092) e o
+Recruitment trusted mutation program (migrations 0093–0098). Com isso, o item
+"Recrutamento e Aprovações" tem agora concluídos, por trusted boundaries atômicas
+reutilizando o Approval Framework, os fluxos de criação e as principais transições
+de aprovação da vaga — create, submit (rascunho → aguardando aprovação), approve
+(→ aprovada), open (→ aberta) e reject (→ rascunho) — além da timeline consolidada
+de Job Opening. Permanecem como remanescentes de Recruitment, ainda no caminho
+legado `updateStatus` e sujeitos a Discovery separada, as transições `cancelled`,
+`closed`, `paused` e `filled`. Os demais writes P1 (Competencies/assignments,
+Import, Development authoring, Assessment admin e Feedback), o smoke autenticado
+core, os gates de privacidade (People/Development) e o hardening forward-only da
+0084 seguem pendentes. Esta reconciliação registra fatos já entregues e não
+atribui nova prioridade nem define o próximo PR funcional.

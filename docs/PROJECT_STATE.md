@@ -73,8 +73,11 @@ O status normativo e o conteúdo completo permanecem no
 
 ### Roadmap e execução
 
-- [ROADMAP](./ROADMAP.md): Phase 9 Multiuser UI/UX é a execução vigente.
-- [NEXT_STEPS](./NEXT_STEPS.md): aprovação da integração 10G e retomada do smoke em `/app`.
+- [ROADMAP](./ROADMAP.md): programa MVP Closure — Mutation Boundaries; baseline
+  atual `c5a5451` com People historical reads (PR J1), Analytics safe reads e o
+  Recruitment trusted mutation program (create→reject) já incorporados.
+- [NEXT_STEPS](./NEXT_STEPS.md): Discovery pós-reconciliação para determinar o
+  próximo slice normativo do MVP Closure.
 - [MVP Plan](./MVP_PLAN.md): jornada completa até o MVP.
 - [EPICS](./EPICS.md): estado funcional das capacidades.
 - [Implementation Plan do MVP-PR1](./Execution/MVP-PR1-TENANT-MULTIUSER-ACTIVATION-IMPLEMENTATION-PLAN.md):
@@ -242,6 +245,50 @@ P0, nem Activity duplicada, nem browser authority; erros estáveis da 0089 viram
 mensagens públicas seguras. `tsc`, lint e 996 testes web passam. O smoke
 autenticado, os writes P1/P2 e os gates de privacidade/0084 permanecem pendentes;
 não há CRUD-safe global e o MVP segue em 98%.
+
+A partir de `e71abce`, o programa MVP Closure prosseguiu com os slices a seguir,
+todos incorporados a `main` e aqui reconciliados factualmente (baseline atual
+`c5a5451`):
+
+- **PR J1 — People historical safe reads** (migrations 0090/0091; commits
+  `49e9ddc`, `fe1e604`, `7b6a85a`). Boundaries `SECURITY DEFINER` aditivas
+  (`..._v2`) que retornam todos os status de ciclo de vida, incluindo
+  `terminated`, para as visões de gestão históricas (Desligados) e o detalhe de
+  competências do perfil. A 0091 expõe exatamente as colunas do perfil de
+  employee-competency que a directory boundary não trazia. O perfil histórico de
+  People passa a consumir apenas essas boundaries, sem read direto protegido
+  (42501). Mesma postura de segurança da 0085: ator de `auth.uid()`, gate de
+  membership ativa, sem grant de tabela/RLS/policy.
+- **People Analytics safe reads** (migration 0092; commit `96f9ddf`). O dashboard
+  de Analytics passa a obter as vagas abertas e a contagem de aprovações
+  pendentes por boundaries membership-gated `SECURITY DEFINER`, eliminando os
+  reads diretos protegidos que derrubavam a página inteira dentro do `Promise.all`
+  all-or-nothing. Nenhum acesso direto a tabela é aberto.
+- **Recruitment trusted mutation program** (migrations 0093–0098; commits
+  `2ac18b8`, `cd65f40`, `9c3effd`, `2dd9794`, `c5a5451`). O ciclo navegável de
+  vaga passa a operar por trusted boundaries atômicas, com o Approval Framework
+  event-sourced como autoridade e sem DML direto protegido nos write paths:
+  create (0093) persiste a vaga como rascunho; submit (0094) transiciona
+  rascunho → aguardando aprovação persistindo o aggregate de aprovação; a 0095
+  habilita a timeline de `job_opening`; approve (0096) decide a aprovação com
+  `expected_version` e transiciona para aprovada; open (0097) transiciona
+  aprovada → aberta; reject (0098) decide a rejeição e devolve a vaga a rascunho
+  preservando o histórico da approval request. Fluxo positivo validado por Human
+  Review: Nova vaga → Rascunho → Enviar para aprovação → Aguardando aprovação →
+  Aprovar → Aprovada → Abrir → Aberta; e caminho negativo: Aguardando aprovação →
+  Rejeitar/Voltar para rascunho → Rascunho. A timeline consolida Vaga criada,
+  Vaga enviada para aprovação, Vaga aprovada, Vaga aberta e Vaga rejeitada. O
+  `StatCard` "Vagas abertas" de Recruitment deriva da source of truth segura e
+  Analytics reflete `status='open'` automaticamente pela 0092.
+
+Permanecem factualmente em aberto (sem prioridade atribuída aqui, cada um exige
+Discovery própria): o smoke autenticado core que retoma o Human Review global; os
+writes P1 restantes (Competencies/assignments, Import, Development authoring,
+Assessment admin e Feedback — este dependente de congelar a matriz de transições
+PD-020); as transições de Recruitment ainda no caminho legado (`cancelled`,
+`closed`, `paused`, `filled`), que continuam roteadas pelo `updateStatus` genérico
+e não por trusted boundary; e os gates pendentes de privacidade (People/Development)
+e o hardening forward-only da 0084. O MVP permanece na baseline de 98%.
 
 ## 7. Arquitetura consolidada
 

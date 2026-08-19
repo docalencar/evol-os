@@ -31,13 +31,12 @@ export async function createJobOpeningAction(
   }
 
   try {
-    const { companyId, user } =
+    const { companyId } =
       await getCurrentCompanyContext()
 
     const jobOpening =
       await createJobOpening({
         companyId,
-        userId: user.id,
         values: parsed.data,
       })
 

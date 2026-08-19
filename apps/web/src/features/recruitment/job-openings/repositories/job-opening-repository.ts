@@ -3,6 +3,9 @@ import {
 } from "@/lib/database/server-database"
 
 import type {
+  CreateJobOpeningInput,
+} from "../schemas/job-opening-schema"
+import type {
   JobOpening,
   JobOpeningEmploymentType,
   JobOpeningPriority,
@@ -224,27 +227,60 @@ export async function createJobOpeningRepository() {
       }
     },
 
-    async create(
-      input: CreateJobOpeningData
-    ) {
-      const { data, error } = await supabase
-        .from("recruitment_job_openings")
-        .insert({
-          company_id: input.companyId,
-          created_by_user_id:
-            input.createdByUserId,
-          ...normalizeJobOpeningInput(input),
-        })
-        .select("*")
-        .single()
+    async create(input: {
+      companyId: string
+      idempotencyKey: string
+      values: CreateJobOpeningInput
+    }) {
+      // Trusted write boundary (migration 0093): the RPC authorizes the actor
+      // (owner/admin/hr), validates every tenant-owned foreign reference,
+      // persists the opening as draft and records the creation activity
+      // atomically. No direct protected DML in the create path.
+      const { values } = input
+      const { data, error } = await supabase.rpc(
+        "create_tenant_job_opening_v1",
+        {
+          p_company_id: input.companyId,
+          p_title: values.title,
+          p_description: values.description,
+          p_department_id: values.departmentId,
+          p_position_id: values.positionId,
+          p_requesting_manager_id:
+            values.requestingManagerId,
+          p_recruiter_id: values.recruiterId ?? null,
+          p_opening_reason: values.openingReason,
+          p_replaced_employee_id:
+            values.replacedEmployeeId ?? null,
+          p_opening_justification:
+            values.openingJustification,
+          p_positions_count: values.positionsCount,
+          p_current_headcount: values.currentHeadcount,
+          p_target_headcount: values.targetHeadcount,
+          p_work_model: values.workModel,
+          p_location: values.location ?? null,
+          p_employment_type: values.employmentType,
+          p_salary_min: values.salaryMin ?? null,
+          p_salary_max: values.salaryMax ?? null,
+          p_priority: values.priority,
+          p_target_hire_date:
+            values.targetHireDate ?? null,
+          p_notes: values.notes ?? null,
+          p_estimated_monthly_cost:
+            values.estimatedMonthlyCost ?? null,
+          p_is_budgeted: values.isBudgeted,
+          p_idempotency_key: input.idempotencyKey,
+        }
+      )
+
+      if (error) {
+        return { data: null, error }
+      }
 
       return {
         data: data
-          ? mapJobOpening(
-              data as JobOpeningRow
-            )
+          ? mapJobOpening(data as JobOpeningRow)
           : null,
-        error,
+        error: null,
       }
     },
 

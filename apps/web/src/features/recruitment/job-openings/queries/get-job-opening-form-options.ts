@@ -1,13 +1,11 @@
 import {
-  getDepartments,
-} from "@/features/organization/departments"
+  getManagementDepartments,
+  getManagementPeople,
+  getManagementPositions,
+} from "@/features/dashboard-read"
 import {
-  getPositions,
   type Position,
 } from "@/features/organization/positions"
-import {
-  getEmployees,
-} from "@/features/people"
 
 import type {
   EmployeeStatus,
@@ -40,11 +38,13 @@ export type JobOpeningFormOptions = {
 export async function getJobOpeningFormOptions(
   companyId: string
 ): Promise<JobOpeningFormOptions> {
+  // Wizard options load through the approved tenant read boundaries
+  // (0083/0085 management projections) — no direct protected-table SELECT.
   const [departments, positions, employees] =
     await Promise.all([
-      getDepartments(companyId),
-      getPositions(companyId),
-      getEmployees(companyId),
+      getManagementDepartments(companyId),
+      getManagementPositions(companyId),
+      getManagementPeople(companyId),
     ])
 
   return {

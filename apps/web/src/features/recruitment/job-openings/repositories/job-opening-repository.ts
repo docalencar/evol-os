@@ -383,6 +383,34 @@ export async function createJobOpeningRepository() {
       }
     },
 
+    async open(input: {
+      companyId: string
+      jobOpeningId: string
+    }) {
+      // Atomic open boundary (migration 0097): authorizes the actor (owner/admin/hr),
+      // requires the opening to be approved + tenant-owned, transitions
+      // approved -> open and records the activity in one transaction. No direct
+      // protected DML in the open path.
+      const { data, error } = await supabase.rpc(
+        "open_tenant_job_opening_v1",
+        {
+          p_company_id: input.companyId,
+          p_job_opening_id: input.jobOpeningId,
+        }
+      )
+
+      if (error) {
+        return { data: null, error }
+      }
+
+      return {
+        data: data
+          ? mapJobOpening(data as JobOpeningRow)
+          : null,
+        error: null,
+      }
+    },
+
     async update(
       input: UpdateJobOpeningData
     ) {

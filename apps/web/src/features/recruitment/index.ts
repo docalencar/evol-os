@@ -18,6 +18,7 @@ export {
   changeJobOpeningStatus,
   changeJobOpeningStatusAction,
   changeJobOpeningStatusSchema,
+  countOpenJobOpenings,
   createJobOpening,
   createJobOpeningAction,
   createJobOpeningSchema,

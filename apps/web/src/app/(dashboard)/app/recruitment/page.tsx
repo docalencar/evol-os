@@ -5,6 +5,7 @@ import { getRecruitmentWorkspaceReadModel } from "@/features/dashboard-read"
 import {
   JobOpeningTable,
   RecruitmentWorkspaceToolbar,
+  countOpenJobOpenings,
 } from "@/features/recruitment"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
@@ -22,7 +23,10 @@ export default async function RecruitmentPage() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Vagas abertas" value={0} />
+        <StatCard
+          label="Vagas abertas"
+          value={countOpenJobOpenings(jobOpenings)}
+        />
         <StatCard label="Pendentes" value={0} />
         <StatCard label="Em andamento" value={0} />
         <StatCard label="Contratações" value={0} />

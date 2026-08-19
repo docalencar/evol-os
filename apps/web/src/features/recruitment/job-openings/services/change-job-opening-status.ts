@@ -212,6 +212,26 @@ export async function changeJobOpeningStatus(
     })
   }
 
+  if (
+    existing.status === "approved" &&
+    input.values.status === "open"
+  ) {
+    // The approved -> open transition is enforced atomically inside the 0097
+    // boundary, which also records the "Vaga aberta" activity. No direct DML.
+    const opened = await repository.open({
+      companyId: input.companyId,
+      jobOpeningId: existing.id,
+    })
+
+    if (opened.error || !opened.data) {
+      throw new Error(
+        "Não foi possível abrir a vaga."
+      )
+    }
+
+    return opened.data
+  }
+
   const approverId = existing.approverId
   const approvedAt = existing.approvedAt
 

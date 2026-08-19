@@ -42,6 +42,7 @@ export type {
 
 export {
   changeJobOpeningStatus,
+  countOpenJobOpenings,
   getAllowedJobOpeningStatusTransitions,
   createJobOpening,
   updateJobOpening,

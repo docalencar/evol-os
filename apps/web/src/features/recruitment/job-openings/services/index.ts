@@ -4,6 +4,10 @@ export {
 } from "./change-job-opening-status"
 
 export {
+  countOpenJobOpenings,
+} from "./count-open-job-openings"
+
+export {
   createJobOpening,
 } from "./create-job-opening"
 

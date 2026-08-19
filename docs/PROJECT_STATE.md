@@ -80,9 +80,9 @@ O status normativo e o conteúdo completo permanecem no
   atual `d5db5b3` com People historical reads (PR J1), Analytics safe reads, o
   Recruitment trusted mutation program (create→reject) e o Competency Catalog
   trusted mutation boundary já incorporados; **authenticated core smoke = PASS**.
-- [NEXT_STEPS](./NEXT_STEPS.md): PD-021 (Approved) e ADR-0017 (Accepted)
-  versionadas; próxima entrega normativa é o Implementation Plan de Career /
-  Seniority + Position Taxonomy.
+- [NEXT_STEPS](./NEXT_STEPS.md): PD-021 (Approved), ADR-0017 (Accepted) e o
+  Implementation Plan da taxonomia versionados; próximo passo executável é o
+  Slice 1A — Seniority Catalog Foundation (DB-first).
 - [MVP Plan](./MVP_PLAN.md): jornada completa até o MVP.
 - [EPICS](./EPICS.md): estado funcional das capacidades.
 - [Implementation Plan do MVP-PR1](./Execution/MVP-PR1-TENANT-MULTIUSER-ACTIVATION-IMPLEMENTATION-PLAN.md):
@@ -349,9 +349,12 @@ NULL para cargos sem senioridade), a lotação de People e a matriz de competên
 referenciando o profile, o Departamento derivado da Position, a relocação
 forward-only de `expected_level`/`weight` para a matriz, as escalas 1–5 de
 proficiência e de peso, e o gate de auditoria de homônimos antes de qualquer
-unicidade de Cargo. Nenhuma migration/código foi criado: o próximo passo normativo
-é o Implementation Plan (recorte de slices DB-first), cuja ordem final não é
-congelada aqui.
+unicidade de Cargo. Nenhuma migration/código foi criado. O
+Implementation Plan da taxonomia está versionado em
+`docs/Execution/CAREER-SENIORITY-POSITION-TAXONOMY-IMPLEMENTATION-PLAN.md`
+(Approved), com o rollout additive → backfill → compatibility → cutover →
+deprecate e o slice map 1A→5 + gate de unicidade + follow-ups. O próximo passo
+executável é o **Slice 1A — Seniority Catalog Foundation (DB-first)**.
 
 ## 7. Arquitetura consolidada
 

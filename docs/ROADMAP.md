@@ -199,10 +199,12 @@ e o Human Review core deixa de estar suspenso. O percentual do MVP não é alter
 aqui (depende de decisão explícita do Product Owner). A raiz da faixa P1 — a
 taxonomia de carreira — foi decidida e versionada: **PD-021 — Career / Seniority +
 Position Taxonomy (Approved)** e **ADR-0017 — Position-Seniority Profile as Career
-Assignment Boundary (Accepted)**. A próxima entrega normativa, registrada em
-`NEXT_STEPS.md`, é o **Implementation Plan** dessa taxonomia (recorte de slices
-DB-first: Seniority Catalog → Position-Seniority Profiles → People lotação →
-Competency matrix relocation → Competency Assignments → Gaps →
-Development/Promotion/Succession/Recruitment matching), com a ordem final definida
-no próprio plano. O backlog reconciliado pós-smoke está consolidado no
-`PROJECT_STATE.md`. Este registro é factual e não inicia implementação.
+Assignment Boundary (Accepted)**. O **Implementation Plan** dessa taxonomia
+está versionado (`docs/Execution/CAREER-SENIORITY-POSITION-TAXONOMY-IMPLEMENTATION-PLAN.md`,
+Approved), com rollout additive → backfill → compatibility → cutover → deprecate e
+o slice map Seniority Catalog → Position-Seniority Profiles → People lotação →
+Competency matrix relocation → Competency Assignments → Gaps (+ gate de unicidade e
+follow-ups de Recruitment/Development/Succession). O **próximo passo executável**,
+registrado em `NEXT_STEPS.md`, é o Slice 1A — Seniority Catalog Foundation
+(DB-first). O backlog reconciliado pós-smoke está consolidado no `PROJECT_STATE.md`.
+Este registro é factual e não inicia implementação.

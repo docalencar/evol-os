@@ -3,6 +3,20 @@
 Este changelog registra somente grandes entregas incorporadas à `main`. Commits
 locais e branches abertas não entram aqui.
 
+## 2026-08-19 — Governança — Career / Seniority + Position Taxonomy Implementation Plan
+
+- **Implementation Plan versionado** (`docs/Execution/CAREER-SENIORITY-POSITION-TAXONOMY-IMPLEMENTATION-PLAN.md`,
+  Approved): rollout additive → backfill → compatibility → cutover → deprecate,
+  sem big-bang; slice map 1A Seniority Catalog (DB) · 1B Admin (UI) · 2A
+  Position-Seniority Profiles + base backfill (DB) · 2B Cargo↔Senioridade (UI) ·
+  3A People assignment + backfill (DB) · 3B Lotação UX · 4A Matrix relocation +
+  backfill (DB) · 4B Matrix + escalas (UI) · 5 Assignments + Gap; gate separado de
+  auditoria de unicidade de Cargo; follow-ups de Recruitment/Development/Succession;
+  invariantes de data-safety (nenhum People perde Position, todo Cargo com base
+  profile, matriz zero-loss);
+- documentação apenas: nenhuma migration/código/schema; próximo passo executável =
+  Slice 1A — Seniority Catalog Foundation (DB-first).
+
 ## 2026-08-19 — Governança — Career / Seniority + Position Taxonomy (PD-021 + ADR-0017)
 
 - **PD-021 — Career / Seniority + Position Taxonomy: Approved** — define

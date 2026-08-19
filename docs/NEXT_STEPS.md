@@ -1,16 +1,16 @@
 # Evol OS — Próxima entrega
 
-## Implementation Plan — Career / Seniority + Position Taxonomy
+## Slice 1A — Seniority Catalog Foundation (DB-first)
 
 ### Objetivo
 
-Planejar a implementação da taxonomia de carreira agora que **PD-021 (Approved)**
-e **ADR-0017 (Accepted)** estão versionadas. Esta próxima entrega é **um
-Implementation Plan** (Discovery + recorte de slices DB-first), não implementação
-de código, migration ou comportamento. A ordem final dos slices é definida no
-próprio plano; a fundação DB pode preceder a experiência, e o Human Review útil
-ocorre quando houver superfície funcional suficiente (não se congela "UI completa
-no Slice 1").
+Iniciar a implementação da taxonomia de carreira pelo primeiro slice do
+[Implementation Plan versionado](./Execution/CAREER-SENIORITY-POSITION-TAXONOMY-IMPLEMENTATION-PLAN.md)
+(Approved), derivado de **PD-021 (Approved)** e **ADR-0017 (Accepted)**. O
+**Slice 1A** cria a fundação DB do catálogo de senioridade (`seniority_levels`
+company-owned) + trusted boundaries, sem UI: migration + pgTAP → validação local →
+STOP. Sem seed obrigatório; empresa pode ter zero níveis. Depois seguem 1B (UI +
+Human Review) e os demais slices na ordem do plano. Nada iniciado neste documento.
 
 ### Estado confirmado (baseline `d5db5b3`)
 
@@ -50,6 +50,6 @@ Competency Assignments (P1)  →  Gaps  →  Development / Promotion / Successio
 ```
 
 O backlog completo reconciliado após o smoke está registrado no
-[PROJECT_STATE](./PROJECT_STATE.md). A ordem final e o recorte dos slices são
-definidos no Implementation Plan (próximo passo); nenhum slice está iniciado e o
-Implementation Plan não é criado neste documento.
+[PROJECT_STATE](./PROJECT_STATE.md); o recorte e a ordem completa dos slices estão
+no Implementation Plan versionado. **Slice 1A é o próximo passo executável**;
+nenhum slice está iniciado.

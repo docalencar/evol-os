@@ -53,6 +53,8 @@ O PROJECT_STATE.md é uma fotografia oficial do estado do programa. Ele não cri
 | PD-017 — Notification Domain Policy | ✅ Approved |
 | PD-018 — Global Competency Concepts and Tenant Mapping | ✅ Approved |
 | PD-019 — Tenant Multiuser Activation Policy | ✅ Approved |
+| PD-020 — Feedback Conversation Privacy and Administrative Access | ✅ Approved |
+| PD-021 — Career / Seniority + Position Taxonomy | ✅ Approved |
 
 ### ADRs
 
@@ -67,6 +69,7 @@ O PROJECT_STATE.md é uma fotografia oficial do estado do programa. Ele não cri
 | ADR-0014 — Deterministic Development Template Application and Snapshots | ✅ Accepted e implementada; PR 3C encerrada em `5c2675b` |
 | ADR-0015 — Tenant Multiuser Activation Architecture | ✅ Accepted; MVP-PR1 em andamento |
 | ADR-0016 — Invitation Delivery Architecture | ✅ Accepted e implementada nas Phases 5/6 |
+| ADR-0017 — Position-Seniority Profile as Career Assignment Boundary | ✅ Accepted; implementação pendente (Implementation Plan) |
 
 O status normativo e o conteúdo completo permanecem no
 [índice de ADRs](./adr/README.md).
@@ -77,8 +80,9 @@ O status normativo e o conteúdo completo permanecem no
   atual `d5db5b3` com People historical reads (PR J1), Analytics safe reads, o
   Recruitment trusted mutation program (create→reject) e o Competency Catalog
   trusted mutation boundary já incorporados; **authenticated core smoke = PASS**.
-- [NEXT_STEPS](./NEXT_STEPS.md): próxima entrega normativa é a Product Decision de
-  Career / Seniority + Position Taxonomy (raiz da faixa P1).
+- [NEXT_STEPS](./NEXT_STEPS.md): PD-021 (Approved) e ADR-0017 (Accepted)
+  versionadas; próxima entrega normativa é o Implementation Plan de Career /
+  Seniority + Position Taxonomy.
 - [MVP Plan](./MVP_PLAN.md): jornada completa até o MVP.
 - [EPICS](./EPICS.md): estado funcional das capacidades.
 - [Implementation Plan do MVP-PR1](./Execution/MVP-PR1-TENANT-MULTIUSER-ACTIVATION-IMPLEMENTATION-PLAN.md):
@@ -335,6 +339,19 @@ assignments, Import, Development authoring, Assessment admin e Feedback writes
 permanecem pendentes — Feedback bloqueado até a decisão de produto da matriz de
 transições de escrita (PD-020); privacy sign-offs (People/Development) e o
 hardening forward-only da 0084 seguem abertos.
+
+Governança da taxonomia de carreira: **PD-021 — Career / Seniority + Position
+Taxonomy (Approved)** e **ADR-0017 — Position-Seniority Profile as Career
+Assignment Boundary (Accepted)** estão versionadas. Elas fixam os eixos ortogonais
+(Departamento/Cargo/Senioridade/Nível hierárquico), o `position_seniority_profiles`
+como âncora de aplicabilidade Cargo × Senioridade (base profile com senioridade
+NULL para cargos sem senioridade), a lotação de People e a matriz de competências
+referenciando o profile, o Departamento derivado da Position, a relocação
+forward-only de `expected_level`/`weight` para a matriz, as escalas 1–5 de
+proficiência e de peso, e o gate de auditoria de homônimos antes de qualquer
+unicidade de Cargo. Nenhuma migration/código foi criado: o próximo passo normativo
+é o Implementation Plan (recorte de slices DB-first), cuja ordem final não é
+congelada aqui.
 
 ## 7. Arquitetura consolidada
 

@@ -19,6 +19,7 @@ reservados antecipadamente.
 - [0014 — Deterministic Development Template Application and Snapshots](./0014-deterministic-development-template-application-and-snapshots.md) — Accepted
 - [0015 — Tenant Multiuser Activation Architecture](./0015-tenant-multiuser-activation-architecture.md) — Accepted
 - [0016 — Invitation Delivery Architecture](./0016-invitation-delivery-architecture.md) — Proposed
+- [0017 — Position-Seniority Profile as Career Assignment Boundary](./0017-position-seniority-profile-as-career-assignment-boundary.md) — Accepted
 - [ADR-001 — Organization Sync Engine](./ADR-001-organization-sync-engine.md)
 
 A numeração paralela de ADR-001 é histórica. Novas decisões devem seguir a série

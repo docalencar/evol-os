@@ -1127,3 +1127,168 @@ navegável e matriz de autorização específica aprovada.
 - isolamento tenant sem revelar existência de selector estrangeiro;
 - nenhum bypass por `service_role` ou grant amplo de tabela;
 - nenhum conteúdo textual sai da boundary antes da autorização por row.
+
+# PD-021 — Career / Seniority + Position Taxonomy
+
+**Status:** Approved
+
+**Owner:** Product Owner
+
+## Contexto
+
+O core MVP opera Organization, People, Competency e Recruitment por trusted
+boundaries, mas o modelo de cargos não separa Departamento, Cargo, Senioridade e
+Nível hierárquico, não possui identidade de Cargo e duplica `expected_level`/
+`weight` entre o catálogo global de competências e a matriz de posição. Sem essa
+taxonomia não há progressão de carreira, comparação de competências por
+cargo/senioridade nem base coerente para Development, Promotion, Succession e
+Recruitment.
+
+## Conceitos oficiais (ortogonais, sem sobreposição)
+
+- **Departamento** — contexto organizacional (onde a função está inserida).
+- **Cargo / Position** — a função exercida; pertence a um Departamento.
+- **Senioridade** — estágio de domínio dentro de uma mesma função.
+- **Nível hierárquico** (`positions.hierarchical_level`) — posição estrutural.
+- **Time** — subunidade organizacional (entidade distinta de Departamento).
+- **Gestor** (`manager_id`) — relação de reporte.
+
+Estes conceitos nunca se confundem: senioridade ≠ nível hierárquico ≠ permissão
+(`company_members.role`) ≠ título.
+
+## Cargo (identidade)
+
+No MVP o Cargo pertence a um Departamento. A identidade conceitual de Cargo entre
+ativos é `company_id + department_id + normalized(title)`. Senioridade e nível
+hierárquico **não** integram a identidade. Assim, `Analista/RH/Júnior`,
+`Analista/RH/Pleno` e `Analista/RH/Sênior` representam **um** Cargo com
+senioridades diferentes, e `Analista/RH` difere de `Analista/Financeiro` pelo
+Departamento. **Nenhuma constraint de unicidade é criada agora**; ver o gate de
+auditoria abaixo.
+
+## Seniority Catalog
+
+`seniority_levels` é **company-owned**, configurável, ordenável (`rank`),
+archivável (`active`) e extensível. Não é enum rígida. A UX pode oferecer
+defaults/seed (Estágio, Júnior, Pleno, Sênior, Especialista, Principal), mas o
+banco não fica preso a esses nomes.
+
+## Cargo ↔ Senioridade (applicability)
+
+A aplicabilidade é modelada por **`position_seniority_profiles`** (surrogate id,
+tenant/company context, FKs compostas tenant-safe). Todo Cargo possui **pelo menos
+um** profile. Cargo que usa senioridade: um profile por senioridade aplicável.
+Cargo sem senioridade: **exatamente um base profile com `seniority_level_id =
+NULL`**. Não se cria senioridade artificial "N/A". A Pessoa nunca referencia um
+`seniority_id` isolado como source-of-truth da lotação — sempre um profile.
+
+## People / Lotação
+
+A lotação referencia **`position_seniority_profile_id`**. O Departamento é
+**derivado** (`profile → position → department`); `people.department_id` **não** é
+adicionado como segunda source-of-truth. UX cascata: Departamento → Cargo
+(filtrado por Departamento) → Senioridade (profiles aplicáveis ao Cargo) → Time
+(filtrado por Departamento) → Gestor (validado pela estrutura). Todas as
+combinações são validadas server-side, fail-closed.
+
+## Team / Manager
+
+Team permanece entidade distinta; a compatibilidade Team ↔ Departamento é
+validada; o Gestor (`manager_id`) não se confunde com o manager do Team. Team não
+é redesenhado nesta PD.
+
+## Competency source of truth
+
+A source-of-truth de expectativa de competência é a matriz
+`(position_seniority_profile_id, competency_id) → expected_level, weight,
+required, type`. O catálogo global `competencies` representa essencialmente
+`name, description, category, active/status`; as colunas atuais `expected_level`/
+`weight` do catálogo ficam **DEPRECATED forward-only** até migration própria (não
+removidas agora). `employee_competencies.current_level` = nível demonstrado.
+
+## Escala de Proficiência (1–5)
+
+Responde "quanto a competência é demonstrada?":
+
+- **1 Inicial** — conhecimento superficial; precisa de orientação frequente.
+- **2 Básico** — domina fundamentos; executa situações simples com algum apoio.
+- **3 Proficiente** — atua autonomamente no escopo típico.
+- **4 Avançado** — resolve situações complexas, melhora práticas e orienta outros.
+- **5 Referência** — define padrões, forma outros e é referência organizacional.
+
+Vale para competências técnicas, comportamentais e de liderança. Behavioral
+anchors específicos por competência ficam como evolução futura.
+
+## Escala de Peso / Importância (1–5)
+
+Responde "quanto a competência importa para este profile?" — **distinta** de
+proficiência:
+
+- **1 Complementar** · **2 Baixa** · **3 Importante** · **4 Alta** · **5 Crítica**.
+
+Nenhuma fórmula de readiness é definida nesta PD.
+
+## Competency Gap
+
+`gap = expected(profile, competency) − demonstrated(person, competency)`. Alimenta
+Development, Promotion, Succession e Recruitment. Sem fórmula de readiness/promotion
+nesta PD.
+
+## Career Movements
+
+Conceitos distintos (não a mesma coisa): progressão de senioridade (mesmo Cargo,
+muda profile); promoção vertical (muda Cargo/nível estrutural); transferência
+organizacional (muda Departamento/Cargo); movimento lateral (muda função sem
+subir nível); mudança de gestor (muda `manager_id`). Não se cria history/event-store
+estruturado agora — o Activity atual é suficiente para o MVP; histórico
+estruturado pode evoluir depois.
+
+## Recruitment
+
+O Recruitment futuro deve usar a mesma taxonomia: Position/profile é a
+source-of-truth estrutural; o Departamento é **derivado** da Position;
+`recruitment_job_openings.title` pode permanecer como rótulo apresentacional da
+vaga, **não** identidade estrutural. Os atuais `department_id`/`title` serão
+reconciliados em slice futuro, sem alteração nesta tarefa.
+
+## Job Family / Role Profile
+
+Não introduzidos agora. Podem ser evolução futura; a arquitetura escolhida
+(`position_seniority_profiles`) não impede a futura extração de Role Profile.
+
+## Invariantes de segurança / tenancy
+
+Multi-tenant estrito; `auth.uid()` autoritativo; FKs compostas tenant-safe
+(ADR-0012); trusted boundaries `SECURITY DEFINER` sem grant de tabela (ADR-0013,
+padrão 0089/0099); fail-closed; sem widening de RLS; sem `service_role`
+browser-side; nada cross-tenant.
+
+## Position uniqueness gate (obrigatório)
+
+Antes de qualquer constraint/índice de unicidade de Cargo: (1) listar cargos
+ativos; (2) normalizar títulos apenas para análise; (3) detectar duplicatas por
+`company + department + normalized title`; (4) identificar FKs afetadas; (5) o
+Product Owner decide merge/rename/archive; (6) preservar referências; (7) só então
+criar a unicidade. É um gate, não uma open question.
+
+## Decisões fechadas
+
+- Senioridade: **company-owned** com defaults/seed opcionais.
+- Aplicabilidade: **por Cargo** (não por Job Family).
+- Cargo sem senioridade: **base profile com `seniority_level_id = NULL`**.
+- Recruitment Department: **derivado da Position**.
+- Recruitment title: **rótulo apresentacional**, não identidade.
+- Homônimos existentes: **audit + decisão humana** antes da constraint.
+
+## Fora de escopo
+
+Compensation/salary/cost; candidates/hiring; algoritmos de readiness/nine-box/
+succession; behavioral anchors por competência; Job Family; Role Profile
+reutilizável; permissões por nível hierárquico; event-store histórico estruturado.
+
+## Consequências
+
+Positions ganham identidade de negócio; competências esperadas variam por
+(Cargo, Senioridade); movimentos de carreira tornam-se conceitos distintos;
+Recruitment converge para a taxonomia única; o catálogo de competências fica
+enxuto. A decisão arquitetural correspondente está registrada na ADR-0017.

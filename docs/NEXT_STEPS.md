@@ -1,13 +1,16 @@
 # Evol OS — Próxima entrega
 
-## Product Decision — Career / Seniority + Position Taxonomy
+## Implementation Plan — Career / Seniority + Position Taxonomy
 
 ### Objetivo
 
-Definir a taxonomia organizacional que serve de raiz para a faixa P1 do MVP
-Closure, antes de qualquer implementação. Esta é a próxima entrega normativa após
-a reconciliação do smoke autenticado core; ela é **uma Product Decision**, não
-implementação de código, migration ou comportamento.
+Planejar a implementação da taxonomia de carreira agora que **PD-021 (Approved)**
+e **ADR-0017 (Accepted)** estão versionadas. Esta próxima entrega é **um
+Implementation Plan** (Discovery + recorte de slices DB-first), não implementação
+de código, migration ou comportamento. A ordem final dos slices é definida no
+próprio plano; a fundação DB pode preceder a experiência, e o Human Review útil
+ocorre quando houver superfície funcional suficiente (não se congela "UI completa
+no Slice 1").
 
 ### Estado confirmado (baseline `d5db5b3`)
 
@@ -21,35 +24,32 @@ implementação de código, migration ou comportamento.
   Competency Catalog) e o ciclo de Recruitment operam por trusted boundaries sem
   reads/writes diretos protegidos.
 
-### A Product Decision deve resolver, antes de implementação
+### Governança já decidida (não reabrir)
 
-- definição de Cargo/título;
-- Departamento;
-- Senioridade (Jr / Pleno / Sênior) — hoje inexistente no schema;
-- Nível hierárquico (já existe em `positions.hierarchical_level`) e por que é
-  distinto de senioridade;
-- identidade/unicidade de Cargo (hoje homônimos coexistem, sem constraint);
-- progressão horizontal (ex.: Analista Pleno → Sênior) vs promoção vertical
-  (ex.: Analista → Coordenador);
-- relação com People (Departamento explícito na lotação; Cargo filtrado por
-  Departamento);
-- relação com Competencies (Cargo + Senioridade ↔ Competency).
+A taxonomia está resolvida por **PD-021** (Approved) e **ADR-0017** (Accepted):
+Departamento/Cargo/Senioridade/Nível hierárquico como eixos ortogonais;
+`position_seniority_profiles` como âncora de aplicabilidade Cargo × Senioridade
+(base profile com senioridade NULL para cargos sem senioridade); lotação e matriz
+de competências referenciando o profile; Departamento derivado da Position;
+`expected_level`/`weight` migrando forward-only para a matriz; escalas 1–5 de
+proficiência e de peso definidas; gate de auditoria de homônimos antes de qualquer
+unicidade de Cargo.
 
-### Ordem de dependência (registrada, não iniciada)
+### Ordem de dependência (a ser confirmada no Implementation Plan)
 
 ```text
-Career/Seniority + Position Taxonomy   (esta Product Decision)
+Seniority Catalog
         ↓
-Cargo/Senioridade ↔ Competency
+Position-Seniority Profiles (âncora de aplicabilidade)
         ↓
-Competency Assignments
+People lotação por profile (Departamento derivado)
         ↓
-Competency Gaps
+Competency matrix relocation ((profile, competency); catálogo enxuto)
         ↓
-Development / Promotion / Succession / Recruitment matching
+Competency Assignments (P1)  →  Gaps  →  Development / Promotion / Succession / Recruitment matching
 ```
 
 O backlog completo reconciliado após o smoke está registrado no
-[PROJECT_STATE](./PROJECT_STATE.md). Nenhum item P1 está pré-selecionado nem
-iniciado; a Product Decision acima é o próximo passo e não é criada neste
-documento.
+[PROJECT_STATE](./PROJECT_STATE.md). A ordem final e o recorte dos slices são
+definidos no Implementation Plan (próximo passo); nenhum slice está iniciado e o
+Implementation Plan não é criado neste documento.

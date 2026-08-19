@@ -3,6 +3,24 @@
 Este changelog registra somente grandes entregas incorporadas à `main`. Commits
 locais e branches abertas não entram aqui.
 
+## 2026-08-19 — Governança — Career / Seniority + Position Taxonomy (PD-021 + ADR-0017)
+
+- **PD-021 — Career / Seniority + Position Taxonomy: Approved** — define
+  Departamento/Cargo/Senioridade/Nível hierárquico como eixos ortogonais,
+  identidade de Cargo `(company, department, normalized title)`, catálogo de
+  senioridade company-owned, `position_seniority_profiles` como âncora de
+  aplicabilidade (base profile com senioridade NULL para cargos sem senioridade),
+  lotação e matriz de competências referenciando o profile, Departamento derivado
+  da Position, relocação forward-only de `expected_level`/`weight` para a matriz,
+  escalas 1–5 de proficiência e de peso, movimentos de carreira como conceitos
+  distintos, e o gate de auditoria de homônimos antes de qualquer unicidade;
+- **ADR-0017 — Position-Seniority Profile as Career Assignment Boundary:
+  Accepted** — registra a decisão arquitetural (profile surrogate tenant-safe como
+  entidade de aplicabilidade Position × Seniority; matriz e People referenciando
+  `profile_id`; FKs compostas por ADR-0012; alternativas rejeitadas);
+- documentação apenas: nenhuma migration/código/schema alterado; próximo passo
+  normativo = Implementation Plan da taxonomia (ordem de slices definida no plano).
+
 ## 2026-08-19 — MVP Closure — Competency Catalog trusted mutations e core smoke PASS (baseline `d5db5b3`)
 
 - **Competency Catalog Core Mutation Boundary** (migration 0099, commit

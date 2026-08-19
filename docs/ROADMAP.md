@@ -196,10 +196,13 @@ Catalog (0099) e o ciclo de Recruitment (0093–0098) por trusted boundaries, o
 **authenticated core smoke = PASS** (Auth/Tenant, Departments, Positions/Cargos,
 People, Competency Catalog, Analytics e Recruitment validados na UI, sem `42501`),
 e o Human Review core deixa de estar suspenso. O percentual do MVP não é alterado
-aqui (depende de decisão explícita do Product Owner). A próxima entrega normativa,
-registrada em `NEXT_STEPS.md`, é a Product Decision de Career / Seniority +
-Position Taxonomy — raiz da faixa P1 (Cargo/Senioridade ↔ Competency → Competency
-Assignments → Gaps → Development/Promotion/Succession/Recruitment matching). O
-backlog reconciliado pós-smoke está consolidado no `PROJECT_STATE.md`. Este
-registro é factual e não define nova prioridade além da dependência de raiz
-declarada.
+aqui (depende de decisão explícita do Product Owner). A raiz da faixa P1 — a
+taxonomia de carreira — foi decidida e versionada: **PD-021 — Career / Seniority +
+Position Taxonomy (Approved)** e **ADR-0017 — Position-Seniority Profile as Career
+Assignment Boundary (Accepted)**. A próxima entrega normativa, registrada em
+`NEXT_STEPS.md`, é o **Implementation Plan** dessa taxonomia (recorte de slices
+DB-first: Seniority Catalog → Position-Seniority Profiles → People lotação →
+Competency matrix relocation → Competency Assignments → Gaps →
+Development/Promotion/Succession/Recruitment matching), com a ordem final definida
+no próprio plano. O backlog reconciliado pós-smoke está consolidado no
+`PROJECT_STATE.md`. Este registro é factual e não inicia implementação.

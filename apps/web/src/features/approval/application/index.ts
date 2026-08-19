@@ -1,4 +1,8 @@
 export { ApproveRequest } from "./approve-request"
+export {
+  buildApprovalRequestSubmission,
+  type ApprovalRequestSubmissionPayload,
+} from "./build-approval-request-submission"
 export { CancelRequest } from "./cancel-request"
 export { CreateApprovalRequest } from "./create-approval-request"
 export { ExpireRequest } from "./expire-request"

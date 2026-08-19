@@ -194,6 +194,7 @@ const activitySchema = z
       "team",
       "position",
       "person",
+      "job_opening",
     ]),
     entity_id: uuid,
     occurred_at: timestamp,
@@ -495,7 +496,12 @@ export async function getManagementPositionCompetencies(
 
 export async function getManagementEntityTimeline(
   companyId: string,
-  entityType: "department" | "team" | "position" | "person",
+  entityType:
+    | "department"
+    | "team"
+    | "position"
+    | "person"
+    | "job_opening",
   entityId: string,
   limit = 20
 ) {

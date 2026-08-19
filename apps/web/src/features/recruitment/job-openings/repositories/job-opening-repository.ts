@@ -209,21 +209,55 @@ export async function createJobOpeningRepository() {
       companyId: string,
       jobOpeningId: string
     ) {
-      const { data, error } = await supabase
-        .from("recruitment_job_openings")
-        .select("*")
-        .eq("company_id", companyId)
-        .eq("id", jobOpeningId)
-        .is("deleted_at", null)
-        .maybeSingle()
+      // Safe detail read boundary (migration 0094) — no direct protected SELECT.
+      const { data, error } = await supabase.rpc(
+        "get_tenant_job_opening_v1",
+        {
+          p_company_id: companyId,
+          p_job_opening_id: jobOpeningId,
+        }
+      )
+
+      if (error) {
+        return { data: null, error }
+      }
 
       return {
         data: data
-          ? mapJobOpening(
-              data as JobOpeningRow
-            )
+          ? mapJobOpening(data as JobOpeningRow)
           : null,
-        error,
+        error: null,
+      }
+    },
+
+    async submitForApproval(input: {
+      companyId: string
+      jobOpeningId: string
+      aggregate: unknown
+      events: unknown
+    }) {
+      // Atomic submit boundary (migration 0094): persists the approval aggregate
+      // through the framework engine AND transitions draft -> pending_approval in
+      // one transaction. No direct protected DML in the submit path.
+      const { data, error } = await supabase.rpc(
+        "submit_tenant_job_opening_for_approval_v1",
+        {
+          p_company_id: input.companyId,
+          p_job_opening_id: input.jobOpeningId,
+          p_aggregate: input.aggregate,
+          p_events: input.events,
+        }
+      )
+
+      if (error) {
+        return { data: null, error }
+      }
+
+      return {
+        data: data
+          ? mapJobOpening(data as JobOpeningRow)
+          : null,
+        error: null,
       }
     },
 

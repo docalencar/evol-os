@@ -19,9 +19,9 @@ import {
   JOB_OPENING_WORK_MODEL_LABELS,
   jobOpeningIdSchema,
 } from "@/features/recruitment"
+import { getManagementEntityTimeline } from "@/features/dashboard-read"
 import {
   EntityTimelineSection,
-  getEntityTimeline,
   type ActivityTimelineItemViewModel,
 } from "@/features/timeline"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
@@ -117,12 +117,12 @@ export default async function JobOpeningDetailsPage({
       idResult.data.jobOpeningId
     ),
     getJobOpeningFormOptions(companyId),
-    getEntityTimeline({
+    getManagementEntityTimeline(
       companyId,
-      entityType: "job_opening",
-      entityId: idResult.data.jobOpeningId,
-      limit: 20,
-    }),
+      "job_opening",
+      idResult.data.jobOpeningId,
+      20
+    ),
   ])
 
   if (!jobOpening) {

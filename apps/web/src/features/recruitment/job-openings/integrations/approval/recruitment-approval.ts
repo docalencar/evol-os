@@ -1,6 +1,8 @@
 import type {
+  ApprovalApplicationResult,
   ApprovalRequest,
   ApprovalRequestApplicationResult,
+  ApprovalRequestSubmissionPayload,
   ApproveRequestCommand,
   CreateApprovalRequestCommand,
   RejectRequestCommand,
@@ -21,6 +23,12 @@ export type RecruitmentApprovalJobOpeningRepository = {
     companyId: string,
     jobOpeningId: string
   ): Promise<RepositoryResult<JobOpening>>
+  submitForApproval(input: {
+    companyId: string
+    jobOpeningId: string
+    aggregate: unknown
+    events: unknown
+  }): Promise<RepositoryResult<JobOpening>>
   updateStatus(input: {
     companyId: string
     jobOpeningId: string
@@ -35,6 +43,12 @@ type ApprovalExecutor<TCommand> = {
     command: TCommand
   ): Promise<ApprovalRequestApplicationResult>
 }
+
+// Builds the serialized approval aggregate + domain events from the framework
+// (ApprovalRequest.request + the framework serializers) without persisting.
+export type BuildApprovalRequestSubmission = (
+  command: CreateApprovalRequestCommand
+) => ApprovalApplicationResult<ApprovalRequestSubmissionPayload>
 
 export type FindRecruitmentApprovalRequests = (input: {
   companyId: string
@@ -160,7 +174,7 @@ function requireActiveAssignment(
 export class CreateRecruitmentApproval {
   constructor(
     private readonly jobOpenings: RecruitmentApprovalJobOpeningRepository,
-    private readonly createApproval: ApprovalExecutor<CreateApprovalRequestCommand>,
+    private readonly buildSubmission: BuildApprovalRequestSubmission,
     private readonly generateId: IdGenerator
   ) {}
 
@@ -179,7 +193,9 @@ export class CreateRecruitmentApproval {
       )
     }
 
-    const result = await this.createApproval.execute({
+    // Reuse the Approval Framework to construct + serialize the aggregate and
+    // its domain events (no reconstruction/duplication of the engine here).
+    const built = this.buildSubmission({
       id: this.generateId(),
       subject: {
         companyId: command.companyId,
@@ -234,17 +250,26 @@ export class CreateRecruitmentApproval {
       supersedesRequestId: null,
     })
 
-    if (result.success === false) {
-      throw applicationFailure(result)
+    if (built.success === false) {
+      throw applicationFailure(built)
     }
 
-    return synchronizeStatus(this.jobOpenings, {
+    // Single atomic boundary: persist the approval aggregate through the engine
+    // AND transition draft -> pending_approval in one transaction.
+    const result = await this.jobOpenings.submitForApproval({
       companyId: command.companyId,
       jobOpeningId: jobOpening.id,
-      status: "pending_approval",
-      approverId: command.approverId,
-      approvedAt: null,
+      aggregate: built.data.aggregate,
+      events: built.data.events,
     })
+
+    if (result.error || !result.data) {
+      throw new Error(
+        "Não foi possível enviar a vaga para aprovação."
+      )
+    }
+
+    return result.data
   }
 }
 

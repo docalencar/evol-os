@@ -1,7 +1,7 @@
 import {
   ApproveRequest,
-  CreateApprovalRequest,
   RejectRequest,
+  buildApprovalRequestSubmission,
   createApprovalRequestRepository,
   getApprovalRequests,
 } from "@/features/approval"
@@ -23,9 +23,6 @@ import type {
 import {
   recordJobOpeningActivity,
 } from "./record-job-opening-activity"
-import {
-  validateJobOpeningRelations,
-} from "./validate-job-opening-relations"
 
 const ALLOWED_TRANSITIONS: Record<
   JobOpeningStatus,
@@ -145,17 +142,12 @@ export async function changeJobOpeningStatus(
       throw new Error("Informe o aprovador da vaga.")
     }
 
-    await validateJobOpeningRelations({
-      companyId: input.companyId,
-      approverId: input.values.approverId,
-    })
-
-    const approvalRepository =
-      await createApprovalRequestRepository()
-
+    // Approver/tenant validation and the draft->pending_approval transition are
+    // enforced atomically inside the 0094 boundary; the approval aggregate is
+    // built by the Approval Framework and persisted through that boundary.
     return new CreateRecruitmentApproval(
       repository,
-      new CreateApprovalRequest(approvalRepository),
+      buildApprovalRequestSubmission,
       crypto.randomUUID
     ).execute({
       companyId: input.companyId,

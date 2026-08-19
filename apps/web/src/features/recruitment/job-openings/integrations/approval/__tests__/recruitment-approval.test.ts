@@ -4,7 +4,6 @@ import test from "node:test"
 import type {
   ApprovalRequestApplicationResult,
   ApproveRequestCommand,
-  CreateApprovalRequestCommand,
   RejectRequestCommand,
 } from "../../../../../approval/public-api"
 import {
@@ -18,6 +17,9 @@ import type {
   JobOpening,
   JobOpeningStatus,
 } from "../../../types/job-opening"
+import {
+  buildApprovalRequestSubmission,
+} from "../../../../../approval/public-api"
 import {
   ApproveRecruitmentRequest,
   CreateRecruitmentApproval,
@@ -129,12 +131,32 @@ class FakeJobOpeningRepository
     approvedAt: string | null
   }> = []
   failUpdate = false
+  submissions: Array<{ aggregate: unknown; events: unknown }> = []
 
   constructor(jobOpening: JobOpening) {
     this.jobOpening = jobOpening
   }
 
   async findById() {
+    return { data: this.jobOpening, error: null }
+  }
+
+  async submitForApproval(input: {
+    companyId: string
+    jobOpeningId: string
+    aggregate: unknown
+    events: unknown
+  }) {
+    this.submissions.push({
+      aggregate: input.aggregate,
+      events: input.events,
+    })
+    this.jobOpening = {
+      ...this.jobOpening,
+      status: "pending_approval",
+      approverId: approverPersonId,
+      approvedAt: null,
+    }
     return { data: this.jobOpening, error: null }
   }
 
@@ -191,12 +213,11 @@ function idGenerator() {
 
 test("cria solicitação pelo Approval e sincroniza pending_approval", async () => {
   const repository = new FakeJobOpeningRepository(createJobOpening())
-  const executor = new FakeApprovalExecutor<CreateApprovalRequestCommand>(
-    successfulResult()
-  )
+  // Reuse the real Approval Framework builder: it constructs + serializes the
+  // aggregate/events, and persistence goes through the atomic submit boundary.
   const service = new CreateRecruitmentApproval(
     repository,
-    executor,
+    buildApprovalRequestSubmission,
     idGenerator()
   )
 
@@ -209,15 +230,23 @@ test("cria solicitação pelo Approval e sincroniza pending_approval", async () 
     requestedAt: occurredAt,
   })
 
-  assert.equal(executor.command?.subject.module, "recruitment")
-  assert.equal(executor.command?.subject.entityType, "job_opening")
+  assert.equal(repository.submissions.length, 1)
+  const aggregate = repository.submissions[0]?.aggregate as {
+    request: {
+      module: string
+      entity_type: string
+      entity_id: string
+    }
+    assignments: Array<{ principal_id: string }>
+  }
+  assert.equal(aggregate.request.module, "recruitment")
+  assert.equal(aggregate.request.entity_type, "job_opening")
+  assert.equal(aggregate.request.entity_id, jobOpeningId)
   assert.equal(
-    executor.command?.planSnapshot.stages[0]?.assignments[0]
-      ?.principal.principalId,
+    aggregate.assignments[0]?.principal_id,
     approverPersonId
   )
   assert.equal(result.status, "pending_approval")
-  assert.equal(result.approverId, approverPersonId)
 })
 
 test("aprova exclusivamente pelo Approval e sincroniza a vaga", async () => {

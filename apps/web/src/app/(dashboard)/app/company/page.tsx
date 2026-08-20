@@ -106,6 +106,27 @@ export default async function CompanyPage() {
           </Link>
         </div>
       </Card>
+
+      <Card>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold">
+              Senioridades
+            </h3>
+
+            <p className="mt-2 text-sm text-slate-600">
+              Defina os níveis de experiência usados nos
+              cargos da empresa.
+            </p>
+          </div>
+
+          <Link href="/app/company/seniority">
+            <Button variant="secondary">
+              Gerenciar senioridades
+            </Button>
+          </Link>
+        </div>
+      </Card>
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import Link from "next/link"
 
 import { DataTable } from "@/components/shared/data-table"
+import { Button } from "@/components/ui/button"
 
 import type {
   PositionEmploymentType,
@@ -76,6 +77,12 @@ export function PositionTable({
           header: "Ações",
           render: (position) => (
             <div className="flex items-center gap-2">
+              <Link href={`/app/company/positions/${position.id}`}>
+                <Button variant="secondary" size="sm">
+                  Ver detalhes
+                </Button>
+              </Link>
+
               <PositionEditDialog
                 companyId={position.company_id}
                 departments={departments}

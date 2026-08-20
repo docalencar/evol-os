@@ -1,11 +1,13 @@
+import Link from "next/link"
 import { redirect } from "next/navigation"
 
+import { ArrowLeft } from "lucide-react"
 import { z } from "zod"
 
 import { DashboardSection } from "@/components/dashboard"
 import { PageHeader } from "@/components/shared/page-header"
-import { getCompetencies } from "@/features/competencies"
 import {
+  getManagementCompetencies,
   getManagementDepartments,
   getManagementEntityTimeline,
   getManagementPeople,
@@ -24,6 +26,10 @@ import {
   PositionWorkspaceOverview,
   presentPositionWorkspace,
 } from "@/features/organization/positions"
+import {
+  PositionSenioritiesSection,
+  getPositionSeniorities,
+} from "@/features/organization/position-seniorities"
 import { type Employee } from "@/features/people"
 import {
   EntityTimelineSection,
@@ -102,6 +108,7 @@ export default async function PositionDetailsPage({
     employeesData,
     departments,
     positionTimeline,
+    positionSeniorities,
   ] = await Promise.all([
     getManagementPositions(companyId).then(
       (rows) =>
@@ -111,7 +118,7 @@ export default async function PositionDetailsPage({
       companyId,
       positionId
     ),
-    getCompetencies(companyId),
+    getManagementCompetencies(companyId),
     getManagementPositionRequirements(
       companyId,
       positionId
@@ -124,6 +131,7 @@ export default async function PositionDetailsPage({
       positionId,
       20
     ),
+    getPositionSeniorities(companyId, positionId),
   ])
 
   if (!position) {
@@ -188,6 +196,14 @@ export default async function PositionDetailsPage({
 
   return (
     <div className="space-y-8">
+      <Link
+        href="/app/company/positions"
+        className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Voltar para cargos
+      </Link>
+
       <PageHeader
         title={workspace.name}
         description={workspace.description}
@@ -222,6 +238,12 @@ export default async function PositionDetailsPage({
           requirements={positionRequirements}
         />
       </DashboardSection>
+
+      <PositionSenioritiesSection
+        positionId={position.id}
+        applicable={positionSeniorities.applicable}
+        available={positionSeniorities.available}
+      />
 
       <DashboardSection
         title="Histórico do cargo"

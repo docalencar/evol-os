@@ -144,6 +144,13 @@ insert into public.teams (id, company_id, name, parent_team_id) values
 insert into public.positions (id, company_id, name, department_id) values
   ('89000000-0000-4000-8000-000000000501', '89000000-0000-4000-8000-000000000101', 'Alpha Existing Position', '89000000-0000-4000-8000-000000000301'),
   ('89000000-0000-4000-8000-000000000502', '89000000-0000-4000-8000-000000000102', 'Beta Position', '89000000-0000-4000-8000-000000000302');
+-- 0103 invariant: a live position must have an active base profile before a
+-- Person can be assigned to it. Position 501 is a directly-inserted fixture used
+-- in Person create/update happy paths, so it needs its base profile explicitly.
+-- (502 is only ever a foreign/rejected reference and never reaches base-profile
+-- derivation, so no base profile is required for it.)
+insert into public.position_seniority_profiles (company_id, position_id, seniority_level_id, active) values
+  ('89000000-0000-4000-8000-000000000101', '89000000-0000-4000-8000-000000000501', null, true);
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{}', true);

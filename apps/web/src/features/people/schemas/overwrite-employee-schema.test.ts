@@ -12,6 +12,7 @@ const complete = {
   status: "active",
   teamId: "",
   positionId: "",
+  positionSeniorityProfileId: "",
   managerId: "",
   discProfile: "",
 } as const

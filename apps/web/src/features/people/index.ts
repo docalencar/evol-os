@@ -49,6 +49,11 @@ export type {
   EmployeeHireInPeriod,
 } from "./queries/get-employee-hires-in-period"
 export { getEmployeeById } from "./queries/get-employee-by-id"
+export {
+  getPeopleSeniorityOptions,
+  type PositionSeniorityOption,
+  type SeniorityOptionsByPosition,
+} from "./queries/get-people-seniority-options"
 export { getRoles } from "./queries/get-roles"
 export { getRoleById } from "./queries/get-role-by-id"
 

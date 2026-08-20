@@ -1,3 +1,4 @@
+import { EntityBackLink } from "@/components/shared/entity-back-link"
 import { PageHeader } from "@/components/shared/page-header"
 import { Card } from "@/components/ui/card"
 import {
@@ -14,6 +15,11 @@ export default async function SeniorityLevelsPage() {
 
   return (
     <div className="space-y-6">
+      <EntityBackLink
+        href="/app/company"
+        label="Voltar para empresa"
+      />
+
       <PageHeader
         title="Senioridades"
         description="Defina os níveis de experiência usados nos cargos da empresa."

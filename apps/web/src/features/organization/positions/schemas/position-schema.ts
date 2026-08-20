@@ -43,6 +43,12 @@ export const createPositionSchema = z.object({
   employmentType: z.enum(POSITION_EMPLOYMENT_TYPES),
 
   travelRequirement: z.enum(POSITION_TRAVEL_REQUIREMENTS),
+
+  // Complete desired set of applicable seniority levels (desired-set overwrite).
+  // Empty/absent means the cargo uses no specific seniority (base only).
+  seniorityLevelIds: z
+    .array(z.string().uuid("Senioridade inválida."))
+    .optional(),
 })
 
 export type CreatePositionInput = z.infer<typeof createPositionSchema>

@@ -8,6 +8,7 @@ import {
   InfoCard,
 } from "@/components/dashboard"
 
+import { EntityBackLink } from "@/components/shared/entity-back-link"
 import { PageHeader } from "@/components/shared/page-header"
 import {
   getManagementDepartments,
@@ -169,6 +170,11 @@ export default async function TeamDetailsPage({
 
   return (
     <div className="space-y-8">
+      <EntityBackLink
+        href="/app/company/teams"
+        label="Voltar para times"
+      />
+
       <PageHeader
         title={details.name}
         description={details.description}

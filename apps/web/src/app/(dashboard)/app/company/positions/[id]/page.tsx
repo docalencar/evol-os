@@ -212,6 +212,23 @@ export default async function PositionDetailsPage({
             companyId={companyId}
             departments={departmentOptions}
             position={position}
+            seniorityLevels={[
+              ...positionSeniorities.applicable.map(
+                (item) => ({
+                  id: item.seniorityLevelId,
+                  label: item.label,
+                })
+              ),
+              ...positionSeniorities.available.map(
+                (item) => ({
+                  id: item.id,
+                  label: item.label,
+                })
+              ),
+            ]}
+            initialSeniorityLevelIds={positionSeniorities.applicable.map(
+              (item) => item.seniorityLevelId
+            )}
           />
         }
       />

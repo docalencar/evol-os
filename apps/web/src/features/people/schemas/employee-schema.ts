@@ -1,5 +1,7 @@
 import { z } from "zod"
 
+import { DISC_PROFILE_VALUES } from "../constants/disc-profile"
+
 export const employeeStatusSchema = z.enum([
   "active",
   "inactive",
@@ -7,24 +9,7 @@ export const employeeStatusSchema = z.enum([
   "terminated",
 ])
 
-export const employeeDiscProfileSchema = z.enum([
-  "D",
-  "I",
-  "S",
-  "C",
-  "ID",
-  "IS",
-  "IC",
-  "DI",
-  "DS",
-  "DC",
-  "SI",
-  "SD",
-  "SC",
-  "CI",
-  "CD",
-  "CS",
-])
+export const employeeDiscProfileSchema = z.enum(DISC_PROFILE_VALUES)
 
 export const createEmployeeSchema = z.object({
   fullName: z
@@ -50,6 +35,12 @@ export const createEmployeeSchema = z.object({
   teamId: z.string().uuid().optional().or(z.literal("")),
 
   positionId: z.string().uuid().optional().or(z.literal("")),
+
+  positionSeniorityProfileId: z
+    .string()
+    .uuid()
+    .optional()
+    .or(z.literal("")),
 
   managerId: z.string().uuid().optional().or(z.literal("")),
 
@@ -81,6 +72,10 @@ export const overwriteEmployeeSchema = z.object({
   status: employeeStatusSchema,
   teamId: z.string().uuid("Time inválido.").or(z.literal("")),
   positionId: z.string().uuid("Cargo inválido.").or(z.literal("")),
+  positionSeniorityProfileId: z
+    .string()
+    .uuid("Senioridade inválida.")
+    .or(z.literal("")),
   managerId: z.string().uuid("Gestor inválido.").or(z.literal("")),
   discProfile: employeeDiscProfileSchema.or(z.literal("")),
 })

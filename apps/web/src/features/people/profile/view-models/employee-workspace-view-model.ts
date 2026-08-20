@@ -17,6 +17,8 @@ export type EmployeeWorkspaceOrganizationViewModel = {
   positionId: string | null
   positionLabel: string
 
+  seniorityLabel: string
+
   teamId: string | null
   teamLabel: string
 

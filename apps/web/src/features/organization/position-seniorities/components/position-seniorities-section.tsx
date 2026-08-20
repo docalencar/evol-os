@@ -16,8 +16,8 @@ export function PositionSenioritiesSection({
 }: PositionSenioritiesSectionProps) {
   return (
     <DashboardSection
-      title="Senioridades aplicáveis"
-      description="Defina quais níveis de senioridade se aplicam a este cargo. Senioridade indica o grau de experiência dentro do cargo — é diferente do nível hierárquico."
+      title="Senioridades aplicáveis a este cargo"
+      description="Escolha, a partir do catálogo de senioridades da empresa (Empresa → Senioridades), quais níveis se aplicam a este cargo. Apenas as senioridades aplicadas aqui ficam disponíveis para as pessoas deste cargo. Senioridade indica o grau de experiência dentro do cargo — é diferente do nível hierárquico."
       actions={
         available.length > 0 ? (
           <AddPositionSeniorityDialog

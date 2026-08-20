@@ -4,6 +4,7 @@ import { z } from "zod"
 
 import { createServerDatabase } from "@/lib/database/server-database"
 import type { ActivityTimelineItemViewModel } from "@/features/timeline/view-models/activity-timeline-item-view-model"
+import { DISC_PROFILE_VALUES } from "@/features/people/constants/disc-profile"
 
 import { createTenantDashboardReadRepository } from "../repositories/tenant-dashboard-read-repository"
 
@@ -11,6 +12,9 @@ const uuid = z.string().uuid()
 const nullableUuid = uuid.nullable()
 const timestamp = z.string().datetime({ offset: true })
 const nullableText = z.string().nullable()
+// DISC read domain must match the write contract (all primary + two-letter
+// combinations). Still strict + nullable: genuinely invalid values fail loud.
+const nullableDiscProfile = z.enum(DISC_PROFILE_VALUES).nullable()
 
 const personSchema = z
   .object({
@@ -28,20 +32,20 @@ const personSchema = z
     team_name: nullableText,
     position_id: nullableUuid,
     position_name: nullableText,
-    disc_profile: z.enum(["D", "I", "S", "C"]).nullable(),
+    disc_profile: nullableDiscProfile,
     avatar_url: nullableText,
     created_at: timestamp,
     updated_at: timestamp,
   })
   .strict()
 
-// Historical variant of the People read contract for the v2 boundary
-// (get_tenant_people_management_v2 / get_tenant_person_profile_v2). It differs
-// from personSchema in exactly one field: `status` also admits "terminated"
-// (v2 returns all lifecycle statuses; v1 excludes terminated). Every other
-// column — including the DISC profile enum — is validated identically to v1 so
-// the historical output stays structurally compatible with the shared Employee
-// contract consumed by the People workspace.
+// Historical variant of the People read contract for the v3 boundary
+// (get_tenant_people_management_v3 / get_tenant_person_profile_v3). It differs
+// from personSchema in two ways: `status` also admits "terminated" (v3 returns
+// all lifecycle statuses; v1 excludes terminated), and it carries the additive
+// seniority columns. Every other column — including the DISC profile enum — is
+// validated identically to v1 so the historical output stays structurally
+// compatible with the shared Employee contract consumed by the People workspace.
 const historicalPersonSchema = z
   .object({
     person_id: uuid,
@@ -58,7 +62,14 @@ const historicalPersonSchema = z
     team_name: nullableText,
     position_id: nullableUuid,
     position_name: nullableText,
-    disc_profile: z.enum(["D", "I", "S", "C"]).nullable(),
+    // Additive v3 seniority fields (assigned profile + resolved label). The
+    // seniority columns are NULL for a base assignment and resolve historical
+    // labels even when the profile/seniority has since been archived.
+    position_seniority_profile_id: nullableUuid,
+    seniority_level_id: nullableUuid,
+    seniority_code: nullableText,
+    seniority_label: nullableText,
+    disc_profile: nullableDiscProfile,
     avatar_url: nullableText,
     created_at: timestamp,
     updated_at: timestamp,
@@ -288,7 +299,7 @@ export async function getManagementPeopleIncludingTerminated(
   companyId: string
 ) {
   const rows = await rpcRows(
-    "get_tenant_people_management_v2",
+    "get_tenant_people_management_v3",
     { p_company_id: companyId },
     z.array(historicalPersonSchema)
   )
@@ -300,7 +311,7 @@ export async function getManagementPersonIncludingTerminated(
   personId: string
 ) {
   const rows = await rpcRows(
-    "get_tenant_person_profile_v2",
+    "get_tenant_person_profile_v3",
     { p_company_id: companyId, p_person_id: personId },
     z.array(historicalPersonSchema)
   )
@@ -329,6 +340,10 @@ function getHistoricalPeopleFromRows(
     team_name: row.team_name,
     position_id: row.position_id,
     position_name: row.position_name,
+    position_seniority_profile_id: row.position_seniority_profile_id,
+    seniority_level_id: row.seniority_level_id,
+    seniority_code: row.seniority_code,
+    seniority_label: row.seniority_label,
     teams: row.team_name ? { name: row.team_name } : null,
     positions: row.position_name
       ? { name: row.position_name }

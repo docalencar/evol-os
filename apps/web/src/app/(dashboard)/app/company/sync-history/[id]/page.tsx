@@ -2,6 +2,7 @@ import {
   notFound,
 } from "next/navigation"
 
+import { EntityBackLink } from "@/components/shared/entity-back-link"
 import {
   OrganizationRollbackPreview,
   OrganizationSyncExecutionDetails,
@@ -48,6 +49,11 @@ export default async function OrganizationSyncExecutionDetailsPage({
 
   return (
     <div className="space-y-8">
+      <EntityBackLink
+        href="/app/company/sync-history"
+        label="Voltar para histórico de sincronização"
+      />
+
       <OrganizationSyncExecutionDetails
         execution={execution}
       />

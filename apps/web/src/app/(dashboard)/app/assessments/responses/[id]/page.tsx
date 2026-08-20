@@ -7,6 +7,7 @@ import {
   presentAssessmentFeedback,
   type AssessmentQuestion,
 } from "@/features/assessments"
+import { EntityBackLink } from "@/components/shared/entity-back-link"
 import { getAssessmentResponsePageReadModel } from "@/features/assessment-feedback-read"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
@@ -67,6 +68,11 @@ export default async function AssessmentResponsePage({
 
     return (
       <div className="space-y-8">
+        <EntityBackLink
+          href="/app/assessments"
+          label="Voltar para avaliações"
+        />
+
         {feedback ? (
           <AssessmentFeedbackCard
             feedback={feedback}

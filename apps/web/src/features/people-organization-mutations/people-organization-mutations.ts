@@ -50,6 +50,9 @@ export type PersonMutationInput = Readonly<{
   positionId?: Value
   managerId?: Value
   discProfile?: Value
+  // Explicit seniority profile of the selected position. Empty/absent means the
+  // position's active base profile (resolved by the v2 boundary).
+  positionSeniorityProfileId?: Value
 }>
 
 export function createPerson(
@@ -57,7 +60,7 @@ export function createPerson(
   input: PersonMutationInput,
   submissionId: string
 ): Promise<MutationResult> {
-  return callMutation("create_tenant_person_v1", {
+  return callMutation("create_tenant_person_v2", {
     p_company_id: companyId,
     p_full_name: nn(input.fullName),
     p_email: nn(input.email),
@@ -70,6 +73,7 @@ export function createPerson(
     p_manager_id: nn(input.managerId),
     p_disc_profile: nn(input.discProfile),
     p_idempotency_key: intentKey("person:create", companyId, submissionId),
+    p_position_seniority_profile_id: nn(input.positionSeniorityProfileId),
   })
 }
 
@@ -78,7 +82,7 @@ export function updatePerson(
   personId: string,
   input: PersonMutationInput
 ): Promise<MutationResult> {
-  return callMutation("update_tenant_person_v1", {
+  return callMutation("update_tenant_person_v2", {
     p_company_id: companyId,
     p_person_id: personId,
     p_full_name: nn(input.fullName),
@@ -93,6 +97,7 @@ export function updatePerson(
     p_position_id: nn(input.positionId),
     p_manager_id: nn(input.managerId),
     p_disc_profile: nn(input.discProfile),
+    p_position_seniority_profile_id: nn(input.positionSeniorityProfileId),
   })
 }
 
@@ -214,6 +219,9 @@ export type PositionMutationInput = Readonly<{
   workModel?: Value
   employmentType?: Value
   travelRequirement?: Value
+  // Complete desired set of applicable seniority levels (a desired-set overwrite,
+  // resolved atomically by the DB boundary). Empty/absent = no specific seniority.
+  seniorityLevelIds?: readonly string[]
 }>
 
 export function createPosition(
@@ -221,7 +229,7 @@ export function createPosition(
   input: PositionMutationInput,
   submissionId: string
 ): Promise<MutationResult> {
-  return callMutation("create_tenant_position_v1", {
+  return callMutation("create_tenant_position_with_seniorities_v1", {
     p_company_id: companyId,
     p_name: nn(input.name),
     p_description: nn(input.description),
@@ -237,6 +245,7 @@ export function createPosition(
       companyId,
       submissionId
     ),
+    p_seniority_level_ids: [...(input.seniorityLevelIds ?? [])],
   })
 }
 
@@ -245,7 +254,7 @@ export function updatePosition(
   positionId: string,
   input: PositionMutationInput
 ): Promise<MutationResult> {
-  return callMutation("update_tenant_position_v1", {
+  return callMutation("update_tenant_position_with_seniorities_v1", {
     p_company_id: companyId,
     p_position_id: positionId,
     p_name: nn(input.name),
@@ -257,6 +266,7 @@ export function updatePosition(
     p_work_model: nn(input.workModel),
     p_employment_type: nn(input.employmentType),
     p_travel_requirement: nn(input.travelRequirement),
+    p_seniority_level_ids: [...(input.seniorityLevelIds ?? [])],
   })
 }
 

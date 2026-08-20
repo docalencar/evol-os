@@ -27,6 +27,11 @@ export function EmployeeProfileSidebar({
               organization.positionLabel,
           },
           {
+            label: "Senioridade",
+            value:
+              organization.seniorityLabel,
+          },
+          {
             label: "Time",
             value:
               organization.teamLabel,

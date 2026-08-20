@@ -21,6 +21,7 @@ import { newSubmissionId } from "@/features/people-organization-mutations/submis
 
 import { createEmployeeAction } from "../actions/create-employee-action"
 import { updateEmployeeAction } from "../actions/update-employee-action"
+import type { SeniorityOptionsByPosition } from "../queries/get-people-seniority-options"
 import type { Employee } from "../types/employee"
 import {
   EmployeeOrganizationStep,
@@ -49,6 +50,7 @@ type EmployeeFormProps = {
   teams?: EmployeeSelectOption[]
   positions?: EmployeeSelectOption[]
   managers?: EmployeeSelectOption[]
+  seniorityOptionsByPosition?: SeniorityOptionsByPosition
   onSuccess?: () => void
   onCancel?: () => void
 }
@@ -86,6 +88,7 @@ export function EmployeeForm({
   teams = [],
   positions = [],
   managers = [],
+  seniorityOptionsByPosition = {},
   onSuccess,
   onCancel,
 }: EmployeeFormProps) {
@@ -109,8 +112,48 @@ export function EmployeeForm({
     useState(employee?.team_id ?? "")
   const [positionId, setPositionId] =
     useState(employee?.position_id ?? "")
+  // Preselect the current SPECIFIC seniority on edit; a base assignment (no
+  // seniority_level_id) starts as "Sem senioridade específica" ("").
+  const initialSeniorityProfileId = employee?.seniority_level_id
+    ? (employee?.position_seniority_profile_id ?? "")
+    : ""
+  const [
+    positionSeniorityProfileId,
+    setPositionSeniorityProfileId,
+  ] = useState(initialSeniorityProfileId)
   const [managerId, setManagerId] =
     useState(employee?.manager_id ?? "")
+
+  // Changing the position must never leave a stale seniority selected; the DB
+  // mismatch error is only the fail-closed backstop, not normal UX.
+  function handlePositionIdChange(value: string) {
+    setPositionId(value)
+    setPositionSeniorityProfileId("")
+  }
+
+  const positionSeniorityOptions =
+    seniorityOptionsByPosition[positionId] ?? []
+
+  // A current specific assignment whose profile is no longer among the position's
+  // active options is historical (its applicability/seniority was archived). It
+  // must remain selectable so an unrelated edit round-trips it unchanged (0105),
+  // but it is never offered as a new choice.
+  const currentHistoricalSeniority =
+    employee?.seniority_level_id &&
+    employee?.position_seniority_profile_id &&
+    employee.position_id === positionId &&
+    positionSeniorityProfileId ===
+      employee.position_seniority_profile_id &&
+    !positionSeniorityOptions.some(
+      (option) =>
+        option.profileId ===
+        employee.position_seniority_profile_id
+    )
+      ? {
+          profileId: employee.position_seniority_profile_id,
+          label: employee.seniority_label ?? "Senioridade",
+        }
+      : null
   const [discProfile, setDiscProfile] =
     useState(employee?.disc_profile ?? "")
   const [hireDate, setHireDate] =
@@ -176,6 +219,9 @@ export function EmployeeForm({
       positionId: String(
         formData.get("positionId") ?? ""
       ),
+      positionSeniorityProfileId: String(
+        formData.get("positionSeniorityProfileId") ?? ""
+      ),
       managerId: String(
         formData.get("managerId") ?? ""
       ),
@@ -237,6 +283,11 @@ export function EmployeeForm({
         type="hidden"
         name="positionId"
         value={positionId}
+      />
+      <input
+        type="hidden"
+        name="positionSeniorityProfileId"
+        value={positionSeniorityProfileId}
       />
       <input
         type="hidden"
@@ -319,12 +370,24 @@ export function EmployeeForm({
               teamId={teamId}
               positionId={positionId}
               managerId={managerId}
+              seniorityOptions={
+                positionSeniorityOptions
+              }
+              positionSeniorityProfileId={
+                positionSeniorityProfileId
+              }
+              currentHistoricalSeniority={
+                currentHistoricalSeniority
+              }
               onTeamIdChange={setTeamId}
               onPositionIdChange={
-                setPositionId
+                handlePositionIdChange
               }
               onManagerIdChange={
                 setManagerId
+              }
+              onPositionSeniorityProfileIdChange={
+                setPositionSeniorityProfileId
               }
             />
           </ProductWizardStep>

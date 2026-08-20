@@ -1,10 +1,9 @@
-import Link from "next/link"
-
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 
 import { EmployeeEditDialog } from "../../components/employee-edit-dialog"
+import type { SeniorityOptionsByPosition } from "../../queries/get-people-seniority-options"
 import type {
   Employee,
 } from "../../types/employee"
@@ -18,6 +17,7 @@ type EmployeeProfileHeaderProps = {
   employee: Employee
   header: EmployeeWorkspaceHeaderViewModel
   options: EmployeeWorkspaceOptionsViewModel
+  seniorityOptionsByPosition?: SeniorityOptionsByPosition
 }
 
 export function EmployeeProfileHeader({
@@ -25,6 +25,7 @@ export function EmployeeProfileHeader({
   employee,
   header,
   options,
+  seniorityOptionsByPosition,
 }: EmployeeProfileHeaderProps) {
   return (
     <Card>
@@ -52,18 +53,15 @@ export function EmployeeProfileHeader({
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Link href="/app/people">
-            <Button variant="secondary">
-              Voltar
-            </Button>
-          </Link>
-
           <EmployeeEditDialog
             companyId={companyId}
             employee={employee}
             teams={options.teams}
             positions={options.positions}
             managers={options.managers}
+            seniorityOptionsByPosition={
+              seniorityOptionsByPosition
+            }
             trigger={
               <Button>
                 Editar perfil

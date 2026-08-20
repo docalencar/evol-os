@@ -6,6 +6,12 @@ export type PeopleOrganizationMutationErrorCode =
   | "TENANT_REFERENCE_INVALID"
   | "PERSON_ACCESS_CONFLICT"
   | "ORGANIZATION_HIERARCHY_CYCLE"
+  | "POSITION_SENIORITY_PROFILE_POSITION_MISMATCH"
+  | "POSITION_SENIORITY_PROFILE_NOT_FOUND"
+  | "POSITION_SENIORITY_PROFILE_ARCHIVED"
+  | "POSITION_SENIORITY_PROFILE_INCOHERENT"
+  | "SENIORITY_LEVEL_ARCHIVED"
+  | "SENIORITY_LEVEL_NOT_FOUND"
   | "VALIDATION_FAILED"
   | "CONFLICT"
   | "IDEMPOTENCY_CONFLICT"
@@ -27,6 +33,18 @@ const PUBLIC_MESSAGES: Record<
     "Não é possível concluir: isso removeria o acesso de um responsável obrigatório da empresa.",
   ORGANIZATION_HIERARCHY_CYCLE:
     "Essa alteração criaria um ciclo na hierarquia da organização.",
+  POSITION_SENIORITY_PROFILE_POSITION_MISMATCH:
+    "A senioridade selecionada não pertence ao cargo escolhido.",
+  POSITION_SENIORITY_PROFILE_NOT_FOUND:
+    "A senioridade selecionada não foi encontrada para este cargo.",
+  POSITION_SENIORITY_PROFILE_ARCHIVED:
+    "A senioridade selecionada está arquivada e não pode ser atribuída.",
+  POSITION_SENIORITY_PROFILE_INCOHERENT:
+    "A combinação de cargo e senioridade é inválida.",
+  SENIORITY_LEVEL_ARCHIVED:
+    "Essa senioridade está arquivada e não pode ser atribuída.",
+  SENIORITY_LEVEL_NOT_FOUND:
+    "Uma das senioridades selecionadas é inválida ou não está mais disponível.",
   VALIDATION_FAILED:
     "Verifique os dados informados e tente novamente.",
   CONFLICT:
@@ -40,6 +58,12 @@ const PUBLIC_MESSAGES: Record<
 // Ordered longest-first so that specific codes win over shorter substrings
 // (e.g. PERSON_ACCESS_CONFLICT / IDEMPOTENCY_CONFLICT before CONFLICT).
 const KNOWN_CODES: PeopleOrganizationMutationErrorCode[] = [
+  "POSITION_SENIORITY_PROFILE_POSITION_MISMATCH",
+  "POSITION_SENIORITY_PROFILE_INCOHERENT",
+  "POSITION_SENIORITY_PROFILE_NOT_FOUND",
+  "POSITION_SENIORITY_PROFILE_ARCHIVED",
+  "SENIORITY_LEVEL_ARCHIVED",
+  "SENIORITY_LEVEL_NOT_FOUND",
   "ORGANIZATION_ENTITY_NOT_FOUND",
   "ORGANIZATION_HIERARCHY_CYCLE",
   "PERSON_ACCESS_CONFLICT",

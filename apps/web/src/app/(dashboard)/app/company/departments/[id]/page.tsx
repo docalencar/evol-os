@@ -9,6 +9,7 @@ import {
   InfoCard,
 } from "@/components/dashboard"
 
+import { EntityBackLink } from "@/components/shared/entity-back-link"
 import { PageHeader } from "@/components/shared/page-header"
 import {
   getManagementDepartments,
@@ -227,6 +228,11 @@ export default async function DepartmentDetailsPage({
 
   return (
     <div className="space-y-8">
+      <EntityBackLink
+        href="/app/company"
+        label="Voltar para empresa"
+      />
+
       <PageHeader
         title={department.name}
         description={

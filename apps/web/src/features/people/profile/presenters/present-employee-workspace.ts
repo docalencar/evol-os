@@ -121,6 +121,15 @@ export function presentEmployeeWorkspace({
       employee.status
     ]
 
+  // Seniority is a separate concept from the Cargo identity. A specific
+  // assignment shows its label (historical labels still resolve via v3); a base
+  // assignment shows "Sem senioridade específica"; no position shows a dash.
+  const seniorityLabel = employee.seniority_level_id
+    ? (employee.seniority_label ?? "—")
+    : employee.position_id
+      ? "Sem senioridade específica"
+      : "—"
+
   const hireDateLabel =
     formatDate(
       employee.hire_date
@@ -167,6 +176,8 @@ export function presentEmployeeWorkspace({
       positionId:
         employee.position_id,
       positionLabel,
+
+      seniorityLabel,
 
       teamId:
         employee.team_id,

@@ -53,6 +53,7 @@ type PositionReviewStepProps = {
   workModelLabel: string
   employmentTypeLabel: string
   travelRequirementLabel: string
+  seniorityLabels: string[]
   isEditing: boolean
 }
 
@@ -66,6 +67,7 @@ export function PositionReviewStep({
   workModelLabel,
   employmentTypeLabel,
   travelRequirementLabel,
+  seniorityLabels,
   isEditing,
 }: PositionReviewStepProps) {
   return (
@@ -157,6 +159,18 @@ export function PositionReviewStep({
         <PositionReviewItem
           label="Viagens"
           value={travelRequirementLabel}
+          icon={
+            <BriefcaseBusiness className="h-4 w-4" />
+          }
+        />
+
+        <PositionReviewItem
+          label="Senioridades aplicáveis"
+          value={
+            seniorityLabels.length > 0
+              ? seniorityLabels.join(", ")
+              : "Sem senioridade específica"
+          }
           icon={
             <BriefcaseBusiness className="h-4 w-4" />
           }

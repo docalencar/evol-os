@@ -4,6 +4,7 @@ import {
   DashboardSection,
   InfoCard,
 } from "@/components/dashboard"
+import { EntityBackLink } from "@/components/shared/entity-back-link"
 
 import { getEmployeeAssessmentSummary } from "@/features/assessments"
 import {
@@ -34,6 +35,7 @@ import {
   EmployeeCompetenciesSummaryCard,
   EmployeeDevelopmentSummaryCard,
   EmployeeNextActionsCard,
+  getPeopleSeniorityOptions,
   presentEmployeeWorkspace,
   type Employee,
 } from "@/features/people"
@@ -192,6 +194,12 @@ export default async function EmployeeProfilePage({
     name: position.name,
   }))
 
+  const seniorityOptionsByPosition =
+    await getPeopleSeniorityOptions(
+      companyId,
+      positionOptions.map((position) => position.id)
+    )
+
   const managerOptions = (
     (employees ?? []) as Employee[]
   ).map((manager) => ({
@@ -269,14 +277,23 @@ export default async function EmployeeProfilePage({
   void executiveAiContext
 
   return (
-    <EmployeeProfileLayout
-      sidebar={
-        <EmployeeProfileSidebar
-          organization={workspace.organization}
-        />
-      }
+    <div className="space-y-8">
+      <EntityBackLink
+        href="/app/people"
+        label="Voltar para pessoas"
+      />
+
+      <EmployeeProfileLayout
+        sidebar={
+          <EmployeeProfileSidebar
+            organization={workspace.organization}
+          />
+        }
       header={
         <EmployeeProfileHeader
+          seniorityOptionsByPosition={
+            seniorityOptionsByPosition
+          }
           companyId={workspace.companyId}
           employee={employee}
           header={workspace.header}
@@ -366,6 +383,7 @@ export default async function EmployeeProfilePage({
         hireDate={employee.hire_date}
         items={employeeTimeline.items}
       />
-    </EmployeeProfileLayout>
+      </EmployeeProfileLayout>
+    </div>
   )
 }

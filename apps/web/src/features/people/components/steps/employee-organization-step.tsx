@@ -1,9 +1,16 @@
 import { ProductWizardSummary } from "@/components/product"
 import { Label } from "@/components/ui/label"
 
+import type { PositionSeniorityOption } from "../../queries/get-people-seniority-options"
+
 type EmployeeSelectOption = {
   id: string
   name: string
+}
+
+type CurrentHistoricalSeniority = {
+  profileId: string
+  label: string
 }
 
 type EmployeeOrganizationStepProps = {
@@ -13,9 +20,13 @@ type EmployeeOrganizationStepProps = {
   teamId: string
   positionId: string
   managerId: string
+  seniorityOptions: PositionSeniorityOption[]
+  positionSeniorityProfileId: string
+  currentHistoricalSeniority: CurrentHistoricalSeniority | null
   onTeamIdChange: (value: string) => void
   onPositionIdChange: (value: string) => void
   onManagerIdChange: (value: string) => void
+  onPositionSeniorityProfileIdChange: (value: string) => void
 }
 
 const selectClassName =
@@ -28,10 +39,15 @@ export function EmployeeOrganizationStep({
   teamId,
   positionId,
   managerId,
+  seniorityOptions,
+  positionSeniorityProfileId,
+  currentHistoricalSeniority,
   onTeamIdChange,
   onPositionIdChange,
   onManagerIdChange,
+  onPositionSeniorityProfileIdChange,
 }: EmployeeOrganizationStepProps) {
+  const hasSpecificSeniorities = seniorityOptions.length > 0
   return (
     <div className="space-y-4">
       <div>
@@ -85,6 +101,56 @@ export function EmployeeOrganizationStep({
           ))}
         </select>
       </div>
+
+      {positionId && (
+        <div>
+          <Label htmlFor="employee-seniority">
+            Senioridade
+          </Label>
+
+          {hasSpecificSeniorities ||
+          currentHistoricalSeniority ? (
+            <select
+              id="employee-seniority"
+              value={positionSeniorityProfileId}
+              onChange={(event) =>
+                onPositionSeniorityProfileIdChange(
+                  event.target.value
+                )
+              }
+              className={selectClassName}
+            >
+              <option value="">
+                Sem senioridade específica
+              </option>
+
+              {seniorityOptions.map((option) => (
+                <option
+                  key={option.profileId}
+                  value={option.profileId}
+                >
+                  {option.label}
+                </option>
+              ))}
+
+              {currentHistoricalSeniority && (
+                <option
+                  value={
+                    currentHistoricalSeniority.profileId
+                  }
+                >
+                  {`${currentHistoricalSeniority.label} (arquivada)`}
+                </option>
+              )}
+            </select>
+          ) : (
+            <p className="mt-1 text-sm text-slate-500">
+              Este cargo não possui senioridades
+              específicas configuradas.
+            </p>
+          )}
+        </div>
+      )}
 
       <div>
         <Label htmlFor="employee-manager">

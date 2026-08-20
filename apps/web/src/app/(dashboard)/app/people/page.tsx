@@ -15,6 +15,7 @@ import {
 import {
   EmployeeCreateDialog,
   EmployeeTable,
+  getPeopleSeniorityOptions,
   PeopleWorkspaceSummary,
   presentPeopleWorkspaceSummary,
 } from "@/features/people"
@@ -36,6 +37,11 @@ export default async function PeoplePage() {
       getManagementPositions(companyId),
       getPeopleAccessStates(supabase, companyId),
     ])
+
+  const seniorityOptionsByPosition = await getPeopleSeniorityOptions(
+    companyId,
+    (positions ?? []).map((position) => position.id)
+  )
 
   const accessStateByPersonId = new Map(
     accessStateResult.status === "available"
@@ -101,6 +107,9 @@ export default async function PeoplePage() {
               teams={teams ?? []}
               positions={positions ?? []}
               managers={managerOptions}
+              seniorityOptionsByPosition={
+                seniorityOptionsByPosition
+              }
             />
           </div>
         }
@@ -113,6 +122,7 @@ export default async function PeoplePage() {
         teams={teams ?? []}
         positions={positions ?? []}
         managers={managerOptions}
+        seniorityOptionsByPosition={seniorityOptionsByPosition}
         invitationRoleOptions={invitationRoleOptions}
       />
     </div>

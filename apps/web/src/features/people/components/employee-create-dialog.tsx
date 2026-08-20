@@ -5,6 +5,7 @@ import { useState } from "react"
 import { EntityDialog } from "@/components/shared/entity-dialog"
 import { Button } from "@/components/ui/button"
 
+import type { SeniorityOptionsByPosition } from "../queries/get-people-seniority-options"
 import { EmployeeForm } from "./employee-form"
 
 type EmployeeSelectOption = {
@@ -17,6 +18,7 @@ type EmployeeCreateDialogProps = {
   teams: EmployeeSelectOption[]
   positions: EmployeeSelectOption[]
   managers: EmployeeSelectOption[]
+  seniorityOptionsByPosition?: SeniorityOptionsByPosition
 }
 
 export function EmployeeCreateDialog({
@@ -24,6 +26,7 @@ export function EmployeeCreateDialog({
   teams,
   positions,
   managers,
+  seniorityOptionsByPosition,
 }: EmployeeCreateDialogProps) {
   const [open, setOpen] = useState(false)
 
@@ -31,6 +34,7 @@ export function EmployeeCreateDialog({
     <EntityDialog
       open={open}
       onOpenChange={setOpen}
+      dismissible={false}
       trigger={
         <Button>
           Novo Colaborador
@@ -45,6 +49,7 @@ export function EmployeeCreateDialog({
         teams={teams}
         positions={positions}
         managers={managers}
+        seniorityOptionsByPosition={seniorityOptionsByPosition}
         onSuccess={() => setOpen(false)}
         onCancel={() => setOpen(false)}
       />

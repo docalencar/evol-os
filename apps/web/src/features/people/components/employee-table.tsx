@@ -21,6 +21,7 @@ import type {
 } from "../types/employee"
 import { ArchiveEmployeeButton } from "./archive-employee-button"
 import { EmployeeBulkActionsBar } from "./employee-bulk-actions-bar"
+import type { SeniorityOptionsByPosition } from "../queries/get-people-seniority-options"
 import { EmployeeEditDialog } from "./employee-edit-dialog"
 import { EmployeeWorkspacePagination } from "./employee-workspace-pagination"
 import {
@@ -175,6 +176,7 @@ type EmployeeTableProps = {
   teams: EmployeeSelectOption[]
   positions: EmployeeSelectOption[]
   managers: EmployeeSelectOption[]
+  seniorityOptionsByPosition?: SeniorityOptionsByPosition
   invitationRoleOptions: readonly InvitationRoleOption[]
 }
 
@@ -183,6 +185,7 @@ export function EmployeeTable({
   teams,
   positions,
   managers,
+  seniorityOptionsByPosition,
   invitationRoleOptions,
 }: EmployeeTableProps) {
   const [filters, setFilters] =
@@ -485,6 +488,9 @@ export function EmployeeTable({
                   teams={teams}
                   positions={positions}
                   managers={managers}
+                  seniorityOptionsByPosition={
+                    seniorityOptionsByPosition
+                  }
                 />
 
                 {invitationRoleOptions.length > 0 &&

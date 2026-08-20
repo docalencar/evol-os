@@ -41,8 +41,11 @@ import {
   PositionOrganizationStep,
   PositionOrganizationSummary,
   PositionReviewStep,
+  PositionSenioritiesStep,
+  PositionSenioritiesSummary,
   PositionWorkArrangementStep,
   PositionWorkArrangementSummary,
+  type SeniorityLevelOption,
 } from "./steps"
 import type {
   DepartmentOption,
@@ -53,6 +56,8 @@ type PositionFormProps = {
   companyId: string
   departments: DepartmentOption[]
   position?: PositionFormPosition
+  seniorityLevels?: SeniorityLevelOption[]
+  initialSeniorityLevelIds?: string[]
   onSuccess?: () => void
   onCancel?: () => void
 }
@@ -77,6 +82,12 @@ const positionWizardSteps: ProductWizardStepDefinition[] = [
       "Configure jornada, modalidade e vínculo profissional.",
   },
   {
+    id: "seniorities",
+    title: "Senioridades aplicáveis",
+    description:
+      "Selecione as senioridades do catálogo que se aplicam a este cargo.",
+  },
+  {
     id: "review",
     title: "Revisão",
     description:
@@ -88,6 +99,8 @@ export function PositionForm({
   companyId,
   departments,
   position,
+  seniorityLevels = [],
+  initialSeniorityLevelIds = [],
   onSuccess,
   onCancel,
 }: PositionFormProps) {
@@ -146,6 +159,27 @@ export function PositionForm({
     position?.travel_requirement ?? "none"
   )
 
+  // Applicable-seniority selection (desired-set overwrite). Only active catalog
+  // levels are offered; edit preselects the current active applicable set.
+  const [
+    selectedSeniorityLevelIds,
+    setSelectedSeniorityLevelIds,
+  ] = useState<string[]>(initialSeniorityLevelIds)
+
+  function toggleSeniorityLevel(id: string) {
+    setSelectedSeniorityLevelIds((current) =>
+      current.includes(id)
+        ? current.filter((value) => value !== id)
+        : [...current, id]
+    )
+  }
+
+  const selectedSeniorityLabels = seniorityLevels
+    .filter((level) =>
+      selectedSeniorityLevelIds.includes(level.id)
+    )
+    .map((level) => level.label)
+
   const selectedDepartment =
     departments.find(
       (department) =>
@@ -199,6 +233,7 @@ export function PositionForm({
       workModel,
       employmentType,
       travelRequirement,
+      seniorityLevelIds: selectedSeniorityLevelIds,
     }
 
     startTransition(async () => {
@@ -339,6 +374,23 @@ export function PositionForm({
         </ProductWizardStep>
 
         <ProductWizardStep
+          id="seniorities"
+          title="Senioridades aplicáveis"
+          description="Selecione as senioridades do catálogo que se aplicam a este cargo."
+          summary={
+            <PositionSenioritiesSummary
+              labels={selectedSeniorityLabels}
+            />
+          }
+        >
+          <PositionSenioritiesStep
+            seniorityLevels={seniorityLevels}
+            selectedIds={selectedSeniorityLevelIds}
+            onToggle={toggleSeniorityLevel}
+          />
+        </ProductWizardStep>
+
+        <ProductWizardStep
           id="review"
           title="Revisão"
           description="Confira os dados antes de salvar."
@@ -365,6 +417,9 @@ export function PositionForm({
             }
             travelRequirementLabel={
               travelRequirementLabel
+            }
+            seniorityLabels={
+              selectedSeniorityLabels
             }
             isEditing={isEditing}
           />
@@ -486,3 +541,5 @@ export type {
   DepartmentOption,
   PositionFormPosition,
 } from "./types"
+
+export type { SeniorityLevelOption } from "./steps"

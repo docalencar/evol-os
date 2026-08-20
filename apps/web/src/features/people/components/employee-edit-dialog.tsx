@@ -6,6 +6,7 @@ import { useState } from "react"
 import { EntityDialog } from "@/components/shared/entity-dialog"
 import { Button } from "@/components/ui/button"
 
+import type { SeniorityOptionsByPosition } from "../queries/get-people-seniority-options"
 import type { Employee } from "../types/employee"
 import { EmployeeForm } from "./employee-form"
 
@@ -20,6 +21,7 @@ type EmployeeEditDialogProps = {
   teams: EmployeeSelectOption[]
   positions: EmployeeSelectOption[]
   managers: EmployeeSelectOption[]
+  seniorityOptionsByPosition?: SeniorityOptionsByPosition
   trigger?: ReactElement
 }
 
@@ -29,6 +31,7 @@ export function EmployeeEditDialog({
   teams,
   positions,
   managers,
+  seniorityOptionsByPosition,
   trigger,
 }: EmployeeEditDialogProps) {
   const [open, setOpen] = useState(false)
@@ -50,6 +53,7 @@ export function EmployeeEditDialog({
       title="Editar colaborador"
       description="Atualize as informações desta pessoa."
       contentClassName="max-w-4xl"
+      dismissible={false}
     >
       <EmployeeForm
         companyId={companyId}
@@ -57,6 +61,7 @@ export function EmployeeEditDialog({
         teams={teams}
         positions={positions}
         managers={managers}
+        seniorityOptionsByPosition={seniorityOptionsByPosition}
         onSuccess={() => setOpen(false)}
         onCancel={() => setOpen(false)}
       />

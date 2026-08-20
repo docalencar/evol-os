@@ -1,3 +1,5 @@
+import type { DiscProfile } from "../constants/disc-profile"
+
 export type EmployeeStatus =
   "active" | "inactive" | "on_leave" | "terminated"
 
@@ -15,7 +17,13 @@ export type Employee = {
   manager_id: string | null
   team_id: string | null
   position_id: string | null
-  disc_profile: "D" | "I" | "S" | "C" | null
+  // Assigned seniority profile of the position (v3 read). Null for a base
+  // assignment. The label resolves even when the profile/seniority is archived.
+  position_seniority_profile_id?: string | null
+  seniority_level_id?: string | null
+  seniority_code?: string | null
+  seniority_label?: string | null
+  disc_profile: DiscProfile | null
   avatar_url: string | null
   created_at: string
   updated_at: string

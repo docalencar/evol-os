@@ -1,4 +1,7 @@
+import Link from "next/link"
+
 import { DataTable } from "@/components/shared/data-table"
+import { Button } from "@/components/ui/button"
 
 import { ArchiveDepartmentButton } from "./archive-department-button"
 import { DepartmentEditDialog } from "./department-edit-dialog"
@@ -42,6 +45,19 @@ export function DepartmentTable({ departments }: DepartmentTableProps) {
           header: "Ações",
           render: (department) => (
             <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                nativeButton={false}
+                render={
+                  <Link
+                    href={`/app/company/departments/${department.id}`}
+                  />
+                }
+              >
+                Ver detalhes
+              </Button>
+
               <DepartmentEditDialog
                 companyId={department.company_id}
                 department={department}

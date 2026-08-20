@@ -1,3 +1,4 @@
+import { EntityBackLink } from "@/components/shared/entity-back-link"
 import {
   OrganizationSyncHistoryHome,
 } from "@/features/organization/sync/server"
@@ -11,6 +12,11 @@ export default async function OrganizationSyncHistoryPage() {
 
   return (
     <div className="space-y-6">
+      <EntityBackLink
+        href="/app/company"
+        label="Voltar para empresa"
+      />
+
       <OrganizationSyncHistoryHome
         companyId={companyId}
       />

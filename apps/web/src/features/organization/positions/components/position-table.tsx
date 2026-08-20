@@ -12,6 +12,7 @@ import type {
 } from "../types/position"
 import { ArchivePositionButton } from "./archive-position-button"
 import { PositionEditDialog } from "./position-edit-dialog"
+import type { SeniorityLevelOption } from "./position-form"
 
 type DepartmentOption = {
   id: string
@@ -41,11 +42,17 @@ type PositionTableProps = {
   positions: PositionTableItem[]
   departments: DepartmentOption[]
   positionCompetencies?: PositionCompetencyTableItem[]
+  seniorityLevels?: SeniorityLevelOption[]
+  applicableSeniorityLevelIdsByPosition?: Readonly<
+    Record<string, string[]>
+  >
 }
 
 export function PositionTable({
   positions,
   departments,
+  seniorityLevels,
+  applicableSeniorityLevelIdsByPosition,
 }: PositionTableProps) {
   return (
     <DataTable
@@ -87,6 +94,12 @@ export function PositionTable({
                 companyId={position.company_id}
                 departments={departments}
                 position={position}
+                seniorityLevels={seniorityLevels}
+                initialSeniorityLevelIds={
+                  applicableSeniorityLevelIdsByPosition?.[
+                    position.id
+                  ] ?? []
+                }
               />
 
               <ArchivePositionButton

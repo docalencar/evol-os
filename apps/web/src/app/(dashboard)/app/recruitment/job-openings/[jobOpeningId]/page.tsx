@@ -5,6 +5,7 @@ import {
   StatCard,
 } from "@/components/dashboard"
 import { EmptyState } from "@/components/empty-state/empty-state"
+import { EntityBackLink } from "@/components/shared/entity-back-link"
 import { PageHeader } from "@/components/shared/page-header"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -156,6 +157,11 @@ export default async function JobOpeningDetailsPage({
 
   return (
     <div className="space-y-8">
+      <EntityBackLink
+        href="/app/recruitment"
+        label="Voltar para recrutamento"
+      />
+
       <PageHeader
         title={jobOpening.title}
         description="Detalhes e contexto da vaga."

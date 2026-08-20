@@ -1,3 +1,4 @@
+import { EntityBackLink } from "@/components/shared/entity-back-link"
 import { PageHeader } from "@/components/shared/page-header"
 import { getManagementTeams } from "@/features/dashboard-read"
 import {
@@ -13,6 +14,11 @@ export default async function TeamsPage() {
 
   return (
     <div className="space-y-6">
+      <EntityBackLink
+        href="/app/company"
+        label="Voltar para empresa"
+      />
+
       <PageHeader
         title="Times"
         description="Organize os times da empresa."

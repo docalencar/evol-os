@@ -14,5 +14,11 @@ export {
 } from "./position-work-arrangement-step"
 
 export {
+  PositionSenioritiesStep,
+  PositionSenioritiesSummary,
+  type SeniorityLevelOption,
+} from "./position-seniorities-step"
+
+export {
   PositionReviewStep,
 } from "./position-review-step"

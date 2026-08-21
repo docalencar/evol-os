@@ -67,6 +67,7 @@ export function EmployeeCompetencyCreateDialog({
       }
       title="Adicionar competência"
       description="Associe uma competência ao colaborador."
+      dismissible={false}
     >
       <EmployeeCompetencyForm
         companyId={companyId}
@@ -75,6 +76,9 @@ export function EmployeeCompetencyCreateDialog({
           availableCompetencies
         }
         onSuccess={() =>
+          setOpen(false)
+        }
+        onCancel={() =>
           setOpen(false)
         }
       />

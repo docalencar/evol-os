@@ -92,14 +92,22 @@ function formatDate(
     return null
   }
 
+  const date = new Date(
+    value.includes("T")
+      ? value
+      : `${value}T00:00:00`
+  )
+
+  if (Number.isNaN(date.getTime())) {
+    return null
+  }
+
   return new Intl.DateTimeFormat(
     "pt-BR",
     {
       dateStyle: "short",
     }
-  ).format(
-    new Date(`${value}T00:00:00`)
-  )
+  ).format(date)
 }
 
 export function EmployeeCompetenciesCard({

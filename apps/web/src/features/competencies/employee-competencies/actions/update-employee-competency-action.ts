@@ -35,6 +35,7 @@ export async function updateEmployeeCompetencyAction(
   }
 
   revalidatePath("/app/people")
+  revalidatePath(`/app/people/${parsed.data.employeeId}`)
 
   return {
     success: true,

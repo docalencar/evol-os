@@ -5,20 +5,6 @@ import type {
   UpdateEmployeeCompetencyInput,
 } from "../schemas/employee-competency-schema"
 
-function normalizeInput(
-  input: CreateEmployeeCompetencyInput | UpdateEmployeeCompetencyInput
-) {
-  return {
-    employee_id: input.employeeId,
-    competency_id: input.competencyId,
-    current_level: input.currentLevel,
-    source: input.source,
-    validated_at: input.validatedAt || null,
-    notes: input.notes || null,
-    updated_at: new Date().toISOString(),
-  }
-}
-
 export async function createEmployeeCompetencyRepository() {
   const supabase = await createServerDatabase()
 
@@ -52,9 +38,14 @@ export async function createEmployeeCompetencyRepository() {
     },
 
     async create(companyId: string, input: CreateEmployeeCompetencyInput) {
-      return supabase.from("employee_competencies").insert({
-        company_id: companyId,
-        ...normalizeInput(input),
+      return supabase.rpc("create_tenant_employee_competency_v1", {
+        p_company_id: companyId,
+        p_employee_id: input.employeeId,
+        p_competency_id: input.competencyId,
+        p_current_level: input.currentLevel,
+        p_source: input.source,
+        p_validated_at: input.validatedAt || null,
+        p_notes: input.notes || null,
       })
     },
 
@@ -63,22 +54,23 @@ export async function createEmployeeCompetencyRepository() {
       id: string,
       input: UpdateEmployeeCompetencyInput
     ) {
-      return supabase
-        .from("employee_competencies")
-        .update(normalizeInput(input))
-        .eq("company_id", companyId)
-        .eq("id", id)
+      return supabase.rpc("update_tenant_employee_competency_v1", {
+        p_company_id: companyId,
+        p_employee_competency_id: id,
+        p_employee_id: input.employeeId,
+        p_competency_id: input.competencyId,
+        p_current_level: input.currentLevel,
+        p_source: input.source,
+        p_validated_at: input.validatedAt || null,
+        p_notes: input.notes || null,
+      })
     },
 
     async archive(companyId: string, id: string) {
-      return supabase
-        .from("employee_competencies")
-        .update({
-          archived_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("company_id", companyId)
-        .eq("id", id)
+      return supabase.rpc("archive_tenant_employee_competency_v1", {
+        p_company_id: companyId,
+        p_employee_competency_id: id,
+      })
     },
   }
 }

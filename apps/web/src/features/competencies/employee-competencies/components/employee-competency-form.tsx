@@ -52,6 +52,8 @@ type EmployeeCompetencyFormProps = {
   employeeCompetency?: EmployeeCompetencyFormValue
 
   onSuccess?: () => void
+
+  onCancel?: () => void
 }
 
 const SOURCE_OPTIONS: {
@@ -82,6 +84,7 @@ export function EmployeeCompetencyForm({
   competencies,
   employeeCompetency,
   onSuccess,
+  onCancel,
 }: EmployeeCompetencyFormProps) {
   const isEditing =
     Boolean(employeeCompetency)
@@ -345,7 +348,18 @@ export function EmployeeCompetencyForm({
         </p>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        {onCancel ? (
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onCancel}
+            disabled={isPending}
+          >
+            Cancelar
+          </Button>
+        ) : null}
+
         <Button
           type="submit"
           disabled={

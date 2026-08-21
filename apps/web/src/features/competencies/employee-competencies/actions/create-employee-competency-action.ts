@@ -30,6 +30,7 @@ export async function createEmployeeCompetencyAction(
   }
 
   revalidatePath("/app/people")
+  revalidatePath(`/app/people/${parsed.data.employeeId}`)
 
   return {
     success: true,

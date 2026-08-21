@@ -50,6 +50,7 @@ export function EmployeeCompetencyEditDialog({
       }
       title="Editar competência"
       description="Atualize o nível atual da competência."
+      dismissible={false}
     >
       <EmployeeCompetencyForm
         companyId={companyId}
@@ -59,6 +60,9 @@ export function EmployeeCompetencyEditDialog({
           employeeCompetency
         }
         onSuccess={() =>
+          setOpen(false)
+        }
+        onCancel={() =>
           setOpen(false)
         }
       />

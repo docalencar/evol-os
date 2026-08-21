@@ -45,11 +45,9 @@ export async function archiveEmployeeCompetencyAction(
     return successResult(
       "Competência do colaborador arquivada com sucesso."
     )
-  } catch (error) {
+  } catch {
     return failureResult(
-      error instanceof Error
-        ? error.message
-        : "Não foi possível arquivar a competência do colaborador."
+      "Não foi possível arquivar a competência do colaborador."
     )
   }
 }

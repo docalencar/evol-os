@@ -17,17 +17,11 @@ import {
   type TeamSnapshot,
 } from "@/features/organization/sync"
 import {
-  getDepartments,
-} from "@/features/organization/departments"
-import {
-  getPositions,
-} from "@/features/organization/positions"
-import {
-  getTeams,
-} from "@/features/organization/teams"
-import {
-  getEmployees,
-} from "@/features/people"
+  getManagementDepartments,
+  getManagementPeople,
+  getManagementPositions,
+  getManagementTeams,
+} from "@/features/dashboard-read"
 import {
   getCurrentCompanyContext,
 } from "@/lib/supabase/supabase/current-company"
@@ -321,17 +315,29 @@ export async function createEmployeeImportSyncPlanAction(
   const { companyId } =
     await getCurrentCompanyContext()
 
-  const [
-    departments,
-    teams,
-    positions,
-    employees,
-  ] = await Promise.all([
-    getDepartments(companyId),
-    getTeams(companyId),
-    getPositions(companyId),
-    getEmployees(companyId),
-  ])
+  // Read the current organization through the trusted, membership-gated read
+  // boundaries (SECURITY DEFINER RPCs) — the same path the normal Company
+  // screens use — instead of the legacy direct-table repositories, which the
+  // authenticated role has no privilege to SELECT.
+  let departments: Awaited<ReturnType<typeof getManagementDepartments>>
+  let teams: Awaited<ReturnType<typeof getManagementTeams>>
+  let positions: Awaited<ReturnType<typeof getManagementPositions>>
+  let employees: Awaited<ReturnType<typeof getManagementPeople>>
+  try {
+    ;[departments, teams, positions, employees] = await Promise.all([
+      getManagementDepartments(companyId),
+      getManagementTeams(companyId),
+      getManagementPositions(companyId),
+      getManagementPeople(companyId),
+    ])
+  } catch {
+    return {
+      success: false,
+      message:
+        "Não foi possível carregar a estrutura atual da organização.",
+      plan: null,
+    }
+  }
 
   const current = createCurrentSnapshot(
     departments ?? [],

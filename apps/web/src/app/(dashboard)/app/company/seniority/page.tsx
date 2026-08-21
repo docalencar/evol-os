@@ -1,3 +1,5 @@
+import { z } from "zod"
+
 import { EntityBackLink } from "@/components/shared/entity-back-link"
 import { PageHeader } from "@/components/shared/page-header"
 import { Card } from "@/components/ui/card"
@@ -8,16 +10,50 @@ import {
 } from "@/features/organization/seniority-levels"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
-export default async function SeniorityLevelsPage() {
+type SeniorityLevelsPageProps = {
+  searchParams: Promise<{
+    fromPositionId?: string
+  }>
+}
+
+// Resolve the back destination. The only accepted origin context is a position
+// id, re-validated as a UUID — so the back link can ONLY ever point at the
+// internal /app/company/positions/<id> route. Anything missing/invalid falls
+// back to the Company hub. No open/arbitrary/external redirect is possible.
+function resolveBackLink(fromPositionId: string | undefined) {
+  const positionId = z
+    .string()
+    .uuid()
+    .safeParse(fromPositionId)
+
+  if (positionId.success) {
+    return {
+      href: `/app/company/positions/${positionId.data}`,
+      label: "Voltar para o cargo",
+    }
+  }
+
+  return {
+    href: "/app/company",
+    label: "Voltar para empresa",
+  }
+}
+
+export default async function SeniorityLevelsPage({
+  searchParams,
+}: SeniorityLevelsPageProps) {
   const { companyId } = await getCurrentCompanyContext()
+  const { fromPositionId } = await searchParams
 
   const seniorityLevels = await getSeniorityLevels(companyId)
+
+  const backLink = resolveBackLink(fromPositionId)
 
   return (
     <div className="space-y-6">
       <EntityBackLink
-        href="/app/company"
-        label="Voltar para empresa"
+        href={backLink.href}
+        label={backLink.label}
       />
 
       <PageHeader

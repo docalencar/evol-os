@@ -1,5 +1,8 @@
+import Link from "next/link"
+
 import { DashboardSection } from "@/components/dashboard"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 
 import type { PositionSenioritiesViewModel } from "../presenters/present-position-seniorities"
 import { AddPositionSeniorityDialog } from "./add-position-seniority-dialog"
@@ -19,12 +22,24 @@ export function PositionSenioritiesSection({
       title="Senioridades aplicáveis a este cargo"
       description="Escolha, a partir do catálogo de senioridades da empresa (Empresa → Senioridades), quais níveis se aplicam a este cargo. Apenas as senioridades aplicadas aqui ficam disponíveis para as pessoas deste cargo. Senioridade indica o grau de experiência dentro do cargo — é diferente do nível hierárquico."
       actions={
-        available.length > 0 ? (
-          <AddPositionSeniorityDialog
-            positionId={positionId}
-            available={available}
-          />
-        ) : undefined
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Optional bridge to the company Seniority catalog. Seniority is
+              optional enrichment — this is a management destination, never a
+              requirement. The Seniority page re-validates the origin as a UUID,
+              so the back link can only resolve to this Position. */}
+          <Link
+            href={`/app/company/seniority?fromPositionId=${encodeURIComponent(positionId)}`}
+          >
+            <Button variant="secondary">Gerenciar senioridades</Button>
+          </Link>
+
+          {available.length > 0 ? (
+            <AddPositionSeniorityDialog
+              positionId={positionId}
+              available={available}
+            />
+          ) : null}
+        </div>
       }
     >
       {applicable.length === 0 ? (

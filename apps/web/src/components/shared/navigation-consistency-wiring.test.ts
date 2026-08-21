@@ -42,6 +42,12 @@ const teamsList = read("../../app/(dashboard)/app/company/teams/page.tsx")
 const seniorityList = read(
   "../../app/(dashboard)/app/company/seniority/page.tsx"
 )
+const competenciesList = read(
+  "../../app/(dashboard)/app/competencies/page.tsx"
+)
+const competencyReturnContext = read(
+  "../../app/(dashboard)/app/competencies/competency-return-context.ts"
+)
 const syncHistoryList = read(
   "../../app/(dashboard)/app/company/sync-history/page.tsx"
 )
@@ -183,6 +189,21 @@ test("Seniority page returns to the Company hub by default, and to a position wi
   assert.match(seniorityList, /z\s*\.string\(\)\s*\.uuid\(\)\s*\.safeParse/)
   assert.match(seniorityList, /\/app\/company\/positions\/\$\{positionId\.data\}/)
   assert.match(seniorityList, /Voltar para o cargo/)
+})
+
+test("Competencies page preserves top-level navigation and returns to a position only with valid origin context", () => {
+  assert.match(competenciesList, /EntityBackLink/)
+  assert.match(competencyReturnContext, /z\.string\(\)\.uuid\(\)\.safeParse/)
+  assert.match(
+    competencyReturnContext,
+    /\/app\/company\/positions\/\$\{positionId\.data\}/
+  )
+  assert.match(competencyReturnContext, /Voltar para o cargo/)
+  assert.match(
+    competencyReturnContext,
+    /if \(!positionId\.success\) \{\s*return null/
+  )
+  assert.doesNotMatch(competenciesList, /Voltar para empresa/)
 })
 
 test("Teams page returns to the Company hub by default, and to a person profile with valid origin context", () => {

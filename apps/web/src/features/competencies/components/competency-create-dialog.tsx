@@ -20,6 +20,7 @@ export function CompetencyCreateDialog({
     <EntityDialog
       open={open}
       onOpenChange={setOpen}
+      dismissible={false}
       trigger={<Button>Nova Competência</Button>}
       title="Nova competência"
       description="Cadastre uma competência da organização."
@@ -31,4 +32,3 @@ export function CompetencyCreateDialog({
     </EntityDialog>
   )
 }
-

@@ -1,8 +1,11 @@
+import Link from "next/link"
+
 import {
   DashboardCard,
   DashboardEmptyState,
   DashboardSection,
 } from "@/components/dashboard"
+import { buttonVariants } from "@/components/ui/button"
 
 import type {
   Competency,
@@ -73,14 +76,21 @@ export function PositionCompetenciesCard({
       title="Competências esperadas"
       description="Defina as competências necessárias para exercer este cargo."
       actions={
-        <PositionCompetencyCreateDialog
-          companyId={companyId}
-          positionId={positionId}
-          competencies={competencies}
-          positionCompetencies={
-            positionCompetencies
-          }
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href={`/app/competencies?fromPositionId=${encodeURIComponent(positionId)}`}
+            className={buttonVariants({ variant: "secondary" })}
+          >
+            Gerenciar competências
+          </Link>
+
+          <PositionCompetencyCreateDialog
+            companyId={companyId}
+            positionId={positionId}
+            competencies={competencies}
+            positionCompetencies={positionCompetencies}
+          />
+        </div>
       }
     >
       <DashboardCard>

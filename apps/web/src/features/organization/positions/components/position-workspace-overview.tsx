@@ -12,6 +12,7 @@ import type {
 } from "../view-models/position-workspace-view-model"
 
 type PositionWorkspaceOverviewProps = {
+  positionId: string
   workspace: PositionWorkspaceViewModel
 }
 
@@ -51,6 +52,7 @@ function ManagementCard({
 }
 
 export function PositionWorkspaceOverview({
+  positionId,
   workspace,
 }: PositionWorkspaceOverviewProps) {
   return (
@@ -163,7 +165,7 @@ export function PositionWorkspaceOverview({
           <ManagementCard
             title="Competências"
             description="Gerencie as competências esperadas e seus respectivos níveis."
-            href="/app/competencies"
+            href={`/app/competencies?fromPositionId=${encodeURIComponent(positionId)}`}
           />
 
           <ManagementCard

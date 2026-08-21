@@ -64,31 +64,45 @@ export function PositionCompetencyCreateDialog({
 
   const hasAvailableCompetencies =
     availableCompetencies.length > 0
+  const hasActiveCompetencies =
+    competencies.some(
+      (competency) => competency.active
+    )
 
   return (
-    <CrudCreateDialog
-      trigger={
-        <Button
-          disabled={
-            !hasAvailableCompetencies
-          }
-        >
-          Adicionar competência
-        </Button>
-      }
-      title="Adicionar competência esperada"
-      description="Defina o nível, o peso e a importância desta competência para o cargo."
-    >
-      {({ close }) => (
-        <PositionCompetencyForm
-          companyId={companyId}
-          positionId={positionId}
-          competencies={
-            availableCompetencies
-          }
-          onSuccess={close}
-        />
-      )}
-    </CrudCreateDialog>
+    <div className="flex flex-col items-start gap-1">
+      <CrudCreateDialog
+        trigger={
+          <Button
+            disabled={
+              !hasAvailableCompetencies
+            }
+          >
+            Adicionar competência
+          </Button>
+        }
+        title="Adicionar competência esperada"
+        description="Defina o nível, o peso e a importância desta competência para o cargo."
+      >
+        {({ close }) => (
+          <PositionCompetencyForm
+            companyId={companyId}
+            positionId={positionId}
+            competencies={
+              availableCompetencies
+            }
+            onSuccess={close}
+          />
+        )}
+      </CrudCreateDialog>
+
+      {!hasAvailableCompetencies ? (
+        <p className="max-w-sm text-xs text-slate-500">
+          {hasActiveCompetencies
+            ? "Todas as competências disponíveis já estão associadas a este cargo."
+            : "Crie uma competência no catálogo da empresa para poder adicioná-la a este cargo."}
+        </p>
+      ) : null}
+    </div>
   )
 }

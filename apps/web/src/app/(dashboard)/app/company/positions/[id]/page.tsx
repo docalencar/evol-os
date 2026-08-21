@@ -233,7 +233,10 @@ export default async function PositionDetailsPage({
         }
       />
 
-      <PositionWorkspaceOverview workspace={workspace} />
+      <PositionWorkspaceOverview
+        positionId={position.id}
+        workspace={workspace}
+      />
 
       <PositionCompetenciesCard
         companyId={companyId}

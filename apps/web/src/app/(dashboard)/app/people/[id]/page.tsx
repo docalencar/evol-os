@@ -323,6 +323,7 @@ export default async function EmployeeProfilePage({
         sidebar={
           <EmployeeProfileSidebar
             organization={workspace.organization}
+            personId={id}
           />
         }
       header={

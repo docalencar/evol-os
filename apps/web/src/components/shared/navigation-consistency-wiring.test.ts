@@ -160,7 +160,6 @@ test("create/edit person dialogs disable outside-click dismissal (no data loss)"
 test("Company list pages return deterministically to the Company hub", () => {
   for (const [name, source] of [
     ["positions", positionsList],
-    ["teams", teamsList],
     ["seniority", seniorityList],
     ["sync-history", syncHistoryList],
   ] as const) {
@@ -171,4 +170,18 @@ test("Company list pages return deterministically to the Company hub", () => {
       `${name} label`
     )
   }
+})
+
+test("Teams page returns to the Company hub by default, and to a person profile with valid origin context", () => {
+  assert.match(teamsList, /EntityBackLink/)
+  // Default (no/invalid origin) still returns to the Company hub.
+  assert.ok(teamsList.includes('href: "/app/company"'), "default href")
+  assert.ok(
+    teamsList.includes('label: "Voltar para empresa"'),
+    "default label"
+  )
+  // Contextual origin is a UUID-validated person id → internal profile route.
+  assert.match(teamsList, /z\s*\.string\(\)\s*\.uuid\(\)\s*\.safeParse/)
+  assert.match(teamsList, /\/app\/people\/\$\{personId\.data\}/)
+  assert.match(teamsList, /Voltar para o perfil/)
 })

@@ -236,7 +236,7 @@ export function EmployeeImportWorkspace() {
           </h1>
 
           <p className="max-w-3xl text-base leading-7 text-slate-600">
-            Envie uma planilha com os dados essenciais. O Evol OS identifica
+            Envie uma planilha com os dados essenciais. O Evol identifica
             automaticamente as colunas antes de qualquer informação ser salva.
           </p>
         </div>
@@ -342,7 +342,7 @@ export function EmployeeImportWorkspace() {
             </h2>
 
             <p className="mt-2 text-sm leading-6 text-slate-600">
-              O Evol OS procura automaticamente nome, e-mail, telefone,
+              O Evol procura automaticamente nome, e-mail, telefone,
               departamento, cargo e demais dados conhecidos.
             </p>
           </section>
@@ -374,7 +374,7 @@ export function EmployeeImportWorkspace() {
               </p>
 
               <h2 className="mt-2 text-xl font-semibold">
-                Deixe o Evol OS entender sua planilha.
+                Deixe o Evol entender sua planilha.
               </h2>
 
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">

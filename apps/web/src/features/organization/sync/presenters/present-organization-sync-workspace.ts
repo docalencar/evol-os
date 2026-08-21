@@ -1,4 +1,7 @@
 import type {
+  OrganizationSyncItem,
+} from "../types/organization-sync-item"
+import type {
   OrganizationSyncPlan,
 } from "../types/organization-sync-plan"
 import type {
@@ -11,6 +14,57 @@ function formatGeneratedAt(value: Date) {
     dateStyle: "short",
     timeStyle: "short",
   }).format(value)
+}
+
+// Future-tense, per-entity "what will be applied" phrasing. Collaborators are
+// "adicionados"; structures are "criados/criadas". Non-zero entities only, in a
+// stable organizational order. Derived from the create items in the plan — the
+// same plan; no recalculation of counts.
+const PLANNED_CHANGE_ORDER: {
+  entity: OrganizationSyncItem["entity"]
+  singular: string
+  plural: string
+}[] = [
+  {
+    entity: "department",
+    singular: "1 departamento será criado",
+    plural: "departamentos serão criados",
+  },
+  {
+    entity: "team",
+    singular: "1 time será criado",
+    plural: "times serão criados",
+  },
+  {
+    entity: "position",
+    singular: "1 cargo será criado",
+    plural: "cargos serão criados",
+  },
+  {
+    entity: "employee",
+    singular: "1 colaborador será adicionado",
+    plural: "colaboradores serão adicionados",
+  },
+]
+
+function buildPlannedChanges(
+  plan: OrganizationSyncPlan
+): string[] {
+  return PLANNED_CHANGE_ORDER.flatMap(
+    ({ entity, singular, plural }) => {
+      const count = plan.items.filter(
+        (item) =>
+          item.entity === entity &&
+          item.operation === "create"
+      ).length
+
+      if (count === 0) {
+        return []
+      }
+
+      return [count === 1 ? singular : `${count} ${plural}`]
+    }
+  )
 }
 
 export function presentOrganizationSyncWorkspace(
@@ -79,6 +133,15 @@ export function presentOrganizationSyncWorkspace(
     canApply:
       totalChanges > 0 &&
       plan.summary.conflicts === 0,
+    noChange:
+      plan.items.length > 0 &&
+      totalChanges === 0 &&
+      plan.summary.conflicts === 0,
+    plannedChanges: buildPlannedChanges(plan),
+    alreadyRecognizedMessage:
+      plan.summary.unchanged > 0
+        ? "Algumas estruturas já existentes foram reconhecidas e não precisam de alteração."
+        : null,
     metrics,
   }
 }

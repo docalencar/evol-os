@@ -32,11 +32,15 @@ export function OrganizationSyncReview({
   return (
     <DashboardSection
       title="Revisão das mudanças"
-      description={`${review.reviewItems} item${
-        review.reviewItems === 1 ? "" : "s"
-      } exige${
-        review.reviewItems === 1 ? "" : "m"
-      } atenção antes da sincronização.`}
+      description={
+        review.reviewItems === 0
+          ? "Nenhum item exige atenção. As estruturas abaixo já estão sincronizadas."
+          : `${review.reviewItems} item${
+              review.reviewItems === 1 ? "" : "s"
+            } exige${
+              review.reviewItems === 1 ? "" : "m"
+            } atenção antes da sincronização.`
+      }
     >
       <div className="space-y-4">
         {review.groups.map((group) => (

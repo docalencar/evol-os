@@ -28,6 +28,9 @@ import {
   presentImportActivationSummary,
   type ImportActivationNextAction,
 } from "../presenters/present-import-activation-summary"
+import {
+  presentImportComparisonSentence,
+} from "../presenters/present-import-preanalysis-copy"
 import type {
   EmployeeImportActionRow,
 } from "../types/employee-import-action"
@@ -135,35 +138,6 @@ export function EmployeeImportActionPanel({
     const activation =
       presentImportActivationSummary(result)
 
-    const createdParts: string[] = []
-    if (activation.createdSummary.departments > 0) {
-      createdParts.push(
-        `${activation.createdSummary.departments} ${
-          activation.createdSummary.departments === 1
-            ? "departamento"
-            : "departamentos"
-        }`
-      )
-    }
-    if (activation.createdSummary.positions > 0) {
-      createdParts.push(
-        `${activation.createdSummary.positions} ${
-          activation.createdSummary.positions === 1
-            ? "cargo"
-            : "cargos"
-        }`
-      )
-    }
-    if (activation.createdSummary.people > 0) {
-      createdParts.push(
-        `${activation.createdSummary.people} ${
-          activation.createdSummary.people === 1
-            ? "pessoa"
-            : "pessoas"
-        }`
-      )
-    }
-
     return (
       <section className="space-y-6 rounded-2xl border border-slate-200 bg-slate-950 p-6 text-white sm:p-8">
         <div>
@@ -180,56 +154,32 @@ export function EmployeeImportActionPanel({
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
             {activation.description}
           </p>
-
-          {activation.operational &&
-          createdParts.length > 0 ? (
-            <p className="mt-3 text-sm font-medium text-white">
-              Criado agora: {createdParts.join(" · ")}.
-            </p>
-          ) : null}
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-xl bg-white/10 p-4">
-            <p className="text-2xl font-bold">
-              {result.totalItems}
+        {activation.changes.length > 0 ? (
+          <div className="rounded-xl bg-white/10 p-5">
+            <p className="text-sm font-semibold text-white">
+              Mudanças realizadas
             </p>
 
-            <p className="mt-1 text-sm text-slate-300">
-              Itens no plano
-            </p>
+            <ul className="mt-2 space-y-1">
+              {activation.changes.map((change) => (
+                <li
+                  key={change}
+                  className="text-sm leading-6 text-slate-200"
+                >
+                  {change}
+                </li>
+              ))}
+            </ul>
           </div>
+        ) : null}
 
-          <div className="rounded-xl bg-white/10 p-4">
-            <p className="text-2xl font-bold">
-              {result.appliedItems}
-            </p>
-
-            <p className="mt-1 text-sm text-slate-300">
-              Aplicados
-            </p>
-          </div>
-
-          <div className="rounded-xl bg-white/10 p-4">
-            <p className="text-2xl font-bold">
-              {result.skippedItems}
-            </p>
-
-            <p className="mt-1 text-sm text-slate-300">
-              Ignorados
-            </p>
-          </div>
-
-          <div className="rounded-xl bg-white/10 p-4">
-            <p className="text-2xl font-bold">
-              {result.failedItems}
-            </p>
-
-            <p className="mt-1 text-sm text-slate-300">
-              Com erro
-            </p>
-          </div>
-        </div>
+        {activation.alreadyUpToDateMessage ? (
+          <p className="text-sm leading-6 text-slate-300">
+            {activation.alreadyUpToDateMessage}
+          </p>
+        ) : null}
 
         {result.errors.length > 0 ? (
           <div className="max-h-64 space-y-2 overflow-y-auto rounded-xl bg-white/10 p-4">
@@ -264,6 +214,8 @@ export function EmployeeImportActionPanel({
 
             <Link
               href={activation.recommendation.href}
+              target="_blank"
+              rel="noopener noreferrer"
               className="mt-3 inline-flex min-h-10 items-center justify-center rounded-md border border-white/20 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10"
             >
               {activation.recommendation.ctaLabel}
@@ -272,16 +224,27 @@ export function EmployeeImportActionPanel({
         ) : null}
 
         {activation.nextActions.length > 0 ? (
-          <div className="flex flex-col flex-wrap gap-3 sm:flex-row sm:items-center">
-            {activation.nextActions.map((action) => (
-              <Link
-                key={action.id}
-                href={action.href}
-                className={`inline-flex min-h-10 items-center justify-center rounded-md px-4 py-2 text-sm font-semibold transition-colors ${NEXT_ACTION_CLASSES[action.emphasis]}`}
-              >
-                {action.label}
-              </Link>
-            ))}
+          <div className="space-y-2">
+            <div className="flex flex-col flex-wrap gap-3 sm:flex-row sm:items-center">
+              {activation.nextActions.map((action) => (
+                // Open exploration in a new tab so this import result stays open
+                // and the operator can return to it and choose another path.
+                <Link
+                  key={action.id}
+                  href={action.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`inline-flex min-h-10 items-center justify-center rounded-md px-4 py-2 text-sm font-semibold transition-colors ${NEXT_ACTION_CLASSES[action.emphasis]}`}
+                >
+                  {action.label}
+                </Link>
+              ))}
+            </div>
+
+            <p className="text-xs leading-5 text-slate-400">
+              Estes atalhos abrem em uma nova aba para você não perder este
+              resumo da importação.
+            </p>
           </div>
         ) : null}
 
@@ -320,61 +283,110 @@ export function EmployeeImportActionPanel({
           dryRun={planResult.dryRun}
         />
 
-        <div className="rounded-2xl border border-slate-200 bg-slate-950 p-6 text-white sm:p-8">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-300">
-                Confirmação humana
-              </p>
+        {planResult.dryRun.noChange ? (
+          // Already synchronized: nothing applicable, nothing blocked. These
+          // records were recognized as already up to date — no apply CTA, just
+          // useful next actions. The detailed records remain above for audit.
+          <div className="rounded-2xl border border-slate-200 bg-slate-950 p-6 text-white sm:p-8">
+            <div className="flex flex-col gap-5">
+              <div>
+                <p className="text-sm font-medium text-slate-300">
+                  Sincronização
+                </p>
 
-              <h2 className="mt-2 text-xl font-semibold">
-                Aplique somente depois de
-                revisar o plano.
-              </h2>
+                <h2 className="mt-2 text-xl font-semibold">
+                  Nenhuma alteração necessária
+                </h2>
 
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-                Nesta primeira integração, o
-                plano identifica novos
-                colaboradores, departamentos e
-                cargos. Atualizações de pessoas
-                existentes serão adicionadas nas
-                próximas PRs.
-              </p>
-            </div>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+                  Os colaboradores e estruturas desta planilha já
+                  estão sincronizados com a organização atual.
+                </p>
 
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => {
-                  // Returning to re-review discards the current intent.
-                  executionIdRef.current = null
-                  setPlanResult(null)
-                }}
-                disabled={isPending}
-              >
-                Voltar
-              </Button>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+                  Você pode importar outra planilha ou continuar
+                  usando o Evol normalmente.
+                </p>
+              </div>
 
-              <Button
-                type="button"
-                onClick={handleImport}
-                disabled={
-                  isPending ||
-                  !validation.canImport ||
-                  importableRows === 0 ||
-                  !planResult.workspace.canApply ||
-                  planResult.dryRun.decision
-                    .status === "blocked"
-                }
-              >
-                {isPending
-                  ? "Aplicando..."
-                  : "Aplicar sincronização"}
-              </Button>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Button
+                  type="button"
+                  onClick={() => {
+                    // Return to the import screen to choose another spreadsheet.
+                    executionIdRef.current = null
+                    setPlanResult(null)
+                  }}
+                >
+                  Importar outra planilha
+                </Button>
+
+                <Link
+                  href="/app/people"
+                  className="inline-flex min-h-10 items-center justify-center rounded-md border border-white/20 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                >
+                  Ver pessoas
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="rounded-2xl border border-slate-200 bg-slate-950 p-6 text-white sm:p-8">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-300">
+                  Confirmação humana
+                </p>
+
+                <h2 className="mt-2 text-xl font-semibold">
+                  Aplique somente depois de
+                  revisar o plano.
+                </h2>
+
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+                  Nesta primeira integração, o
+                  plano identifica novos
+                  colaboradores, departamentos e
+                  cargos. Atualizações de pessoas
+                  existentes serão adicionadas nas
+                  próximas PRs.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    // Returning to re-review discards the current intent.
+                    executionIdRef.current = null
+                    setPlanResult(null)
+                  }}
+                  disabled={isPending}
+                >
+                  Voltar
+                </Button>
+
+                <Button
+                  type="button"
+                  onClick={handleImport}
+                  disabled={
+                    isPending ||
+                    !validation.canImport ||
+                    importableRows === 0 ||
+                    !planResult.workspace.canApply ||
+                    planResult.dryRun.decision
+                      .status === "blocked"
+                  }
+                >
+                  {isPending
+                    ? "Aplicando..."
+                    : "Aplicar sincronização"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
     )
   }
@@ -388,19 +400,13 @@ export function EmployeeImportActionPanel({
           </p>
 
           <h2 className="mt-2 text-xl font-semibold">
-            {importableRows} colaborador
-            {importableRows === 1 ? "" : "es"}{" "}
-            será
-            {importableRows === 1 ? "" : "ão"}{" "}
-            comparado
-            {importableRows === 1 ? "" : "s"}{" "}
-            com a organização atual.
+            {presentImportComparisonSentence(importableRows)}
           </h2>
 
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
             Nenhuma informação será salva nesta
-            etapa. O Evol OS criará um plano para
-            revisão antes da confirmação.
+            etapa. O Evol criará um plano para você
+            revisar antes de confirmar.
           </p>
 
           {planResult &&

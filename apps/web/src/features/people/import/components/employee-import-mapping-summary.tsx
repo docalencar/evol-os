@@ -18,7 +18,7 @@ export function EmployeeImportMappingSummary({
           </p>
 
           <h2 className="mt-1 text-lg font-semibold text-slate-950">
-            O Evol OS interpretou as colunas
+            O Evol interpretou as colunas
           </h2>
 
           <p className="mt-1 text-sm text-slate-600">

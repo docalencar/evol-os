@@ -2,6 +2,7 @@ export type OrganizationDryRunDecisionTone =
   | "success"
   | "warning"
   | "danger"
+  | "neutral"
 
 export type OrganizationDryRunMetricViewModel = {
   key: string
@@ -28,11 +29,15 @@ export type OrganizationDryRunNoticeViewModel = {
 
 export type OrganizationDryRunViewModel = {
   decision: {
-    status: "safe" | "review" | "blocked"
+    status: "safe" | "review" | "blocked" | "no-change"
     tone: OrganizationDryRunDecisionTone
     title: string
     description: string
   }
+  // True when there are analyzed items but nothing applicable and nothing
+  // blocked — the sheet is already synchronized. Presentation-only; derived
+  // from the existing report counts, not a new plan/execution state.
+  noChange: boolean
   metrics: OrganizationDryRunMetricViewModel[]
   entitySummary: OrganizationDryRunSummaryViewModel[]
   operationSummary: OrganizationDryRunSummaryViewModel[]

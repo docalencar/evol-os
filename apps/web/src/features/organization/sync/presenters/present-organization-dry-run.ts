@@ -125,8 +125,26 @@ function presentNotices(
 export function presentOrganizationDryRun(
   report: OrganizationDryRunReport
 ): OrganizationDryRunViewModel {
+  // Analyzed items exist, but nothing is applicable and nothing is blocked:
+  // the sheet is already synchronized. This is NOT a duplicate/error/conflict —
+  // existing structures/people were recognized as already up to date.
+  const noChange =
+    report.totalItems > 0 &&
+    report.applicableItems === 0 &&
+    report.blockedItems === 0
+
   return {
-    decision: presentDecision(report.decision),
+    decision: noChange
+      ? {
+          status: "no-change",
+          tone: "neutral",
+          title: "Nenhuma alteração necessária",
+          description:
+            "Os colaboradores e estruturas desta planilha já estão sincronizados com a organização atual.",
+        }
+      : presentDecision(report.decision),
+
+    noChange,
 
     metrics: [
       {

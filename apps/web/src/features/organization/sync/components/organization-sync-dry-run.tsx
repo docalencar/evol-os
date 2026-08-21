@@ -43,6 +43,12 @@ const DECISION_STYLES: Record<
     badgeClassName:
       "bg-red-100 text-red-700",
   },
+  neutral: {
+    containerClassName:
+      "border-slate-200 bg-slate-50",
+    badgeClassName:
+      "bg-slate-100 text-slate-700",
+  },
 }
 
 function NoticeList({
@@ -170,7 +176,10 @@ export function OrganizationSyncDryRun({
                 : dryRun.decision.status ===
                     "review"
                   ? "Revisar"
-                  : "Bloqueado"}
+                  : dryRun.decision.status ===
+                      "no-change"
+                    ? "Sem alterações"
+                    : "Bloqueado"}
             </Badge>
           </div>
         </div>

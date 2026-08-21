@@ -145,12 +145,61 @@ test("9. created-entity summary is preserved from appliedByEntity", () => {
   const summary = presentImportActivationSummary(makeResult())
   assert.deepEqual(summary.createdSummary, {
     departments: 1,
+    teams: 0,
     positions: 1,
     people: 1,
   })
 })
 
-test("E. an idempotent retry (success, nothing applied) stays valid and usable", () => {
+test("B1. business changes list uses singular PT-BR and omits zero entities", () => {
+  const summary = presentImportActivationSummary(makeResult())
+  assert.deepEqual(summary.changes, [
+    "1 departamento criado",
+    "1 cargo criado",
+    "1 colaborador adicionado",
+  ])
+  // Team was zero — not listed.
+  assert.ok(!summary.changes.some((c) => /time/.test(c)))
+  // Collaborator terminology, never "pessoa criada".
+  assert.doesNotMatch(JSON.stringify(summary.changes), /pessoa/i)
+})
+
+test("B2. business changes list uses correct plural PT-BR", () => {
+  const summary = presentImportActivationSummary(
+    makeResult({
+      appliedItems: 8,
+      appliedByEntity: {
+        department: 2,
+        team: 3,
+        position: 2,
+        employee: 4,
+      },
+    })
+  )
+  assert.deepEqual(summary.changes, [
+    "2 departamentos criados",
+    "3 times criados",
+    "2 cargos criados",
+    "4 colaboradores adicionados",
+  ])
+})
+
+test("B3. skipped items are framed as 'já estavam atualizadas', never 'Ignorados'", () => {
+  const summary = presentImportActivationSummary(
+    makeResult({ skippedItems: 4 })
+  )
+  assert.match(summary.alreadyUpToDateMessage ?? "", /já estavam atualizadas/i)
+  assert.doesNotMatch(JSON.stringify(summary), /ignorad/i)
+})
+
+test("B4. no skipped items => no already-up-to-date message", () => {
+  const summary = presentImportActivationSummary(
+    makeResult({ skippedItems: 0 })
+  )
+  assert.equal(summary.alreadyUpToDateMessage, null)
+})
+
+test("C. a clean no-change success is honest and still operational", () => {
   const summary = presentImportActivationSummary(
     makeResult({
       appliedItems: 0,
@@ -164,9 +213,32 @@ test("E. an idempotent retry (success, nothing applied) stays valid and usable",
     })
   )
   assert.equal(summary.operational, true)
+  assert.equal(summary.noChanges, true)
+  assert.match(summary.headline, /nenhuma alteração necessária/i)
+  assert.match(summary.description, /já estava atualizada/i)
   assert.doesNotMatch(summary.headline, /erro|falh/i)
-  assert.match(summary.description, /sincronizada|pronta/i)
-  // Recommendation + navigation still offered on a clean no-op.
-  assert.ok(summary.recommendation)
+  // Still a valid, usable state: navigation offered, no error framing.
   assert.ok(summary.nextActions.length > 0)
+  assert.deepEqual(summary.changes, [])
+})
+
+test("D. a partial result still lists the successful changes", () => {
+  const summary = presentImportActivationSummary(
+    makeResult({
+      success: false,
+      failedItems: 1,
+      appliedItems: 2,
+      appliedByEntity: {
+        department: 1,
+        team: 0,
+        position: 1,
+        employee: 0,
+      },
+    })
+  )
+  assert.equal(summary.tone, "partial")
+  assert.deepEqual(summary.changes, [
+    "1 departamento criado",
+    "1 cargo criado",
+  ])
 })

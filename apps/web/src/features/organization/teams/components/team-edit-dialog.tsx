@@ -23,6 +23,7 @@ export function TeamEditDialog({ companyId, team }: TeamEditDialogProps) {
     <EntityDialog
       open={open}
       onOpenChange={setOpen}
+      dismissible={false}
       trigger={
         <Button variant="secondary" size="sm">
           Editar

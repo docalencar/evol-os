@@ -20,6 +20,7 @@ export function DepartmentCreateDialog({
     <EntityDialog
       open={open}
       onOpenChange={setOpen}
+      dismissible={false}
       trigger={<Button>Novo Departamento</Button>}
       title="Novo departamento"
       description="Cadastre uma área da organização."

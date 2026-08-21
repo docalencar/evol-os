@@ -18,6 +18,7 @@ export function TeamCreateDialog({ companyId }: TeamCreateDialogProps) {
     <EntityDialog
       open={open}
       onOpenChange={setOpen}
+      dismissible={false}
       trigger={<Button>Novo time</Button>}
       title="Novo time"
       description="Cadastre um time da organização."

@@ -20,6 +20,7 @@ export function SeniorityLevelCreateDialog({
     <EntityDialog
       open={open}
       onOpenChange={setOpen}
+      dismissible={false}
       trigger={<Button>Nova senioridade</Button>}
       title="Nova senioridade"
       description="Cadastre um nível de senioridade da empresa."

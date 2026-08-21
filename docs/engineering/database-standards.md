@@ -115,6 +115,13 @@ Evitar exclusão física.
 
 # Migrations
 
+Antes de criar uma migration, execute o preflight de ambiente definido em
+[`ENVIRONMENT-GOVERNANCE.md`](../Execution/ENVIRONMENT-GOVERNANCE.md). Se o
+Review canônico estiver ausente, tiver identidade incerta ou estiver mais de três
+migrations atrás de `main`, interrompa nova evolução pesada de banco e solicite
+provisionamento/promoção. O checker é somente leitura e nunca autoriza aplicação
+remota.
+
 Cada migration deve possuir apenas um objetivo.
 
 Exemplo:

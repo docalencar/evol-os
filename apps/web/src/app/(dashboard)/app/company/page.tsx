@@ -90,6 +90,27 @@ export default async function CompanyPage() {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold">
+              Times
+            </h3>
+
+            <p className="mt-2 text-sm text-slate-600">
+              Organize pessoas em equipes quando isso
+              fizer sentido para a estrutura da empresa.
+            </p>
+          </div>
+
+          <Link href="/app/company/teams">
+            <Button variant="secondary">
+              Gerenciar times
+            </Button>
+          </Link>
+        </div>
+      </Card>
+
+      <Card>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold">
               Cargos
             </h3>
 

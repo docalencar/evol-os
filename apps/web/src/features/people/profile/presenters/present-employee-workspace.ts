@@ -15,6 +15,7 @@ type EmployeeWorkspaceOptionInput = {
 
 type PresentEmployeeWorkspaceInput = {
   employee: Employee
+  departmentName: string | null
   positionName: string | null
   teamName: string | null
   managerName: string | null
@@ -97,6 +98,7 @@ function formatPhone(
 
 export function presentEmployeeWorkspace({
   employee,
+  departmentName,
   positionName,
   teamName,
   managerName,
@@ -104,6 +106,10 @@ export function presentEmployeeWorkspace({
   positions,
   managers,
 }: PresentEmployeeWorkspaceInput): EmployeeWorkspaceViewModel {
+  const departmentLabel =
+    departmentName ??
+    "Sem departamento definido"
+
   const positionLabel =
     positionName ??
     "Sem cargo definido"
@@ -173,6 +179,8 @@ export function presentEmployeeWorkspace({
     },
 
     organization: {
+      departmentLabel,
+
       positionId:
         employee.position_id,
       positionLabel,

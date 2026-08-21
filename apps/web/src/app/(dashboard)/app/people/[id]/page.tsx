@@ -10,6 +10,7 @@ import { getEmployeeAssessmentSummary } from "@/features/assessments"
 import {
   getManagementCompetencies,
   getManagementCompetencyAssignments,
+  getManagementDepartments,
   getManagementDevelopmentPlans,
   getManagementEmployeeCompetencies,
   getManagementEntityTimeline,
@@ -115,6 +116,7 @@ export default async function EmployeeProfilePage({
     employeeTimeline,
     assessmentSummary,
     allDevelopmentPlans,
+    departments,
   ] = await Promise.all([
     getManagementPersonIncludingTerminated(companyId, id),
 
@@ -137,6 +139,8 @@ export default async function EmployeeProfilePage({
     getEmployeeAssessmentSummary(companyId, id),
 
     getManagementDevelopmentPlans(companyId),
+
+    getManagementDepartments(companyId),
   ])
 
   if (!employee) {
@@ -212,8 +216,40 @@ export default async function EmployeeProfilePage({
       (manager) => manager.id === employee.manager_id
     )?.name ?? null
 
+  // Department is derived from the canonical Position → Department relationship
+  // (position.department_id), resolved to a name via the trusted departments
+  // read. No direct department-table access and no string inference.
+  const departmentIdByPosition = new Map(
+    ((positions ?? []) as Array<{
+      id: string
+      department_id: string | null
+    }>).map((position) => [
+      position.id,
+      position.department_id,
+    ])
+  )
+
+  const departmentNameById = new Map(
+    ((departments ?? []) as Array<{
+      id: string
+      name: string
+    }>).map((department) => [
+      department.id,
+      department.name,
+    ])
+  )
+
+  const employeeDepartmentId = employee.position_id
+    ? departmentIdByPosition.get(employee.position_id) ?? null
+    : null
+
+  const departmentName = employeeDepartmentId
+    ? departmentNameById.get(employeeDepartmentId) ?? null
+    : null
+
   const workspace = presentEmployeeWorkspace({
     employee,
+    departmentName,
     positionName: getRelationName(employee.positions),
     teamName: getRelationName(employee.teams),
     managerName,

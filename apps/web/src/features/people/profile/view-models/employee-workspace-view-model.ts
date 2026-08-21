@@ -14,6 +14,11 @@ export type EmployeeWorkspaceMetricViewModel = {
 }
 
 export type EmployeeWorkspaceOrganizationViewModel = {
+  // Department is derived from the person's Position (position.department_id →
+  // department name), resolved via the trusted management reads. Shown first
+  // because it frames the employee's organizational context.
+  departmentLabel: string
+
   positionId: string | null
   positionLabel: string
 

@@ -22,6 +22,11 @@ export function EmployeeProfileSidebar({
       <KeyValueList
         items={[
           {
+            label: "Departamento",
+            value:
+              organization.departmentLabel,
+          },
+          {
             label: "Cargo",
             value:
               organization.positionLabel,

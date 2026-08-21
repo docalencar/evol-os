@@ -3,6 +3,7 @@
 import Link from "next/link"
 import {
   useMemo,
+  useRef,
   useState,
   useTransition,
 } from "react"
@@ -12,6 +13,7 @@ import {
   OrganizationSyncReview,
   OrganizationSyncWorkspaceSummary,
 } from "@/features/organization/sync"
+import { newSubmissionId } from "@/features/people-organization-mutations/submission-id"
 import { Button } from "@/components/ui/button"
 
 import {
@@ -62,6 +64,12 @@ export function EmployeeImportActionPanel({
       null
     )
 
+  // Stable identity of ONE Apply intent. Minted on the first Apply of the
+  // current plan and REUSED on every retry of that same plan, so a server/network
+  // retry is idempotent at the DB boundary. Reset to null whenever a new plan is
+  // built or the flow restarts, so a genuinely new import gets a fresh identity.
+  const executionIdRef = useRef<string | null>(null)
+
   const rows = useMemo(
     () => createActionRows(validation),
     [validation]
@@ -72,6 +80,9 @@ export function EmployeeImportActionPanel({
     validation.warningRows
 
   function handleAnalyze() {
+    // A newly analyzed plan is a new intent — drop any prior execution id.
+    executionIdRef.current = null
+
     startTransition(async () => {
       const actionResult =
         await createEmployeeImportSyncPlanAction(
@@ -87,10 +98,17 @@ export function EmployeeImportActionPanel({
       return
     }
 
+    if (!executionIdRef.current) {
+      executionIdRef.current = newSubmissionId()
+    }
+
+    const executionId = executionIdRef.current
+
     startTransition(async () => {
       const actionResult =
         await applyOrganizationSyncPlanAction(
-          planResult.plan
+          planResult.plan,
+          executionId
         )
 
       setResult(actionResult)
@@ -184,6 +202,8 @@ export function EmployeeImportActionPanel({
           <button
             type="button"
             onClick={() => {
+              // Fresh import = fresh intent.
+              executionIdRef.current = null
               setResult(null)
               setPlanResult(null)
             }}
@@ -239,9 +259,11 @@ export function EmployeeImportActionPanel({
               <Button
                 type="button"
                 variant="secondary"
-                onClick={() =>
+                onClick={() => {
+                  // Returning to re-review discards the current intent.
+                  executionIdRef.current = null
                   setPlanResult(null)
-                }
+                }}
                 disabled={isPending}
               >
                 Voltar

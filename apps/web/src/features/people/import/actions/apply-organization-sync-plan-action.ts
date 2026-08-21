@@ -10,9 +10,12 @@ import type {
   OrganizationSyncPlan,
 } from "@/features/organization/sync"
 import {
-  applyOrganizationSyncCoordinator,
-  persistOrganizationTimeline,
+  executeOrganizationSyncPlan,
+  OrganizationSyncExecutionError,
 } from "@/features/organization/sync/server"
+import {
+  isValidSubmissionId,
+} from "@/features/people-organization-mutations/submission-id"
 import {
   getCurrentCompanyContext,
 } from "@/lib/supabase/supabase/current-company"
@@ -37,25 +40,54 @@ function deserializePlan(
   }
 }
 
-export async function applyOrganizationSyncPlanAction(
-  input: SerializedOrganizationSyncPlan
-): Promise<ApplyOrganizationSyncPlanActionResult> {
-  const { companyId, user } =
-    await getCurrentCompanyContext()
+function failureResult(
+  message: string,
+  totalItems: number
+): ApplyOrganizationSyncPlanActionResult {
+  return {
+    success: false,
+    message,
+    totalItems,
+    appliedItems: 0,
+    skippedItems: 0,
+    failedItems: 0,
+    errors: [],
+  }
+}
 
+export async function applyOrganizationSyncPlanAction(
+  input: SerializedOrganizationSyncPlan,
+  executionId: string
+): Promise<ApplyOrganizationSyncPlanActionResult> {
   const plan = deserializePlan(input)
 
-  const executionReport =
-    await applyOrganizationSyncCoordinator({
+  // The execution_id is the stable identity of ONE Apply intent. A retry of the
+  // same intent must reuse it (idempotent at the DB boundary); a new plan gets a
+  // new one. If it is missing/malformed we fail closed rather than inventing a
+  // second identity.
+  if (!isValidSubmissionId(executionId)) {
+    return failureResult(
+      "Não foi possível iniciar a aplicação. Refaça a análise e tente novamente.",
+      plan.items.length
+    )
+  }
+
+  const { companyId } = await getCurrentCompanyContext()
+
+  let report
+  try {
+    report = await executeOrganizationSyncPlan({
       companyId,
+      executionId,
       plan,
     })
-
-  await persistOrganizationTimeline({
-    companyId,
-    createdBy: user.id,
-    report: executionReport,
-  })
+  } catch (error) {
+    if (error instanceof OrganizationSyncExecutionError) {
+      // Whole-execution refusal (auth / tenant / changed-intent conflict).
+      return failureResult(error.message, plan.items.length)
+    }
+    throw error
+  }
 
   revalidatePath("/app")
   revalidatePath("/app/people")
@@ -63,7 +95,5 @@ export async function applyOrganizationSyncPlanAction(
   revalidatePath("/app/company/teams")
   revalidatePath("/app/company/positions")
 
-  return presentApplyOrganizationSyncResult(
-    executionReport
-  )
+  return presentApplyOrganizationSyncResult(report)
 }

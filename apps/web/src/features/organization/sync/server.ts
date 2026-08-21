@@ -1,6 +1,23 @@
 import "server-only"
 
 export {
+  executeOrganizationSyncPlan,
+} from "./services/execute-organization-sync-plan"
+
+export type {
+  ExecuteOrganizationSyncPlanInput,
+} from "./services/execute-organization-sync-plan"
+
+export {
+  OrganizationSyncExecutionError,
+  organizationSyncErrorMessage,
+} from "./services/organization-sync-execution-errors"
+
+export type {
+  OrganizationSyncExecutionCode,
+} from "./services/organization-sync-execution-errors"
+
+export {
   applyOrganizationSyncCoordinator,
 } from "./services/apply-organization-sync-coordinator"
 

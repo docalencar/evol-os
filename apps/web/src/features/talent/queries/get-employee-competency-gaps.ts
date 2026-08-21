@@ -81,10 +81,16 @@ export async function getEmployeeCompetencyGaps(
       )
     )
 
-  return (
-    positionCompetencies ?? []
-  ).map((positionCompetency) =>
-    calculateCompetencyGap({
+  return (positionCompetencies ?? []).flatMap((positionCompetency) => {
+    const currentLevel = currentLevelByCompetency.get(
+      positionCompetency.competency_id
+    )
+
+    if (currentLevel === undefined) {
+      return []
+    }
+
+    return [calculateCompetencyGap({
       competencyId:
         positionCompetency.competency_id,
 
@@ -93,10 +99,7 @@ export async function getEmployeeCompetencyGaps(
           positionCompetency.competencies as CompetencyRelation
         ),
 
-      currentLevel:
-        currentLevelByCompetency.get(
-          positionCompetency.competency_id
-        ) ?? 0,
+      currentLevel,
 
       expectedLevel:
         positionCompetency.expected_level,
@@ -106,6 +109,6 @@ export async function getEmployeeCompetencyGaps(
 
       required:
         positionCompetency.required,
-    })
-  )
+    })]
+  })
 }

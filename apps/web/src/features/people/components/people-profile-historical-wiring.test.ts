@@ -35,12 +35,14 @@ test("profile route performs no direct read on protected tables", () => {
   assert.doesNotMatch(page, /createClient|company_members/)
 })
 
-test("competency gaps are derived from safe read models via the existing rule", () => {
-  // Gaps are computed from the subject's position requirements (directory) versus
-  // the employee's current levels, reusing calculateCompetencyGap (no duplication).
-  assert.match(page, /calculateCompetencyGap\(/)
+test("competency coverage and real gaps are derived from safe read models", () => {
+  // Coverage is computed from the subject's position requirements (directory)
+  // versus recorded levels. The shared resolver reuses calculateCompetencyGap
+  // only for assessed competencies, so missing data never becomes level zero.
+  assert.match(page, /deriveCompetencyCoverage\(/)
   assert.match(page, /assignment\.record_type === "position"/)
   assert.match(page, /assignment\.position_id === employee\.position_id/)
+  assert.doesNotMatch(page, /currentLevel:[\s\S]{0,100}\?\? 0/)
 })
 
 test("development plans are scoped to the subject employee", () => {

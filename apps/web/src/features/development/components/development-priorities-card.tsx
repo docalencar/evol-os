@@ -24,9 +24,9 @@ const DEVELOPMENT_PRIORITY_LABELS: Record<
   DevelopmentPriorityRisk,
   string
 > = {
-  high: "Alta prioridade",
-  medium: "Média prioridade",
-  low: "Baixa prioridade",
+  high: "Prioridade alta",
+  medium: "Prioridade moderada",
+  low: "Prioridade baixa",
 }
 
 const DEVELOPMENT_PRIORITY_STYLES: Record<

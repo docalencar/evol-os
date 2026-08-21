@@ -1,10 +1,10 @@
 import { Badge } from "@/components/ui/badge"
 import { DashboardCard } from "@/components/dashboard"
 
-import type { CompetencyGap } from "../types/competency-gap"
+import type { CompetencyCoverage } from "../types/competency-coverage"
 
 type Props = {
-  gaps: CompetencyGap[]
+  coverage: CompetencyCoverage
 }
 
 const STATUS = {
@@ -38,19 +38,47 @@ function formatGap(gap: number) {
   return String(gap)
 }
 
-export function CompetencyGapCard({ gaps }: Props) {
-  if (gaps.length === 0) {
+export function CompetencyGapCard({ coverage }: Props) {
+  if (coverage.state === "no_position" || coverage.state === "not_configured") {
     return (
       <DashboardCard>
         <div className="py-8 text-center text-sm text-slate-500">
-          Nenhuma competência esperada foi cadastrada para este cargo.
+          {coverage.state === "no_position"
+            ? "Este colaborador ainda não possui um cargo definido."
+            : "Competências ainda não configuradas para este cargo."}
         </div>
       </DashboardCard>
     )
   }
 
+  if (coverage.state === "not_assessed") {
+    return (
+      <DashboardCard>
+        <div className="py-8 text-center">
+          <p className="font-medium text-slate-900">Competências ainda não avaliadas.</p>
+          <p className="mt-2 text-sm text-slate-500">
+            {coverage.expectedCount} competências esperadas aguardam o registro do nível atual.
+          </p>
+        </div>
+      </DashboardCard>
+    )
+  }
+
+  const gaps = coverage.gaps
+
   return (
     <DashboardCard>
+      {coverage.state === "partially_assessed" ? (
+        <div className="mb-4 rounded-lg bg-blue-50 px-4 py-3 text-sm text-blue-800">
+          <span className="font-medium">Avaliação parcial:</span>{" "}
+          {coverage.assessedCount} de {coverage.expectedCount} competências avaliadas.
+          {" "}{coverage.unassessedCount}{" "}
+          {coverage.unassessedCount === 1
+            ? "competência ainda não avaliada."
+            : "competências ainda não avaliadas."}
+        </div>
+      ) : null}
+
       <div className="overflow-hidden rounded-lg border border-slate-200">
         <table className="w-full border-collapse">
           <thead className="bg-slate-50">

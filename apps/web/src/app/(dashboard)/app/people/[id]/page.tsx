@@ -50,9 +50,9 @@ import {
 } from "@/features/people/profile"
 
 import {
-  calculateCompetencyGap,
   CompetencyGapCard,
   createEmployeeInsights,
+  deriveCompetencyCoverage,
   TalentSummaryCard,
 } from "@/features/talent"
 
@@ -155,34 +155,27 @@ export default async function EmployeeProfilePage({
     (plan) => plan.employeeId === id
   )
 
-  const currentLevelByCompetency = new Map(
-    employeeCompetencies.map(
-      (competency) =>
-        [competency.competency_id, competency.current_level] as const
-    )
-  )
-
-  const competencyGaps = employee.position_id
-    ? competencyAssignments
-        .filter(
-          (assignment) =>
-            assignment.record_type === "position" &&
-            assignment.position_id === employee.position_id
-        )
-        .map((assignment) =>
-          calculateCompetencyGap({
-            competencyId: assignment.competency_id,
-            competencyName: assignment.competency_name,
-            currentLevel:
-              currentLevelByCompetency.get(
-                assignment.competency_id
-              ) ?? 0,
-            expectedLevel: assignment.expected_level ?? 0,
-            weight: assignment.weight ?? 0,
-            required: assignment.required ?? false,
-          })
-        )
-    : []
+  const competencyCoverage = deriveCompetencyCoverage({
+    positionId: employee.position_id,
+    expectations: competencyAssignments
+      .filter(
+        (assignment) =>
+          assignment.record_type === "position" &&
+          assignment.position_id === employee.position_id
+      )
+      .map((assignment) => ({
+        competencyId: assignment.competency_id,
+        competencyName: assignment.competency_name,
+        expectedLevel: assignment.expected_level as number,
+        weight: assignment.weight as number,
+        required: assignment.required as boolean,
+      })),
+    employeeLevels: employeeCompetencies.map((competency) => ({
+      competencyId: competency.competency_id,
+      currentLevel: competency.current_level,
+    })),
+  })
+  const competencyGaps = [...competencyCoverage.gaps]
 
   const teamOptions = ((teams ?? []) as NamedEntity[]).map(
     (team) => ({
@@ -344,6 +337,7 @@ export default async function EmployeeProfilePage({
       <DashboardSection title="Resumo de talentos">
         <TalentSummaryCard
           insights={insights}
+          coverage={competencyCoverage}
           positionId={workspace.organization.positionId}
         />
       </DashboardSection>
@@ -400,7 +394,7 @@ export default async function EmployeeProfilePage({
           ) : undefined
         }
       >
-        <CompetencyGapCard gaps={competencyGaps} />
+        <CompetencyGapCard coverage={competencyCoverage} />
       </DashboardSection>
 
       <DashboardSection title="Competências registradas">

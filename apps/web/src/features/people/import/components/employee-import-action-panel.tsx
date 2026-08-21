@@ -24,12 +24,28 @@ import {
   applyOrganizationSyncPlanAction,
   type ApplyOrganizationSyncPlanActionResult,
 } from "../actions/apply-organization-sync-plan-action"
+import {
+  presentImportActivationSummary,
+  type ImportActivationNextAction,
+} from "../presenters/present-import-activation-summary"
 import type {
   EmployeeImportActionRow,
 } from "../types/employee-import-action"
 import type {
   EmployeeImportValidationResult,
 } from "../types/employee-import-validation"
+
+const NEXT_ACTION_CLASSES: Record<
+  ImportActivationNextAction["emphasis"],
+  string
+> = {
+  primary:
+    "bg-white text-slate-950 hover:bg-slate-100",
+  secondary:
+    "border border-white/20 text-white hover:bg-white/10",
+  tertiary:
+    "text-slate-300 underline-offset-4 hover:text-white hover:underline",
+}
 
 type EmployeeImportActionPanelProps = {
   validation: EmployeeImportValidationResult
@@ -116,16 +132,61 @@ export function EmployeeImportActionPanel({
   }
 
   if (result) {
+    const activation =
+      presentImportActivationSummary(result)
+
+    const createdParts: string[] = []
+    if (activation.createdSummary.departments > 0) {
+      createdParts.push(
+        `${activation.createdSummary.departments} ${
+          activation.createdSummary.departments === 1
+            ? "departamento"
+            : "departamentos"
+        }`
+      )
+    }
+    if (activation.createdSummary.positions > 0) {
+      createdParts.push(
+        `${activation.createdSummary.positions} ${
+          activation.createdSummary.positions === 1
+            ? "cargo"
+            : "cargos"
+        }`
+      )
+    }
+    if (activation.createdSummary.people > 0) {
+      createdParts.push(
+        `${activation.createdSummary.people} ${
+          activation.createdSummary.people === 1
+            ? "pessoa"
+            : "pessoas"
+        }`
+      )
+    }
+
     return (
-      <section className="space-y-5 rounded-2xl border border-slate-200 bg-slate-950 p-6 text-white sm:p-8">
+      <section className="space-y-6 rounded-2xl border border-slate-200 bg-slate-950 p-6 text-white sm:p-8">
         <div>
           <p className="text-sm font-medium text-slate-300">
-            Sincronização concluída
+            {activation.operational
+              ? "Importação concluída"
+              : "Importação revisada"}
           </p>
 
           <h2 className="mt-2 text-2xl font-semibold">
-            {result.message}
+            {activation.headline}
           </h2>
+
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+            {activation.description}
+          </p>
+
+          {activation.operational &&
+          createdParts.length > 0 ? (
+            <p className="mt-3 text-sm font-medium text-white">
+              Criado agora: {createdParts.join(" · ")}.
+            </p>
+          ) : null}
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -173,7 +234,7 @@ export function EmployeeImportActionPanel({
         {result.errors.length > 0 ? (
           <div className="max-h-64 space-y-2 overflow-y-auto rounded-xl bg-white/10 p-4">
             <p className="text-sm font-semibold">
-              Avisos da sincronização
+              Itens que precisam de atenção
             </p>
 
             {result.errors.map(
@@ -191,14 +252,40 @@ export function EmployeeImportActionPanel({
           </div>
         ) : null}
 
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <Link
-            href="/app/people"
-            className="inline-flex min-h-10 items-center justify-center rounded-md bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition-colors hover:bg-slate-100"
-          >
-            Ver colaboradores
-          </Link>
+        {activation.recommendation ? (
+          <div className="rounded-xl border border-white/15 bg-white/5 p-5">
+            <p className="text-sm font-semibold text-white">
+              {activation.recommendation.title}
+            </p>
 
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-300">
+              {activation.recommendation.description}
+            </p>
+
+            <Link
+              href={activation.recommendation.href}
+              className="mt-3 inline-flex min-h-10 items-center justify-center rounded-md border border-white/20 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+            >
+              {activation.recommendation.ctaLabel}
+            </Link>
+          </div>
+        ) : null}
+
+        {activation.nextActions.length > 0 ? (
+          <div className="flex flex-col flex-wrap gap-3 sm:flex-row sm:items-center">
+            {activation.nextActions.map((action) => (
+              <Link
+                key={action.id}
+                href={action.href}
+                className={`inline-flex min-h-10 items-center justify-center rounded-md px-4 py-2 text-sm font-semibold transition-colors ${NEXT_ACTION_CLASSES[action.emphasis]}`}
+              >
+                {action.label}
+              </Link>
+            ))}
+          </div>
+        ) : null}
+
+        <div>
           <button
             type="button"
             onClick={() => {

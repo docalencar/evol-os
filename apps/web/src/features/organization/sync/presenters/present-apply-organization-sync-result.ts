@@ -43,6 +43,12 @@ export function presentApplyOrganizationSyncResult(
     appliedItems: report.appliedItems,
     skippedItems: report.skippedItems,
     failedItems: report.failedItems,
+    appliedByEntity: {
+      department: report.entitySummary.department.appliedItems,
+      team: report.entitySummary.team.appliedItems,
+      position: report.entitySummary.position.appliedItems,
+      employee: report.entitySummary.employee.appliedItems,
+    },
     errors: report.errors,
   }
 }

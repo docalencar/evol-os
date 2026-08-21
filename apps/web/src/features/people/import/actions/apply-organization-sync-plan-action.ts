@@ -51,6 +51,12 @@ function failureResult(
     appliedItems: 0,
     skippedItems: 0,
     failedItems: 0,
+    appliedByEntity: {
+      department: 0,
+      team: 0,
+      position: 0,
+      employee: 0,
+    },
     errors: [],
   }
 }

@@ -13,6 +13,7 @@ type CrudCreateDialogProps = {
   trigger: ReactElement
   title: string
   description?: string
+  dismissible?: boolean
   children:
     | ReactNode
     | ((controls: CrudDialogControls) => ReactNode)
@@ -22,6 +23,7 @@ export function CrudCreateDialog({
   trigger,
   title,
   description,
+  dismissible,
   children,
 }: CrudCreateDialogProps) {
   const [open, setOpen] = useState(false)
@@ -37,6 +39,7 @@ export function CrudCreateDialog({
       trigger={trigger}
       title={title}
       description={description}
+      dismissible={dismissible}
     >
       {typeof children === "function"
         ? children({ close })

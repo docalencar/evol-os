@@ -29,6 +29,7 @@ export async function createPositionCompetencyAction(
   }
 
   revalidatePath("/app/company/positions")
+  revalidatePath(`/app/company/positions/${parsed.data.positionId}`)
 
   return {
     success: true,

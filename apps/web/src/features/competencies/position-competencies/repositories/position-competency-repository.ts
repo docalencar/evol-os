@@ -5,21 +5,6 @@ import type {
   UpdatePositionCompetencyInput,
 } from "../schemas/position-competency-schema"
 
-function normalizeInput(
-  input: CreatePositionCompetencyInput | UpdatePositionCompetencyInput
-) {
-  return {
-    position_id: input.positionId,
-    competency_id: input.competencyId,
-    expected_level: input.expectedLevel,
-    weight: input.weight,
-    required: input.required,
-    type: input.type,
-    notes: input.notes || null,
-    updated_at: new Date().toISOString(),
-  }
-}
-
 export async function createPositionCompetencyRepository() {
   const supabase = await createServerDatabase()
 
@@ -53,9 +38,15 @@ export async function createPositionCompetencyRepository() {
     },
 
     async create(companyId: string, input: CreatePositionCompetencyInput) {
-      return supabase.from("position_competencies").insert({
-        company_id: companyId,
-        ...normalizeInput(input),
+      return supabase.rpc("create_tenant_position_competency_v1", {
+        p_company_id: companyId,
+        p_position_id: input.positionId,
+        p_competency_id: input.competencyId,
+        p_expected_level: input.expectedLevel,
+        p_weight: input.weight,
+        p_required: input.required,
+        p_type: input.type,
+        p_notes: input.notes || null,
       })
     },
 
@@ -64,22 +55,24 @@ export async function createPositionCompetencyRepository() {
       id: string,
       input: UpdatePositionCompetencyInput
     ) {
-      return supabase
-        .from("position_competencies")
-        .update(normalizeInput(input))
-        .eq("company_id", companyId)
-        .eq("id", id)
+      return supabase.rpc("update_tenant_position_competency_v1", {
+        p_company_id: companyId,
+        p_position_competency_id: id,
+        p_position_id: input.positionId,
+        p_competency_id: input.competencyId,
+        p_expected_level: input.expectedLevel,
+        p_weight: input.weight,
+        p_required: input.required,
+        p_type: input.type,
+        p_notes: input.notes || null,
+      })
     },
 
     async archive(companyId: string, id: string) {
-      return supabase
-        .from("position_competencies")
-        .update({
-          archived_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("company_id", companyId)
-        .eq("id", id)
+      return supabase.rpc("archive_tenant_position_competency_v1", {
+        p_company_id: companyId,
+        p_position_competency_id: id,
+      })
     },
   }
 }

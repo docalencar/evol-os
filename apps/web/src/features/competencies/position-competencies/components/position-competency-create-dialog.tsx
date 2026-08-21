@@ -83,6 +83,7 @@ export function PositionCompetencyCreateDialog({
         }
         title="Adicionar competência esperada"
         description="Defina o nível, o peso e a importância desta competência para o cargo."
+        dismissible={false}
       >
         {({ close }) => (
           <PositionCompetencyForm

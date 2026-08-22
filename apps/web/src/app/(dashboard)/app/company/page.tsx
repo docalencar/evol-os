@@ -75,18 +75,6 @@ export default async function CompanyPage() {
       <DepartmentTable departments={departments ?? []} />
 
       <Card>
-        <EntityTimelineSection
-          title="Timeline da empresa"
-          description="Últimas atividades registradas em toda a organização."
-          emptyTitle="Nenhuma atividade registrada"
-          emptyDescription="Quando houver movimentações, elas aparecerão aqui."
-          items={companyTimeline.items.map(
-            presentTimelineItem
-          )}
-        />
-      </Card>
-
-      <Card>
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold">
@@ -147,6 +135,19 @@ export default async function CompanyPage() {
             </Button>
           </Link>
         </div>
+      </Card>
+
+      <Card>
+        <EntityTimelineSection
+          title="Atividade recente"
+          description="Veja as atividades mais recentes registradas na organização."
+          emptyTitle="Nenhuma atividade registrada"
+          emptyDescription="Quando houver movimentações, elas aparecerão aqui."
+          initialVisibleCount={4}
+          items={companyTimeline.items.map(
+            presentTimelineItem
+          )}
+        />
       </Card>
     </div>
   )

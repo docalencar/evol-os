@@ -45,49 +45,36 @@ export async function createAssessmentTemplateRepository() {
     },
 
     async create(data: CreateAssessmentTemplateData) {
-      return supabase.from("assessment_templates").insert({
-        company_id: data.companyId,
-        name: data.name,
-        description: data.description ?? null,
-        instructions: data.instructions ?? null,
-        type: data.type,
-        status: data.status,
-        active: data.status === "active",
+      return supabase.rpc("create_tenant_assessment_template_v1", {
+        p_company_id: data.companyId,
+        p_name: data.name,
+        p_description: data.description ?? "",
+        p_instructions: data.instructions ?? "",
+        p_type: data.type,
+        p_status: data.status,
       })
     },
 
     async update(data: UpdateAssessmentTemplateData) {
-      return supabase
-        .from("assessment_templates")
-        .update({
-          name: data.name,
-          description: data.description ?? null,
-          instructions: data.instructions ?? null,
-          type: data.type,
-          status: data.status,
-          active: data.status === "active",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("company_id", data.companyId)
-        .eq("id", data.assessmentTemplateId)
-        .is("deleted_at", null)
+      return supabase.rpc("update_tenant_assessment_template_v1", {
+        p_company_id: data.companyId,
+        p_assessment_template_id: data.assessmentTemplateId,
+        p_name: data.name,
+        p_description: data.description ?? "",
+        p_instructions: data.instructions ?? "",
+        p_type: data.type,
+        p_status: data.status,
+      })
     },
 
     async archive(
       companyId: string,
       assessmentTemplateId: string
     ) {
-      return supabase
-        .from("assessment_templates")
-        .update({
-          status: "archived",
-          active: false,
-          deleted_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("company_id", companyId)
-        .eq("id", assessmentTemplateId)
-        .is("deleted_at", null)
+      return supabase.rpc("archive_tenant_assessment_template_v1", {
+        p_company_id: companyId,
+        p_assessment_template_id: assessmentTemplateId,
+      })
     },
   }
 }

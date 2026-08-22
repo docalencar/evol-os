@@ -11,11 +11,13 @@ import { archiveAssessmentSectionAction } from "../../actions/archive-assessment
 type ArchiveAssessmentSectionButtonProps = {
   companyId: string
   assessmentSectionId: string
+  assessmentTemplateId: string
 }
 
 export function ArchiveAssessmentSectionButton({
   companyId,
   assessmentSectionId,
+  assessmentTemplateId,
 }: ArchiveAssessmentSectionButtonProps) {
   const [isPending, startTransition] = useTransition()
 
@@ -23,7 +25,8 @@ export function ArchiveAssessmentSectionButton({
     startTransition(async () => {
       const result = await archiveAssessmentSectionAction(
         companyId,
-        assessmentSectionId
+        assessmentSectionId,
+        assessmentTemplateId
       )
 
       if (!result.success) {
@@ -38,7 +41,7 @@ export function ArchiveAssessmentSectionButton({
   return (
     <ConfirmDialog
       title="Arquivar seção?"
-      description="A seção deixará de aparecer no template. Os dados relacionados serão preservados."
+      description="A seção deixará de aparecer no modelo. Os dados relacionados serão preservados."
       confirmLabel="Arquivar"
       loading={isPending}
       onConfirm={handleArchive}

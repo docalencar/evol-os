@@ -44,21 +44,11 @@ export async function createAssessmentSectionAction(
   })
 
   if (error) {
-    console.error(
-      "Assessment Section Create Error:",
-      error
-    )
-
-    if (
-      error.code === "23505" &&
-      error.message.includes(
-        "idx_assessment_sections_unique_name"
-      )
-    ) {
+    if (error.code === "23505") {
       return {
         success: false,
         message:
-          "Já existe uma seção com esse nome neste template.",
+          "Já existe uma seção com esse nome neste modelo.",
       }
     }
 

@@ -20,12 +20,14 @@ export function AssessmentTemplateCreateDialog({
     <EntityDialog
       open={open}
       onOpenChange={setOpen}
-      trigger={<Button variant="secondary">Novo template</Button>}
-      title="Novo template de avaliação"
+      trigger={<Button variant="secondary">Novo modelo</Button>}
+      title="Novo modelo de avaliação"
       description="Crie uma estrutura reutilizável para avaliações."
+      dismissible={false}
     >
       <AssessmentTemplateForm
         companyId={companyId}
+        onCancel={() => setOpen(false)}
         onSuccess={() => setOpen(false)}
       />
     </EntityDialog>

@@ -46,8 +46,6 @@ export async function updateAssessmentSectionAction(
   })
 
   if (error) {
-    console.error("Assessment Section Update Error:", error)
-
     return {
       success: false,
       message: "Não foi possível atualizar a seção.",

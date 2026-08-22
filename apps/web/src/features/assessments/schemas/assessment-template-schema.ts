@@ -11,11 +11,11 @@ export const assessmentTemplateSchema = z.object({
     .trim()
     .min(
       2,
-      "O nome do template deve ter pelo menos 2 caracteres."
+      "O nome do modelo deve ter pelo menos 2 caracteres."
     )
     .max(
       120,
-      "O nome do template deve ter no máximo 120 caracteres."
+      "O nome do modelo deve ter no máximo 120 caracteres."
     ),
 
   description: z

@@ -27,7 +27,7 @@ export async function createAssessmentTemplateAction(
       success: false,
       message:
         parsedInput.error.issues[0]?.message ??
-        "Dados inválidos para criar o template.",
+        "Dados inválidos para criar o modelo.",
     }
   }
 
@@ -41,7 +41,7 @@ export async function createAssessmentTemplateAction(
   if (error) {
     return {
       success: false,
-      message: "Não foi possível criar o template de avaliação.",
+      message: "Não foi possível criar o modelo de avaliação.",
     }
   }
 
@@ -49,6 +49,6 @@ export async function createAssessmentTemplateAction(
 
   return {
     success: true,
-    message: "Template de avaliação criado com sucesso.",
+    message: "Modelo de avaliação criado com sucesso.",
   }
 }

@@ -43,7 +43,7 @@ export function AssessmentTemplatePreview({
       {visibleSections.length === 0 ? (
         <div className="rounded-xl border border-dashed p-8 text-center">
           <p className="font-medium">
-            Este template ainda não possui seções ativas.
+            Este modelo ainda não possui seções ativas.
           </p>
 
           <p className="mt-1 text-sm text-muted-foreground">

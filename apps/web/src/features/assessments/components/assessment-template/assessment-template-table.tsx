@@ -39,14 +39,14 @@ export function AssessmentTemplateTable({
 }: AssessmentTemplateTableProps) {
   return (
     <DataTable
-      title="Templates de avaliação"
+      title="Modelos de avaliação"
       data={templates}
       rowKey={(template) => template.id}
-      emptyMessage="Nenhum template de avaliação cadastrado."
+      emptyMessage="Nenhum modelo de avaliação cadastrado."
       columns={[
         {
           key: "name",
-          header: "Template",
+          header: "Modelo",
           render: (template) => (
             <div className="max-w-md">
               <Link
@@ -58,7 +58,7 @@ export function AssessmentTemplateTable({
 
               <p className="line-clamp-2 text-sm text-muted-foreground">
                 {template.description ||
-                  "Template sem descrição cadastrada."}
+                  "Modelo sem descrição cadastrada."}
               </p>
             </div>
           ),

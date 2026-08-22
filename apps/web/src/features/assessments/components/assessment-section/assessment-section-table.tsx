@@ -39,10 +39,10 @@ export function AssessmentSectionTable({
 }: AssessmentSectionTableProps) {
   return (
     <DataTable
-      title="Seções do template"
+      title="Seções do modelo"
       data={sections}
       rowKey={(section) => section.id}
-      emptyMessage="Nenhuma seção cadastrada neste template."
+      emptyMessage="Nenhuma seção cadastrada neste modelo."
       columns={[
         {
           key: "name",
@@ -103,6 +103,7 @@ export function AssessmentSectionTable({
               <ArchiveAssessmentSectionButton
                 companyId={companyId}
                 assessmentSectionId={section.id}
+                assessmentTemplateId={section.assessment_template_id}
               />
             </div>
           ),

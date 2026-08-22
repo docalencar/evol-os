@@ -26,12 +26,14 @@ export function AssessmentSectionCreateDialog({
       onOpenChange={setOpen}
       trigger={<Button>Nova seção</Button>}
       title="Nova seção"
-      description="Organize as perguntas do template em grupos."
+      description="Organize as perguntas do modelo em grupos."
+      dismissible={false}
     >
       <AssessmentSectionForm
         companyId={companyId}
         assessmentTemplateId={assessmentTemplateId}
         defaultDisplayOrder={defaultDisplayOrder}
+        onCancel={() => setOpen(false)}
         onSuccess={() => setOpen(false)}
       />
     </EntityDialog>

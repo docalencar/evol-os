@@ -12,7 +12,7 @@ const optionalTextSchema = (maximumLength: number, message: string) =>
 export const assessmentSectionSchema = z.object({
   assessmentTemplateId: z
     .string()
-    .uuid("Template de avaliação inválido."),
+    .uuid("Modelo de avaliação inválido."),
 
   code: optionalTextSchema(
     30,

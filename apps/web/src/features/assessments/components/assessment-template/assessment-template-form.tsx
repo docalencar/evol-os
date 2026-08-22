@@ -19,6 +19,7 @@ type AssessmentTemplateFormProps = {
   companyId: string
   template?: AssessmentTemplate
   onSuccess?: () => void
+  onCancel?: () => void
 }
 
 const selectClassName =
@@ -31,6 +32,7 @@ export function AssessmentTemplateForm({
   companyId,
   template,
   onSuccess,
+  onCancel,
 }: AssessmentTemplateFormProps) {
   const [isPending, startTransition] = useTransition()
 
@@ -57,7 +59,7 @@ export function AssessmentTemplateForm({
   return (
     <form action={handleSubmit} className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="name">Nome do template</Label>
+        <Label htmlFor="name">Nome do modelo</Label>
 
         <Input
           id="name"
@@ -78,7 +80,7 @@ export function AssessmentTemplateForm({
           name="description"
           className={textareaClassName}
           defaultValue={template?.description ?? ""}
-          placeholder="Explique o objetivo deste template."
+          placeholder="Explique o objetivo deste modelo."
           maxLength={500}
         />
       </div>
@@ -134,13 +136,22 @@ export function AssessmentTemplateForm({
         </div>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={isPending}
+          onClick={onCancel}
+        >
+          Cancelar
+        </Button>
+
         <Button type="submit" disabled={isPending}>
           {isPending
             ? "Salvando..."
             : template
               ? "Salvar alterações"
-              : "Criar template"}
+              : "Criar modelo"}
         </Button>
       </div>
     </form>

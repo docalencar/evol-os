@@ -37,8 +37,8 @@ export function ArchiveAssessmentTemplateButton({
 
   return (
     <ConfirmDialog
-      title="Arquivar template de avaliação?"
-      description="O template deixará de aparecer nas listagens padrão. As avaliações já vinculadas serão preservadas."
+      title="Arquivar modelo de avaliação?"
+      description="O modelo deixará de aparecer nas listagens padrão. As avaliações já vinculadas serão preservadas."
       confirmLabel="Arquivar"
       loading={isPending}
       onConfirm={handleArchive}

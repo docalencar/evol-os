@@ -27,7 +27,7 @@ export function GenerateCycleAssessmentsButton({
   function handleGenerate() {
     if (!assessmentTemplateId) {
       toast.error(
-        "Selecione um template antes de gerar as avaliações."
+        "Selecione um modelo antes de gerar as avaliações."
       )
       return
     }

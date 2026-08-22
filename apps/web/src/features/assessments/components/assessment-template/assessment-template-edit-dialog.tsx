@@ -28,12 +28,14 @@ export function AssessmentTemplateEditDialog({
           Editar
         </Button>
       }
-      title="Editar template de avaliação"
-      description="Atualize a estrutura e as instruções deste template."
+      title="Editar modelo de avaliação"
+      description="Atualize a estrutura e as instruções deste modelo."
+      dismissible={false}
     >
       <AssessmentTemplateForm
         companyId={companyId}
         template={template}
+        onCancel={() => setOpen(false)}
         onSuccess={() => setOpen(false)}
       />
     </EntityDialog>

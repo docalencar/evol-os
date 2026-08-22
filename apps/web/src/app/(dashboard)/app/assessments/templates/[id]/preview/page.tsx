@@ -55,7 +55,7 @@ export default async function AssessmentTemplatePreviewPage({
           href={`/app/assessments/templates/${template.id}`}
           className="inline-flex h-9 items-center justify-center rounded-md bg-secondary px-3 text-sm font-medium text-secondary-foreground transition-colors hover:bg-secondary/80"
         >
-          Voltar para o template
+          Voltar para o modelo
         </Link>
 
         <span className="text-sm text-muted-foreground">

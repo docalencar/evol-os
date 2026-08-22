@@ -30,11 +30,13 @@ export function AssessmentSectionEditDialog({
       }
       title="Editar seção"
       description="Atualize a organização desta seção."
+      dismissible={false}
     >
       <AssessmentSectionForm
         companyId={companyId}
         assessmentTemplateId={section.assessment_template_id}
         section={section}
+        onCancel={() => setOpen(false)}
         onSuccess={() => setOpen(false)}
       />
     </EntityDialog>

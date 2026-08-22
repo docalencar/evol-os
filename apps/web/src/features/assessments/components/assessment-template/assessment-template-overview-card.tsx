@@ -24,15 +24,15 @@ export function AssessmentTemplateOverviewCard({
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
       <InfoCard
-        label="Total de templates"
+        label="Total de modelos"
         value={templates.length}
       />
 
-      <InfoCard label="Templates ativos" value={activeTemplates} />
+      <InfoCard label="Modelos ativos" value={activeTemplates} />
 
       <InfoCard label="Rascunhos" value={draftTemplates} />
 
-      <InfoCard label="Templates anuais" value={annualTemplates} />
+      <InfoCard label="Modelos anuais" value={annualTemplates} />
     </div>
   )
 }

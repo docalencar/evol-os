@@ -28,7 +28,7 @@ export async function updateAssessmentTemplateAction(
       success: false,
       message:
         parsedInput.error.issues[0]?.message ??
-        "Dados inválidos para atualizar o template.",
+        "Dados inválidos para atualizar o modelo.",
     }
   }
 
@@ -43,14 +43,17 @@ export async function updateAssessmentTemplateAction(
   if (error) {
     return {
       success: false,
-      message: "Não foi possível atualizar o template de avaliação.",
+      message: "Não foi possível atualizar o modelo de avaliação.",
     }
   }
 
   revalidatePath("/app/assessments")
+  revalidatePath(
+    `/app/assessments/templates/${assessmentTemplateId}`
+  )
 
   return {
     success: true,
-    message: "Template de avaliação atualizado com sucesso.",
+    message: "Modelo de avaliação atualizado com sucesso.",
   }
 }

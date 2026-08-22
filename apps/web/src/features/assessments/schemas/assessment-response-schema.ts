@@ -7,7 +7,7 @@ export const startAssessmentResponseSchema = z.object({
 
   assessmentTemplateId: z
     .string()
-    .uuid("Template de avaliação inválido."),
+    .uuid("Modelo de avaliação inválido."),
 
   employeeId: z
     .string()

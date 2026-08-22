@@ -21,6 +21,7 @@ type AssessmentSectionFormProps = {
   section?: AssessmentSection
   defaultDisplayOrder?: number
   onSuccess?: () => void
+  onCancel?: () => void
 }
 
 const selectClassName =
@@ -35,6 +36,7 @@ export function AssessmentSectionForm({
   section,
   defaultDisplayOrder = 0,
   onSuccess,
+  onCancel,
 }: AssessmentSectionFormProps) {
   const [isPending, startTransition] = useTransition()
 
@@ -182,7 +184,16 @@ export function AssessmentSectionForm({
         Seção ativa
       </label>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={isPending}
+          onClick={onCancel}
+        >
+          Cancelar
+        </Button>
+
         <Button type="submit" disabled={isPending}>
           {isPending
             ? "Salvando..."

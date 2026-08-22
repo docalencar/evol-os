@@ -6,7 +6,8 @@ import { createAssessmentSectionRepository } from "../repositories/assessment-se
 
 export async function archiveAssessmentSectionAction(
   companyId: string,
-  assessmentSectionId: string
+  assessmentSectionId: string,
+  assessmentTemplateId: string
 ) {
   const repository = await createAssessmentSectionRepository()
 
@@ -23,6 +24,9 @@ export async function archiveAssessmentSectionAction(
   }
 
   revalidatePath("/app/assessments")
+  revalidatePath(
+    `/app/assessments/templates/${assessmentTemplateId}`
+  )
 
   return {
     success: true,

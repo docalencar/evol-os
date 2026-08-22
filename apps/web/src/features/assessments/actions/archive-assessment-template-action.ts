@@ -23,14 +23,17 @@ export async function archiveAssessmentTemplateAction(
   if (error) {
     return {
       success: false,
-      message: "Não foi possível arquivar o template de avaliação.",
+      message: "Não foi possível arquivar o modelo de avaliação.",
     }
   }
 
   revalidatePath("/app/assessments")
+  revalidatePath(
+    `/app/assessments/templates/${assessmentTemplateId}`
+  )
 
   return {
     success: true,
-    message: "Template de avaliação arquivado com sucesso.",
+    message: "Modelo de avaliação arquivado com sucesso.",
   }
 }

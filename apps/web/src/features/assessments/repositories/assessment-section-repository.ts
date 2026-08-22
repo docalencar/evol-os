@@ -49,54 +49,44 @@ export async function createAssessmentSectionRepository() {
     },
 
     async create(data: CreateAssessmentSectionData) {
-      return supabase.from("assessment_sections").insert({
-        company_id: data.companyId,
-        assessment_template_id: data.assessmentTemplateId,
-        code: data.code ?? null,
-        name: data.name,
-        description: data.description ?? null,
-        icon: data.icon ?? null,
-        color: data.color ?? null,
-        weight: data.weight,
-        display_order: data.displayOrder,
-        active: data.active,
+      return supabase.rpc("create_tenant_assessment_section_v1", {
+        p_company_id: data.companyId,
+        p_assessment_template_id: data.assessmentTemplateId,
+        p_code: data.code ?? "",
+        p_name: data.name,
+        p_description: data.description ?? "",
+        p_icon: data.icon ?? "",
+        p_color: data.color ?? "",
+        p_weight: data.weight,
+        p_display_order: data.displayOrder,
+        p_active: data.active,
       })
     },
 
     async update(data: UpdateAssessmentSectionData) {
-      return supabase
-        .from("assessment_sections")
-        .update({
-          assessment_template_id: data.assessmentTemplateId,
-          code: data.code ?? null,
-          name: data.name,
-          description: data.description ?? null,
-          icon: data.icon ?? null,
-          color: data.color ?? null,
-          weight: data.weight,
-          display_order: data.displayOrder,
-          active: data.active,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("company_id", data.companyId)
-        .eq("id", data.assessmentSectionId)
-        .is("deleted_at", null)
+      return supabase.rpc("update_tenant_assessment_section_v1", {
+        p_company_id: data.companyId,
+        p_assessment_section_id: data.assessmentSectionId,
+        p_assessment_template_id: data.assessmentTemplateId,
+        p_code: data.code ?? "",
+        p_name: data.name,
+        p_description: data.description ?? "",
+        p_icon: data.icon ?? "",
+        p_color: data.color ?? "",
+        p_weight: data.weight,
+        p_display_order: data.displayOrder,
+        p_active: data.active,
+      })
     },
 
     async archive(
       companyId: string,
       assessmentSectionId: string
     ) {
-      return supabase
-        .from("assessment_sections")
-        .update({
-          active: false,
-          deleted_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("company_id", companyId)
-        .eq("id", assessmentSectionId)
-        .is("deleted_at", null)
+      return supabase.rpc("archive_tenant_assessment_section_v1", {
+        p_company_id: companyId,
+        p_assessment_section_id: assessmentSectionId,
+      })
     },
   }
 }

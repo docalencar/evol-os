@@ -13,8 +13,9 @@ migration application remains an explicit Human Reviewer action under
 | Production | Real customer/production operation | Reviewed migrations already verified in Review; explicit approval and recovery preparation |
 | Legacy | Forensic/reference use | Never a promotion target without a separate deliberate decision |
 
-There is currently no canonical Review project. Provisioning one is a separate,
-explicitly authorized operation.
+Canonical Review is `rwfvxvbzaosgcyfxdjpt`. Its current migration and validation
+state is recorded in `ENVIRONMENT-MIGRATION-STATUS.md`; every later remote
+operation still requires explicit authorization.
 
 ## Migration lifecycle
 
@@ -50,6 +51,7 @@ but cannot be promoted.
 
 Review targets the latest committed migration on `main`:
 
+- 0 behind: `ALIGNED`;
 - 1 behind: warning and prompt promotion;
 - 2–3 behind: elevated warning; avoid accumulating further DB work;
 - more than 3 behind: block another DB-heavy slice.
@@ -72,6 +74,12 @@ If Review is absent, identity is uncertain, or lag exceeds three, stop and reque
 provisioning/promotion before another DB-heavy slice. After a migration is
 committed and Human Reviewed, the normal next DB action is Review promotion,
 verification and status update—not accumulation of more migrations.
+
+Every DB-related closure report must record the latest local migration, latest
+committed migration, latest canonical Review migration, Review drift
+classification and whether Review promotion is the required next action.
+Production remains a separately approved promotion and is never advanced merely
+because Review is current.
 
 ## Read-only drift checker
 
@@ -116,7 +124,9 @@ mismatches block. Keep evidence outside Git if it contains operational metadata.
 10. Mark Review applied through `0109` and retain evidence.
 11. Make its drift check the preflight for later DB-heavy work.
 
-Project creation and remote application are intentionally not executed here.
+This plan was executed for canonical Review on 2026-08-21. It remains the
+operating checklist for future reprovisioning; it does not authorize another
+project creation or remote application.
 
 ## Production promotion
 
@@ -138,6 +148,8 @@ a human-approved compensating migration and recovery plan.
 
 ## Known remotes
 
+- `rwfvxvbzaosgcyfxdjpt`: canonical **REVIEW**, provisioned through committed
+  migration `0109`. Consult the status document before every remote operation.
 - `oudngmrdtgengilpqqnz`: currently linked locally and previously observed at
   `0075`; role was never canonical and security-significant grant drift exists.
   Recommendation: **LEGACY — forensic/read-only** until a separate human decision

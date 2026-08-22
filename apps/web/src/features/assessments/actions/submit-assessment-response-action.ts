@@ -2,15 +2,12 @@
 
 import { revalidatePath } from "next/cache"
 
+import { getAssessmentResponsePageReadModel } from "@/features/assessment-feedback-read"
+
 import { requireAssessmentEvaluator } from "../application/assessment-authorization"
 import { loadAssessmentActor } from "../application/load-assessment-actor"
-import { createAssessmentAnswerRepository } from "../repositories/assessment-answer-repository"
-import { createAssessmentQuestionRepository } from "../repositories/assessment-question-repository"
 import { createAssessmentResponseRepository } from "../repositories/assessment-response-repository"
-import { createAssessmentSectionRepository } from "../repositories/assessment-section-repository"
-import type { AssessmentQuestion } from "../types/assessment-question"
 import type { AssessmentResponse } from "../types/assessment-response"
-import type { AssessmentSection } from "../types/assessment-section"
 
 type SubmitAssessmentResponseResult = {
   success: boolean
@@ -23,15 +20,6 @@ export async function submitAssessmentResponseAction(
 ): Promise<SubmitAssessmentResponseResult> {
   const responseRepository =
     await createAssessmentResponseRepository()
-
-  const sectionRepository =
-    await createAssessmentSectionRepository()
-
-  const questionRepository =
-    await createAssessmentQuestionRepository()
-
-  const answerRepository =
-    await createAssessmentAnswerRepository()
 
   const {
     data: responseData,
@@ -73,69 +61,32 @@ export async function submitAssessmentResponseAction(
     }
   }
 
-  const {
-    data: sectionsData,
-    error: sectionsError,
-  } = await sectionRepository.findAllByTemplate(
-    companyId,
-    response.assessment_template_id
-  )
+  let workspace
 
-  if (sectionsError) {
-    return {
-      success: false,
-      message:
-        "Não foi possível carregar as seções da avaliação.",
-    }
-  }
-
-  const sections =
-    (sectionsData ?? []) as AssessmentSection[]
-
-  const questionResults = await Promise.all(
-    sections.map((section) =>
-      questionRepository.findAllBySection(
-        companyId,
-        section.id
-      )
+  try {
+    workspace = await getAssessmentResponsePageReadModel(
+      companyId,
+      assessmentResponseId
     )
-  )
-
-  const questionError = questionResults.find(
-    (result) => result.error
-  )?.error
-
-  if (questionError) {
+  } catch {
     return {
       success: false,
       message:
-        "Não foi possível carregar as perguntas da avaliação.",
+        "Não foi possível carregar a avaliação.",
     }
   }
 
-  const questions = questionResults.flatMap(
-    (result) =>
-      (result.data ?? []) as AssessmentQuestion[]
-  )
-
-  const {
-    data: answers,
-    error: answerError,
-  } = await answerRepository.findAllByResponse(
-    companyId,
-    assessmentResponseId
-  )
-
-  if (answerError) {
+  if (!workspace) {
     return {
       success: false,
-      message:
-        "Não foi possível carregar as respostas da avaliação.",
+      message: "Avaliação não encontrada.",
     }
   }
+
+  const { questions, answers } = workspace
 
   const answeredQuestionIds = new Set(
-    (answers ?? []).map(
+    answers.map(
       (answer) => answer.assessment_question_id
     )
   )

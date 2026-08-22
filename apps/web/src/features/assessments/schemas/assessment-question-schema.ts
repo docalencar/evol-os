@@ -22,6 +22,11 @@ export const assessmentQuestionSchema = z
       .string()
       .uuid("Seção de avaliação inválida."),
 
+    competencyId: z
+      .string()
+      .uuid("Competência inválida.")
+      .nullable(),
+
     code: optionalText(
       30,
       "O código deve possuir no máximo 30 caracteres."

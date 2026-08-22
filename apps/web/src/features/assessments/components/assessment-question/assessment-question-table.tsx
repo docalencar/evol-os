@@ -5,7 +5,7 @@ import {
   ASSESSMENT_QUESTION_TYPE_LABELS,
 } from "../../constants/assessment-question-options"
 
-import type { AssessmentQuestion } from "../../types/assessment-question"
+import type { AssessmentCompetencyOption, AssessmentQuestion } from "../../types/assessment-question"
 
 import { ArchiveAssessmentQuestionButton } from "./archive-assessment-question-button"
 import { AssessmentQuestionEditDialog } from "./assessment-question-edit-dialog"
@@ -13,11 +13,13 @@ import { AssessmentQuestionEditDialog } from "./assessment-question-edit-dialog"
 type Props = {
   companyId: string
   questions: AssessmentQuestion[]
+  competencyOptions: AssessmentCompetencyOption[]
 }
 
 export function AssessmentQuestionTable({
   companyId,
   questions,
+  competencyOptions,
 }: Props) {
   return (
     <DataTable
@@ -40,6 +42,11 @@ export function AssessmentQuestionTable({
                   {question.help_text}
                 </p>
               )}
+              {question.competency_name ? (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Competência: {question.competency_name}
+                </p>
+              ) : null}
             </div>
           ),
         },
@@ -69,6 +76,7 @@ export function AssessmentQuestionTable({
               <AssessmentQuestionEditDialog
                 companyId={companyId}
                 question={question}
+                competencyOptions={competencyOptions}
               />
 
               <ArchiveAssessmentQuestionButton

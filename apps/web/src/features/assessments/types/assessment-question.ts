@@ -15,6 +15,9 @@ export type AssessmentQuestion = {
 
   assessment_section_id: string
 
+  competency_id: string | null
+  competency_name: string | null
+
   code: string | null
 
   question: string
@@ -41,3 +44,8 @@ export type AssessmentQuestion = {
 
   deleted_at?: string | null
 }
+
+export type AssessmentCompetencyOption = Readonly<{
+  id: string
+  name: string
+}>

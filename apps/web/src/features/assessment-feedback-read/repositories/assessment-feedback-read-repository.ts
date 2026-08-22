@@ -49,6 +49,7 @@ const structureRowSchema = z.object({
   weight: z.coerce.number().nullable(), display_order: z.number().int().nullable(), question: nullableText,
   help_text: nullableText, question_type: questionType.nullable(), scale_min: z.number().int().nullable(),
   scale_max: z.number().int().nullable(), required: z.boolean().nullable(), active: z.boolean(),
+  competency_id: nullableUuid, competency_name: nullableText,
 }).strict().superRefine((row, context) => {
   const valid = row.record_type === "template"
     ? row.name !== null && row.assessment_type !== null && row.status !== null
@@ -88,6 +89,7 @@ const workspaceRowSchema = z.object({
   help_text: nullableText, question_type: questionType.nullable(), scale_min: z.number().int().nullable(),
   scale_max: z.number().int().nullable(), required: z.boolean().nullable(), active: z.boolean().nullable(),
   started_at: nullableTimestamp, completed_at: nullableTimestamp, submitted_at: nullableTimestamp,
+  competency_id: nullableUuid, competency_name: nullableText,
 }).strict().superRefine((row, context) => {
   const valid = row.record_type === "response"
     ? row.template_id !== null && row.cycle_id !== null && row.employee_id !== null

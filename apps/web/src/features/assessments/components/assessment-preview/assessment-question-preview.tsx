@@ -12,6 +12,11 @@ export function AssessmentQuestionPreview({
   return (
     <div className="space-y-3 rounded-lg border bg-background p-5">
       <div>
+        {question.competency_name ? (
+          <p className="mb-2 text-xs font-medium text-primary">
+            Competência: {question.competency_name}
+          </p>
+        ) : null}
         <p className="font-medium text-slate-900">
           {index}. {question.question}
           {question.required ? (

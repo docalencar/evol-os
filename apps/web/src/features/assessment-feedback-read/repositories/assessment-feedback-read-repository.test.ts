@@ -50,6 +50,7 @@ const structureTemplate = {
   icon: null, color: null, weight: null, display_order: null, question: null,
   help_text: null, question_type: null, scale_min: null, scale_max: null,
   required: null, active: true,
+  competency_id: null, competency_name: null,
 }
 
 const cycle = {
@@ -68,6 +69,7 @@ const workspaceResponse = {
   color: null, weight: null, display_order: null, question: null, help_text: null,
   question_type: null, scale_min: null, scale_max: null, required: null, active: false,
   started_at: timestamp, completed_at: null, submitted_at: null,
+  competency_id: null, competency_name: null,
 }
 
 const feedbackDirectory = {

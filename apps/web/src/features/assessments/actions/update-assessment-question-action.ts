@@ -38,6 +38,7 @@ export async function updateAssessmentQuestionAction(
       assessmentQuestionId,
       assessmentSectionId:
         parsed.data.assessmentSectionId,
+      competencyId: parsed.data.competencyId,
       code: parsed.data.code,
       question: parsed.data.question,
       helpText: parsed.data.helpText,

@@ -66,6 +66,7 @@ function mapStructure(companyId: string, rows: Awaited<ReturnType<ReturnType<typ
   }))
   const questions: AssessmentQuestion[] = rows.filter((row) => row.record_type === "question").map((row) => ({
     id: row.record_id, company_id: companyId, assessment_section_id: row.parent_id!, code: null,
+    competency_id: row.competency_id, competency_name: row.competency_name,
     question: row.question!, help_text: row.help_text,
     question_type: row.question_type as AssessmentQuestion["question_type"],
     scale_min: row.scale_min!, scale_max: row.scale_max!, weight: row.weight!,
@@ -117,7 +118,8 @@ export async function getAssessmentEvaluatorWorkspaceReadModel(companyId: string
     assessment_type: row.assessment_type, status: row.status, icon: row.icon, color: row.color,
     weight: row.weight, display_order: row.display_order, question: row.question, help_text: row.help_text,
     question_type: row.question_type, scale_min: row.scale_min, scale_max: row.scale_max,
-    required: row.required, active: row.active!,
+    required: row.required, active: row.active!, competency_id: row.competency_id,
+    competency_name: row.competency_name,
   }))
   return { response, ...mapStructure(companyId, structureRows) }
 }

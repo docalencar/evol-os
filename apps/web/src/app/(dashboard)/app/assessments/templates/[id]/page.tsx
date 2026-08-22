@@ -15,6 +15,7 @@ import {
   AssessmentTemplateEditDialog,
 } from "@/features/assessments"
 import { getAssessmentTemplateStructureReadModel } from "@/features/assessment-feedback-read"
+import { getManagementCompetencies } from "@/features/dashboard-read"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 type AssessmentTemplateDetailsPageProps = {
@@ -37,11 +38,11 @@ export default async function AssessmentTemplateDetailsPage({
   const assessmentTemplateId = templateIdResult.data
   const { companyId } = await getCurrentCompanyContext()
 
-  const { template, sections, questions } =
-    await getAssessmentTemplateStructureReadModel(
-      companyId,
-      assessmentTemplateId
-    )
+  const [{ template, sections, questions }, competencies] =
+    await Promise.all([
+      getAssessmentTemplateStructureReadModel(companyId, assessmentTemplateId),
+      getManagementCompetencies(companyId),
+    ])
 
   if (!template) {
     notFound()
@@ -72,7 +73,7 @@ export default async function AssessmentTemplateDetailsPage({
         title={assessmentTemplate.name}
         description={
           assessmentTemplate.description ??
-          "Template sem descrição cadastrada."
+          "Modelo sem descrição cadastrada."
         }
         actions={
           <div className="flex flex-wrap items-center gap-2">
@@ -100,7 +101,7 @@ export default async function AssessmentTemplateDetailsPage({
 
       <DashboardSection
         title="Seções e perguntas"
-        description="Organize o conteúdo deste template em seções e perguntas."
+        description="Organize o conteúdo deste modelo em seções e perguntas."
         actions={
           <AssessmentSectionCreateDialog
             companyId={companyId}
@@ -117,7 +118,7 @@ export default async function AssessmentTemplateDetailsPage({
 
             <p className="mt-1 text-sm text-muted-foreground">
               Crie a primeira seção para começar a estruturar o
-              template.
+              modelo.
             </p>
           </div>
         ) : (
@@ -145,6 +146,10 @@ export default async function AssessmentTemplateDetailsPage({
                     <AssessmentQuestionCreateDialog
                       companyId={companyId}
                       assessmentSectionId={section.id}
+                      competencyOptions={competencies.map((competency) => ({
+                        id: competency.id,
+                        name: competency.name,
+                      }))}
                       defaultDisplayOrder={questions.length + 1}
                     />
                   </div>
@@ -152,6 +157,10 @@ export default async function AssessmentTemplateDetailsPage({
                   <AssessmentQuestionTable
                     companyId={companyId}
                     questions={questions}
+                    competencyOptions={competencies.map((competency) => ({
+                      id: competency.id,
+                      name: competency.name,
+                    }))}
                   />
                 </div>
               )

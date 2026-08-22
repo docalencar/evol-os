@@ -20,6 +20,7 @@ import {
   assessmentQuestionTypeOptions,
 } from "../../constants/assessment-question-options"
 import type {
+  AssessmentCompetencyOption,
   AssessmentQuestion,
   AssessmentQuestionType,
 } from "../../types/assessment-question"
@@ -30,6 +31,8 @@ type Props = {
   question?: AssessmentQuestion
   defaultDisplayOrder?: number
   onSuccess?: () => void
+  onCancel?: () => void
+  competencyOptions: AssessmentCompetencyOption[]
 }
 
 const selectClassName =
@@ -93,6 +96,8 @@ export function AssessmentQuestionForm({
   question,
   defaultDisplayOrder = 1,
   onSuccess,
+  onCancel,
+  competencyOptions,
 }: Props) {
   const [isPending, startTransition] =
     useTransition()
@@ -116,6 +121,7 @@ export function AssessmentQuestionForm({
 
     const input = {
       assessmentSectionId,
+      competencyId: String(formData.get("competencyId") ?? "") || null,
       code: String(
         formData.get("code") ?? ""
       ),
@@ -168,6 +174,30 @@ export function AssessmentQuestionForm({
       action={submit}
       className="space-y-5"
     >
+      <div className="space-y-2">
+        <Label htmlFor="competencyId">
+          Competência avaliada
+        </Label>
+
+        <select
+          id="competencyId"
+          name="competencyId"
+          defaultValue={question?.competency_id ?? ""}
+          className={selectClassName}
+        >
+          <option value="">Nenhuma competência específica</option>
+          {competencyOptions.map((competency) => (
+            <option key={competency.id} value={competency.id}>
+              {competency.name}
+            </option>
+          ))}
+        </select>
+
+        <p className="text-xs leading-5 text-muted-foreground">
+          Opcional. Vincule esta pergunta a uma competência do catálogo.
+        </p>
+      </div>
+
       <div className="space-y-2">
         <Label htmlFor="question">
           Pergunta
@@ -351,7 +381,16 @@ export function AssessmentQuestionForm({
         </label>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={isPending}
+          onClick={onCancel}
+        >
+          Cancelar
+        </Button>
+
         <Button
           type="submit"
           disabled={isPending}

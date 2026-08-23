@@ -34,6 +34,7 @@ export function AssessmentCycleEditDialog({
       title="Editar ciclo de avaliação"
       description="Atualize as configurações deste ciclo."
       contentClassName="max-w-4xl"
+      dismissible={false}
     >
       <AssessmentCycleForm
         companyId={companyId}

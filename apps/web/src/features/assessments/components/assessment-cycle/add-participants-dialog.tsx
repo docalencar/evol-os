@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react"
 import { toast } from "sonner"
 
+import { EntityDialog } from "@/components/shared/entity-dialog"
 import { Button } from "@/components/ui/button"
 import type { Employee } from "@/features/people/types/employee"
 
@@ -52,6 +53,15 @@ export function AddParticipantsDialog({
     setSelectedEmployeeIds([])
   }
 
+  function handleOpenChange(nextOpen: boolean) {
+    if (nextOpen) {
+      setOpen(true)
+      return
+    }
+
+    handleClose()
+  }
+
   function handleAddParticipants() {
     startTransition(async () => {
       const result = await addCycleParticipantsAction({
@@ -65,37 +75,29 @@ export function AddParticipantsDialog({
         return
       }
 
-      toast.success("Participantes adicionados com sucesso.")
+      toast.success(result.message)
       setSelectedEmployeeIds([])
       setOpen(false)
     })
   }
 
   return (
-    <>
-      <Button
-        type="button"
-        onClick={() => setOpen(true)}
-        disabled={disabled || isPending}
-      >
-        Adicionar participantes
-      </Button>
-
-      {open ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-2xl rounded-xl bg-background p-6 shadow-xl">
-            <div>
-              <h2 className="text-lg font-semibold">
-                Participantes do ciclo
-              </h2>
-
-              <p className="mt-2 text-sm text-muted-foreground">
-                Selecione os colaboradores que participarão deste
-                ciclo de avaliação.
-              </p>
-            </div>
-
-            <div className="mt-6 max-h-96 space-y-2 overflow-y-auto">
+    <EntityDialog
+      open={open}
+      onOpenChange={handleOpenChange}
+      trigger={
+        <Button type="button" disabled={disabled || isPending}>
+          Adicionar participantes
+        </Button>
+      }
+      title="Participantes do ciclo"
+      description="Selecione os colaboradores que participarão deste ciclo de avaliação."
+      contentClassName="max-h-[92dvh] max-w-2xl bg-white"
+      bodyClassName="p-0 sm:p-0"
+      dismissible={false}
+    >
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-5 py-4 sm:px-6">
               {activeEmployees.length === 0 ? (
                 <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
                   Nenhum colaborador ativo disponível.
@@ -109,7 +111,7 @@ export function AddParticipantsDialog({
                     <label
                       key={employee.id}
                       className={[
-                        "flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-colors",
+                        "flex cursor-pointer items-center gap-3 rounded-lg border bg-white px-3 py-2.5 transition-colors",
                         selected
                           ? "border-primary bg-primary/5"
                           : "hover:bg-muted/50",
@@ -141,9 +143,9 @@ export function AddParticipantsDialog({
                   )
                 })
               )}
-            </div>
+        </div>
 
-            <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t bg-white px-5 py-4 sm:px-6">
               <p className="text-sm text-muted-foreground">
                 {selectedEmployeeIds.length} participante(s)
                 selecionado(s)
@@ -172,10 +174,8 @@ export function AddParticipantsDialog({
                     : "Adicionar selecionados"}
                 </Button>
               </div>
-            </div>
-          </div>
         </div>
-      ) : null}
-    </>
+      </div>
+    </EntityDialog>
   )
 }

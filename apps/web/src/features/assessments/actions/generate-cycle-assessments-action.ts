@@ -4,19 +4,16 @@ import { revalidatePath } from "next/cache"
 
 import { requireAssessmentAdministrator } from "../application/assessment-authorization"
 import { loadAssessmentActor } from "../application/load-assessment-actor"
-import { createAssessmentCycleParticipantRepository } from "../repositories/assessment-cycle-participant-repository"
 import { createAssessmentResponseRepository } from "../repositories/assessment-response-repository"
 
 type GenerateCycleAssessmentsInput = {
   companyId: string
   assessmentCycleId: string
-  assessmentTemplateId: string
 }
 
 export async function generateCycleAssessmentsAction({
   companyId,
   assessmentCycleId,
-  assessmentTemplateId,
 }: GenerateCycleAssessmentsInput) {
   try {
     const actor = await loadAssessmentActor()
@@ -28,51 +25,23 @@ export async function generateCycleAssessmentsAction({
     }
   }
 
-  const participantRepository =
-    await createAssessmentCycleParticipantRepository()
+  const responseRepository =
+    await createAssessmentResponseRepository()
 
-  const { data: participants, error: participantsError } =
-    await participantRepository.findByCycle(
+  const { data, error } =
+    await responseRepository.generateForCycle(
       companyId,
       assessmentCycleId
     )
 
-  if (participantsError) {
-    return {
-      success: false,
-      message:
-        "Não foi possível carregar os participantes do ciclo.",
-    }
-  }
-
-  const employeeIds = (participants ?? []).map(
-    (participant) => participant.employee_id as string
-  )
-
-  if (employeeIds.length === 0) {
-    return {
-      success: false,
-      message:
-        "Adicione pelo menos um participante antes de gerar as avaliações.",
-    }
-  }
-
-  const responseRepository =
-    await createAssessmentResponseRepository()
-
-  const { error } =
-    await responseRepository.generateSelfAssessments(
-      companyId,
-      assessmentCycleId,
-      assessmentTemplateId,
-      employeeIds
-    )
-
   if (error) {
-    console.error(
-      "Erro ao gerar avaliações do ciclo:",
-      error
-    )
+    if (error.message === "ASSESSMENT_PEER_SELECTION_NOT_SUPPORTED") {
+      return {
+        success: false,
+        message:
+          "A seleção segura de pares ainda não está disponível. Desative a avaliação por pares para gerar este ciclo.",
+      }
+    }
 
     return {
       success: false,
@@ -85,8 +54,29 @@ export async function generateCycleAssessmentsAction({
     `/app/assessments/cycles/${assessmentCycleId}`
   )
 
+  const result = data as {
+    createdResponseCount?: number
+    perspectives?: string[]
+  } | null
+  const createdCount = result?.createdResponseCount ?? 0
+  const perspectiveLabels: Record<string, string> = {
+    self: "autoavaliação",
+    manager: "gestor",
+    direct_report: "liderado",
+  }
+  const perspectives = (result?.perspectives ?? [])
+    .map((perspective) => perspectiveLabels[perspective])
+    .filter(Boolean)
+
   return {
     success: true,
-    message: `${employeeIds.length} avaliação(ões) gerada(s) com sucesso.`,
+    message:
+      createdCount === 0
+        ? "Nenhuma nova avaliação foi criada. As avaliações já estão atualizadas."
+        : `${createdCount} avaliação(ões) gerada(s)${
+            perspectives.length > 0
+              ? `: ${perspectives.join(", ")}`
+              : ""
+          }.`,
   }
 }

@@ -16,6 +16,7 @@ import {
   useProductWizard,
   type ProductWizardStepDefinition,
 } from "@/components/product"
+import { newSubmissionId } from "@/features/people-organization-mutations/submission-id"
 
 import { createAssessmentCycleAction } from "../../actions/create-assessment-cycle-action"
 import { updateAssessmentCycleAction } from "../../actions/update-assessment-cycle-action"
@@ -99,9 +100,23 @@ export function AssessmentCycleForm({
   onSuccess,
   onCancel,
 }: AssessmentCycleFormProps) {
+  const submissionIdRef = useRef<string | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
   const [isPending, startTransition] =
     useTransition()
+  const configurationLocked = Boolean(cycle && cycle.status !== "draft")
+  const allowedStatusValues: AssessmentCycleStatus[] = cycle
+    ? ({
+        draft: ["draft", "scheduled", "active", "cancelled"],
+        scheduled: ["scheduled", "draft", "active", "cancelled"],
+        active: ["active", "completed", "cancelled"],
+        completed: ["completed"],
+        cancelled: ["cancelled"],
+      } satisfies Record<AssessmentCycleStatus, AssessmentCycleStatus[]>)[cycle.status]
+    : ["draft"]
+  const allowedStatusOptions = assessmentCycleStatusOptions.filter((option) =>
+    allowedStatusValues.includes(option.value)
+  )
 
   const [name, setName] = useState(
     cycle?.name ?? ""
@@ -234,6 +249,13 @@ export function AssessmentCycleForm({
 
   function handleSubmit(formData: FormData) {
     startTransition(async () => {
+      if (!cycle && !submissionIdRef.current) {
+        submissionIdRef.current = newSubmissionId()
+      }
+      if (submissionIdRef.current) {
+        formData.set("idempotencyKey", submissionIdRef.current)
+      }
+
       const result = cycle
         ? await updateAssessmentCycleAction(
             companyId,
@@ -251,6 +273,7 @@ export function AssessmentCycleForm({
       }
 
       toast.success(result.message)
+      submissionIdRef.current = null
       onSuccess?.()
     })
   }
@@ -374,6 +397,8 @@ export function AssessmentCycleForm({
               }
               assessmentType={assessmentType}
               status={status}
+              statusOptions={allowedStatusOptions}
+              configurationLocked={configurationLocked}
               onNameChange={setName}
               onDescriptionChange={
                 setDescription
@@ -404,6 +429,7 @@ export function AssessmentCycleForm({
               startDate={startDate}
               endDate={endDate}
               closeDate={closeDate}
+              disabled={configurationLocked}
               onStartDateChange={
                 handleStartDateChange
               }
@@ -437,6 +463,7 @@ export function AssessmentCycleForm({
               allowDirectReportAssessment={
                 allowDirectReportAssessment
               }
+              disabled={configurationLocked}
               onAllowSelfAssessmentChange={
                 setAllowSelfAssessment
               }
@@ -467,6 +494,7 @@ export function AssessmentCycleForm({
               anonymous={anonymous}
               onAnonymousChange={setAnonymous}
               assessmentVisibility={assessmentVisibility}
+              disabled={configurationLocked}
               onAssessmentVisibilityChange={setAssessmentVisibility}
             />
           </ProductWizardStep>

@@ -26,15 +26,11 @@ export async function createAssessmentCycleParticipantRepository() {
       assessmentCycleId: string,
       employeeIds: string[]
     ) {
-      return supabase
-        .from("assessment_cycle_participants")
-        .insert(
-          employeeIds.map((employeeId) => ({
-            company_id: companyId,
-            assessment_cycle_id: assessmentCycleId,
-            employee_id: employeeId,
-          }))
-        )
+      return supabase.rpc("add_tenant_assessment_cycle_participants_v1", {
+        p_company_id: companyId,
+        p_assessment_cycle_id: assessmentCycleId,
+        p_employee_ids: employeeIds,
+      })
     },
 
     async removeParticipant(
@@ -42,12 +38,11 @@ export async function createAssessmentCycleParticipantRepository() {
       assessmentCycleId: string,
       employeeId: string
     ) {
-      return supabase
-        .from("assessment_cycle_participants")
-        .delete()
-        .eq("company_id", companyId)
-        .eq("assessment_cycle_id", assessmentCycleId)
-        .eq("employee_id", employeeId)
+      return supabase.rpc("remove_tenant_assessment_cycle_participant_v1", {
+        p_company_id: companyId,
+        p_assessment_cycle_id: assessmentCycleId,
+        p_employee_id: employeeId,
+      })
     },
   }
 }

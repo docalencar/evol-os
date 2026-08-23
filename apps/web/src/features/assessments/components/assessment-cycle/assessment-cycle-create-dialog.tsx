@@ -35,6 +35,7 @@ export function AssessmentCycleCreateDialog({
       title="Nova avaliação"
       description="Escolha o modelo, o período e quem participará da avaliação."
       contentClassName="max-w-4xl"
+      dismissible={false}
     >
       <AssessmentCycleForm
         companyId={companyId}

@@ -37,7 +37,7 @@ export async function addCycleParticipantsAction({
   const repository =
     await createAssessmentCycleParticipantRepository()
 
-  const { error } =
+  const { data, error } =
     await repository.addParticipants(
       companyId,
       assessmentCycleId,
@@ -51,9 +51,33 @@ export async function addCycleParticipantsAction({
     }
   }
 
-  revalidatePath(`/app/assessments/cycles/${assessmentCycleId}`)
+  const result = data as {
+    status?: "succeeded" | "no_change"
+    addedParticipantCount?: number
+  } | null
+  const addedParticipantCount = result?.addedParticipantCount
+
+  if (
+    (result?.status !== "succeeded" && result?.status !== "no_change") ||
+    typeof addedParticipantCount !== "number"
+  ) {
+    return {
+      success: false,
+      message: "Não foi possível confirmar os participantes adicionados.",
+    }
+  }
+
+  if (addedParticipantCount > 0) {
+    revalidatePath(`/app/assessments/cycles/${assessmentCycleId}`)
+  }
 
   return {
     success: true,
+    status: result.status,
+    addedParticipantCount,
+    message:
+      addedParticipantCount > 0
+        ? "Participantes adicionados com sucesso."
+        : "Os participantes selecionados já fazem parte do ciclo.",
   }
 }

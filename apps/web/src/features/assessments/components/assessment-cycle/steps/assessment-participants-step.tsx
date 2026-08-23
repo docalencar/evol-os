@@ -8,6 +8,7 @@ type AssessmentParticipantsStepProps = {
   allowManagerAssessment: boolean
   allowPeerAssessment: boolean
   allowDirectReportAssessment: boolean
+  disabled?: boolean
   onAllowSelfAssessmentChange: (value: boolean) => void
   onAllowManagerAssessmentChange: (value: boolean) => void
   onAllowPeerAssessmentChange: (value: boolean) => void
@@ -19,6 +20,7 @@ export function AssessmentParticipantsStep({
   allowManagerAssessment,
   allowPeerAssessment,
   allowDirectReportAssessment,
+  disabled = false,
   onAllowSelfAssessmentChange,
   onAllowManagerAssessmentChange,
   onAllowPeerAssessmentChange,
@@ -32,6 +34,7 @@ export function AssessmentParticipantsStep({
           description="A própria pessoa avalia seu desempenho."
           checked={allowSelfAssessment}
           onCheckedChange={onAllowSelfAssessmentChange}
+          disabled={disabled}
         />
 
         <ParticipantCard
@@ -39,6 +42,7 @@ export function AssessmentParticipantsStep({
           description="A liderança direta avalia a pessoa."
           checked={allowManagerAssessment}
           onCheckedChange={onAllowManagerAssessmentChange}
+          disabled={disabled}
         />
 
         <ParticipantCard
@@ -46,6 +50,7 @@ export function AssessmentParticipantsStep({
           description="Colegas de trabalho também participam."
           checked={allowPeerAssessment}
           onCheckedChange={onAllowPeerAssessmentChange}
+          disabled={disabled}
         />
 
         <ParticipantCard
@@ -53,6 +58,7 @@ export function AssessmentParticipantsStep({
           description="Pessoas lideradas avaliam sua liderança."
           checked={allowDirectReportAssessment}
           onCheckedChange={onAllowDirectReportAssessmentChange}
+          disabled={disabled}
         />
       </div>
 
@@ -69,6 +75,7 @@ type ParticipantCardProps = {
   description: string
   checked: boolean
   onCheckedChange: (value: boolean) => void
+  disabled?: boolean
 }
 
 function ParticipantCard({
@@ -76,12 +83,14 @@ function ParticipantCard({
   description,
   checked,
   onCheckedChange,
+  disabled = false,
 }: ParticipantCardProps) {
   return (
     <label className="flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors hover:bg-muted/30">
       <input
         type="checkbox"
         checked={checked}
+        disabled={disabled}
         onChange={(event) =>
           onCheckedChange(event.target.checked)
         }

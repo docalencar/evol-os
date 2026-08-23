@@ -11,32 +11,22 @@ import { generateCycleAssessmentsAction } from "../../actions/generate-cycle-ass
 type GenerateCycleAssessmentsButtonProps = {
   companyId: string
   assessmentCycleId: string
-  assessmentTemplateId: string | null
   disabled?: boolean
 }
 
 export function GenerateCycleAssessmentsButton({
   companyId,
   assessmentCycleId,
-  assessmentTemplateId,
   disabled = false,
 }: GenerateCycleAssessmentsButtonProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
   function handleGenerate() {
-    if (!assessmentTemplateId) {
-      toast.error(
-        "Selecione um modelo antes de gerar as avaliações."
-      )
-      return
-    }
-
     startTransition(async () => {
       const result = await generateCycleAssessmentsAction({
         companyId,
         assessmentCycleId,
-        assessmentTemplateId,
       })
 
       if (!result.success) {
@@ -55,8 +45,7 @@ export function GenerateCycleAssessmentsButton({
       onClick={handleGenerate}
       disabled={
         disabled ||
-        isPending ||
-        !assessmentTemplateId
+        isPending
       }
     >
       {isPending

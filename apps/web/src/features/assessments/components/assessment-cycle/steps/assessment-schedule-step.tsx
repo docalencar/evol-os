@@ -52,6 +52,7 @@ type AssessmentScheduleStepProps = {
   startDate: string
   endDate: string
   closeDate: string
+  disabled?: boolean
   onStartDateChange: (value: string) => void
   onEndDateChange: (value: string) => void
   onCloseDateChange: (value: string) => void
@@ -61,6 +62,7 @@ export function AssessmentScheduleStep({
   startDate,
   endDate,
   closeDate,
+  disabled = false,
   onStartDateChange,
   onEndDateChange,
   onCloseDateChange,
@@ -82,6 +84,7 @@ export function AssessmentScheduleStep({
           id="assessment-start-date"
           type="date"
           value={startDate}
+          disabled={disabled}
           onChange={(event) =>
             onStartDateChange(event.target.value)
           }
@@ -102,7 +105,7 @@ export function AssessmentScheduleStep({
           type="date"
           value={endDate}
           min={startDate || undefined}
-          disabled={!startDate}
+          disabled={disabled || !startDate}
           onChange={(event) =>
             onEndDateChange(event.target.value)
           }
@@ -136,7 +139,7 @@ export function AssessmentScheduleStep({
           type="date"
           value={closeDate}
           min={endDate || undefined}
-          disabled={!endDate}
+          disabled={disabled || !endDate}
           onChange={(event) =>
             onCloseDateChange(event.target.value)
           }

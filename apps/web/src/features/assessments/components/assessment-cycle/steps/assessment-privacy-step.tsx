@@ -12,6 +12,7 @@ type AssessmentPrivacyStepProps = {
   onAnonymousChange: (value: boolean) => void
   assessmentVisibility: AssessmentVisibility
   onAssessmentVisibilityChange: (value: AssessmentVisibility) => void
+  disabled?: boolean
 }
 
 export function AssessmentPrivacyStep({
@@ -19,6 +20,7 @@ export function AssessmentPrivacyStep({
   onAnonymousChange,
   assessmentVisibility,
   onAssessmentVisibilityChange,
+  disabled = false,
 }: AssessmentPrivacyStepProps) {
   return (
     <div className="space-y-4">
@@ -26,6 +28,7 @@ export function AssessmentPrivacyStep({
         <input
           type="checkbox"
           checked={anonymous}
+          disabled={disabled}
           onChange={(event) =>
             onAnonymousChange(event.target.checked)
           }
@@ -53,6 +56,7 @@ export function AssessmentPrivacyStep({
           id="assessment-visibility"
           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
           value={assessmentVisibility}
+          disabled={disabled}
           onChange={(event) =>
             onAssessmentVisibilityChange(
               event.target.value as AssessmentVisibility

@@ -10,6 +10,7 @@ import {
   AssessmentCycleResultsCard,
   AssessmentStatisticsCard,
   GenerateCycleAssessmentsButton,
+  RemoveCycleParticipantButton,
   getAssessmentResponsesByCycle,
   getAssessmentCycleStatistics,
   presentAssessmentCycleDashboard,
@@ -101,7 +102,7 @@ export default async function AssessmentCyclePage({
 }: Props) {
   const { id } = await params
 
-  const { companyId } =
+  const { companyId, personId } =
     await getCurrentCompanyContext()
 
   const { cycle, participants } =
@@ -158,15 +159,19 @@ export default async function AssessmentCyclePage({
               companyId={companyId}
               assessmentCycleId={cycle.id}
               employees={employees}
+              disabled={
+                !["draft", "scheduled"].includes(cycle.status) &&
+                !(cycle.status === "active" && responses.length === 0)
+              }
             />
 
             <GenerateCycleAssessmentsButton
               companyId={companyId}
               assessmentCycleId={cycle.id}
-              assessmentTemplateId={
-                cycle.assessment_template_id
+              disabled={
+                participants.length === 0 ||
+                cycle.status !== "active"
               }
-              disabled={participants.length === 0}
             />
 
           </div>
@@ -276,6 +281,18 @@ export default async function AssessmentCyclePage({
                     <td className="px-4 py-3 text-sm text-muted-foreground">
                       {participant.people.email ?? "-"}
                     </td>
+
+                    <td className="px-4 py-3 text-right">
+                      <RemoveCycleParticipantButton
+                        companyId={companyId}
+                        assessmentCycleId={cycle.id}
+                        employeeId={participant.employee_id}
+                        disabled={
+                          !["draft", "scheduled"].includes(cycle.status) &&
+                          !(cycle.status === "active" && responses.length === 0)
+                        }
+                      />
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -358,7 +375,8 @@ export default async function AssessmentCyclePage({
                           href={`/app/assessments/responses/${response.id}`}
                           className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
                         >
-                          {response.status === "draft"
+                          {response.status === "draft" &&
+                          response.evaluator?.id === personId
                             ? "Responder"
                             : "Abrir"}
                         </Link>

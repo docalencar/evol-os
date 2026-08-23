@@ -198,6 +198,7 @@ export {
 } from "./actions/generate-cycle-assessments-action"
 
 export { GenerateCycleAssessmentsButton } from "./components/assessment-cycle/generate-cycle-assessments-button"
+export { RemoveCycleParticipantButton } from "./components/assessment-cycle/remove-cycle-participant-button"
 
 export type {
   Assessment,

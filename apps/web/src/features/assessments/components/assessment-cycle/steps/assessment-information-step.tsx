@@ -5,10 +5,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-import {
-  assessmentCycleStatusOptions,
-  assessmentCycleTypeOptions,
-} from "../../../constants/assessment-cycle-options"
+import { assessmentCycleTypeOptions } from "../../../constants/assessment-cycle-options"
 import type {
   AssessmentCycleStatus,
   AssessmentCycleType,
@@ -28,6 +25,8 @@ type AssessmentInformationStepProps = {
   assessmentTemplateId: string
   assessmentType: AssessmentCycleType
   status: AssessmentCycleStatus
+  statusOptions: { value: AssessmentCycleStatus; label: string }[]
+  configurationLocked?: boolean
   onNameChange: (value: string) => void
   onDescriptionChange: (value: string) => void
   onAssessmentTemplateIdChange: (value: string) => void
@@ -42,6 +41,8 @@ export function AssessmentInformationStep({
   assessmentTemplateId,
   assessmentType,
   status,
+  statusOptions,
+  configurationLocked = false,
   onNameChange,
   onDescriptionChange,
   onAssessmentTemplateIdChange,
@@ -71,6 +72,7 @@ export function AssessmentInformationStep({
           minLength={2}
           maxLength={120}
           autoFocus
+          disabled={configurationLocked}
         />
       </div>
 
@@ -88,6 +90,7 @@ export function AssessmentInformationStep({
           }
           placeholder="Explique rapidamente o objetivo deste ciclo."
           maxLength={500}
+          disabled={configurationLocked}
         />
       </div>
 
@@ -105,7 +108,7 @@ export function AssessmentInformationStep({
               event.target.value
             )
           }
-          disabled={activeTemplates.length === 0}
+          disabled={configurationLocked || activeTemplates.length === 0}
         >
           <option value="">
             Selecione um modelo
@@ -142,6 +145,7 @@ export function AssessmentInformationStep({
             id="assessment-cycle-type"
             className={selectClassName}
             value={assessmentType}
+            disabled={configurationLocked}
             onChange={(event) =>
               onAssessmentTypeChange(
                 event.target.value as AssessmentCycleType
@@ -174,7 +178,7 @@ export function AssessmentInformationStep({
               )
             }
           >
-            {assessmentCycleStatusOptions.map((option) => (
+            {statusOptions.map((option) => (
               <option
                 key={option.value}
                 value={option.value}

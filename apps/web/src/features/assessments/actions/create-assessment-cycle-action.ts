@@ -2,6 +2,11 @@
 
 import { revalidatePath } from "next/cache"
 
+import {
+  isValidSubmissionId,
+  submissionIdFromInput,
+} from "@/features/people-organization-mutations"
+
 import { requireAssessmentAdministrator } from "../application/assessment-authorization"
 import { loadAssessmentActor } from "../application/load-assessment-actor"
 import { createAssessmentCycleRepository } from "../repositories/assessment-cycle-repository"
@@ -16,6 +21,17 @@ export async function createAssessmentCycleAction(
   companyId: string,
   formData: FormData
 ): Promise<AssessmentCycleActionState> {
+  const submissionId = submissionIdFromInput({
+    idempotencyKey: formData.get("idempotencyKey"),
+  })
+
+  if (!isValidSubmissionId(submissionId)) {
+    return {
+      success: false,
+      message: "Não foi possível validar esta solicitação.",
+    }
+  }
+
   const parsed = assessmentCycleSchema.safeParse({
     name: formData.get("name"),
     description: formData.get("description"),
@@ -61,6 +77,7 @@ export async function createAssessmentCycleAction(
 
   const { error } = await repository.create({
     companyId,
+    submissionId,
     ...parsed.data,
   })
 

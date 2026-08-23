@@ -47,6 +47,7 @@ export function useAssessmentAutoSave({
   ] = useState<AssessmentAutoSaveState>(
     "idle"
   )
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const timeoutRef =
     useRef<ReturnType<typeof setTimeout> | null>(
@@ -74,6 +75,7 @@ export function useAssessmentAutoSave({
 
       clearPendingSave()
       setSaveState("saving")
+      setErrorMessage(null)
 
       const requestSequence =
         requestSequenceRef.current + 1
@@ -105,6 +107,9 @@ export function useAssessmentAutoSave({
               ? "saved"
               : "error"
           )
+          setErrorMessage(
+            result.success ? null : result.message || "Erro ao salvar"
+          )
 
           timeoutRef.current = null
         },
@@ -124,5 +129,6 @@ export function useAssessmentAutoSave({
   return {
     save,
     saveState,
+    errorMessage,
   }
 }

@@ -20,6 +20,7 @@ type AssessmentExecutionWorkspaceProps = {
   sections: AssessmentSection[]
   questionsBySection: Map<string, AssessmentQuestion[]>
   answers: AssessmentAnswer[]
+  canAnswer: boolean
 }
 
 export function AssessmentExecutionWorkspace({
@@ -30,12 +31,14 @@ export function AssessmentExecutionWorkspace({
   sections,
   questionsBySection,
   answers,
+  canAnswer,
 }: AssessmentExecutionWorkspaceProps) {
   const allQuestions = Array.from(
     questionsBySection.values()
   ).flat()
 
   const readOnly =
+    !canAnswer ||
     responseStatus === "submitted" ||
     responseStatus === "completed" ||
     responseStatus === "cancelled"
@@ -77,7 +80,18 @@ export function AssessmentExecutionWorkspace({
         status={responseStatusLabel}
       />
 
-      {readOnly ? (
+      {!canAnswer ? (
+        <div className="rounded-xl border border-blue-200 bg-blue-50 p-5">
+          <p className="font-semibold text-blue-900">
+            Visualização administrativa
+          </p>
+          <p className="mt-1 text-sm text-blue-800">
+            Somente o avaliador designado pode responder esta avaliação.
+          </p>
+        </div>
+      ) : null}
+
+      {canAnswer && readOnly ? (
         <div className="flex flex-col gap-4 rounded-xl border border-emerald-200 bg-emerald-50 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="font-semibold text-emerald-800">

@@ -167,8 +167,8 @@ select throws_ok(
        'draft'
      ) $$,
   '42501',
-  'new row violates row-level security policy for table "assessment_responses"',
-  'manager cannot create assignments'
+  'permission denied for table assessment_responses',
+  'manager cannot create assignments directly'
 );
 
 reset role;
@@ -192,7 +192,7 @@ reset role;
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000001","role":"authenticated"}', true);
 select results_eq($$ select count(*) from public.assessment_answers $$, array[0::bigint], 'owner has no direct raw access');
-select lives_ok(
+select throws_ok(
   $$ insert into public.assessment_responses (
        id, company_id, assessment_cycle_id, assessment_template_id,
        employee_id, evaluator_id, status
@@ -205,7 +205,9 @@ select lives_ok(
        '30000000-0000-4000-8000-000000000003',
        'draft'
      ) $$,
-  'owner creates assessment assignment'
+  '42501',
+  'permission denied for table assessment_responses',
+  'owner cannot create assignments outside the trusted cycle boundary'
 );
 select ok(
   jsonb_array_length(public.read_assessment_administratively(

@@ -20,7 +20,7 @@ type Props = {
 export default async function AssessmentResponsePage({
   params,
 }: Props) {
-  const { companyId } =
+  const { companyId, personId } =
     await getCurrentCompanyContext()
 
   const { id } = await params
@@ -87,6 +87,9 @@ export default async function AssessmentResponsePage({
           sections={sections}
           questionsBySection={questionsBySection}
           answers={answers}
+          canAnswer={
+            personId === workspace.response.evaluator_id
+          }
         />
       </div>
     )

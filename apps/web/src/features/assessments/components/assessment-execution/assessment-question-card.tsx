@@ -36,12 +36,57 @@ type AssessmentQuestionCardProps = {
 }
 
 export function AssessmentQuestionCard({
+  readOnly = false,
+  ...props
+}: AssessmentQuestionCardProps) {
+  return readOnly ? (
+    <ReadOnlyAssessmentQuestionCard {...props} />
+  ) : (
+    <EditableAssessmentQuestionCard {...props} />
+  )
+}
+
+function ReadOnlyAssessmentQuestionCard({
+  question,
+  answer,
+}: Omit<AssessmentQuestionCardProps, "readOnly">) {
+  const answerLabel =
+    question.question_type === "scale"
+      ? answer?.score?.toString()
+      : question.question_type === "yes_no"
+        ? answer?.answer_boolean === true
+          ? "Sim"
+          : answer?.answer_boolean === false
+            ? "Não"
+            : null
+        : question.question_type === "text"
+          ? answer?.answer_text
+          : answer?.answer_number?.toString()
+
+  return (
+    <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-5">
+      <div>
+        <h3 className="font-medium">{question.question}</h3>
+        {question.help_text ? (
+          <p className="mt-1 text-sm text-slate-600">
+            {question.help_text}
+          </p>
+        ) : null}
+      </div>
+      <div className="rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-800">
+        {answerLabel ?? "Ainda não respondida"}
+      </div>
+    </div>
+  )
+}
+
+function EditableAssessmentQuestionCard({
   companyId,
   assessmentResponseId,
   question,
   answer,
-  readOnly = false,
-}: AssessmentQuestionCardProps) {
+}: Omit<AssessmentQuestionCardProps, "readOnly">) {
+  const readOnly = false
   const [
     selectedScore,
     setSelectedScore,
@@ -82,6 +127,7 @@ export function AssessmentQuestionCard({
   const {
     save,
     saveState,
+    errorMessage,
   } = useAssessmentAutoSave({
     companyId,
     assessmentResponseId,
@@ -264,7 +310,7 @@ export function AssessmentQuestionCard({
           {!showUnsavedTextState &&
           saveState === "error" ? (
             <span className="text-red-600">
-              Erro ao salvar
+              {errorMessage ?? "Erro ao salvar"}
             </span>
           ) : null}
         </div>

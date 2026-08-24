@@ -132,10 +132,28 @@ insert into public.assessment_cycles(id,company_id,name,assessment_type,status,s
  ('88000000-0000-4000-8000-000000000602','88000000-0000-4000-8000-000000000102','Foreign Cycle','360','active','2026-01-01','2026-12-31','88000000-0000-4000-8000-000000000302','full');
 insert into public.assessment_cycle_participants(id,company_id,assessment_cycle_id,employee_id,created_at) values
  ('88000000-0000-4000-8000-000000000701','88000000-0000-4000-8000-000000000101','88000000-0000-4000-8000-000000000601','88000000-0000-4000-8000-000000000206','2026-01-02');
-insert into public.assessment_responses(id,company_id,assessment_cycle_id,assessment_template_id,employee_id,evaluator_id,status) values
- ('88000000-0000-4000-8000-000000000801','88000000-0000-4000-8000-000000000101','88000000-0000-4000-8000-000000000601','88000000-0000-4000-8000-000000000301','88000000-0000-4000-8000-000000000206','88000000-0000-4000-8000-000000000205','submitted');
-insert into public.assessment_answers(id,company_id,assessment_response_id,assessment_question_id,score) values
- ('88000000-0000-4000-8000-000000000901','88000000-0000-4000-8000-000000000101','88000000-0000-4000-8000-000000000801','88000000-0000-4000-8000-000000000502',4);
+insert into public.assessment_execution_snapshots(id,company_id,assessment_cycle_id,
+  source_assessment_template_id,template_name,template_description,
+  template_instructions,template_type,capture_origin) values
+ ('88000000-0000-4000-8000-000000000751','88000000-0000-4000-8000-000000000101','88000000-0000-4000-8000-000000000601','88000000-0000-4000-8000-000000000301','Template A','Desc','Instructions','360','legacy_backfill_current_state');
+insert into public.assessment_execution_snapshot_sections(id,company_id,
+  assessment_execution_snapshot_id,source_assessment_section_id,name,description,
+  weight,display_order,active_at_capture) values
+ ('88000000-0000-4000-8000-000000000752','88000000-0000-4000-8000-000000000101','88000000-0000-4000-8000-000000000751','88000000-0000-4000-8000-000000000402','Section A','First',1,1,true),
+ ('88000000-0000-4000-8000-000000000753','88000000-0000-4000-8000-000000000101','88000000-0000-4000-8000-000000000751','88000000-0000-4000-8000-000000000401','Section B','Second',1,2,true);
+insert into public.assessment_execution_snapshot_questions(id,company_id,
+  assessment_execution_snapshot_id,assessment_execution_snapshot_section_id,
+  source_assessment_question_id,question,question_type,required,weight,
+  display_order,scale_min,scale_max,active_at_capture) values
+ ('88000000-0000-4000-8000-000000000754','88000000-0000-4000-8000-000000000101','88000000-0000-4000-8000-000000000751','88000000-0000-4000-8000-000000000752','88000000-0000-4000-8000-000000000502','Question A','scale',true,1,1,1,5,true),
+ ('88000000-0000-4000-8000-000000000755','88000000-0000-4000-8000-000000000101','88000000-0000-4000-8000-000000000751','88000000-0000-4000-8000-000000000752','88000000-0000-4000-8000-000000000501','Question B','scale',true,1,2,1,5,true);
+insert into public.assessment_responses(id,company_id,assessment_cycle_id,assessment_template_id,
+  assessment_execution_snapshot_id,employee_id,evaluator_id,status) values
+ ('88000000-0000-4000-8000-000000000801','88000000-0000-4000-8000-000000000101','88000000-0000-4000-8000-000000000601','88000000-0000-4000-8000-000000000301','88000000-0000-4000-8000-000000000751','88000000-0000-4000-8000-000000000206','88000000-0000-4000-8000-000000000205','submitted');
+insert into public.assessment_answers(id,company_id,assessment_response_id,
+  assessment_question_id,assessment_execution_snapshot_id,
+  assessment_execution_snapshot_question_id,score) values
+ ('88000000-0000-4000-8000-000000000901','88000000-0000-4000-8000-000000000101','88000000-0000-4000-8000-000000000801','88000000-0000-4000-8000-000000000502','88000000-0000-4000-8000-000000000751','88000000-0000-4000-8000-000000000754',4);
 
 insert into public.feedback_threads(id,company_id,sender_employee_id,receiver_employee_id,created_by_user_id,title,visibility,updated_at) values
  ('88100000-0000-4000-8000-000000000001','88000000-0000-4000-8000-000000000101','88000000-0000-4000-8000-000000000205','88000000-0000-4000-8000-000000000206','88000000-0000-4000-8000-000000000005','Normal private','participants','2026-01-01'),

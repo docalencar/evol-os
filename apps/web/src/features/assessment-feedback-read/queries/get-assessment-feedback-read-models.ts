@@ -163,9 +163,12 @@ export async function getAssessmentResponsePageReadModel(
     const response = administrativeRead.responses[0]
     if (!response) return null
 
-    const structure = await getAssessmentTemplateStructureReadModel(
+    const structure = mapStructure(
       companyId,
-      response.assessment_template_id
+      await (await repository()).assessmentResponseStructure(
+        companyId,
+        responseId
+      )
     )
     if (!structure.template) return null
 

@@ -89,15 +89,52 @@ insert into public.assessment_cycles(
  ('ae000000-0000-4000-8000-000000000404','ae000000-0000-4000-8000-000000000101','Cycle Cancelled','performance','active',current_date,current_date+7,'ae000000-0000-4000-8000-000000000201'),
  ('ae000000-0000-4000-8000-000000000405','ae000000-0000-4000-8000-000000000101','Cycle Completed','performance','active',current_date,current_date+7,'ae000000-0000-4000-8000-000000000201'),
  ('ae000000-0000-4000-8000-000000000406','ae000000-0000-4000-8000-000000000102','Cycle Beta','performance','active',current_date,current_date+7,'ae000000-0000-4000-8000-000000000203');
-insert into public.assessment_responses(
-  id,company_id,assessment_cycle_id,assessment_template_id,employee_id,evaluator_id,status
+insert into public.assessment_execution_snapshots(
+  id,company_id,assessment_cycle_id,source_assessment_template_id,
+  template_name,template_type,capture_origin
 ) values
- ('ae000000-0000-4000-8000-000000000501','ae000000-0000-4000-8000-000000000101','ae000000-0000-4000-8000-000000000401','ae000000-0000-4000-8000-000000000201','ae000000-0000-4000-8000-000000000305','ae000000-0000-4000-8000-000000000301','draft'),
- ('ae000000-0000-4000-8000-000000000502','ae000000-0000-4000-8000-000000000101','ae000000-0000-4000-8000-000000000402','ae000000-0000-4000-8000-000000000201','ae000000-0000-4000-8000-000000000305','ae000000-0000-4000-8000-000000000301','draft'),
- ('ae000000-0000-4000-8000-000000000503','ae000000-0000-4000-8000-000000000101','ae000000-0000-4000-8000-000000000403','ae000000-0000-4000-8000-000000000201','ae000000-0000-4000-8000-000000000305','ae000000-0000-4000-8000-000000000301','draft'),
- ('ae000000-0000-4000-8000-000000000504','ae000000-0000-4000-8000-000000000101','ae000000-0000-4000-8000-000000000404','ae000000-0000-4000-8000-000000000201','ae000000-0000-4000-8000-000000000305','ae000000-0000-4000-8000-000000000301','cancelled'),
- ('ae000000-0000-4000-8000-000000000505','ae000000-0000-4000-8000-000000000101','ae000000-0000-4000-8000-000000000405','ae000000-0000-4000-8000-000000000201','ae000000-0000-4000-8000-000000000305','ae000000-0000-4000-8000-000000000301','completed'),
- ('ae000000-0000-4000-8000-000000000506','ae000000-0000-4000-8000-000000000102','ae000000-0000-4000-8000-000000000406','ae000000-0000-4000-8000-000000000203','ae000000-0000-4000-8000-000000000306','ae000000-0000-4000-8000-000000000306','draft');
+ ('ae000000-0000-4000-8000-000000000451','ae000000-0000-4000-8000-000000000101','ae000000-0000-4000-8000-000000000401','ae000000-0000-4000-8000-000000000201','Model A','annual','legacy_backfill_current_state'),
+ ('ae000000-0000-4000-8000-000000000452','ae000000-0000-4000-8000-000000000101','ae000000-0000-4000-8000-000000000402','ae000000-0000-4000-8000-000000000201','Model A','annual','legacy_backfill_current_state'),
+ ('ae000000-0000-4000-8000-000000000453','ae000000-0000-4000-8000-000000000101','ae000000-0000-4000-8000-000000000403','ae000000-0000-4000-8000-000000000201','Model A','annual','legacy_backfill_current_state'),
+ ('ae000000-0000-4000-8000-000000000454','ae000000-0000-4000-8000-000000000101','ae000000-0000-4000-8000-000000000404','ae000000-0000-4000-8000-000000000201','Model A','annual','legacy_backfill_current_state'),
+ ('ae000000-0000-4000-8000-000000000455','ae000000-0000-4000-8000-000000000101','ae000000-0000-4000-8000-000000000405','ae000000-0000-4000-8000-000000000201','Model A','annual','legacy_backfill_current_state'),
+ ('ae000000-0000-4000-8000-000000000456','ae000000-0000-4000-8000-000000000102','ae000000-0000-4000-8000-000000000406','ae000000-0000-4000-8000-000000000203','Model Beta','annual','legacy_backfill_current_state');
+insert into public.assessment_execution_snapshot_sections(
+  company_id,assessment_execution_snapshot_id,source_assessment_section_id,
+  name,weight,display_order,active_at_capture
+)
+select snapshot.company_id,snapshot.id,section.id,section.name,section.weight,
+  section.display_order,section.active and section.deleted_at is null
+from public.assessment_execution_snapshots snapshot
+join public.assessment_sections section on section.company_id=snapshot.company_id
+  and section.assessment_template_id=snapshot.source_assessment_template_id
+where snapshot.id::text like 'ae000000-0000-4000-8000-00000000045%';
+insert into public.assessment_execution_snapshot_questions(
+  company_id,assessment_execution_snapshot_id,assessment_execution_snapshot_section_id,
+  source_assessment_question_id,question,question_type,required,weight,display_order,
+  scale_min,scale_max,active_at_capture
+)
+select snapshot_section.company_id,snapshot_section.assessment_execution_snapshot_id,
+  snapshot_section.id,question.id,question.question,question.question_type,
+  question.required,question.weight,question.display_order,question.scale_min,
+  question.scale_max,question.active and question.deleted_at is null
+    and snapshot_section.active_at_capture
+from public.assessment_execution_snapshot_sections snapshot_section
+join public.assessment_questions question
+  on question.company_id=snapshot_section.company_id
+  and question.assessment_section_id=snapshot_section.source_assessment_section_id
+where snapshot_section.assessment_execution_snapshot_id::text
+  like 'ae000000-0000-4000-8000-00000000045%';
+insert into public.assessment_responses(
+  id,company_id,assessment_cycle_id,assessment_template_id,
+  assessment_execution_snapshot_id,employee_id,evaluator_id,status
+) values
+ ('ae000000-0000-4000-8000-000000000501','ae000000-0000-4000-8000-000000000101','ae000000-0000-4000-8000-000000000401','ae000000-0000-4000-8000-000000000201','ae000000-0000-4000-8000-000000000451','ae000000-0000-4000-8000-000000000305','ae000000-0000-4000-8000-000000000301','draft'),
+ ('ae000000-0000-4000-8000-000000000502','ae000000-0000-4000-8000-000000000101','ae000000-0000-4000-8000-000000000402','ae000000-0000-4000-8000-000000000201','ae000000-0000-4000-8000-000000000452','ae000000-0000-4000-8000-000000000305','ae000000-0000-4000-8000-000000000301','draft'),
+ ('ae000000-0000-4000-8000-000000000503','ae000000-0000-4000-8000-000000000101','ae000000-0000-4000-8000-000000000403','ae000000-0000-4000-8000-000000000201','ae000000-0000-4000-8000-000000000453','ae000000-0000-4000-8000-000000000305','ae000000-0000-4000-8000-000000000301','draft'),
+ ('ae000000-0000-4000-8000-000000000504','ae000000-0000-4000-8000-000000000101','ae000000-0000-4000-8000-000000000404','ae000000-0000-4000-8000-000000000201','ae000000-0000-4000-8000-000000000454','ae000000-0000-4000-8000-000000000305','ae000000-0000-4000-8000-000000000301','cancelled'),
+ ('ae000000-0000-4000-8000-000000000505','ae000000-0000-4000-8000-000000000101','ae000000-0000-4000-8000-000000000405','ae000000-0000-4000-8000-000000000201','ae000000-0000-4000-8000-000000000455','ae000000-0000-4000-8000-000000000305','ae000000-0000-4000-8000-000000000301','completed'),
+ ('ae000000-0000-4000-8000-000000000506','ae000000-0000-4000-8000-000000000102','ae000000-0000-4000-8000-000000000406','ae000000-0000-4000-8000-000000000203','ae000000-0000-4000-8000-000000000456','ae000000-0000-4000-8000-000000000306','ae000000-0000-4000-8000-000000000306','draft');
 
 set local role anon;
 select set_config('request.jwt.claims','{"role":"anon"}',true);
@@ -197,8 +234,13 @@ select throws_ok($$select public.submit_tenant_assessment_response_v1(
  '42501','ASSESSMENT_RESPONSE_WRITE_DENIED','cross-tenant evaluator cannot submit');
 
 reset role;
-insert into public.assessment_answers(company_id,assessment_response_id,assessment_question_id,score)
-values ('ae000000-0000-4000-8000-000000000101','ae000000-0000-4000-8000-000000000503','ae000000-0000-4000-8000-000000000221',11);
+insert into public.assessment_answers(company_id,assessment_response_id,assessment_question_id,
+  assessment_execution_snapshot_id,assessment_execution_snapshot_question_id,score)
+select 'ae000000-0000-4000-8000-000000000101','ae000000-0000-4000-8000-000000000503',
+  'ae000000-0000-4000-8000-000000000221','ae000000-0000-4000-8000-000000000453',question.id,11
+from public.assessment_execution_snapshot_questions question
+where question.assessment_execution_snapshot_id='ae000000-0000-4000-8000-000000000453'
+  and question.source_assessment_question_id='ae000000-0000-4000-8000-000000000221';
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"ae000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
 select throws_ok($$select public.submit_tenant_assessment_response_v1(

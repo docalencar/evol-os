@@ -84,6 +84,7 @@ test("calls every 0088 boundary with the server-derived tenant selector", async 
   const payloads: Record<string, unknown[]> = {
     get_tenant_assessment_catalog_v1: [catalogTemplate],
     get_tenant_assessment_template_structure_v1: [structureTemplate],
+    get_tenant_assessment_response_structure_v1: [structureTemplate],
     get_tenant_assessment_cycle_management_v1: [cycle],
     get_assessment_evaluator_workspace_v1: [workspaceResponse],
     get_current_person_feedback_threads_v1: [feedbackDirectory],
@@ -101,18 +102,20 @@ test("calls every 0088 boundary with the server-derived tenant selector", async 
 
   await repository.assessmentCatalog(companyId)
   await repository.assessmentStructure(companyId, recordId)
+  await repository.assessmentResponseStructure(companyId, recordId)
   await repository.assessmentCycle(companyId, recordId)
   await repository.evaluatorWorkspace(companyId, recordId)
   await repository.feedbackDirectory(companyId)
   await repository.feedbackDetail(companyId, recordId)
   await repository.feedbackMessages(companyId, recordId)
 
-  assert.equal(calls.length, 7)
+  assert.equal(calls.length, 8)
   assert.ok(calls.every((call) =>
     (call.parameters as { p_company_id?: string }).p_company_id === companyId
   ))
   assert.deepEqual(calls[1].parameters, { p_company_id: companyId, p_template_id: recordId })
-  assert.deepEqual(calls[5].parameters, { p_company_id: companyId, p_thread_id: recordId })
+  assert.deepEqual(calls[2].parameters, { p_company_id: companyId, p_response_id: recordId })
+  assert.deepEqual(calls[6].parameters, { p_company_id: companyId, p_thread_id: recordId })
 })
 
 test("accepts empty selectors and rejects malformed rows fail-closed", async () => {

@@ -152,6 +152,7 @@ export function createAssessmentFeedbackReadRepository(database: RpcDatabase) {
   return {
     assessmentCatalog: (companyId: string) => rpcRows(database, "get_tenant_assessment_catalog_v1", { p_company_id: companyId }, z.array(catalogRowSchema)),
     assessmentStructure: (companyId: string, templateId: string) => rpcRows(database, "get_tenant_assessment_template_structure_v1", { p_company_id: companyId, p_template_id: templateId }, z.array(structureRowSchema)),
+    assessmentResponseStructure: (companyId: string, responseId: string) => rpcRows(database, "get_tenant_assessment_response_structure_v1", { p_company_id: companyId, p_response_id: responseId }, z.array(structureRowSchema)),
     assessmentCycle: (companyId: string, cycleId: string) => rpcRows(database, "get_tenant_assessment_cycle_management_v1", { p_company_id: companyId, p_cycle_id: cycleId }, z.array(cycleRowSchema)),
     evaluatorWorkspace: (companyId: string, responseId: string) => rpcRows(database, "get_assessment_evaluator_workspace_v1", { p_company_id: companyId, p_response_id: responseId }, z.array(workspaceRowSchema)),
     feedbackDirectory: (companyId: string) => rpcRows(database, "get_current_person_feedback_threads_v1", { p_company_id: companyId }, z.array(feedbackDirectoryRowSchema)),

@@ -53,12 +53,19 @@ test("server-only adapter has strict schemas and no protected-table fallback", (
   for (const rpc of [
     "get_tenant_assessment_catalog_v1",
     "get_tenant_assessment_template_structure_v1",
+    "get_tenant_assessment_response_structure_v1",
     "get_tenant_assessment_cycle_management_v1",
     "get_assessment_evaluator_workspace_v1",
     "get_current_person_feedback_threads_v1",
     "get_feedback_thread_detail_v1",
     "get_feedback_thread_messages_v1",
   ]) assert.match(repository, new RegExp(rpc))
+
+  assert.match(query, /assessmentResponseStructure\([\s\S]*?companyId,[\s\S]*?responseId/)
+  assert.doesNotMatch(
+    query,
+    /getAssessmentTemplateStructureReadModel\([\s\S]*?response\.assessment_template_id/
+  )
 })
 
 test("route errors expose only stable retry copy", () => {

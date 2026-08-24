@@ -77,14 +77,49 @@ insert into public.assessment_questions (
   'Communicates clearly?'
 );
 
+insert into public.assessment_execution_snapshots (
+  id, company_id, assessment_cycle_id, source_assessment_template_id,
+  template_name, template_type, capture_origin
+) values (
+  '45000000-0000-4000-8000-000000000001',
+  '20000000-0000-4000-8000-000000000001',
+  '50000000-0000-4000-8000-000000000001',
+  '40000000-0000-4000-8000-000000000001',
+  'Template', '360', 'legacy_backfill_current_state'
+);
+insert into public.assessment_execution_snapshot_sections (
+  id, company_id, assessment_execution_snapshot_id, source_assessment_section_id,
+  name, weight, display_order, active_at_capture
+) values (
+  '65000000-0000-4000-8000-000000000001',
+  '20000000-0000-4000-8000-000000000001',
+  '45000000-0000-4000-8000-000000000001',
+  '60000000-0000-4000-8000-000000000001',
+  'Leadership', 1, 0, true
+);
+insert into public.assessment_execution_snapshot_questions (
+  id, company_id, assessment_execution_snapshot_id,
+  assessment_execution_snapshot_section_id, source_assessment_question_id,
+  question, question_type, required, weight, display_order, scale_min, scale_max,
+  active_at_capture
+) values (
+  '75000000-0000-4000-8000-000000000001',
+  '20000000-0000-4000-8000-000000000001',
+  '45000000-0000-4000-8000-000000000001',
+  '65000000-0000-4000-8000-000000000001',
+  '70000000-0000-4000-8000-000000000001',
+  'Communicates clearly?', 'scale', true, 1, 0, 1, 5, true
+);
+
 insert into public.assessment_responses (
   id, company_id, assessment_cycle_id, assessment_template_id,
-  employee_id, evaluator_id, status
+  assessment_execution_snapshot_id, employee_id, evaluator_id, status
 ) values (
   '80000000-0000-4000-8000-000000000001',
   '20000000-0000-4000-8000-000000000001',
   '50000000-0000-4000-8000-000000000001',
   '40000000-0000-4000-8000-000000000001',
+  '45000000-0000-4000-8000-000000000001',
   '30000000-0000-4000-8000-000000000002',
   '30000000-0000-4000-8000-000000000001',
   'in_progress'
@@ -92,12 +127,14 @@ insert into public.assessment_responses (
 
 insert into public.assessment_answers (
   id, company_id, assessment_response_id, assessment_question_id,
-  score
+  assessment_execution_snapshot_id, assessment_execution_snapshot_question_id, score
 ) values (
   '90000000-0000-4000-8000-000000000001',
   '20000000-0000-4000-8000-000000000001',
   '80000000-0000-4000-8000-000000000001',
   '70000000-0000-4000-8000-000000000001',
+  '45000000-0000-4000-8000-000000000001',
+  '75000000-0000-4000-8000-000000000001',
   4
 );
 

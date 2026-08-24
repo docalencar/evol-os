@@ -132,11 +132,6 @@ export type {
 } from "./types/assessment-answer"
 
 export {
-  startAssessmentResponseSchema,
-  type StartAssessmentResponseInput,
-} from "./schemas/assessment-response-schema"
-
-export {
   saveAssessmentAnswerSchema,
   type SaveAssessmentAnswerInput,
 } from "./schemas/assessment-answer-schema"
@@ -157,10 +152,6 @@ export type {
   AssessmentAdministrativeRead,
   AssessmentEvaluateeResult,
 } from "./types/assessment-secure-read"
-
-export {
-  startAssessmentResponseAction,
-} from "./actions/start-assessment-response-action"
 
 export {
   saveAssessmentAnswerAction,

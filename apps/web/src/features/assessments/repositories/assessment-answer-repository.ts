@@ -51,31 +51,18 @@ export async function createAssessmentAnswerRepository() {
     },
 
     save(data: SaveAssessmentAnswerData) {
-      return supabase
-        .from("assessment_answers")
-        .upsert(
-          {
-            company_id: data.companyId,
-            assessment_response_id:
-              data.assessmentResponseId,
-            assessment_question_id:
-              data.assessmentQuestionId,
-            answer_text: data.answerText ?? null,
-            answer_number:
-              data.answerNumber ?? null,
-            answer_boolean:
-              data.answerBoolean ?? null,
-            score: data.score ?? null,
-            updated_at:
-              new Date().toISOString(),
-          },
-          {
-            onConflict:
-              "assessment_response_id,assessment_question_id",
-          }
-        )
-        .select("*")
-        .single()
+      return supabase.rpc(
+        "save_tenant_assessment_answer_v1",
+        {
+          p_company_id: data.companyId,
+          p_assessment_response_id: data.assessmentResponseId,
+          p_assessment_question_id: data.assessmentQuestionId,
+          p_answer_text: data.answerText ?? null,
+          p_answer_number: data.answerNumber ?? null,
+          p_answer_boolean: data.answerBoolean ?? null,
+          p_score: data.score ?? null,
+        }
+      )
     },
   }
 }

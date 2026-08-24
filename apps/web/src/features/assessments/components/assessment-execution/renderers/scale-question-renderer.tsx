@@ -23,7 +23,11 @@ export function ScaleQuestionRenderer({
   )
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div
+      className="flex flex-wrap gap-2"
+      role="radiogroup"
+      aria-label="Escala de resposta"
+    >
       {values.map((optionValue) => {
         const selected = optionValue === value
 
@@ -31,18 +35,23 @@ export function ScaleQuestionRenderer({
           <button
             key={optionValue}
             type="button"
+            role="radio"
+            aria-checked={selected}
             onClick={() => onChange(optionValue)}
             disabled={disabled}
             className={[
-              "flex h-10 w-10 items-center justify-center rounded-full border text-sm font-medium transition-all",
+              "flex h-10 w-10 items-center justify-center rounded-full border text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
               selected
-                ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                ? "border-2 border-primary bg-primary font-bold text-primary-foreground ring-2 ring-primary/40 ring-offset-2"
                 : disabled
-                  ? "cursor-not-allowed opacity-60"
-                  : "hover:border-primary hover:bg-primary/10",
+                  ? "cursor-not-allowed font-medium opacity-60"
+                  : "font-medium hover:border-primary hover:bg-primary/10",
             ].join(" ")}
           >
             {optionValue}
+            {selected ? (
+              <span className="sr-only"> selecionado</span>
+            ) : null}
           </button>
         )
       })}

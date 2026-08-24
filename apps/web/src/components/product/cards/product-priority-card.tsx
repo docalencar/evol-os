@@ -1,3 +1,5 @@
+import Link from "next/link"
+
 import { Card } from "@/components/ui/card"
 
 import type { ProductPriority } from "../types/product-priority"
@@ -29,13 +31,13 @@ export function ProductPriorityCard({
           </p>
         </div>
 
-        {priority.actionLabel ? (
-          <button
-            type="button"
+        {priority.actionLabel && priority.href ? (
+          <Link
+            href={priority.href}
             className="text-sm font-medium text-primary hover:underline"
           >
             {priority.actionLabel}
-          </button>
+          </Link>
         ) : null}
       </div>
     </Card>

@@ -12,7 +12,11 @@ export function BooleanQuestionRenderer({
   onChange,
 }: BooleanQuestionRendererProps) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
+    <div
+      className="grid gap-3 sm:grid-cols-2"
+      role="radiogroup"
+      aria-label="Resposta sim ou não"
+    >
       {[
         {
           label: "Sim",
@@ -29,18 +33,23 @@ export function BooleanQuestionRenderer({
           <button
             key={option.label}
             type="button"
+            role="radio"
+            aria-checked={selected}
             onClick={() => onChange(option.value)}
             disabled={disabled}
             className={[
-              "rounded-lg border px-4 py-3 text-left text-sm font-medium transition-all",
+              "rounded-lg border px-4 py-3 text-left text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
               selected
-                ? "border-primary bg-primary/10 text-primary"
+                ? "border-2 border-primary bg-primary/15 font-bold text-primary ring-2 ring-primary/40 ring-offset-2"
                 : disabled
-                  ? "cursor-not-allowed opacity-60"
-                  : "hover:border-primary hover:bg-primary/5",
+                  ? "cursor-not-allowed font-medium opacity-60"
+                  : "font-medium hover:border-primary hover:bg-primary/5",
             ].join(" ")}
           >
             {option.label}
+            {selected ? (
+              <span className="sr-only"> selecionado</span>
+            ) : null}
           </button>
         )
       })}

@@ -7,6 +7,7 @@ import type { AssessmentSection } from "../../types/assessment-section"
 import type { AssessmentTemplate } from "../../types/assessment-template"
 import { createAssessmentExecutionViewModel } from "../../services/create-assessment-execution-view-model"
 import { AssessmentFooter } from "./assessment-footer"
+import { AssessmentAutosaveProvider } from "./assessment-autosave-context"
 import { AssessmentProgressCard } from "./assessment-progress-card"
 import { AssessmentQuestionCard } from "./assessment-question-card"
 import { AssessmentSectionAccordion } from "./assessment-section-accordion"
@@ -33,9 +34,15 @@ export function AssessmentExecutionWorkspace({
   answers,
   canAnswer,
 }: AssessmentExecutionWorkspaceProps) {
-  const allQuestions = Array.from(
-    questionsBySection.values()
-  ).flat()
+  const activeSectionIds = new Set(
+    sections.filter((section) => section.active).map((section) => section.id)
+  )
+
+  const allQuestions = Array.from(questionsBySection.entries())
+    .filter(([sectionId]) => activeSectionIds.has(sectionId))
+    .flatMap(([, questions]) =>
+      questions.filter((question) => question.active)
+    )
 
   const readOnly =
     !canAnswer ||
@@ -68,7 +75,8 @@ export function AssessmentExecutionWorkspace({
     })
 
   return (
-    <div className="space-y-8">
+    <AssessmentAutosaveProvider>
+      <div className="space-y-8">
       <AssessmentProgressCard
         title={viewModel.title}
         description={viewModel.description}
@@ -126,14 +134,16 @@ export function AssessmentExecutionWorkspace({
             const questions =
               questionsBySection.get(section.id) ?? []
 
-            const questionIds = new Set(
-              questions.map((question) => question.id)
+            const activeQuestions = questions.filter(
+              (question) => question.active && section.active
             )
 
             const answeredInSection = answers.filter(
               (answer) =>
-                questionIds.has(
-                  answer.assessment_question_id
+                activeQuestions.some(
+                  (question) =>
+                    question.id ===
+                    answer.assessment_question_id
                 )
             ).length
 
@@ -146,7 +156,7 @@ export function AssessmentExecutionWorkspace({
                   title={section.name}
                   description={section.description}
                   answered={answeredInSection}
-                  total={questions.length}
+                  total={activeQuestions.length}
                   defaultOpen={sectionIndex === 0}
                 >
                   {questions.length === 0 ? (
@@ -163,7 +173,11 @@ export function AssessmentExecutionWorkspace({
                             assessmentResponseId
                           }
                           question={question}
-                          readOnly={readOnly}
+                          readOnly={
+                            readOnly ||
+                            !section.active ||
+                            !question.active
+                          }
                           answer={answers.find(
                             (answer) =>
                               answer.assessment_question_id ===
@@ -192,6 +206,7 @@ export function AssessmentExecutionWorkspace({
           missingRequired={viewModel.missingRequired}
         />
       ) : null}
-    </div>
+      </div>
+    </AssessmentAutosaveProvider>
   )
 }

@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
 } from "react"
+import { useRouter } from "next/navigation"
 
 import {
   saveAssessmentAnswerAction,
@@ -13,6 +14,7 @@ import {
 import type {
   SaveAssessmentAnswerInput,
 } from "../../../schemas/assessment-answer-schema"
+import { useAssessmentAutosaveCoordinator } from "../assessment-autosave-context"
 
 export type AssessmentAutoSaveState =
   | "idle"
@@ -41,6 +43,12 @@ export function useAssessmentAutoSave({
   disabled = false,
   delay = 500,
 }: UseAssessmentAutoSaveInput) {
+  const router = useRouter()
+  const {
+    markFailed,
+    markPending,
+    markPersisted,
+  } = useAssessmentAutosaveCoordinator()
   const [
     saveState,
     setSaveState,
@@ -55,6 +63,7 @@ export function useAssessmentAutoSave({
     )
 
   const requestSequenceRef = useRef(0)
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve())
 
   const clearPendingSave = useCallback(() => {
     if (timeoutRef.current) {
@@ -76,6 +85,7 @@ export function useAssessmentAutoSave({
       clearPendingSave()
       setSaveState("saving")
       setErrorMessage(null)
+      markPending(assessmentQuestionId)
 
       const requestSequence =
         requestSequenceRef.current + 1
@@ -83,38 +93,36 @@ export function useAssessmentAutoSave({
       requestSequenceRef.current =
         requestSequence
 
-      timeoutRef.current = setTimeout(
-        async () => {
-          const result =
-            await saveAssessmentAnswerAction(
-              companyId,
-              {
-                assessmentResponseId,
-                assessmentQuestionId,
-                ...payload,
-              }
-            )
+      timeoutRef.current = setTimeout(() => {
+        saveQueueRef.current = saveQueueRef.current.then(async () => {
+          const result = await saveAssessmentAnswerAction(companyId, {
+            assessmentResponseId,
+            assessmentQuestionId,
+            ...payload,
+          })
 
-          if (
-            requestSequence !==
-            requestSequenceRef.current
-          ) {
-            return
-          }
+          if (requestSequence !== requestSequenceRef.current) return
 
-          setSaveState(
-            result.success
-              ? "saved"
-              : "error"
-          )
+          setSaveState(result.success ? "saved" : "error")
           setErrorMessage(
             result.success ? null : result.message || "Erro ao salvar"
           )
 
-          timeoutRef.current = null
-        },
-        delay
-      )
+          if (result.success) {
+            markPersisted(assessmentQuestionId)
+            router.refresh()
+          } else {
+            markFailed(assessmentQuestionId)
+          }
+        }).catch(() => {
+          if (requestSequence !== requestSequenceRef.current) return
+          setSaveState("error")
+          setErrorMessage("Não foi possível salvar a resposta.")
+          markFailed(assessmentQuestionId)
+        })
+
+        timeoutRef.current = null
+      }, delay)
     },
     [
       assessmentQuestionId,
@@ -123,6 +131,10 @@ export function useAssessmentAutoSave({
       companyId,
       delay,
       disabled,
+      markFailed,
+      markPending,
+      markPersisted,
+      router,
     ]
   )
 
@@ -130,5 +142,7 @@ export function useAssessmentAutoSave({
     save,
     saveState,
     errorMessage,
+    markPending: () => markPending(assessmentQuestionId),
+    markPersisted: () => markPersisted(assessmentQuestionId),
   }
 }

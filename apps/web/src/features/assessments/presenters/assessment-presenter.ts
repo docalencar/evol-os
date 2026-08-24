@@ -3,6 +3,7 @@ import type {
   AssessmentCycleStatus,
   AssessmentCycleType,
 } from "../types/assessment-cycle"
+import type { AssessmentResponse } from "../types/assessment-response"
 import type { AssessmentViewModel } from "../view-models/assessment-view-model"
 
 const statusLabels: Record<AssessmentCycleStatus, string> = {
@@ -59,7 +60,8 @@ function getEvaluatorFormats(cycle: AssessmentCycle) {
 }
 
 export function presentAssessment(
-  cycle: AssessmentCycle
+  cycle: AssessmentCycle,
+  actionableResponseId: string | null = null
 ): AssessmentViewModel {
   return {
     id: cycle.id,
@@ -75,13 +77,28 @@ export function presentAssessment(
     startDate: cycle.start_date,
     endDate: cycle.end_date,
     templateId: cycle.assessment_template_id,
+    actionableResponseId,
     isAnonymous: cycle.anonymous,
     evaluatorFormats: getEvaluatorFormats(cycle),
   }
 }
 
 export function presentAssessments(
-  cycles: AssessmentCycle[]
+  cycles: AssessmentCycle[],
+  evaluatorResponses: AssessmentResponse[] = []
 ): AssessmentViewModel[] {
-  return cycles.map(presentAssessment)
+  const actionableResponseByCycle = new Map(
+    evaluatorResponses
+      .filter((response) =>
+        response.status === "draft" || response.status === "in_progress"
+      )
+      .map((response) => [response.assessment_cycle_id, response.id])
+  )
+
+  return cycles.map((cycle) =>
+    presentAssessment(
+      cycle,
+      actionableResponseByCycle.get(cycle.id) ?? null
+    )
+  )
 }

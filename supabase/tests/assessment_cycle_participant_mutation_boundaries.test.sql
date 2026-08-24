@@ -46,8 +46,8 @@ select ok(not has_table_privilege('authenticated','public.assessment_cycle_parti
 select ok(not has_table_privilege('authenticated','public.assessment_responses','insert'),
   'authenticated direct response generation is closed');
 select ok(has_table_privilege('authenticated','public.assessment_responses','select')
-  and has_table_privilege('authenticated','public.assessment_responses','update'),
-  'existing response read and execution privileges remain');
+  and not has_table_privilege('authenticated','public.assessment_responses','update'),
+  'response SELECT remains while 0113 closes direct execution UPDATE');
 
 insert into auth.users(id,email) values
  ('ad000000-0000-4000-8000-000000000001','owner-acp@example.com'),
@@ -150,20 +150,20 @@ select is((public.update_tenant_assessment_cycle_v1(
 select is((public.generate_tenant_assessment_cycle_responses_v1(
  'ad000000-0000-4000-8000-000000000101',(select id from acp_result where kind='cycle'))
  ->>'createdResponseCount')::int,4,'generation derives self, manager and direct-report assignments');
-select lives_ok($$insert into public.assessment_answers(
- company_id,assessment_response_id,assessment_question_id,score)
- select 'ad000000-0000-4000-8000-000000000101',response.id,
- 'ad000000-0000-4000-8000-000000000221',4
- from public.assessment_responses response
- where response.assessment_cycle_id=(select id from acp_result where kind='cycle')
-   and response.employee_id='ad000000-0000-4000-8000-000000000301'
-   and response.evaluator_id='ad000000-0000-4000-8000-000000000301'$$,
- 'authorized evaluator saves the first answer on an 0112-generated self response');
-select lives_ok($$update public.assessment_responses set status='in_progress'
+select lives_ok($$select public.save_tenant_assessment_answer_v1(
+ 'ad000000-0000-4000-8000-000000000101',(
+   select response.id from public.assessment_responses response
+   where response.assessment_cycle_id=(select id from acp_result where kind='cycle')
+     and response.employee_id='ad000000-0000-4000-8000-000000000301'
+     and response.evaluator_id='ad000000-0000-4000-8000-000000000301'
+ ),'ad000000-0000-4000-8000-000000000221',null,null,null,4)$$,
+ 'authorized evaluator saves through 0113 on an 0112-generated self response');
+select results_eq($$select status from public.assessment_responses
  where assessment_cycle_id=(select id from acp_result where kind='cycle')
    and employee_id='ad000000-0000-4000-8000-000000000301'
    and evaluator_id='ad000000-0000-4000-8000-000000000301'$$,
- 'first authorized save can transition generated response to in_progress');
+ array['in_progress'::text],
+ 'trusted first save transitions generated response to in_progress');
 select is((public.generate_tenant_assessment_cycle_responses_v1(
  'ad000000-0000-4000-8000-000000000101',(select id from acp_result where kind='cycle'))
  ->>'createdResponseCount')::int,0,'generation retry converges to zero new responses');

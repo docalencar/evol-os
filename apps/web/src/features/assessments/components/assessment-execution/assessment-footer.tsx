@@ -6,6 +6,7 @@ import { toast } from "sonner"
 
 import { submitAssessmentResponseAction } from "../../actions/submit-assessment-response-action"
 import { SubmitAssessmentDialog } from "./submit-assessment-dialog"
+import { useAssessmentAutosaveCoordinator } from "./assessment-autosave-context"
 
 type AssessmentFooterProps = {
   companyId: string
@@ -48,6 +49,8 @@ export function AssessmentFooter({
   missingRequired,
 }: AssessmentFooterProps) {
   const router = useRouter()
+  const { hasUnpersistedChanges } =
+    useAssessmentAutosaveCoordinator()
 
   const [loading, startTransition] =
     useTransition()
@@ -81,9 +84,15 @@ export function AssessmentFooter({
           </p>
 
           {canSubmit ? (
-            <p className="text-xs text-emerald-600">
-              ✔ Todas as perguntas obrigatórias foram respondidas.
-            </p>
+            hasUnpersistedChanges ? (
+              <p className="text-xs text-amber-600">
+                Aguarde a conclusão do salvamento antes de enviar.
+              </p>
+            ) : (
+              <p className="text-xs text-emerald-600">
+                ✔ Todas as perguntas obrigatórias foram respondidas.
+              </p>
+            )
           ) : (
             <p className="text-xs text-amber-600">
               Faltam {missingRequired} pergunta(s) obrigatória(s).
@@ -110,7 +119,7 @@ export function AssessmentFooter({
           </button>
 
           <SubmitAssessmentDialog
-            disabled={!canSubmit}
+            disabled={!canSubmit || hasUnpersistedChanges}
             loading={loading}
             onConfirm={handleSubmit}
           />

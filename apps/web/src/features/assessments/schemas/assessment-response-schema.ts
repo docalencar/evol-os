@@ -1,23 +1,3 @@
-import { z } from "zod"
-
-export const startAssessmentResponseSchema = z.object({
-  assessmentCycleId: z
-    .string()
-    .uuid("Ciclo de avaliação inválido."),
-
-  assessmentTemplateId: z
-    .string()
-    .uuid("Modelo de avaliação inválido."),
-
-  employeeId: z
-    .string()
-    .uuid("Colaborador avaliado inválido."),
-
-  evaluatorId: z
-    .string()
-    .uuid("Avaliador inválido."),
-})
-
-export type StartAssessmentResponseInput = z.infer<
-  typeof startAssessmentResponseSchema
->
+// Response creation is owned by the trusted Cycle generation boundary (0112).
+// Evaluator execution does not accept a client-authored Response payload.
+export {}

@@ -73,9 +73,25 @@ function ReadOnlyAssessmentQuestionCard({
           </p>
         ) : null}
       </div>
-      <div className="rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-800">
-        {answerLabel ?? "Ainda não respondida"}
-      </div>
+      {question.question_type === "scale" ? (
+        <ScaleQuestionRenderer
+          value={answer?.score ?? null}
+          min={question.scale_min}
+          max={question.scale_max}
+          disabled
+          onChange={() => undefined}
+        />
+      ) : question.question_type === "yes_no" ? (
+        <BooleanQuestionRenderer
+          value={answer?.answer_boolean ?? null}
+          disabled
+          onChange={() => undefined}
+        />
+      ) : (
+        <div className="rounded-lg border-2 border-slate-300 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900">
+          {answerLabel ?? "Ainda não respondida"}
+        </div>
+      )}
     </div>
   )
 }
@@ -128,6 +144,8 @@ function EditableAssessmentQuestionCard({
     save,
     saveState,
     errorMessage,
+    markPending,
+    markPersisted,
   } = useAssessmentAutoSave({
     companyId,
     assessmentResponseId,
@@ -165,9 +183,14 @@ function EditableAssessmentQuestionCard({
   function handleTextChange(value: string) {
     setTextValue(value)
 
-    setTextDirty(
-      value !== lastSavedTextRef.current
-    )
+    const dirty = value !== lastSavedTextRef.current
+    setTextDirty(dirty)
+
+    if (dirty) {
+      markPending()
+    } else {
+      markPersisted()
+    }
   }
 
   function handleTextBlur() {

@@ -2,135 +2,52 @@
 
 import { revalidatePath } from "next/cache"
 
-import { getAssessmentResponsePageReadModel } from "@/features/assessment-feedback-read"
-
-import { requireAssessmentEvaluator } from "../application/assessment-authorization"
-import { loadAssessmentActor } from "../application/load-assessment-actor"
 import { createAssessmentResponseRepository } from "../repositories/assessment-response-repository"
-import type { AssessmentResponse } from "../types/assessment-response"
 
 type SubmitAssessmentResponseResult = {
   success: boolean
   message: string
+  status?: "succeeded" | "already_submitted"
 }
 
 export async function submitAssessmentResponseAction(
   companyId: string,
   assessmentResponseId: string
 ): Promise<SubmitAssessmentResponseResult> {
-  const responseRepository =
-    await createAssessmentResponseRepository()
-
-  const {
-    data: responseData,
-    error: responseError,
-  } = await responseRepository.findById(
+  const repository = await createAssessmentResponseRepository()
+  const { data, error } = await repository.submit(
     companyId,
     assessmentResponseId
   )
 
-  if (responseError || !responseData) {
+  if (error) {
+    console.error("Assessment Response Submit Error:", error)
+
     return {
       success: false,
-      message: "Avaliação não encontrada.",
+      message: error.message.includes(
+        "ASSESSMENT_REQUIRED_ANSWERS_MISSING"
+      )
+        ? "Responda todas as perguntas obrigatórias antes de enviar."
+        : "Não foi possível enviar a avaliação.",
     }
   }
 
-  const response =
-    responseData as AssessmentResponse
-
-  try {
-    const actor = await loadAssessmentActor()
-    requireAssessmentEvaluator(actor, response, "write")
-  } catch {
-    return {
-      success: false,
-      message: "Você não possui permissão para enviar esta avaliação.",
-    }
-  }
-
-  if (
-    response.status === "submitted" ||
-    response.status === "completed" ||
-    response.status === "cancelled"
-  ) {
-    return {
-      success: false,
-      message:
-        "Esta avaliação não pode mais ser enviada.",
-    }
-  }
-
-  let workspace
-
-  try {
-    workspace = await getAssessmentResponsePageReadModel(
-      companyId,
-      assessmentResponseId
-    )
-  } catch {
-    return {
-      success: false,
-      message:
-        "Não foi possível carregar a avaliação.",
-    }
-  }
-
-  if (!workspace) {
-    return {
-      success: false,
-      message: "Avaliação não encontrada.",
-    }
-  }
-
-  const { questions, answers } = workspace
-
-  const answeredQuestionIds = new Set(
-    answers.map(
-      (answer) => answer.assessment_question_id
-    )
-  )
-
-  const missingRequiredQuestions = questions.filter(
-    (question) =>
-      question.active &&
-      question.required &&
-      !answeredQuestionIds.has(question.id)
-  )
-
-  if (missingRequiredQuestions.length > 0) {
-    return {
-      success: false,
-      message:
-        "Responda todas as perguntas obrigatórias antes de enviar.",
-    }
-  }
-
-  const { error: statusError } =
-    await responseRepository.updateStatus(
-      companyId,
-      assessmentResponseId,
-      "submitted"
-    )
-
-  if (statusError) {
-    return {
-      success: false,
-      message:
-        "Não foi possível enviar a avaliação.",
-    }
-  }
+  const result = data as {
+    status?: "succeeded" | "already_submitted"
+  } | null
 
   revalidatePath("/app/assessments")
-  revalidatePath(
-    `/app/assessments/cycles/${response.assessment_cycle_id}`
-  )
   revalidatePath(
     `/app/assessments/responses/${assessmentResponseId}`
   )
 
   return {
     success: true,
-    message: "Avaliação enviada com sucesso.",
+    status: result?.status ?? "succeeded",
+    message:
+      result?.status === "already_submitted"
+        ? "Esta avaliação já havia sido enviada."
+        : "Avaliação enviada com sucesso.",
   }
 }

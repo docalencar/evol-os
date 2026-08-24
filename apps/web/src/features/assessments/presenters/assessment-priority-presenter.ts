@@ -19,7 +19,12 @@ export function presentAssessmentPriority(
       title: "Sua prioridade hoje",
       message: `"${active.title}" está em andamento (${active.periodLabel}).`,
       severity: "warning",
-      actionLabel: "Abrir avaliação",
+      actionLabel: active.actionableResponseId
+        ? "Abrir avaliação"
+        : undefined,
+      href: active.actionableResponseId
+        ? `/app/assessments/responses/${active.actionableResponseId}`
+        : undefined,
     }
   }
 
@@ -34,6 +39,7 @@ export function presentAssessmentPriority(
       message: `"${scheduled.title}" começa em breve (${scheduled.periodLabel}).`,
       severity: "info",
       actionLabel: "Ver planejamento",
+      href: `/app/assessments/cycles/${scheduled.id}`,
     }
   }
 

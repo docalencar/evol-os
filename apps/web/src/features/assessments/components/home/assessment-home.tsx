@@ -19,6 +19,7 @@ import {
   presentAssessments,
   type AssessmentCycle,
   type AssessmentTemplate,
+  type AssessmentResponse,
 } from "@/features/assessments"
 
 import {
@@ -32,15 +33,17 @@ type AssessmentHomeProps = {
   companyId: string
   cycles: AssessmentCycle[]
   templates: AssessmentTemplate[]
+  evaluatorResponses: AssessmentResponse[]
 }
 
 export function AssessmentHome({
   companyId,
   cycles,
   templates,
+  evaluatorResponses,
 }: AssessmentHomeProps) {
   const assessments =
-    presentAssessments(cycles)
+    presentAssessments(cycles, evaluatorResponses)
 
   const home =
     presentAssessmentHome(

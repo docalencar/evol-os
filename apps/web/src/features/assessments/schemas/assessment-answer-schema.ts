@@ -18,33 +18,34 @@ export const saveAssessmentAnswerSchema = z
       .nullable()
       .optional(),
 
-    answerNumber: z.number().nullable().optional(),
+    answerNumber: z.number().finite().nullable().optional(),
 
     answerBoolean: z.boolean().nullable().optional(),
 
     score: z
       .number()
-      .min(0, "A pontuação não pode ser negativa.")
-      .max(100, "A pontuação deve ser de no máximo 100.")
+      .int("A pontuação deve ser um número inteiro.")
       .nullable()
       .optional(),
   })
   .superRefine((data, context) => {
-    const hasAnswer =
-      data.answerText !== null &&
-        data.answerText !== undefined ||
-      data.answerNumber !== null &&
-        data.answerNumber !== undefined ||
-      data.answerBoolean !== null &&
-        data.answerBoolean !== undefined ||
-      data.score !== null &&
-        data.score !== undefined
+    const answerCount = [
+      data.answerText,
+      data.answerNumber,
+      data.answerBoolean,
+      data.score,
+    ].filter(
+      (value) => value !== null && value !== undefined
+    ).length
 
-    if (!hasAnswer) {
+    if (answerCount !== 1) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["answerText"],
-        message: "Informe uma resposta.",
+        message:
+          answerCount === 0
+            ? "Informe uma resposta."
+            : "Informe somente o valor correspondente ao tipo da pergunta.",
       })
     }
   })

@@ -17,6 +17,7 @@ export type AssessmentViewModel = {
   startDate: string
   endDate: string
   templateId: string | null
+  actionableResponseId?: string | null
   isAnonymous: boolean
   evaluatorFormats: string[]
 }

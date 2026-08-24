@@ -2,19 +2,17 @@
 
 import { revalidatePath } from "next/cache"
 
-import { requireAssessmentEvaluator } from "../application/assessment-authorization"
-import { loadAssessmentActor } from "../application/load-assessment-actor"
 import { createAssessmentAnswerRepository } from "../repositories/assessment-answer-repository"
-import { createAssessmentResponseRepository } from "../repositories/assessment-response-repository"
 import {
   saveAssessmentAnswerSchema,
   type SaveAssessmentAnswerInput,
 } from "../schemas/assessment-answer-schema"
-import type { AssessmentResponse } from "../types/assessment-response"
 
 type SaveAssessmentAnswerActionState = {
   success: boolean
   message: string
+  status?: "succeeded" | "no_change"
+  assessmentQuestionId?: string
 }
 
 export async function saveAssessmentAnswerAction(
@@ -27,108 +25,41 @@ export async function saveAssessmentAnswerAction(
     return {
       success: false,
       message:
-        parsed.error.issues[0]?.message ??
-        "Resposta inválida.",
+        parsed.error.issues[0]?.message ?? "Resposta inválida.",
     }
   }
 
-  const responseRepository =
-    await createAssessmentResponseRepository()
-
-  const {
-    data: responseData,
-    error: responseError,
-  } = await responseRepository.findById(
+  const repository = await createAssessmentAnswerRepository()
+  const { data, error } = await repository.save({
     companyId,
-    parsed.data.assessmentResponseId
-  )
+    ...parsed.data,
+  })
 
-  if (responseError || !responseData) {
+  if (error) {
+    console.error("Assessment Answer Save Error:", error)
     return {
       success: false,
-      message: "Avaliação não encontrada.",
+      message: "Não foi possível salvar a resposta.",
     }
   }
 
-  const response =
-    responseData as AssessmentResponse
-
-  try {
-    const actor = await loadAssessmentActor()
-    requireAssessmentEvaluator(actor, response, "write")
-  } catch {
-    return {
-      success: false,
-      message: "Você não possui permissão para alterar esta avaliação.",
-    }
-  }
-
-  if (
-    response.status === "submitted" ||
-    response.status === "completed" ||
-    response.status === "cancelled"
-  ) {
-    return {
-      success: false,
-      message:
-        "Esta avaliação não pode mais ser editada.",
-    }
-  }
-
-  const answerRepository =
-    await createAssessmentAnswerRepository()
-
-  const { error: answerError } =
-    await answerRepository.save({
-      companyId,
-      ...parsed.data,
-    })
-
-  if (answerError) {
-    console.error(
-      "Assessment Answer Save Error:",
-      answerError
-    )
-
-    return {
-      success: false,
-      message:
-        "Não foi possível salvar a resposta.",
-    }
-  }
-
-  if (response.status === "draft") {
-    const { error: statusError } =
-      await responseRepository.updateStatus(
-        companyId,
-        response.id,
-        "in_progress"
-      )
-
-    if (statusError) {
-      console.error(
-        "Assessment Response Status Error:",
-        statusError
-      )
-
-      return {
-        success: false,
-        message:
-          "A resposta foi salva, mas não foi possível iniciar a avaliação.",
-      }
-    }
-  }
+  const result = data as {
+    status?: "succeeded" | "no_change"
+    assessmentQuestionId?: string
+  } | null
 
   revalidatePath(
-    `/app/assessments/responses/${response.id}`
-  )
-
-  revalidatePath(
-    `/app/assessments/cycles/${response.assessment_cycle_id}`
+    `/app/assessments/responses/${parsed.data.assessmentResponseId}`
   )
 
   return {
     success: true,
-    message: "Resposta salva automaticamente.",
+    status: result?.status ?? "succeeded",
+    assessmentQuestionId:
+      result?.assessmentQuestionId ?? parsed.data.assessmentQuestionId,
+    message:
+      result?.status === "no_change"
+        ? "Resposta já estava salva."
+        : "Resposta salva automaticamente.",
   }
 }

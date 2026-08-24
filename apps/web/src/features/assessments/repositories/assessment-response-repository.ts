@@ -1,15 +1,5 @@
 import { createServerDatabase } from "@/lib/database/server-database"
 
-import type { AssessmentResponseStatus } from "../types/assessment-response"
-
-type CreateAssessmentResponseData = {
-  companyId: string
-  assessmentCycleId: string
-  assessmentTemplateId: string
-  employeeId: string
-  evaluatorId: string
-}
-
 export async function createAssessmentResponseRepository() {
   const supabase = await createServerDatabase()
 
@@ -83,46 +73,17 @@ export async function createAssessmentResponseRepository() {
       })
     },
 
-    create(data: CreateAssessmentResponseData) {
-      const now = new Date().toISOString()
-
-      return supabase
-        .from("assessment_responses")
-        .insert({
-          company_id: data.companyId,
-          assessment_cycle_id: data.assessmentCycleId,
-          assessment_template_id: data.assessmentTemplateId,
-          employee_id: data.employeeId,
-          evaluator_id: data.evaluatorId,
-          status: "in_progress",
-          started_at: now,
-          updated_at: now,
-        })
-        .select("*")
-        .single()
-    },
-
-    updateStatus(
+    submit(
       companyId: string,
-      assessmentResponseId: string,
-      status: AssessmentResponseStatus
+      assessmentResponseId: string
     ) {
-      const now = new Date().toISOString()
-
-      return supabase
-        .from("assessment_responses")
-        .update({
-          status,
-          submitted_at:
-            status === "submitted" ? now : undefined,
-          completed_at:
-            status === "completed" ? now : undefined,
-          updated_at: now,
-        })
-        .eq("company_id", companyId)
-        .eq("id", assessmentResponseId)
-        .select("*")
-        .single()
+      return supabase.rpc(
+        "submit_tenant_assessment_response_v1",
+        {
+          p_company_id: companyId,
+          p_assessment_response_id: assessmentResponseId,
+        }
+      )
     },
   }
 }

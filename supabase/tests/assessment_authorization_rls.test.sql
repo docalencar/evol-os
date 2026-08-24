@@ -92,13 +92,12 @@ insert into public.assessment_responses (
 
 insert into public.assessment_answers (
   id, company_id, assessment_response_id, assessment_question_id,
-  answer_text, score
+  score
 ) values (
   '90000000-0000-4000-8000-000000000001',
   '20000000-0000-4000-8000-000000000001',
   '80000000-0000-4000-8000-000000000001',
   '70000000-0000-4000-8000-000000000001',
-  'Sensitive comment',
   4
 );
 
@@ -116,17 +115,24 @@ select results_eq(
   'evaluator reads own answer'
 );
 select lives_ok(
-  $$ update public.assessment_answers set answer_text = 'Updated' where id = '90000000-0000-4000-8000-000000000001' $$,
-  'evaluator updates open answer'
+  $$ select public.save_tenant_assessment_answer_v1(
+       '20000000-0000-4000-8000-000000000001',
+       '80000000-0000-4000-8000-000000000001',
+       '70000000-0000-4000-8000-000000000001',null,null,null,5
+     ) $$,
+  'evaluator updates open answer through trusted boundary'
 );
 select lives_ok(
-  $$ update public.assessment_responses set status = 'submitted' where id = '80000000-0000-4000-8000-000000000001' $$,
-  'evaluator submits response'
+  $$ select public.submit_tenant_assessment_response_v1(
+       '20000000-0000-4000-8000-000000000001',
+       '80000000-0000-4000-8000-000000000001'
+     ) $$,
+  'evaluator submits response through trusted boundary'
 );
-select results_eq(
-  $$ update public.assessment_answers set answer_text = 'Forbidden' where id = '90000000-0000-4000-8000-000000000001' returning 1 $$,
-  $$ values (null::integer) limit 0 $$,
-  'submitted answer cannot be updated'
+select throws_ok(
+  $$ update public.assessment_answers set score = 3 where id = '90000000-0000-4000-8000-000000000001' $$,
+  '42501','permission denied for table assessment_answers',
+  'direct submitted Answer mutation is privilege-dead'
 );
 
 reset role;
@@ -184,8 +190,8 @@ select throws_ok(
      values ('20000000-0000-4000-8000-000000000001', '80000000-0000-4000-8000-000000000001', '70000000-0000-4000-8000-000000000001', 1)
      on conflict (assessment_response_id, assessment_question_id) do nothing $$,
   '42501',
-  'new row violates row-level security policy for table "assessment_answers"',
-  'unrelated member cannot insert answer'
+  'permission denied for table assessment_answers',
+  'unrelated member cannot insert Answer directly'
 );
 
 reset role;
@@ -221,13 +227,12 @@ reset role;
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000002","role":"authenticated"}', true);
 select results_eq($$ select count(*) from public.assessment_responses $$, array[0::bigint], 'admin has no direct raw access');
-select results_eq(
+select throws_ok(
   $$ update public.assessment_responses
      set updated_at = now()
-     where id = '80000000-0000-4000-8000-000000000001'
-     returning 1 $$,
-  $$ values (null::integer) limit 0 $$,
-  'admin cannot alter responses'
+     where id = '80000000-0000-4000-8000-000000000001' $$,
+  '42501','permission denied for table assessment_responses',
+  'admin cannot alter Responses directly'
 );
 select lives_ok(
   $$ select public.read_assessment_administratively('20000000-0000-4000-8000-000000000001', 'response', '80000000-0000-4000-8000-000000000001', 'review_response') $$,

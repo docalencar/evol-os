@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public, pg_temp;
 
-select plan(21);
+select no_plan();
 
 insert into auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at
@@ -14,10 +14,16 @@ insert into auth.users (
   ('10000000-0000-4000-8000-000000000004', 'authenticated', 'authenticated', 'manager@test.local', '', now(), now(), now()),
   ('10000000-0000-4000-8000-000000000005', 'authenticated', 'authenticated', 'evaluator@test.local', '', now(), now(), now()),
   ('10000000-0000-4000-8000-000000000006', 'authenticated', 'authenticated', 'evaluatee@test.local', '', now(), now(), now()),
-  ('10000000-0000-4000-8000-000000000007', 'authenticated', 'authenticated', 'unrelated@test.local', '', now(), now(), now());
+  ('10000000-0000-4000-8000-000000000007', 'authenticated', 'authenticated', 'unrelated@test.local', '', now(), now(), now()),
+  ('10000000-0000-4000-8000-000000000008', 'authenticated', 'authenticated', 'other-owner@test.local', '', now(), now(), now()),
+  ('10000000-0000-4000-8000-000000000009', 'authenticated', 'authenticated', 'other-admin@test.local', '', now(), now(), now()),
+  ('10000000-0000-4000-8000-000000000010', 'authenticated', 'authenticated', 'other-member@test.local', '', now(), now(), now()),
+  ('10000000-0000-4000-8000-000000000011', 'authenticated', 'authenticated', 'no-membership@test.local', '', now(), now(), now());
 
 insert into public.companies (id, name, slug)
-values ('20000000-0000-4000-8000-000000000001', 'Assessment Test', 'assessment-test');
+values
+  ('20000000-0000-4000-8000-000000000001', 'Assessment Test', 'assessment-test'),
+  ('20000000-0000-4000-8000-000000000002', 'Other Tenant', 'assessment-other');
 
 insert into public.company_members (company_id, user_id, role)
 values
@@ -27,10 +33,19 @@ values
   ('20000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000004', 'manager'),
   ('20000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000005', 'employee'),
   ('20000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000006', 'employee'),
-  ('20000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000007', 'employee');
+  ('20000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000007', 'employee'),
+  ('20000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000008', 'owner'),
+  ('20000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000009', 'admin'),
+  ('20000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000010', 'employee');
 
 insert into public.people (id, company_id, user_id, full_name)
 values
+  ('30000000-0000-4000-8000-000000000005', '20000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', 'Owner'),
+  ('30000000-0000-4000-8000-000000000006', '20000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000002', 'Admin'),
+  ('30000000-0000-4000-8000-000000000007', '20000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000003', 'HR'),
+  ('30000000-0000-4000-8000-000000000008', '20000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000008', 'Other Owner'),
+  ('30000000-0000-4000-8000-000000000009', '20000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000009', 'Other Admin'),
+  ('30000000-0000-4000-8000-000000000010', '20000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000010', 'Other Member'),
   ('30000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000005', 'Evaluator'),
   ('30000000-0000-4000-8000-000000000002', '20000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000006', 'Evaluatee'),
   ('30000000-0000-4000-8000-000000000003', '20000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000004', 'Manager'),
@@ -286,6 +301,81 @@ select lives_ok(
 );
 
 reset role;
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000005","role":"authenticated"}', true);
+select lives_ok($$select public.get_tenant_assessment_scored_result_v1('20000000-0000-4000-8000-000000000001','80000000-0000-4000-8000-000000000001')$$,'designated evaluator reads scored result');
+select ok(position('evaluator' in lower(public.get_tenant_assessment_scored_result_v1('20000000-0000-4000-8000-000000000001','80000000-0000-4000-8000-000000000001')::text))=0,'scored payload does not disclose evaluator identity');
+
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000006","role":"authenticated"}', true);
+select lives_ok($$select public.get_tenant_assessment_scored_result_v1('20000000-0000-4000-8000-000000000001','80000000-0000-4000-8000-000000000001')$$,'evaluatee reads scored result according to visibility');
+select lives_ok($$select public.read_assessment_result_for_evaluatee('20000000-0000-4000-8000-000000000001','80000000-0000-4000-8000-000000000001')$$,'evaluatee wrapper delegates safely');
+
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000001","role":"authenticated"}', true);
+select lives_ok($$select public.get_tenant_assessment_scored_result_v1('20000000-0000-4000-8000-000000000001','80000000-0000-4000-8000-000000000001')$$,'same-tenant owner reads scored result');
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000002","role":"authenticated"}', true);
+select lives_ok($$select public.get_tenant_assessment_scored_result_v1('20000000-0000-4000-8000-000000000001','80000000-0000-4000-8000-000000000001')$$,'same-tenant admin reads scored result');
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000003","role":"authenticated"}', true);
+select lives_ok($$select public.get_tenant_assessment_scored_result_v1('20000000-0000-4000-8000-000000000001','80000000-0000-4000-8000-000000000001')$$,'same-tenant hr reads scored result');
+
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000007","role":"authenticated"}', true);
+select throws_ok($$select public.get_tenant_assessment_scored_result_v1('20000000-0000-4000-8000-000000000001','80000000-0000-4000-8000-000000000001')$$,'42501','ASSESSMENT_RESULT_FORBIDDEN','unrelated same-tenant Person is denied');
+
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000008","role":"authenticated"}', true);
+select is(public.current_person_id('20000000-0000-4000-8000-000000000001'),null::uuid,'cross-tenant owner reproduces original NULL actor condition');
+select throws_ok($$select public.get_tenant_assessment_scored_result_v1('20000000-0000-4000-8000-000000000001','80000000-0000-4000-8000-000000000001')$$,'42501','ASSESSMENT_RESULT_FORBIDDEN','Tenant B owner cannot read Tenant A scored result');
+select throws_ok($$select public.read_assessment_result_for_evaluatee('20000000-0000-4000-8000-000000000001','80000000-0000-4000-8000-000000000001')$$,'42501','ASSESSMENT_RESULT_NOT_VISIBLE','evaluatee wrapper denies cross-tenant owner');
+select throws_ok($$select public.get_tenant_assessment_scored_result_v1('20000000-0000-4000-8000-000000000002','80000000-0000-4000-8000-000000000001')$$,'P0002','ASSESSMENT_RESULT_NOT_AVAILABLE','wrong company and valid Response pairing is safely unavailable');
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000009","role":"authenticated"}', true);
+select throws_ok($$select public.get_tenant_assessment_scored_result_v1('20000000-0000-4000-8000-000000000001','80000000-0000-4000-8000-000000000001')$$,'42501','ASSESSMENT_RESULT_FORBIDDEN','Tenant B admin cannot read Tenant A scored result');
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000010","role":"authenticated"}', true);
+select throws_ok($$select public.get_tenant_assessment_scored_result_v1('20000000-0000-4000-8000-000000000001','80000000-0000-4000-8000-000000000001')$$,'42501','ASSESSMENT_RESULT_FORBIDDEN','Tenant B ordinary member cannot read Tenant A scored result');
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000011","role":"authenticated"}', true);
+select throws_ok($$select public.get_tenant_assessment_scored_result_v1('20000000-0000-4000-8000-000000000001','80000000-0000-4000-8000-000000000001')$$,'42501','ASSESSMENT_RESULT_FORBIDDEN','authenticated user without requested-tenant membership is denied');
+
+reset role;
+update public.assessment_cycles set assessment_visibility='score' where id='50000000-0000-4000-8000-000000000001';
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000006","role":"authenticated"}', true);
+select ok(jsonb_array_length(public.get_tenant_assessment_scored_result_v1('20000000-0000-4000-8000-000000000001','80000000-0000-4000-8000-000000000001')->'sections')=0,'score visibility returns no dimensions');
+reset role;
+update public.assessment_cycles set assessment_visibility='score_and_competencies' where id='50000000-0000-4000-8000-000000000001';
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000006","role":"authenticated"}', true);
+select ok(jsonb_array_length(public.get_tenant_assessment_scored_result_v1('20000000-0000-4000-8000-000000000001','80000000-0000-4000-8000-000000000001')->'sections')=1,'score-and-competencies visibility returns allowed dimensions');
+reset role;
+update public.assessment_cycles set assessment_visibility='score_and_comments' where id='50000000-0000-4000-8000-000000000001';
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000006","role":"authenticated"}', true);
+select ok(jsonb_array_length(public.get_tenant_assessment_scored_result_v1('20000000-0000-4000-8000-000000000001','80000000-0000-4000-8000-000000000001')->'answers')=1,'score-and-comments visibility returns allowed evidence');
+reset role;
+update public.assessment_cycles set assessment_visibility='none' where id='50000000-0000-4000-8000-000000000001';
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000006","role":"authenticated"}', true);
+select throws_ok($$select public.get_tenant_assessment_scored_result_v1('20000000-0000-4000-8000-000000000001','80000000-0000-4000-8000-000000000001')$$,'42501','ASSESSMENT_RESULT_NOT_VISIBLE','none visibility remains denied to evaluatee');
+reset role;
+update public.assessment_cycles set assessment_visibility='full' where id='50000000-0000-4000-8000-000000000001';
+set local role anon;
+select throws_ok($$select public.get_tenant_assessment_scored_result_v1('20000000-0000-4000-8000-000000000001','80000000-0000-4000-8000-000000000001')$$,'42501','permission denied for function get_tenant_assessment_scored_result_v1','anonymous cannot execute scored-result boundary');
+
+reset role;
 select results_eq(
   $$
     select count(*)
@@ -293,7 +383,7 @@ select results_eq(
     where activity_type = 'assessments.administrative_read'
       and company_id = '20000000-0000-4000-8000-000000000001'::uuid
   $$,
-  array[3::bigint],
+  array[6::bigint],
   'every administrative read created an audit event'
 );
 select results_eq(

@@ -1,7 +1,6 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import type { AssessmentAnswer } from "../types/assessment-answer"
 import type { AssessmentResponse } from "../types/assessment-response"
 import { summarizeEmployeeAssessments } from "../services/summarize-employee-assessments"
 
@@ -26,23 +25,8 @@ function response(
   }
 }
 
-function answer(id: string, score: number | null): AssessmentAnswer {
-  return {
-    id,
-    company_id: "company-1",
-    assessment_response_id: "response-1",
-    assessment_question_id: `question-${id}`,
-    answer_text: null,
-    answer_number: null,
-    answer_boolean: null,
-    score,
-    created_at: "2026-01-01T00:00:00.000Z",
-    updated_at: "2026-01-01T00:00:00.000Z",
-  }
-}
-
 test("summarizeEmployeeAssessments returns an empty summary", () => {
-  assert.deepEqual(summarizeEmployeeAssessments([], []), {
+  assert.deepEqual(summarizeEmployeeAssessments([]), {
     completedAssessments: 0,
     pendingAssessments: 0,
     averageScore: null,
@@ -56,14 +40,13 @@ test("summarizeEmployeeAssessments summarizes completed and pending assessments"
       response("response-1", "completed", "2026-06-01T00:00:00.000Z"),
       response("response-2", "completed", "2026-07-01T00:00:00.000Z"),
       response("response-3", "in_progress"),
-    ],
-    [answer("1", 4), answer("2", 2), answer("3", null)]
+    ]
   )
 
   assert.deepEqual(summary, {
     completedAssessments: 2,
     pendingAssessments: 1,
-    averageScore: 3,
+    averageScore: null,
     latestAssessmentAt: "2026-07-01T00:00:00.000Z",
   })
 })

@@ -113,7 +113,7 @@ insert into public.assessment_execution_snapshot_questions (
 
 insert into public.assessment_responses (
   id, company_id, assessment_cycle_id, assessment_template_id,
-  assessment_execution_snapshot_id, employee_id, evaluator_id, status
+  assessment_execution_snapshot_id, employee_id, evaluator_id, status, perspective
 ) values (
   '80000000-0000-4000-8000-000000000001',
   '20000000-0000-4000-8000-000000000001',
@@ -122,7 +122,7 @@ insert into public.assessment_responses (
   '45000000-0000-4000-8000-000000000001',
   '30000000-0000-4000-8000-000000000002',
   '30000000-0000-4000-8000-000000000001',
-  'in_progress'
+  'in_progress', 'legacy_unknown'
 );
 
 insert into public.assessment_answers (

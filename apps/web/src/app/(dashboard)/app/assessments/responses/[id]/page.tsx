@@ -3,12 +3,13 @@ import { notFound } from "next/navigation"
 import {
   AssessmentExecutionWorkspace,
   AssessmentFeedbackCard,
-  getAssessmentFeedback,
-  presentAssessmentFeedback,
   type AssessmentQuestion,
 } from "@/features/assessments"
 import { EntityBackLink } from "@/components/shared/entity-back-link"
-import { getAssessmentResponsePageReadModel } from "@/features/assessment-feedback-read"
+import {
+  getAssessmentResponsePageReadModel,
+  getAssessmentScoredResultReadModel,
+} from "@/features/assessment-feedback-read"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 type Props = {
@@ -57,13 +58,7 @@ export default async function AssessmentResponsePage({
       workspace.response.status === "completed"
 
     const feedback = showFeedback
-      ? presentAssessmentFeedback(
-          getAssessmentFeedback(
-            sections,
-            questions,
-            answers
-          )
-        )
+      ? await getAssessmentScoredResultReadModel(companyId, id)
       : null
 
     return (

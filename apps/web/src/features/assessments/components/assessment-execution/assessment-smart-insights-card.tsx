@@ -36,16 +36,6 @@ export function AssessmentSmartInsightsCard({
           </p>
         </div>
 
-        <div className="rounded-lg bg-muted/40 p-3">
-          <p className="text-xs text-muted-foreground">
-            Nota média
-          </p>
-
-          <p className="mt-1 text-2xl font-bold">
-            {insights.averageScore ?? "--"}
-          </p>
-        </div>
-
         <div className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
           Continue respondendo para desbloquear
           recomendações inteligentes.

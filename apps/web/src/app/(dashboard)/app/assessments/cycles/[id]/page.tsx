@@ -8,13 +8,10 @@ import {
   AddParticipantsDialog,
   AssessmentCycleProgressOverview,
   AssessmentCycleResultsCard,
-  AssessmentStatisticsCard,
   GenerateCycleAssessmentsButton,
   RemoveCycleParticipantButton,
   getAssessmentResponsesByCycle,
-  getAssessmentCycleStatistics,
   presentAssessmentCycleDashboard,
-  presentAssessmentStatistics,
   type AssessmentResponseStatus,
 } from "@/features/assessments"
 
@@ -119,17 +116,6 @@ export default async function AssessmentCyclePage({
 
   const responses =
     responsesData as CycleAssessmentResponse[]
-
-  const statistics =
-    await getAssessmentCycleStatistics(
-      companyId,
-      cycle.id
-    )
-
-  const statisticsViewModel =
-    presentAssessmentStatistics(
-      statistics
-    )
 
   const dashboard =
     presentAssessmentCycleDashboard(
@@ -237,10 +223,6 @@ export default async function AssessmentCyclePage({
         description="Resumo executivo do ciclo."
       >
         <div className="space-y-6">
-          <AssessmentStatisticsCard
-            statistics={statisticsViewModel}
-          />
-
           <AssessmentCycleResultsCard
             results={dashboard.results}
           />

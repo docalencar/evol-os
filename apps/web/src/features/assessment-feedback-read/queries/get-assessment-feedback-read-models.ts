@@ -124,6 +124,10 @@ export async function getAssessmentEvaluatorWorkspaceReadModel(companyId: string
   return { response, ...mapStructure(companyId, structureRows) }
 }
 
+export async function getAssessmentScoredResultReadModel(companyId: string, responseId: string) {
+  return (await repository()).scoredResult(companyId, responseId)
+}
+
 export async function getAssessmentResponsePageReadModel(
   companyId: string,
   responseId: string

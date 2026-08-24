@@ -19,6 +19,36 @@ const cycleStatus = z.enum(["draft", "scheduled", "active", "completed", "cancel
 const visibility = z.enum(["none", "score", "score_and_competencies", "score_and_comments", "full"])
 const responseStatus = z.enum(["draft", "in_progress", "submitted", "completed", "cancelled"])
 const questionType = z.enum(["scale", "yes_no", "text", "number"])
+const scoredResultSchema = z.object({
+  assessmentResponseId: uuid,
+  status: z.enum(["submitted", "completed"]),
+  perspective: z.enum(["self", "manager", "direct_report", "legacy_unknown"]),
+  visibility,
+  formulaVersion: z.literal("response-scale-weighted-v1"),
+  overallScore: z.coerce.number().nullable(),
+  sections: z.array(z.object({
+    snapshotSectionId: uuid, sourceSectionId: uuid, name: text,
+    displayOrder: z.number().int(), weight: z.coerce.number(), score: z.coerce.number().nullable(),
+  })),
+  questions: z.array(z.object({
+    snapshotQuestionId: uuid, sourceQuestionId: uuid, snapshotSectionId: uuid,
+    prompt: text, type: questionType, required: z.boolean(), weight: z.coerce.number(),
+    displayOrder: z.number().int(), scaleMin: z.number().int().nullable(),
+    scaleMax: z.number().int().nullable(), answerText: nullableText,
+    answerNumber: z.coerce.number().nullable(), answerBoolean: z.boolean().nullable(),
+    rawScore: z.number().int().nullable(), normalizedScore: z.coerce.number().nullable(),
+    competencyId: nullableUuid, competencyName: nullableText,
+  })),
+  competencies: z.array(z.object({
+    competencyId: uuid, competencyName: text, score: z.coerce.number(),
+  })),
+  answers: z.array(z.object({
+    sourceQuestionId: uuid, rawScore: z.number().int().nullable(), answerText: nullableText,
+    answerNumber: z.coerce.number().nullable(), answerBoolean: z.boolean().nullable(),
+  })),
+}).strict()
+
+export type AssessmentScoredResult = z.infer<typeof scoredResultSchema>
 
 const catalogRowSchema = z.object({
   record_type: z.enum(["template", "cycle"]), record_id: uuid, name: text.min(1),
@@ -155,6 +185,7 @@ export function createAssessmentFeedbackReadRepository(database: RpcDatabase) {
     assessmentResponseStructure: (companyId: string, responseId: string) => rpcRows(database, "get_tenant_assessment_response_structure_v1", { p_company_id: companyId, p_response_id: responseId }, z.array(structureRowSchema)),
     assessmentCycle: (companyId: string, cycleId: string) => rpcRows(database, "get_tenant_assessment_cycle_management_v1", { p_company_id: companyId, p_cycle_id: cycleId }, z.array(cycleRowSchema)),
     evaluatorWorkspace: (companyId: string, responseId: string) => rpcRows(database, "get_assessment_evaluator_workspace_v1", { p_company_id: companyId, p_response_id: responseId }, z.array(workspaceRowSchema)),
+    scoredResult: (companyId: string, responseId: string) => rpcRows(database, "get_tenant_assessment_scored_result_v1", { p_company_id: companyId, p_response_id: responseId }, scoredResultSchema),
     feedbackDirectory: (companyId: string) => rpcRows(database, "get_current_person_feedback_threads_v1", { p_company_id: companyId }, z.array(feedbackDirectoryRowSchema)),
     feedbackDetail: (companyId: string, threadId: string) => rpcRows(database, "get_feedback_thread_detail_v1", { p_company_id: companyId, p_thread_id: threadId }, z.array(feedbackDetailRowSchema)),
     feedbackMessages: (companyId: string, threadId: string) => rpcRows(database, "get_feedback_thread_messages_v1", { p_company_id: companyId, p_thread_id: threadId }, z.array(feedbackMessageRowSchema)),

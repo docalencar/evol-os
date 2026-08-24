@@ -6,7 +6,6 @@ type EmployeeAssessmentsSummaryCardProps = {
 
 export function EmployeeAssessmentsSummaryCard({
   completedAssessments,
-  averageScore,
   latestAssessmentAt,
 }: EmployeeAssessmentsSummaryCardProps) {
   return (
@@ -21,7 +20,7 @@ export function EmployeeAssessmentsSummaryCard({
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         <div>
           <p className="text-xs text-muted-foreground">
             Concluídas
@@ -29,16 +28,6 @@ export function EmployeeAssessmentsSummaryCard({
 
           <p className="text-2xl font-semibold">
             {completedAssessments}
-          </p>
-        </div>
-
-        <div>
-          <p className="text-xs text-muted-foreground">
-            Média
-          </p>
-
-          <p className="text-2xl font-semibold">
-            {averageScore?.toFixed(1) ?? "-"}
           </p>
         </div>
 

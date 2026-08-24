@@ -20,8 +20,5 @@ export async function getEmployeeAssessmentSummary(
     "view_employee_assessment_summary"
   )
 
-  return summarizeEmployeeAssessments(
-    result.responses,
-    result.answers
-  )
+  return summarizeEmployeeAssessments(result.responses)
 }

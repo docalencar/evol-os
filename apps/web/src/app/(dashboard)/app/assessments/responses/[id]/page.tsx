@@ -15,19 +15,26 @@ import {
 } from "@/features/assessment-feedback-read"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
+import { resolveAssessmentResultBackLink } from "./assessment-result-return-context"
+
 type Props = {
   params: Promise<{
     id: string
+  }>
+  searchParams: Promise<{
+    source?: string
   }>
 }
 
 export default async function AssessmentResponsePage({
   params,
+  searchParams,
 }: Props) {
   const { companyId, personId } =
     await getCurrentCompanyContext()
 
-  const { id } = await params
+  const [{ id }, { source }] = await Promise.all([params, searchParams])
+  const backLink = resolveAssessmentResultBackLink(source)
 
   try {
     const workspace = await getAssessmentResponsePageReadModel(
@@ -50,7 +57,7 @@ export default async function AssessmentResponsePage({
 
       return (
         <div className="space-y-8">
-          <EntityBackLink href="/app/assessments" label="Voltar para avaliações" />
+          <EntityBackLink href={backLink.href} label={backLink.label} />
           <AssessmentFeedbackCard result={result} />
         </div>
       )
@@ -64,7 +71,7 @@ export default async function AssessmentResponsePage({
 
       return (
         <div className="space-y-8">
-          <EntityBackLink href="/app/assessments" label="Voltar para avaliações" />
+          <EntityBackLink href={backLink.href} label={backLink.label} />
           {evaluateeResult ? (
             <AssessmentFeedbackCard
               result={presentAssessmentResult({
@@ -98,8 +105,8 @@ export default async function AssessmentResponsePage({
     return (
       <div className="space-y-8">
         <EntityBackLink
-          href="/app/assessments"
-          label="Voltar para avaliações"
+          href={backLink.href}
+          label={backLink.label}
         />
 
         <AssessmentExecutionWorkspace

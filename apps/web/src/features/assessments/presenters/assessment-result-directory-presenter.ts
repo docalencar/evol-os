@@ -5,6 +5,7 @@ import {
   QUALITATIVE_RESULT_DESCRIPTION,
 } from "./assessment-result-presenter"
 import type {
+  AssessmentPerspectiveComparisonViewModel,
   AssessmentResultDirectoryViewModel,
 } from "../view-models/assessment-result-directory-view-model"
 
@@ -20,6 +21,76 @@ const perspectiveLabels = {
   manager: "Gestor",
   legacy_unknown: "Histórico — perspectiva não identificada",
 } as const
+
+const percentagePointFormatter = new Intl.NumberFormat("pt-BR", {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+  signDisplay: "exceptZero",
+})
+
+export function formatAssessmentPercentagePoints(value: number): string {
+  return `${percentagePointFormatter.format(value)} pp`
+}
+
+function presentComparison(
+  rows: ReadonlyArray<AssessmentResultDirectoryRow>
+): Readonly<{
+  comparison: AssessmentPerspectiveComparisonViewModel | null
+  comparisonUnavailableMessage: string | null
+}> {
+  const selfResults = rows.filter((row) => row.perspective === "self")
+  const managerResults = rows.filter((row) => row.perspective === "manager")
+
+  if (managerResults.length > 1) {
+    return {
+      comparison: null,
+      comparisonUnavailableMessage:
+        "Há mais de uma avaliação de Gestor neste ciclo. Consulte os resultados individualmente.",
+    }
+  }
+
+  if (selfResults.length > 1) {
+    return {
+      comparison: null,
+      comparisonUnavailableMessage: "Comparação indisponível para este ciclo.",
+    }
+  }
+
+  const self = selfResults[0]
+  const manager = managerResults[0]
+
+  if (!self || !manager) {
+    return { comparison: null, comparisonUnavailableMessage: null }
+  }
+
+  if (self.overall_score === null || manager.overall_score === null) {
+    return {
+      comparison: null,
+      comparisonUnavailableMessage:
+        "Comparação quantitativa indisponível para este ciclo.",
+    }
+  }
+
+  const differencePoints = manager.overall_score - self.overall_score
+
+  return {
+    comparison: {
+      self: {
+        responseId: self.response_id,
+        score: self.overall_score,
+        scoreLabel: formatAssessmentPercentage(self.overall_score),
+      },
+      manager: {
+        responseId: manager.response_id,
+        score: manager.overall_score,
+        scoreLabel: formatAssessmentPercentage(manager.overall_score),
+      },
+      differencePoints,
+      differenceLabel: formatAssessmentPercentagePoints(differencePoints),
+    },
+    comparisonUnavailableMessage: null,
+  }
+}
 
 function terminalDate(row: AssessmentResultDirectoryRow): string {
   return row.submitted_at ?? row.completed_at ?? `${row.cycle_date}T00:00:00Z`
@@ -38,6 +109,7 @@ export function presentAssessmentResultDirectory(
 
   const cycles = [...grouped.entries()].map(([cycleId, cycleRows]) => {
     const first = cycleRows[0]!
+    const comparisonPresentation = presentComparison(cycleRows)
     const results = [...cycleRows]
       .sort((left, right) =>
         perspectiveOrder[left.perspective] - perspectiveOrder[right.perspective]
@@ -55,7 +127,7 @@ export function presentAssessmentResultDirectory(
         submittedAtLabel: row.submitted_at || row.completed_at
           ? dateFormatter.format(new Date(row.submitted_at ?? row.completed_at!))
           : null,
-        href: `/app/assessments/responses/${row.response_id}`,
+        href: `/app/assessments/responses/${row.response_id}?source=assessments-results`,
         canOpen: true as const,
       }))
 
@@ -65,6 +137,7 @@ export function presentAssessmentResultDirectory(
       modelName: first.model_name,
       dateLabel: dateFormatter.format(new Date(`${first.cycle_date}T00:00:00Z`)),
       results,
+      ...comparisonPresentation,
       sortDate: cycleRows.reduce(
         (latest, row) => terminalDate(row) > latest ? terminalDate(row) : latest,
         terminalDate(first)
@@ -79,6 +152,8 @@ export function presentAssessmentResultDirectory(
     modelName: cycle.modelName,
     dateLabel: cycle.dateLabel,
     results: cycle.results,
+    comparison: cycle.comparison,
+    comparisonUnavailableMessage: cycle.comparisonUnavailableMessage,
   }))
 
   return { cycles, isEmpty: cycles.length === 0 }

@@ -22,6 +22,9 @@ const recruitDetail = read(
 const responseDetail = read(
   "../../app/(dashboard)/app/assessments/responses/[id]/page.tsx"
 )
+const assessmentResultReturnContext = read(
+  "../../app/(dashboard)/app/assessments/responses/[id]/assessment-result-return-context.ts"
+)
 const deptTable = read(
   "../../features/organization/departments/components/department-table.tsx"
 )
@@ -89,12 +92,6 @@ const cases: Array<[string, string, string, string]> = [
     "/app/recruitment",
     "Voltar para recrutamento",
   ],
-  [
-    "assessment responses",
-    responseDetail,
-    "/app/assessments",
-    "Voltar para avaliações",
-  ],
 ]
 
 for (const [name, source, href, label] of cases) {
@@ -105,6 +102,17 @@ for (const [name, source, href, label] of cases) {
     assert.ok(source.includes(`label="${label}"`), `label ${label}`)
   })
 }
+
+test("assessment result detail uses an allowlisted deterministic back link", () => {
+  assert.match(responseDetail, /resolveAssessmentResultBackLink\(source\)/)
+  assert.match(assessmentResultReturnContext, /source === "assessments-results"/)
+  assert.match(assessmentResultReturnContext, /\/app\/assessments#meus-resultados/)
+  assert.match(assessmentResultReturnContext, /\/app\/assessments/)
+  assert.doesNotMatch(
+    assessmentResultReturnContext,
+    /returnTo|redirectTo|callbackUrl|https?:\/\//
+  )
+})
 
 test("the department table exposes a deterministic 'Ver detalhes' entry to the detail route", () => {
   assert.match(deptTable, /Ver detalhes/)

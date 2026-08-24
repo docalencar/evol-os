@@ -37,6 +37,7 @@ type AssessmentHomeProps = {
   templates: AssessmentTemplate[]
   evaluatorResponses: AssessmentResponse[]
   resultDirectory: AssessmentResultDirectoryViewModel
+  canManageAssessments: boolean
 }
 
 export function AssessmentHome({
@@ -45,7 +46,23 @@ export function AssessmentHome({
   templates,
   evaluatorResponses,
   resultDirectory,
+  canManageAssessments,
 }: AssessmentHomeProps) {
+  const resultDirectorySection = (
+    <div id="meus-resultados" className="scroll-mt-6">
+      <DashboardSection
+        title="Meus resultados"
+        description="Consulte suas avaliações oficiais já enviadas ou concluídas."
+      >
+        <AssessmentResultsDirectory directory={resultDirectory} />
+      </DashboardSection>
+    </div>
+  )
+
+  if (!canManageAssessments) {
+    return <div className="space-y-8">{resultDirectorySection}</div>
+  }
+
   const assessments =
     presentAssessments(cycles, evaluatorResponses)
 
@@ -97,12 +114,7 @@ export function AssessmentHome({
         priority={home.priority}
       />
 
-      <DashboardSection
-        title="Meus resultados"
-        description="Consulte suas avaliações oficiais já enviadas ou concluídas."
-      >
-        <AssessmentResultsDirectory directory={resultDirectory} />
-      </DashboardSection>
+      {resultDirectorySection}
 
       <ProductMetricGrid
         metrics={home.metrics}

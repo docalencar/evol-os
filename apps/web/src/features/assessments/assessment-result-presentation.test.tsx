@@ -283,11 +283,20 @@ describe("individual Assessment result presentation", () => {
       path.join(root, "app/(dashboard)/app/assessments/responses/[id]/page.tsx"),
       "utf8"
     )
+    const returnContext = fs.readFileSync(
+      path.join(
+        root,
+        "app/(dashboard)/app/assessments/responses/[id]/assessment-result-return-context.ts"
+      ),
+      "utf8"
+    )
 
     assert.match(markup, /75,6%/)
     assert.doesNotMatch(markup, /Nota média|6,0%/)
     assert.match(route, /getAssessmentScoredResultReadModel|getAssessmentEvaluateeScoredResultReadModel/)
     assert.doesNotMatch(route, /getAssessmentFeedback\(|router\.back|history\.back/)
-    assert.match(route, /href="\/app\/assessments"/)
+    assert.match(route, /resolveAssessmentResultBackLink\(source\)/)
+    assert.match(returnContext, /href: "\/app\/assessments"/)
+    assert.doesNotMatch(returnContext, /returnTo|redirectTo|callbackUrl|https?:\/\//)
   })
 })

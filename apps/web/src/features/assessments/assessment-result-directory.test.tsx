@@ -8,7 +8,10 @@ import { renderToStaticMarkup } from "react-dom/server"
 import type { AssessmentResultDirectoryRow } from "@/features/assessment-feedback-read"
 
 import { AssessmentResultsDirectory } from "./components/assessment-results/assessment-results-directory"
-import { presentAssessmentResultDirectory } from "./presenters/assessment-result-directory-presenter"
+import {
+  formatAssessmentPercentagePoints,
+  presentAssessmentResultDirectory,
+} from "./presenters/assessment-result-directory-presenter"
 
 const root = path.resolve(__dirname, "../..")
 
@@ -61,8 +64,104 @@ describe("current Person Assessment result directory", () => {
     assert.match(markup, /Resultado qualitativo/)
     assert.match(markup, /não possui perguntas com pontuação quantitativa/)
     assert.doesNotMatch(markup, /Sem resultado quantitativo|>0,0%<|N\/A|NULL/)
-    assert.match(markup, /href="\/app\/assessments\/responses\/20000000-0000-4000-8000-000000000002"/)
+    assert.match(markup, /href="\/app\/assessments\/responses\/20000000-0000-4000-8000-000000000002\?source=assessments-results"/)
     assert.doesNotMatch(markup, /Média geral|Nota final|self|manager|legacy_unknown|Avaliador/)
+  })
+
+  it("compares exactly one Self and one Manager in the same Cycle", () => {
+    const negative = presentAssessmentResultDirectory([
+      row({ overall_score: 82 }),
+      row({ response_id: "20000000-0000-4000-8000-000000000002", perspective: "manager", overall_score: 71 }),
+    ])
+    const positive = presentAssessmentResultDirectory([
+      row({ overall_score: 71 }),
+      row({ response_id: "20000000-0000-4000-8000-000000000002", perspective: "manager", overall_score: 82 }),
+    ])
+    const equal = presentAssessmentResultDirectory([
+      row({ overall_score: 75 }),
+      row({ response_id: "20000000-0000-4000-8000-000000000002", perspective: "manager", overall_score: 75 }),
+    ])
+
+    assert.equal(negative.cycles[0]?.comparison?.differenceLabel, "-11,0 pp")
+    assert.equal(positive.cycles[0]?.comparison?.differenceLabel, "+11,0 pp")
+    assert.equal(equal.cycles[0]?.comparison?.differenceLabel, "0,0 pp")
+    assert.equal(formatAssessmentPercentagePoints(4.45), "+4,5 pp")
+  })
+
+  it("fails safely for qualitative, missing and inconsistent cardinalities", () => {
+    const manager = row({
+      response_id: "20000000-0000-4000-8000-000000000002",
+      perspective: "manager",
+      overall_score: 71,
+    })
+    const secondManager = row({
+      response_id: "20000000-0000-4000-8000-000000000003",
+      perspective: "manager",
+      overall_score: 72,
+    })
+    const secondSelf = row({
+      response_id: "20000000-0000-4000-8000-000000000004",
+      perspective: "self",
+      overall_score: 81,
+    })
+
+    for (const rows of [
+      [row({ overall_score: null }), manager],
+      [row({}), { ...manager, overall_score: null }],
+    ]) {
+      const cycle = presentAssessmentResultDirectory(rows).cycles[0]!
+      assert.equal(cycle.comparison, null)
+      assert.equal(cycle.comparisonUnavailableMessage, "Comparação quantitativa indisponível para este ciclo.")
+    }
+
+    assert.equal(presentAssessmentResultDirectory([row({})]).cycles[0]?.comparison, null)
+    assert.equal(presentAssessmentResultDirectory([manager]).cycles[0]?.comparison, null)
+
+    const multipleManager = presentAssessmentResultDirectory([row({}), manager, secondManager]).cycles[0]!
+    assert.equal(multipleManager.comparison, null)
+    assert.match(multipleManager.comparisonUnavailableMessage ?? "", /mais de uma avaliação de Gestor/)
+    assert.equal(multipleManager.results.length, 3)
+
+    const multipleSelf = presentAssessmentResultDirectory([row({}), secondSelf, manager]).cycles[0]!
+    assert.equal(multipleSelf.comparison, null)
+    assert.equal(multipleSelf.comparisonUnavailableMessage, "Comparação indisponível para este ciclo.")
+    assert.equal(multipleSelf.results.length, 3)
+  })
+
+  it("never compares across Cycles and ignores legacy Results", () => {
+    const directory = presentAssessmentResultDirectory([
+      row({ overall_score: 82 }),
+      row({
+        cycle_id: "10000000-0000-4000-8000-000000000002",
+        response_id: "20000000-0000-4000-8000-000000000002",
+        perspective: "manager",
+        overall_score: 71,
+      }),
+      row({
+        response_id: "20000000-0000-4000-8000-000000000003",
+        perspective: "legacy_unknown",
+        overall_score: 40,
+      }),
+    ])
+
+    assert.equal(directory.cycles.length, 2)
+    assert.ok(directory.cycles.every((cycle) => cycle.comparison === null))
+  })
+
+  it("renders neutral, responsive and semantic comparison copy without replacing cards", () => {
+    const directory = presentAssessmentResultDirectory([
+      row({ overall_score: 82 }),
+      row({ response_id: "20000000-0000-4000-8000-000000000002", perspective: "manager", overall_score: 71 }),
+    ])
+    const markup = renderToStaticMarkup(<AssessmentResultsDirectory directory={directory} />)
+
+    assert.match(markup, /<h4[^>]*>Diferença de percepção<\/h4>/)
+    assert.match(markup, /Diferença de percepção/)
+    assert.match(markup, /não representa, por si só, um resultado positivo ou negativo/)
+    assert.match(markup, /sm:grid-cols-3/)
+    assert.match(markup, /-11,0 pp/)
+    assert.equal((markup.match(/Ver resultado/g) ?? []).length, 2)
+    assert.doesNotMatch(markup, /text-green|text-red|bg-green|bg-red|GAP|Avaliador|Liderados/)
   })
 
   it("renders a neutral empty state without implying hidden Results", () => {
@@ -82,6 +181,9 @@ describe("current Person Assessment result directory", () => {
     assert.match(repository, /z\.enum\(\["self", "manager", "legacy_unknown"\]\)/)
     assert.doesNotMatch(repository, /resultDirectoryRowSchema[\s\S]{0,700}evaluator/)
     assert.match(page, /getCurrentPersonAssessmentResultDirectoryReadModel/)
+    assert.match(page, /isAdministrativeRole\(currentUser\.role\)/)
+    assert.match(page, /canManageAssessments\s*\?\s*getAssessmentCatalogReadModel/)
+    assert.match(home, /if \(!canManageAssessments\)/)
     assert.match(home, /title="Meus resultados"/)
   })
 })

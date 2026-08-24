@@ -60,6 +60,43 @@ export function AssessmentResultsDirectory({
               </article>
             ))}
           </div>
+
+          {cycle.comparison ? (
+            <div className="mt-5 rounded-lg border bg-card p-4 shadow-sm">
+              <h4 className="text-base font-semibold">Diferença de percepção</h4>
+              <div className="mt-4 grid gap-4 sm:grid-cols-3">
+                <div>
+                  <p className="text-sm text-muted-foreground">Autoavaliação</p>
+                  <p className="mt-1 text-xl font-semibold">
+                    {cycle.comparison.self.scoreLabel}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Gestor</p>
+                  <p className="mt-1 text-xl font-semibold">
+                    {cycle.comparison.manager.scoreLabel}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">
+                    Diferença
+                  </p>
+                  <p className="mt-1 text-xl font-semibold">
+                    {cycle.comparison.differenceLabel}
+                  </p>
+                </div>
+              </div>
+              <p className="mt-4 text-sm text-muted-foreground">
+                Diferença de percepção compara a nota da Autoavaliação com a
+                avaliação do Gestor. Ela não representa, por si só, um resultado
+                positivo ou negativo.
+              </p>
+            </div>
+          ) : cycle.comparisonUnavailableMessage ? (
+            <p className="mt-5 rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
+              {cycle.comparisonUnavailableMessage}
+            </p>
+          ) : null}
         </section>
       ))}
     </div>

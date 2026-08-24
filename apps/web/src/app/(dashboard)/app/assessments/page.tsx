@@ -6,21 +6,25 @@ import {
   getCurrentPersonAssessmentResultDirectoryReadModel,
 } from "@/features/assessment-feedback-read"
 import { presentAssessmentResultDirectory } from "@/features/assessments"
+import { isAdministrativeRole } from "@/features/authorization"
 
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 export default async function AssessmentsPage() {
-  const { companyId, personId } =
+  const { companyId, currentUser, personId } =
     await getCurrentCompanyContext()
+  const canManageAssessments = isAdministrativeRole(currentUser.role)
 
   const [{ cycles, templates }, resultDirectoryRows] = await Promise.all([
-    getAssessmentCatalogReadModel(companyId),
+    canManageAssessments
+      ? getAssessmentCatalogReadModel(companyId)
+      : Promise.resolve({ cycles: [], templates: [] }),
     getCurrentPersonAssessmentResultDirectoryReadModel(companyId),
   ])
 
   let evaluatorResponses: AssessmentResponse[] = []
 
-  if (personId) {
+  if (canManageAssessments && personId) {
     const repository = await createAssessmentResponseRepository()
     const { data, error } = await repository.findByEvaluator(
       companyId,
@@ -39,6 +43,7 @@ export default async function AssessmentsPage() {
       templates={templates}
       evaluatorResponses={evaluatorResponses}
       resultDirectory={presentAssessmentResultDirectory(resultDirectoryRows)}
+      canManageAssessments={canManageAssessments}
     />
   )
 }

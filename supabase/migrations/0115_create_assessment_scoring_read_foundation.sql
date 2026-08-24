@@ -2,6 +2,64 @@
 
 alter table public.assessment_responses add column perspective text;
 
+do $$
+begin
+  if exists (
+    select 1 from public.assessment_responses response
+    left join public.people evaluatee
+      on evaluatee.id=response.employee_id and evaluatee.company_id=response.company_id
+    left join public.people evaluator
+      on evaluator.id=response.evaluator_id and evaluator.company_id=response.company_id
+    where response.employee_id is null or response.evaluator_id is null
+      or evaluatee.id is null or evaluator.id is null
+  ) then
+    raise exception using errcode='23514',
+      message='ASSESSMENT_RESPONSE_PERSPECTIVE_BACKFILL_INVALID';
+  end if;
+end $$;
+
+-- Migration-only initializer. It permits exactly the new perspective value to
+-- change and preserves every pre-existing column, including terminal state and
+-- timestamps. The final function below replaces this in the same transaction.
+create or replace function public.protect_assessment_response_immutability()
+returns trigger language plpgsql security invoker set search_path=public,pg_temp as $$
+begin
+  if old.perspective is null
+    and new.perspective in ('self','legacy_unknown')
+    and (to_jsonb(new)-'perspective')=(to_jsonb(old)-'perspective') then
+    return new;
+  end if;
+  if old.status in ('submitted','completed') then
+    raise exception using errcode='55000',message='ASSESSMENT_RESPONSE_IMMUTABLE';
+  end if;
+  if new.company_id<>old.company_id or new.assessment_cycle_id<>old.assessment_cycle_id
+    or new.assessment_template_id<>old.assessment_template_id
+    or new.assessment_execution_snapshot_id<>old.assessment_execution_snapshot_id
+    or new.employee_id<>old.employee_id or new.evaluator_id<>old.evaluator_id then
+    raise exception using errcode='55000',message='ASSESSMENT_RESPONSE_ASSIGNMENT_IMMUTABLE';
+  end if;
+  if new.completed_at is distinct from old.completed_at
+    or new.created_at is distinct from old.created_at then
+    raise exception using errcode='55000',message='ASSESSMENT_RESPONSE_FIELDS_IMMUTABLE';
+  end if;
+  if new.started_at is distinct from old.started_at and not (
+    old.started_at is null and new.started_at is not null
+    and old.status='draft' and new.status='in_progress'
+  ) then raise exception using errcode='55000',message='ASSESSMENT_RESPONSE_START_TIME_FORBIDDEN'; end if;
+  if not (new.status=old.status
+    or (old.status='draft' and new.status in ('in_progress','submitted'))
+    or (old.status='in_progress' and new.status='submitted'))
+    or new.status not in ('draft','in_progress','submitted') then
+    raise exception using errcode='55000',message='ASSESSMENT_RESPONSE_TRANSITION_FORBIDDEN';
+  end if;
+  if new.status='submitted' and old.status<>'submitted' then
+    new.submitted_at:=coalesce(new.submitted_at,now());
+  elsif new.submitted_at is distinct from old.submitted_at then
+    raise exception using errcode='55000',message='ASSESSMENT_RESPONSE_SUBMISSION_TIME_FORBIDDEN';
+  end if;
+  new.updated_at:=now(); return new;
+end; $$;
+
 update public.assessment_responses
 set perspective = case when evaluator_id = employee_id then 'self' else 'legacy_unknown' end;
 
@@ -12,6 +70,9 @@ begin
     left join public.people evaluatee on evaluatee.id=response.employee_id and evaluatee.company_id=response.company_id
     left join public.people evaluator on evaluator.id=response.evaluator_id and evaluator.company_id=response.company_id
     where response.perspective is null or evaluatee.id is null or evaluator.id is null
+      or (response.evaluator_id=response.employee_id and response.perspective<>'self')
+      or (response.evaluator_id<>response.employee_id and response.perspective<>'legacy_unknown')
+      or response.perspective in ('manager','direct_report')
   ) then raise exception using errcode='23514',message='ASSESSMENT_RESPONSE_PERSPECTIVE_BACKFILL_INVALID'; end if;
 end $$;
 

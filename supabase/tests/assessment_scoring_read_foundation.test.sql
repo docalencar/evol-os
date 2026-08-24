@@ -1,10 +1,16 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path=extensions,public,pg_temp;
-select plan(18);
+select plan(19);
 
 select has_column('public','assessment_responses','perspective','Response stores immutable perspective');
 select col_not_null('public','assessment_responses','perspective','perspective is required');
+select is(
+  (select pg_get_constraintdef(oid) from pg_constraint
+   where conrelid='public.assessment_responses'::regclass
+     and conname='assessment_responses_perspective_check'),
+  'CHECK ((perspective = ANY (ARRAY[''self''::text, ''manager''::text, ''direct_report''::text, ''legacy_unknown''::text])))',
+  'perspective allows exactly the approved execution and historical values');
 select has_function('public','get_tenant_assessment_scored_result_v1',array['uuid','uuid'],'scored read RPC exists');
 select function_privs_are('public','get_tenant_assessment_scored_result_v1',array['uuid','uuid'],'authenticated',array['EXECUTE'],'authenticated alone can execute scored read');
 select function_privs_are('public','get_tenant_assessment_scored_result_v1',array['uuid','uuid'],'anon',array[]::text[],'anon cannot execute scored read');

@@ -150,6 +150,24 @@ select is((public.update_tenant_assessment_cycle_v1(
 select is((public.generate_tenant_assessment_cycle_responses_v1(
  'ad000000-0000-4000-8000-000000000101',(select id from acp_result where kind='cycle'))
  ->>'createdResponseCount')::int,4,'generation derives self, manager and direct-report assignments');
+set local role postgres;
+select is((select count(*)::int from public.assessment_responses
+ where assessment_cycle_id=(select id from acp_result where kind='cycle')
+   and perspective='self'),2,
+ 'new generation persists self perspective');
+select is((select count(*)::int from public.assessment_responses
+ where assessment_cycle_id=(select id from acp_result where kind='cycle')
+   and perspective='manager'),1,
+ 'new generation persists manager perspective');
+select is((select count(*)::int from public.assessment_responses
+ where assessment_cycle_id=(select id from acp_result where kind='cycle')
+   and perspective='direct_report'),1,
+ 'new generation persists direct-report perspective');
+select is((select count(*)::int from public.assessment_responses
+ where assessment_cycle_id=(select id from acp_result where kind='cycle')
+   and perspective='legacy_unknown'),0,
+ 'new generation never writes the historical-only legacy_unknown perspective');
+set local role authenticated;
 select lives_ok($$select public.save_tenant_assessment_answer_v1(
  'ad000000-0000-4000-8000-000000000101',(
    select response.id from public.assessment_responses response

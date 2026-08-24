@@ -1,6 +1,7 @@
 export {
   getAssessmentCatalogReadModel,
   getAssessmentCycleReadModel,
+  getAssessmentEvaluateeScoredResultReadModel,
   getAssessmentEvaluatorWorkspaceReadModel,
   getAssessmentResponsePageReadModel,
   getAssessmentScoredResultReadModel,

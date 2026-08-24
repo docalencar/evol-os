@@ -265,6 +265,21 @@ export {
   AssessmentFeedbackCard,
 } from "./components/assessment-feedback/assessment-feedback-card"
 
+export {
+  AssessmentResultUnavailableState,
+} from "./components/assessment-feedback/assessment-result-unavailable-state"
+
+export {
+  formatAssessmentPercentage,
+  presentAssessmentResult,
+} from "./presenters/assessment-result-presenter"
+
+export type {
+  AssessmentResultMode,
+  AssessmentResultQuestionViewModel,
+  AssessmentResultViewModel,
+} from "./view-models/assessment-result-view-model"
+
 export { getAssessmentFeedback } from "./queries/get-assessment-feedback"
 
 export { AssessmentCycleResultsCard } from "./components/assessment-cycle/assessment-cycle-results-card"

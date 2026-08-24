@@ -128,6 +128,13 @@ export async function getAssessmentScoredResultReadModel(companyId: string, resp
   return (await repository()).scoredResult(companyId, responseId)
 }
 
+export async function getAssessmentEvaluateeScoredResultReadModel(
+  companyId: string,
+  responseId: string
+) {
+  return (await repository()).evaluateeScoredResult(companyId, responseId)
+}
+
 export async function getAssessmentResponsePageReadModel(
   companyId: string,
   responseId: string

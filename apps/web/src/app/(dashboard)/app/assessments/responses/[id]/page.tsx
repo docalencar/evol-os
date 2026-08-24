@@ -3,11 +3,14 @@ import { notFound } from "next/navigation"
 import {
   AssessmentExecutionWorkspace,
   AssessmentFeedbackCard,
+  AssessmentResultUnavailableState,
+  presentAssessmentResult,
   type AssessmentQuestion,
 } from "@/features/assessments"
 import { EntityBackLink } from "@/components/shared/entity-back-link"
 import {
   getAssessmentResponsePageReadModel,
+  getAssessmentEvaluateeScoredResultReadModel,
   getAssessmentScoredResultReadModel,
 } from "@/features/assessment-feedback-read"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
@@ -27,14 +30,53 @@ export default async function AssessmentResponsePage({
   const { id } = await params
 
   try {
-    const workspace =
-      await getAssessmentResponsePageReadModel(
-        companyId,
-        id
+    const workspace = await getAssessmentResponsePageReadModel(
+      companyId,
+      id
+    ).catch(() => null)
+
+    if (
+      workspace &&
+      (workspace.response.status === "submitted" ||
+        workspace.response.status === "completed")
+    ) {
+      const scoredResult = await getAssessmentScoredResultReadModel(companyId, id)
+      const result = presentAssessmentResult({
+        result: scoredResult,
+        mode: workspace.mode === "administrative" ? "administrative" : "evaluator",
+        submittedAt:
+          workspace.response.submitted_at ?? workspace.response.completed_at,
+      })
+
+      return (
+        <div className="space-y-8">
+          <EntityBackLink href="/app/assessments" label="Voltar para avaliações" />
+          <AssessmentFeedbackCard result={result} />
+        </div>
       )
+    }
 
     if (!workspace) {
-      notFound()
+      const evaluateeResult = await getAssessmentEvaluateeScoredResultReadModel(
+        companyId,
+        id
+      ).catch(() => null)
+
+      return (
+        <div className="space-y-8">
+          <EntityBackLink href="/app/assessments" label="Voltar para avaliações" />
+          {evaluateeResult ? (
+            <AssessmentFeedbackCard
+              result={presentAssessmentResult({
+                result: evaluateeResult,
+                mode: "evaluatee",
+              })}
+            />
+          ) : (
+            <AssessmentResultUnavailableState />
+          )}
+        </div>
+      )
     }
 
     const { template, sections, questions, answers } = workspace
@@ -53,26 +95,12 @@ export default async function AssessmentResponsePage({
       ])
     )
 
-    const showFeedback =
-      workspace.response.status === "submitted" ||
-      workspace.response.status === "completed"
-
-    const feedback = showFeedback
-      ? await getAssessmentScoredResultReadModel(companyId, id)
-      : null
-
     return (
       <div className="space-y-8">
         <EntityBackLink
           href="/app/assessments"
           label="Voltar para avaliações"
         />
-
-        {feedback ? (
-          <AssessmentFeedbackCard
-            feedback={feedback}
-          />
-        ) : null}
 
         <AssessmentExecutionWorkspace
           companyId={companyId}

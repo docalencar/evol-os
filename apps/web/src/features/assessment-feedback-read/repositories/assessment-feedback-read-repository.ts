@@ -186,6 +186,7 @@ export function createAssessmentFeedbackReadRepository(database: RpcDatabase) {
     assessmentCycle: (companyId: string, cycleId: string) => rpcRows(database, "get_tenant_assessment_cycle_management_v1", { p_company_id: companyId, p_cycle_id: cycleId }, z.array(cycleRowSchema)),
     evaluatorWorkspace: (companyId: string, responseId: string) => rpcRows(database, "get_assessment_evaluator_workspace_v1", { p_company_id: companyId, p_response_id: responseId }, z.array(workspaceRowSchema)),
     scoredResult: (companyId: string, responseId: string) => rpcRows(database, "get_tenant_assessment_scored_result_v1", { p_company_id: companyId, p_response_id: responseId }, scoredResultSchema),
+    evaluateeScoredResult: (companyId: string, responseId: string) => rpcRows(database, "read_assessment_result_for_evaluatee", { p_company_id: companyId, p_assessment_response_id: responseId }, scoredResultSchema),
     feedbackDirectory: (companyId: string) => rpcRows(database, "get_current_person_feedback_threads_v1", { p_company_id: companyId }, z.array(feedbackDirectoryRowSchema)),
     feedbackDetail: (companyId: string, threadId: string) => rpcRows(database, "get_feedback_thread_detail_v1", { p_company_id: companyId, p_thread_id: threadId }, z.array(feedbackDetailRowSchema)),
     feedbackMessages: (companyId: string, threadId: string) => rpcRows(database, "get_feedback_thread_messages_v1", { p_company_id: companyId, p_thread_id: threadId }, z.array(feedbackMessageRowSchema)),

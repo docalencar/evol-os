@@ -20,6 +20,7 @@ import {
   type AssessmentCycle,
   type AssessmentTemplate,
   type AssessmentResponse,
+  type AssessmentResultDirectoryViewModel,
 } from "@/features/assessments"
 
 import {
@@ -28,12 +29,14 @@ import {
 import {
   AssessmentPriorityCard,
 } from "./assessment-priority-card"
+import { AssessmentResultsDirectory } from "../assessment-results/assessment-results-directory"
 
 type AssessmentHomeProps = {
   companyId: string
   cycles: AssessmentCycle[]
   templates: AssessmentTemplate[]
   evaluatorResponses: AssessmentResponse[]
+  resultDirectory: AssessmentResultDirectoryViewModel
 }
 
 export function AssessmentHome({
@@ -41,6 +44,7 @@ export function AssessmentHome({
   cycles,
   templates,
   evaluatorResponses,
+  resultDirectory,
 }: AssessmentHomeProps) {
   const assessments =
     presentAssessments(cycles, evaluatorResponses)
@@ -92,6 +96,13 @@ export function AssessmentHome({
       <AssessmentPriorityCard
         priority={home.priority}
       />
+
+      <DashboardSection
+        title="Meus resultados"
+        description="Consulte suas avaliações oficiais já enviadas ou concluídas."
+      >
+        <AssessmentResultsDirectory directory={resultDirectory} />
+      </DashboardSection>
 
       <ProductMetricGrid
         metrics={home.metrics}

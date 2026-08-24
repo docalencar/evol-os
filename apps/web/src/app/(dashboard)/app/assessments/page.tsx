@@ -1,7 +1,11 @@
 import { AssessmentHome } from "@/features/assessments/components/home/assessment-home"
 import { createAssessmentResponseRepository } from "@/features/assessments/repositories/assessment-response-repository"
 import type { AssessmentResponse } from "@/features/assessments/types/assessment-response"
-import { getAssessmentCatalogReadModel } from "@/features/assessment-feedback-read"
+import {
+  getAssessmentCatalogReadModel,
+  getCurrentPersonAssessmentResultDirectoryReadModel,
+} from "@/features/assessment-feedback-read"
+import { presentAssessmentResultDirectory } from "@/features/assessments"
 
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
@@ -9,8 +13,10 @@ export default async function AssessmentsPage() {
   const { companyId, personId } =
     await getCurrentCompanyContext()
 
-  const { cycles, templates } =
-    await getAssessmentCatalogReadModel(companyId)
+  const [{ cycles, templates }, resultDirectoryRows] = await Promise.all([
+    getAssessmentCatalogReadModel(companyId),
+    getCurrentPersonAssessmentResultDirectoryReadModel(companyId),
+  ])
 
   let evaluatorResponses: AssessmentResponse[] = []
 
@@ -32,6 +38,7 @@ export default async function AssessmentsPage() {
       cycles={cycles}
       templates={templates}
       evaluatorResponses={evaluatorResponses}
+      resultDirectory={presentAssessmentResultDirectory(resultDirectoryRows)}
     />
   )
 }

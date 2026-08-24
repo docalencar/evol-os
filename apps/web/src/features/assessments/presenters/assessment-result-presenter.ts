@@ -33,12 +33,15 @@ const statusLabels: Record<AssessmentScoredResult["status"], string> = {
   completed: "Concluída",
 }
 
-export const NO_QUANTITATIVE_RESULT_COPY = "Sem resultado quantitativo"
+export const QUALITATIVE_RESULT_COPY = "Resultado qualitativo"
+export const QUALITATIVE_RESULT_DESCRIPTION =
+  "Esta avaliação não possui perguntas com pontuação quantitativa. Consulte as respostas e evidências registradas."
+export const NO_SECTION_QUANTITATIVE_SCORE_COPY = "Sem pontuação quantitativa nesta seção"
 export const NO_ANSWER_COPY = "Sem resposta"
 
 export function formatAssessmentPercentage(value: number | null): string {
   return value === null
-    ? NO_QUANTITATIVE_RESULT_COPY
+    ? QUALITATIVE_RESULT_COPY
     : `${percentageFormatter.format(value)}%`
 }
 
@@ -99,12 +102,15 @@ export function presentAssessmentResult(input: Readonly<{
     score: {
       value: result.overallScore,
       label: formatAssessmentPercentage(result.overallScore),
+      description: result.overallScore === null ? QUALITATIVE_RESULT_DESCRIPTION : null,
     },
     sections: result.sections.map((section) => ({
       id: section.snapshotSectionId,
       name: section.name,
       score: section.score,
-      scoreLabel: formatAssessmentPercentage(section.score),
+      scoreLabel: section.score === null
+        ? NO_SECTION_QUANTITATIVE_SCORE_COPY
+        : formatAssessmentPercentage(section.score),
       weight: section.weight,
       weightLabel: `Peso relativo: ${numberFormatter.format(section.weight)}`,
     })),

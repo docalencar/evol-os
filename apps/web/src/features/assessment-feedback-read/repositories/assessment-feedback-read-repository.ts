@@ -50,6 +50,23 @@ const scoredResultSchema = z.object({
 
 export type AssessmentScoredResult = z.infer<typeof scoredResultSchema>
 
+const resultDirectoryRowSchema = z.object({
+  cycle_id: uuid,
+  cycle_name: text.min(1),
+  model_name: text.min(1),
+  cycle_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  response_id: uuid,
+  perspective: z.enum(["self", "manager", "legacy_unknown"]),
+  response_status: z.enum(["submitted", "completed"]),
+  submitted_at: nullableTimestamp,
+  completed_at: nullableTimestamp,
+  overall_score: z.coerce.number().nullable(),
+  visibility: z.enum(["score", "score_and_competencies", "score_and_comments", "full"]),
+  result_available: z.literal(true),
+}).strict()
+
+export type AssessmentResultDirectoryRow = z.infer<typeof resultDirectoryRowSchema>
+
 const catalogRowSchema = z.object({
   record_type: z.enum(["template", "cycle"]), record_id: uuid, name: text.min(1),
   description: nullableText, instructions: nullableText,
@@ -187,6 +204,7 @@ export function createAssessmentFeedbackReadRepository(database: RpcDatabase) {
     evaluatorWorkspace: (companyId: string, responseId: string) => rpcRows(database, "get_assessment_evaluator_workspace_v1", { p_company_id: companyId, p_response_id: responseId }, z.array(workspaceRowSchema)),
     scoredResult: (companyId: string, responseId: string) => rpcRows(database, "get_tenant_assessment_scored_result_v1", { p_company_id: companyId, p_response_id: responseId }, scoredResultSchema),
     evaluateeScoredResult: (companyId: string, responseId: string) => rpcRows(database, "read_assessment_result_for_evaluatee", { p_company_id: companyId, p_assessment_response_id: responseId }, scoredResultSchema),
+    currentPersonResultDirectory: (companyId: string) => rpcRows(database, "get_current_person_assessment_result_directory_v1", { p_company_id: companyId }, z.array(resultDirectoryRowSchema)),
     feedbackDirectory: (companyId: string) => rpcRows(database, "get_current_person_feedback_threads_v1", { p_company_id: companyId }, z.array(feedbackDirectoryRowSchema)),
     feedbackDetail: (companyId: string, threadId: string) => rpcRows(database, "get_feedback_thread_detail_v1", { p_company_id: companyId, p_thread_id: threadId }, z.array(feedbackDetailRowSchema)),
     feedbackMessages: (companyId: string, threadId: string) => rpcRows(database, "get_feedback_thread_messages_v1", { p_company_id: companyId, p_thread_id: threadId }, z.array(feedbackMessageRowSchema)),

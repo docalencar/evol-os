@@ -20,6 +20,11 @@ export function AssessmentResultSummary({
           <p className="mt-1 break-words text-4xl font-bold sm:text-5xl">
             {result.score.label}
           </p>
+          {result.score.description ? (
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+              {result.score.description}
+            </p>
+          ) : null}
         </div>
 
         <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-1">

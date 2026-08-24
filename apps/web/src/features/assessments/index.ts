@@ -280,6 +280,16 @@ export type {
   AssessmentResultViewModel,
 } from "./view-models/assessment-result-view-model"
 
+export {
+  presentAssessmentResultDirectory,
+} from "./presenters/assessment-result-directory-presenter"
+
+export type {
+  AssessmentCycleResultGroupViewModel,
+  AssessmentResultDirectoryCardViewModel,
+  AssessmentResultDirectoryViewModel,
+} from "./view-models/assessment-result-directory-view-model"
+
 export { getAssessmentFeedback } from "./queries/get-assessment-feedback"
 
 export { AssessmentCycleResultsCard } from "./components/assessment-cycle/assessment-cycle-results-card"

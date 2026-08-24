@@ -135,6 +135,12 @@ export async function getAssessmentEvaluateeScoredResultReadModel(
   return (await repository()).evaluateeScoredResult(companyId, responseId)
 }
 
+export async function getCurrentPersonAssessmentResultDirectoryReadModel(
+  companyId: string
+) {
+  return (await repository()).currentPersonResultDirectory(companyId)
+}
+
 export async function getAssessmentResponsePageReadModel(
   companyId: string,
   responseId: string

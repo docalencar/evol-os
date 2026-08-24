@@ -87,6 +87,7 @@ test("calls every 0088 boundary with the server-derived tenant selector", async 
     get_tenant_assessment_response_structure_v1: [structureTemplate],
     get_tenant_assessment_cycle_management_v1: [cycle],
     get_assessment_evaluator_workspace_v1: [workspaceResponse],
+    get_current_person_assessment_result_directory_v1: [],
     get_current_person_feedback_threads_v1: [feedbackDirectory],
     get_feedback_thread_detail_v1: [{
       ...feedbackDirectory, visibility: "participants", requires_follow_up: false,
@@ -105,17 +106,18 @@ test("calls every 0088 boundary with the server-derived tenant selector", async 
   await repository.assessmentResponseStructure(companyId, recordId)
   await repository.assessmentCycle(companyId, recordId)
   await repository.evaluatorWorkspace(companyId, recordId)
+  await repository.currentPersonResultDirectory(companyId)
   await repository.feedbackDirectory(companyId)
   await repository.feedbackDetail(companyId, recordId)
   await repository.feedbackMessages(companyId, recordId)
 
-  assert.equal(calls.length, 8)
+  assert.equal(calls.length, 9)
   assert.ok(calls.every((call) =>
     (call.parameters as { p_company_id?: string }).p_company_id === companyId
   ))
   assert.deepEqual(calls[1].parameters, { p_company_id: companyId, p_template_id: recordId })
   assert.deepEqual(calls[2].parameters, { p_company_id: companyId, p_response_id: recordId })
-  assert.deepEqual(calls[6].parameters, { p_company_id: companyId, p_thread_id: recordId })
+  assert.deepEqual(calls[7].parameters, { p_company_id: companyId, p_thread_id: recordId })
 })
 
 test("accepts empty selectors and rejects malformed rows fail-closed", async () => {
@@ -149,5 +151,35 @@ test("sanitizes RPC authorization and PostgREST failures", async () => {
     (error: unknown) => error instanceof AssessmentFeedbackReadError
       && !error.message.includes("42501")
       && !error.message.includes("TENANT_AUTHORIZATION_DENIED"),
+  )
+})
+
+test("result directory rejects evaluator identity and other unexpected fields", async () => {
+  const { AssessmentFeedbackReadError, createAssessmentFeedbackReadRepository } =
+    await repositoryModule
+  const repository = createAssessmentFeedbackReadRepository({
+    rpc: async () => ({
+      data: [{
+        cycle_id: "10000000-0000-4000-8000-000000000001",
+        cycle_name: "Cycle",
+        model_name: "Model",
+        cycle_date: "2026-08-20",
+        response_id: "20000000-0000-4000-8000-000000000001",
+        perspective: "self",
+        response_status: "submitted",
+        submitted_at: "2026-08-21T12:00:00+00:00",
+        completed_at: null,
+        overall_score: 80,
+        visibility: "full",
+        result_available: true,
+        evaluator_id: "30000000-0000-4000-8000-000000000001",
+      }],
+      error: null,
+    }),
+  } as never)
+
+  await assert.rejects(
+    repository.currentPersonResultDirectory("10000000-0000-4000-8000-000000000001"),
+    AssessmentFeedbackReadError
   )
 })

@@ -165,7 +165,7 @@ describe("individual Assessment result presentation", () => {
     assert.equal(formatAssessmentPercentage(75.5556), "75,6%")
     assert.equal(formatAssessmentPercentage(80), "80,0%")
     assert.equal(formatAssessmentPercentage(66.6667), "66,7%")
-    assert.equal(formatAssessmentPercentage(null), "Sem resultado quantitativo")
+    assert.equal(formatAssessmentPercentage(null), "Resultado qualitativo")
   })
 
   it("maps every perspective without exposing technical enums", () => {
@@ -188,7 +188,7 @@ describe("individual Assessment result presentation", () => {
 
     assert.deepEqual(view.sections.map((section) => [section.scoreLabel, section.weightLabel]), [
       ["80,0%", "Peso relativo: 2"],
-      ["Sem resultado quantitativo", "Peso relativo: 1"],
+      ["Sem pontuação quantitativa nesta seção", "Peso relativo: 1"],
     ])
     assert.deepEqual(view.questions.map((question) => [
       question.answerLabel,
@@ -245,7 +245,21 @@ describe("individual Assessment result presentation", () => {
     assert.match(full, /Entrega com qualidade|Resultado nesta avaliação/)
 
     const unavailable = renderToStaticMarkup(<AssessmentResultUnavailableState />)
+    assert.match(unavailable, /Resultado ainda não disponível/)
     assert.match(unavailable, /Este resultado não está disponível conforme a política do ciclo/)
+  })
+
+  it("presents a valid NULL-score result as qualitative without converting it to zero", () => {
+    const view = presentAssessmentResult({
+      result: result({ overallScore: null }),
+      mode: "evaluatee",
+    })
+    const markup = renderToStaticMarkup(<AssessmentFeedbackCard result={view} />)
+
+    assert.equal(view.score.value, null)
+    assert.match(markup, /Resultado qualitativo/)
+    assert.match(markup, /não possui perguntas com pontuação quantitativa/)
+    assert.doesNotMatch(markup, /Sem resultado quantitativo|>0,0%<|N\/A|NULL/)
   })
 
   it("keeps administrative and submitted evaluator modes read-only and identity-neutral", () => {

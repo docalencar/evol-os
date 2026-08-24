@@ -28,6 +28,7 @@ export type AssessmentResultViewModel = Readonly<{
   score: Readonly<{
     value: number | null
     label: string
+    description: string | null
   }>
   sections: ReadonlyArray<Readonly<{
     id: string

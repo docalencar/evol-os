@@ -295,7 +295,7 @@ describe("individual Assessment result presentation", () => {
     assert.doesNotMatch(markup, /Nota média|6,0%/)
     assert.match(route, /getAssessmentScoredResultReadModel|getAssessmentEvaluateeScoredResultReadModel/)
     assert.doesNotMatch(route, /getAssessmentFeedback\(|router\.back|history\.back/)
-    assert.match(route, /resolveAssessmentResultBackLink\(source\)/)
+    assert.match(route, /resolveAssessmentResultBackLink\(source, returnPersonId\)/)
     assert.match(returnContext, /href: "\/app\/assessments"/)
     assert.doesNotMatch(returnContext, /returnTo|redirectTo|callbackUrl|https?:\/\//)
   })

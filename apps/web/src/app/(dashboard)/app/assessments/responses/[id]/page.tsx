@@ -23,6 +23,7 @@ type Props = {
   }>
   searchParams: Promise<{
     source?: string
+    personId?: string
   }>
 }
 
@@ -33,8 +34,11 @@ export default async function AssessmentResponsePage({
   const { companyId, personId } =
     await getCurrentCompanyContext()
 
-  const [{ id }, { source }] = await Promise.all([params, searchParams])
-  const backLink = resolveAssessmentResultBackLink(source)
+  const [{ id }, { source, personId: returnPersonId }] = await Promise.all([
+    params,
+    searchParams,
+  ])
+  const backLink = resolveAssessmentResultBackLink(source, returnPersonId)
 
   try {
     const workspace = await getAssessmentResponsePageReadModel(

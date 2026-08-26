@@ -7,6 +7,7 @@ import {
 import { EntityBackLink } from "@/components/shared/entity-back-link"
 
 import { getEmployeeAssessmentSummary } from "@/features/assessments"
+import { getPersonAssessmentResultDirectoryReadModel } from "@/features/assessment-feedback-read"
 import {
   getManagementCompetencies,
   getManagementCompetencyAssignments,
@@ -32,7 +33,9 @@ import {
 import {
   createEmployeeIntelligence,
   presentEmployeeIntelligence,
+  presentPersonAssessmentResults,
   EmployeeAssessmentsSummaryCard,
+  EmployeeRecentAssessmentResultsCard,
   EmployeeCompetenciesSummaryCard,
   EmployeeDevelopmentSummaryCard,
   EmployeeNextActionsCard,
@@ -117,6 +120,7 @@ export default async function EmployeeProfilePage({
     assessmentSummary,
     allDevelopmentPlans,
     departments,
+    personAssessmentResults,
   ] = await Promise.all([
     getManagementPersonIncludingTerminated(companyId, id),
 
@@ -141,6 +145,12 @@ export default async function EmployeeProfilePage({
     getManagementDevelopmentPlans(companyId),
 
     getManagementDepartments(companyId),
+
+    // Fronteira administrativa 0118. A própria query confere o papel antes de
+    // chamar o RPC, então um papel sem propósito não gera negação nem evento de
+    // auditoria a cada render; a autorização definitiva continua sendo a do
+    // banco.
+    getPersonAssessmentResultDirectoryReadModel(companyId, id),
   ])
 
   if (!employee) {
@@ -360,6 +370,25 @@ export default async function EmployeeProfilePage({
           />
         </div>
       </DashboardSection>
+
+      {personAssessmentResults.status === "forbidden" ? null : (
+        <div id="ultimas-avaliacoes" className="scroll-mt-6">
+          <DashboardSection
+            title="Últimas avaliações"
+            description="Resultados oficiais já enviados ou concluídos desta pessoa."
+          >
+            <EmployeeRecentAssessmentResultsCard
+              isUnavailable={personAssessmentResults.status === "unavailable"}
+              results={presentPersonAssessmentResults(
+                personAssessmentResults.status === "ok"
+                  ? personAssessmentResults.rows
+                  : [],
+                { personId: id }
+              )}
+            />
+          </DashboardSection>
+        </div>
+      )}
 
       <DashboardSection title="Informações principais">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

@@ -104,7 +104,7 @@ for (const [name, source, href, label] of cases) {
 }
 
 test("assessment result detail uses an allowlisted deterministic back link", () => {
-  assert.match(responseDetail, /resolveAssessmentResultBackLink\(source\)/)
+  assert.match(responseDetail, /resolveAssessmentResultBackLink\(source, returnPersonId\)/)
   assert.match(assessmentResultReturnContext, /source === "assessments-results"/)
   assert.match(assessmentResultReturnContext, /\/app\/assessments#meus-resultados/)
   assert.match(assessmentResultReturnContext, /\/app\/assessments/)

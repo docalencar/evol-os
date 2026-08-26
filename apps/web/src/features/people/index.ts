@@ -115,6 +115,21 @@ export {
 
 
 export {
+  EmployeeRecentAssessmentResultsCard,
+} from "./assessments/components/employee-recent-assessment-results-card"
+
+export {
+  presentPersonAssessmentResults,
+  PERSON_ASSESSMENT_RESULTS_DEFAULT_LIMIT,
+} from "./assessments/presenters/person-assessment-results-presenter"
+
+export type {
+  PersonAssessmentResultItemViewModel,
+  PersonAssessmentResultsViewModel,
+} from "./assessments/view-models/person-assessment-results-view-model"
+
+
+export {
   EmployeeDevelopmentSummaryCard,
 } from "./intelligence/components/employee-development-summary-card"
 

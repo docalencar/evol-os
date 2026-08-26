@@ -1,5 +1,6 @@
 import type { AssessmentResultDirectoryRow } from "@/features/assessment-feedback-read"
 
+import { DIRECTORY_PERSPECTIVE_LABELS } from "./assessment-perspective-labels"
 import {
   formatAssessmentPercentage,
   QUALITATIVE_RESULT_DESCRIPTION,
@@ -16,11 +17,6 @@ const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
 })
 
 const perspectiveOrder = { self: 0, manager: 1, legacy_unknown: 3 } as const
-const perspectiveLabels = {
-  self: "Autoavaliação",
-  manager: "Gestor",
-  legacy_unknown: "Histórico — perspectiva não identificada",
-} as const
 
 const percentagePointFormatter = new Intl.NumberFormat("pt-BR", {
   minimumFractionDigits: 1,
@@ -119,7 +115,7 @@ export function presentAssessmentResultDirectory(
       .map((row) => ({
         responseId: row.response_id,
         perspective: row.perspective,
-        perspectiveLabel: perspectiveLabels[row.perspective],
+        perspectiveLabel: DIRECTORY_PERSPECTIVE_LABELS[row.perspective],
         score: row.overall_score,
         scoreLabel: formatAssessmentPercentage(row.overall_score),
         scoreDescription: row.overall_score === null ? QUALITATIVE_RESULT_DESCRIPTION : null,

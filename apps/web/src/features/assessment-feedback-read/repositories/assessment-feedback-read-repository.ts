@@ -67,6 +67,34 @@ const resultDirectoryRowSchema = z.object({
 
 export type AssessmentResultDirectoryRow = z.infer<typeof resultDirectoryRowSchema>
 
+/**
+ * Contrato da 0118 — directory administrativo de Results de UMA Pessoa.
+ *
+ * Deliberadamente NÃO reutiliza `resultDirectoryRowSchema`: aquele é o contrato
+ * do directory do próprio avaliado (0117), é `.strict()` e exige `visibility` e
+ * `result_available`, que a fronteira administrativa não retorna. Reusá-lo faria
+ * o `safeParse` falhar e o erro de parsing se disfarçaria de falta de permissão.
+ *
+ * São exatamente as 10 colunas contratadas: sem identidade do avaliador, sem
+ * Answers, sem Questions, sem comentários e sem score bruto.
+ */
+const personResultDirectoryRowSchema = z.object({
+  cycle_id: uuid,
+  cycle_name: text.min(1),
+  model_name: text.min(1),
+  cycle_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  response_id: uuid,
+  perspective: z.enum(["self", "manager", "legacy_unknown"]),
+  response_status: z.enum(["submitted", "completed"]),
+  submitted_at: nullableTimestamp,
+  completed_at: nullableTimestamp,
+  overall_score: z.coerce.number().nullable(),
+}).strict()
+
+export type PersonAssessmentResultDirectoryRow = z.infer<
+  typeof personResultDirectoryRowSchema
+>
+
 const catalogRowSchema = z.object({
   record_type: z.enum(["template", "cycle"]), record_id: uuid, name: text.min(1),
   description: nullableText, instructions: nullableText,
@@ -205,6 +233,7 @@ export function createAssessmentFeedbackReadRepository(database: RpcDatabase) {
     scoredResult: (companyId: string, responseId: string) => rpcRows(database, "get_tenant_assessment_scored_result_v1", { p_company_id: companyId, p_response_id: responseId }, scoredResultSchema),
     evaluateeScoredResult: (companyId: string, responseId: string) => rpcRows(database, "read_assessment_result_for_evaluatee", { p_company_id: companyId, p_assessment_response_id: responseId }, scoredResultSchema),
     currentPersonResultDirectory: (companyId: string) => rpcRows(database, "get_current_person_assessment_result_directory_v1", { p_company_id: companyId }, z.array(resultDirectoryRowSchema)),
+    personResultDirectory: (companyId: string, personId: string) => rpcRows(database, "get_tenant_person_assessment_result_directory_v1", { p_company_id: companyId, p_person_id: personId }, z.array(personResultDirectoryRowSchema)),
     feedbackDirectory: (companyId: string) => rpcRows(database, "get_current_person_feedback_threads_v1", { p_company_id: companyId }, z.array(feedbackDirectoryRowSchema)),
     feedbackDetail: (companyId: string, threadId: string) => rpcRows(database, "get_feedback_thread_detail_v1", { p_company_id: companyId, p_thread_id: threadId }, z.array(feedbackDetailRowSchema)),
     feedbackMessages: (companyId: string, threadId: string) => rpcRows(database, "get_feedback_thread_messages_v1", { p_company_id: companyId, p_thread_id: threadId }, z.array(feedbackMessageRowSchema)),

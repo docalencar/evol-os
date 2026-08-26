@@ -183,3 +183,115 @@ test("result directory rejects evaluator identity and other unexpected fields", 
     AssessmentFeedbackReadError
   )
 })
+
+// --- Fronteira administrativa 0118 (directory de Results de uma Pessoa) ---
+
+const personId = "55555555-5555-4555-8555-555555555555"
+
+const personDirectoryRow = {
+  cycle_id: "10000000-0000-4000-8000-000000000001",
+  cycle_name: "Ciclo 2026",
+  model_name: "Modelo Anual",
+  cycle_date: "2026-08-20",
+  response_id: "20000000-0000-4000-8000-000000000001",
+  perspective: "manager",
+  response_status: "submitted",
+  submitted_at: "2026-08-21T12:00:00+00:00",
+  completed_at: null,
+  overall_score: 80,
+}
+
+test("0118 person directory parses the exact ten-column payload", async () => {
+  const { createAssessmentFeedbackReadRepository } = await repositoryModule
+  const { calls, database } = createDatabase(() => ({
+    data: [personDirectoryRow],
+    error: null,
+  }))
+
+  const rows = await createAssessmentFeedbackReadRepository(database)
+    .personResultDirectory(companyId, personId)
+
+  assert.deepEqual(rows, [personDirectoryRow])
+  assert.equal(calls.length, 1)
+  assert.equal(calls[0].name, "get_tenant_person_assessment_result_directory_v1")
+  assert.deepEqual(calls[0].parameters, {
+    p_company_id: companyId,
+    p_person_id: personId,
+  })
+})
+
+test("0118 person directory does not require the 0117-only fields", async () => {
+  // Regressão do defeito que o discovery apontou: reaproveitar o schema do
+  // directory do avaliado (0117) faria o `safeParse` exigir `visibility` e
+  // `result_available`, que a 0118 não retorna — e o erro de parsing se
+  // disfarçaria de falta de permissão.
+  const { createAssessmentFeedbackReadRepository } = await repositoryModule
+  assert.equal("visibility" in personDirectoryRow, false)
+  assert.equal("result_available" in personDirectoryRow, false)
+
+  const { database } = createDatabase(() => ({ data: [personDirectoryRow], error: null }))
+  await assert.doesNotReject(
+    createAssessmentFeedbackReadRepository(database)
+      .personResultDirectory(companyId, personId)
+  )
+})
+
+test("0118 person directory rejects a 0117-shaped row", async () => {
+  // O inverso da asserção anterior: os dois contratos não são intercambiáveis.
+  const { AssessmentFeedbackReadError, createAssessmentFeedbackReadRepository } =
+    await repositoryModule
+  const { database } = createDatabase(() => ({
+    data: [{ ...personDirectoryRow, visibility: "full", result_available: true }],
+    error: null,
+  }))
+
+  await assert.rejects(
+    createAssessmentFeedbackReadRepository(database)
+      .personResultDirectory(companyId, personId),
+    AssessmentFeedbackReadError
+  )
+})
+
+test("0118 person directory rejects evaluator identity and raw score", async () => {
+  const { AssessmentFeedbackReadError, createAssessmentFeedbackReadRepository } =
+    await repositoryModule
+
+  for (const leak of [
+    { evaluator_id: "30000000-0000-4000-8000-000000000001" },
+    { raw_score: 4 },
+    { answers: [] },
+  ]) {
+    const { database } = createDatabase(() => ({
+      data: [{ ...personDirectoryRow, ...leak }],
+      error: null,
+    }))
+    await assert.rejects(
+      createAssessmentFeedbackReadRepository(database)
+        .personResultDirectory(companyId, personId),
+      AssessmentFeedbackReadError
+    )
+  }
+})
+
+test("0118 person directory keeps numeric coercion and qualitative NULL", async () => {
+  const { createAssessmentFeedbackReadRepository } = await repositoryModule
+  const { database } = createDatabase(() => ({
+    data: [
+      { ...personDirectoryRow, overall_score: "66.666667" },
+      {
+        ...personDirectoryRow,
+        response_id: "20000000-0000-4000-8000-000000000002",
+        overall_score: null,
+      },
+    ],
+    error: null,
+  }))
+
+  const rows = await createAssessmentFeedbackReadRepository(database)
+    .personResultDirectory(companyId, personId)
+
+  // PostgREST entrega `numeric` como string; a coerção não pode transformar
+  // ausência de nota em zero.
+  assert.equal(rows[0].overall_score, 66.666667)
+  assert.equal(rows[1].overall_score, null)
+})

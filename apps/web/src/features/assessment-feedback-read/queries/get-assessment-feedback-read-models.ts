@@ -22,6 +22,7 @@ import {
   AssessmentFeedbackReadError,
   createAssessmentFeedbackReadRepository,
 } from "../repositories/assessment-feedback-read-repository"
+import type { PersonAssessmentResultDirectoryRow } from "../repositories/assessment-feedback-read-repository"
 
 async function repository() {
   return createAssessmentFeedbackReadRepository(await createServerDatabase())
@@ -139,6 +140,46 @@ export async function getCurrentPersonAssessmentResultDirectoryReadModel(
   companyId: string
 ) {
   return (await repository()).currentPersonResultDirectory(companyId)
+}
+
+/**
+ * Directory administrativo de Results de UMA Pessoa (fronteira 0118).
+ *
+ * O papel é conferido ANTES da chamada: um papel não administrativo nunca chega
+ * a invocar o RPC. Isso não substitui a autorização do banco — que continua
+ * sendo a autoridade e nega por conta própria — mas evita gerar uma negação e
+ * um evento de auditoria a cada renderização de página para quem notoriamente
+ * não tem o propósito.
+ *
+ * O resultado é discriminado de propósito: "forbidden" e "unavailable" são
+ * coisas diferentes de "nenhum resultado", e colapsá-las em lista vazia faria a
+ * superfície mentir sobre o histórico da Pessoa.
+ */
+export type PersonAssessmentResultDirectoryReadModel =
+  | { status: "forbidden" }
+  | { status: "unavailable" }
+  | { status: "ok"; rows: PersonAssessmentResultDirectoryRow[] }
+
+export async function getPersonAssessmentResultDirectoryReadModel(
+  companyId: string,
+  personId: string
+): Promise<PersonAssessmentResultDirectoryReadModel> {
+  const actor = await loadAssessmentActor()
+  if (actor.companyId !== companyId) return { status: "forbidden" }
+  if (!isAdministrativeRole(actor.role)) return { status: "forbidden" }
+
+  try {
+    const rows = await (await repository()).personResultDirectory(
+      companyId,
+      personId
+    )
+    return { status: "ok", rows }
+  } catch (error) {
+    if (error instanceof AssessmentFeedbackReadError) {
+      return { status: "unavailable" }
+    }
+    throw error
+  }
 }
 
 export async function getAssessmentResponsePageReadModel(

@@ -3,6 +3,34 @@
 Este changelog registra somente grandes entregas incorporadas à `main`. Commits
 locais e branches abertas não entram aqui.
 
+## 2026-08-26 — Governança — Direct-Report Anonymity & Aggregation (Slice 0115-B2-C)
+
+Discovery da Slice 0115-B2-C concluída e aprovada; governança versionada
+(documentação apenas — sem migration, sem `0119`, sem código de produto):
+
+- **PD-022 — Direct-Report Anonymity & Aggregation Policy (Approved):** expõe
+  `direct_report` de forma **agregada e anônima**; princípio de produto = impedir
+  razoavelmente a **reidentificação** do avaliador por score, cardinalidade,
+  metadata, tempo ou comparação. Threshold **`k = 4`** por `(company, Person,
+  Cycle)`; sem acumulação entre ciclos; abaixo de `k`, nada exibido (sem score,
+  parcial, cardinalidade ou metadata); `visibility = none` não participa; score =
+  média dos `overallScore` elegíveis (reuso da autoridade `compute_assessment_scored_result_v1`,
+  `NULL` nunca vira zero); **contrato público sem `respondent_count`**;
+  owner/admin/hr veem **somente o agregado** (sem drill-down/individual);
+  auditoria ≤1 evento por leitura; People em superfície separada sem CTA; terceira
+  dimensão independente no Self × Manager.
+- **ADR-0018 — Direct-Report Anonymity & Aggregation Architecture (Accepted):**
+  agregação **server-side** em nova boundary `SECURITY DEFINER`
+  (`get_tenant_person_direct_report_aggregate_v1`), threshold e suppression
+  fail-closed, isolamento por ciclo (anti-differencing), reuso do scorer, contrato
+  minimizado, isolamento de tenant, auditoria única.
+- **Implementation Plan versionado** (`docs/execution/SLICE-0115-B2-C-DIRECT-REPORT-ANONYMITY-IMPLEMENTATION-PLAN.md`,
+  Approved): DB-first → migration `0119` (aggregate boundary + pgTAP/threat-model) →
+  app read boundary → presenter → People UX → Canonical Review validation.
+  **Migration REQUIRED (`0119`)**, porém **implementação não autorizada** a iniciar
+  sem aprovação explícita do Product Architect. Production `UNKNOWN / REVERIFY
+  BEFORE USE`; Legacy `NOT A PROMOTION TARGET`.
+
 ## 2026-08-26 — Assessment Results Track (0115–0118) + B2-B2-B — CLOSED / PASS
 
 Reconciliação de governança (autoridade = estado real do `main`/HEAD

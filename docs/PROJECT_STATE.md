@@ -55,6 +55,7 @@ O PROJECT_STATE.md é uma fotografia oficial do estado do programa. Ele não cri
 | PD-019 — Tenant Multiuser Activation Policy | ✅ Approved |
 | PD-020 — Feedback Conversation Privacy and Administrative Access | ✅ Approved |
 | PD-021 — Career / Seniority + Position Taxonomy | ✅ Approved |
+| PD-022 — Direct-Report Anonymity & Aggregation Policy | ✅ Approved |
 
 ### ADRs
 
@@ -70,6 +71,7 @@ O PROJECT_STATE.md é uma fotografia oficial do estado do programa. Ele não cri
 | ADR-0015 — Tenant Multiuser Activation Architecture | ✅ Accepted; MVP-PR1 em andamento |
 | ADR-0016 — Invitation Delivery Architecture | ✅ Accepted e implementada nas Phases 5/6 |
 | ADR-0017 — Position-Seniority Profile as Career Assignment Boundary | ✅ Accepted; implementação pendente (Implementation Plan) |
+| ADR-0018 — Direct-Report Anonymity & Aggregation Architecture | ✅ Accepted; Implementation Plan versionado, implementação não autorizada |
 
 O status normativo e o conteúdo completo permanecem no
 [índice de ADRs](./adr/README.md).

@@ -1,14 +1,22 @@
 # Evol OS — Próxima entrega
 
-## Slice 0115-B2-C — Direct-Report Anonymity / Aggregation Discovery (DISCOVERY ONLY)
+## Slice 0115-B2-C — Direct-Report Anonymity / Aggregation
 
-### Objetivo
+> **Governança versionada (2026-08-26).** A discovery foi concluída e aprovada. Os
+> artefatos normativos existem: **PD-022 (Approved)**, **ADR-0018 (Accepted)** e o
+> [Implementation Plan versionado](./execution/SLICE-0115-B2-C-DIRECT-REPORT-ANONYMITY-IMPLEMENTATION-PLAN.md)
+> (Approved). **Próximo passo executável = Phase 1 (DB-first): migration `0119` +
+> boundary agregado anônimo + pgTAP/threat-model → validação local → STOP.**
+> **A implementação NÃO está autorizada a iniciar** — aguarda aprovação explícita
+> do Product Architect. Não criar `0119` nem alterar produto até então.
 
-Definir, em modo **discovery only**, o contrato seguro que permitirá futuramente
-expor a perspectiva `direct_report` nos Assessment Results — deliberadamente
-omitida desde B2-A/B2-B2 até existir política de anonimato. Nenhuma implementação
-neste passo: discovery → (futuras) Product Decision/ADR → Implementation Plan
-versionado → implementação.
+### Objetivo (discovery — concluído)
+
+Definiu o contrato seguro para expor a perspectiva `direct_report` de forma
+**agregada e anônima** (threshold `k = 4` por `(Person, Cycle)`, agregado-somente,
+sem cardinalidade no contrato público, server-side, anti-reidentificação). Detalhes
+funcionais na PD-022, arquiteturais na ADR-0018 e o recorte de entrega no
+Implementation Plan.
 
 A discovery deve cobrir, no mínimo:
 

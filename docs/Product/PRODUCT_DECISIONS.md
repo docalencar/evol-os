@@ -1292,3 +1292,126 @@ Positions ganham identidade de negócio; competências esperadas variam por
 (Cargo, Senioridade); movimentos de carreira tornam-se conceitos distintos;
 Recruitment converge para a taxonomia única; o catálogo de competências fica
 enxuto. A decisão arquitetural correspondente está registrada na ADR-0017.
+
+# PD-022 — Direct-Report Anonymity & Aggregation Policy
+
+**Status:** Approved
+
+**Owner:** Product Architect
+
+## Contexto
+
+Os Assessment Results (migrations 0115–0118) já expõem, por trusted boundaries,
+os resultados oficiais de `self` e `manager`. A perspectiva `direct_report` —
+feedback ascendente, em que subordinados avaliam o próprio gestor — foi
+deliberadamente **omitida** de todas as superfícies B2 (directories 0117/0118 e
+People "Últimas avaliações") até existir uma política explícita de anonimato.
+Diferente de `self`/`manager` (≈1 resultado), `direct_report` é
+muitos-por-avaliado (uma resposta por subordinado), o que cria risco real de
+reidentificação de quem avaliou.
+
+## Problema
+
+Como o Evol OS pode apresentar feedback/resultados de subordinados diretos sem
+permitir que evaluatee, gestor, RH ou administrador — que conhecem a lista de
+subordinados — infira a identidade individual de quem avaliou, inclusive por
+combinação de score, cardinalidade, metadata, tempo ou comparação entre
+resultados?
+
+## Objetivos
+
+- Tornar `direct_report` exibível de forma **agregada e anônima**;
+- impedir razoavelmente a reidentificação do avaliador;
+- preservar a autoridade única de scoring e o snapshot como base;
+- manter isolamento de tenant, menor privilégio e auditabilidade.
+
+## Não objetivos
+
+- Expor responses individuais de `direct_report`;
+- criar acesso administrativo/drill-down individual nesta política;
+- alterar a semântica existente de `self`/`manager`/`legacy_unknown`;
+- definir schema, RPC, migration, RLS ou UI (isso é da ADR-0018 e do
+  Implementation Plan).
+
+## Decisão
+
+### Princípio de produto (anonimato)
+
+Anonimato significa **não apenas ocultar a identidade nominal do avaliador**, mas
+**impedir razoavelmente sua reidentificação** por combinação de score,
+cardinalidade, metadata, tempo ou comparação entre resultados.
+
+### Unidade de anonimato e agregação
+
+- `direct_report` é agregado por **`(empresa, Person/evaluatee, Cycle)`**;
+- cada ciclo é um **anonymity set independente**;
+- **sem acumulação entre ciclos**, sem rolling aggregate, sem usar ciclos
+  anteriores para atingir o threshold.
+
+### Threshold
+
+- **`k = 4`** respostas elegíveis por `(Person, Cycle)`;
+- abaixo de 4: **nenhum score agregado, nenhum resultado parcial, nenhuma
+  cardinalidade, nenhum metadata que permita inferência**; UI neutra: "dados
+  insuficientes para exibição anônima".
+
+### Elegibilidade
+
+- Somente respostas **oficiais/finalizadas** (`submitted`/`completed`) e com
+  visibility elegível participam;
+- respostas com **`visibility = none`** **não** participam do agregado **nem** da
+  cardinalidade e não podem ser inferidas pelo resultado.
+
+### Score
+
+- Quando `N ≥ 4`: calcular o score individual pela **autoridade canônica
+  existente** e agregar **somente após** o scoring individual;
+- agregado quantitativo = **média dos `overallScore` elegíveis**;
+- resultado sem score quantitativo = **"Resultado qualitativo"**; `NULL` **nunca**
+  vira zero;
+- não duplicar a fórmula; não recalcular sobre Questions vivas; snapshot é a
+  autoridade.
+
+### Metadata / anonimato
+
+- O contrato público **não** expõe `respondent_count`/cardinalidade (nem quando
+  `N ≥ 4`), `responseId`, `evaluatorId`, nome/e-mail do avaliador, timestamps ou
+  status individuais, `raw_score`, min/max, distribuição, score individual ou
+  ordem das respostas;
+- a cardinalidade existe **apenas** como variável interna da boundary para aplicar
+  `k`.
+
+### Acesso administrativo
+
+- `owner`/`admin`/`hr` veem **somente o agregado**; sem drill-down, sem acesso
+  individual, sem bypass de anonimato;
+- eventual necessidade jurídica/compliance de acesso individual exigirá **Product
+  Decision e threat model próprios**.
+
+### Apresentação
+
+- **People:** `direct_report` **não** entra nos cards de "Últimas avaliações"; será
+  uma superfície separada **"Feedback de subordinados — anônimo"**, **sem CTA**
+  para response individual;
+- **Self × Manager:** `direct_report` é uma **terceira dimensão independente**
+  (Autoavaliação / Gestor / Subordinados diretos — agregado anônimo); **sem** "nota
+  geral" combinada; **sem** alterar a semântica Self × Manager existente.
+
+### Segurança / tenant
+
+- Agregação **obrigatoriamente server-side** em trusted boundary; **nenhuma**
+  agregação client-side; nenhuma response individual enviada ao browser para
+  agregar depois;
+- `company_id`, Person, Cycle e Responses coerentes por tenant.
+
+## Auditoria
+
+- Leitura administrativa agregada produz **no máximo um** evento de auditoria por
+  leitura — nunca um evento por response.
+
+## Consequências
+
+`direct_report` torna-se exibível de forma agregada e anônima, com o segredo fora
+do contrato público e do browser; times abaixo de `k = 4` não têm resultado
+exibível no ciclo e não há drill-down. A decisão arquitetural correspondente está
+na ADR-0018; o recorte de entrega está no Implementation Plan da Slice 0115-B2-C.

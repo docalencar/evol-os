@@ -76,13 +76,20 @@ O status normativo e o conteúdo completo permanecem no
 
 ### Roadmap e execução
 
-- [ROADMAP](./ROADMAP.md): programa MVP Closure — Mutation Boundaries; baseline
-  atual `d5db5b3` com People historical reads (PR J1), Analytics safe reads, o
-  Recruitment trusted mutation program (create→reject) e o Competency Catalog
-  trusted mutation boundary já incorporados; **authenticated core smoke = PASS**.
-- [NEXT_STEPS](./NEXT_STEPS.md): PD-021 (Approved), ADR-0017 (Accepted) e o
-  Implementation Plan da taxonomia versionados; próximo passo executável é o
-  Slice 1A — Seniority Catalog Foundation (DB-first).
+- **Trilha vigente = Assessment Results (0115–0118).** Autoridade = estado real
+  do `main`/HEAD `338efd58`. A trilha está concluída e alinhada em `0118` (Local e
+  Canonical Review); ver [CHANGELOG](./CHANGELOG.md) e
+  [ENVIRONMENT-MIGRATION-STATUS](./execution/ENVIRONMENT-MIGRATION-STATUS.md).
+  **B2-B2-B — People “Últimas avaliações” = CLOSED / PASS** (DoD gates PASS; DB
+  boundary `0118` validado no Review; application smoke PASS no subset executado),
+  com **explicit runtime coverage debt** registrada e não bloqueante.
+- [NEXT_STEPS](./NEXT_STEPS.md): próximo passo executável é o
+  **Slice 0115-B2-C — Direct-Report Anonymity / Aggregation Discovery
+  (DISCOVERY ONLY)**.
+- [ROADMAP](./ROADMAP.md): a trilha Career / Seniority (PD-021 Approved, ADR-0017
+  Accepted, Slice 1A) permanece **planejada e adiada** — não é retomada agora
+  apenas porque os documentos narrativos ficaram defasados. O corpo histórico do
+  ROADMAP/§6 abaixo é contexto e não a prioridade atual.
 - [MVP Plan](./MVP_PLAN.md): jornada completa até o MVP.
 - [EPICS](./EPICS.md): estado funcional das capacidades.
 - [Implementation Plan do MVP-PR1](./Execution/MVP-PR1-TENANT-MULTIUSER-ACTIVATION-IMPLEMENTATION-PLAN.md):
@@ -99,6 +106,13 @@ O status normativo e o conteúdo completo permanecem no
 | Slice 3C | Deterministic Template Application and Snapshots | ✅ Concluído | `5c2675b` |
 
 ## 6. Próxima etapa
+
+> **Reconciliação 2026-08-26 (autoridade = `main`/HEAD `338efd58`).** O próximo
+> passo normativo é o **Slice 0115-B2-C — Direct-Report Anonymity / Aggregation
+> Discovery (DISCOVERY ONLY)** (ver `NEXT_STEPS.md`). A trilha **Assessment
+> Results 0115–0118** está concluída e a **B2-B2-B = CLOSED / PASS**. O texto
+> abaixo (Phase 9 — Multiuser UI/UX e trilha Seniority) é **contexto histórico**
+> de programas anteriores/adiados e não a prioridade atual.
 
 A execução vigente é a Phase 9 — Multiuser UI/UX. As Phases 1–8 estão
 concluídas: a fundação persistente, Trusted Persistence, delivery/aceite,

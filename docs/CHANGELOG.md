@@ -3,6 +3,69 @@
 Este changelog registra somente grandes entregas incorporadas à `main`. Commits
 locais e branches abertas não entram aqui.
 
+## 2026-08-26 — Assessment Results Track (0115–0118) + B2-B2-B — CLOSED / PASS
+
+Reconciliação de governança (autoridade = estado real do `main`/HEAD
+`338efd58…`) registrando a trilha **Assessment Results**, já incorporada à `main`
+mas ainda ausente dos documentos narrativos. Sem promoção, sem migration nova,
+sem `0119`, sem push.
+
+Migrations — aplicadas e validadas; Local e Canonical Review alinhados em `0118`
+(fonte operacional autoritativa: `docs/execution/ENVIRONMENT-MIGRATION-STATUS.md`):
+
+- **`0115`** — Assessment Scoring Read Foundation: projeção determinística de
+  score por response (scale-weighted, `formulaVersion = response-scale-weighted-v1`).
+- **`0116`** — Security hotfix da autorização do scored result: o estado inválido
+  `assessment_visibility = NULL` (response tenant-incoerente) passa a falhar
+  fechado com `ASSESSMENT_RESULT_NOT_VISIBLE`, sem relaxar política válida.
+- **`0117`** — Trusted Result Directory do avaliado (evaluatee), com `visibility`
+  e `result_available`.
+- **`0118`** — Trusted administrative **Person** Result directory + shared private
+  scorer: `get_tenant_person_assessment_result_directory_v1` (owner/admin/hr;
+  `direct_report` intencionalmente omitido até a política B2-C). Scoring extraído
+  para `compute_assessment_scored_result_v1` — autoridade única, fechada a todas
+  as roles de aplicação. SHA-256
+  `cfc4935ebd2185f002f2561678fa3a864948921ad67cc87889de7319ea2a8089`.
+
+Slices de aplicação da trilha:
+
+- **B2-A** — Trusted Result Discovery (directory do avaliado).
+- **B2-B1** — Comparação de resultados Self × Manager.
+- **B2-B2-A** — Administrative Person Result directory (consumo do `0118`).
+- **B2-B2-B** — People “Últimas avaliações” — **CLOSED / PASS**, commit
+  `338efd5872a7f861c09fa5fe9815be23bfba846e` (`feat(people): add recent assessment results`).
+
+Evidência de fechamento da B2-B2-B (sem superdeclaração de cobertura):
+
+1. **Mandatory DoD gates — PASS**: `npm run build`, `npm run lint`,
+   `npx tsc --noEmit`, focused 48/48, relevant regression 203/203, full 1347/1347,
+   `git diff --check`.
+2. **Canonical Review DB boundary (`0118`) — PASS**: matriz transacionada
+   multi-role no Review (**27 assertions, 0 falhas, `ROLLBACK`, sem `COMMIT`**);
+   parity de função/`prosrc`/ACL/`SECURITY DEFINER` PASS.
+3. **Canonical Review application smoke — PASS no subset realmente executado**:
+   owner autorizado (200 + contrato exato de 10 colunas + sem
+   evaluator/answers/questions/comments/competencies/raw_score); non-member
+   cross-tenant negado; seção “Últimas avaliações” visível; coexistência com o
+   `EmployeeAssessmentsSummaryCard`; empty state exato; exatamente **1** directory
+   RPC por Person; navegação/fallbacks seguros (sem open redirect); console limpo;
+   cleanup PASS; git baseline preservado.
+4. **Explicit runtime coverage debt — NÃO executada (não marcada como executada)**:
+   render runtime in-tenant de Admin/HR e Manager/Employee por role específica;
+   resultados quantitativos e qualitativos reais; CTA/return-context e deep-link
+   `assessments-results` com `responseId` real. **Não bloqueia** o fechamento: a
+   matriz multi-role está validada no boundary `0118` e os comportamentos de UI
+   restantes têm cobertura determinística automatizada (formatação de score,
+   `NULL → “Resultado qualitativo”`, CTA href, return-context/fallbacks,
+   ordering/limit, no-leak, empty state).
+
+Ambientes preservados: Production `gzrrwyiqfbnyprkdeqvm` — **UNKNOWN / REVERIFY
+BEFORE USE**; Legacy `oudngmrdtgengilpqqnz` — **NOT A PROMOTION TARGET**.
+
+Próximo passo normativo: **SLICE 0115-B2-C — Direct-Report Anonymity / Aggregation
+Discovery (DISCOVERY ONLY)** (ver `NEXT_STEPS.md`). A trilha Career / Seniority
+(PD-021/ADR-0017, Slice 1A) permanece planejada e **adiada**.
+
 ## 2026-08-19 — Governança — Career / Seniority + Position Taxonomy Implementation Plan
 
 - **Implementation Plan versionado** (`docs/Execution/CAREER-SENIORITY-POSITION-TAXONOMY-IMPLEMENTATION-PLAN.md`,

@@ -1,55 +1,50 @@
 # Evol OS — Próxima entrega
 
-## Slice 1A — Seniority Catalog Foundation (DB-first)
+## Slice 0115-B2-C — Direct-Report Anonymity / Aggregation Discovery (DISCOVERY ONLY)
 
 ### Objetivo
 
-Iniciar a implementação da taxonomia de carreira pelo primeiro slice do
-[Implementation Plan versionado](./Execution/CAREER-SENIORITY-POSITION-TAXONOMY-IMPLEMENTATION-PLAN.md)
-(Approved), derivado de **PD-021 (Approved)** e **ADR-0017 (Accepted)**. O
-**Slice 1A** cria a fundação DB do catálogo de senioridade (`seniority_levels`
-company-owned) + trusted boundaries, sem UI: migration + pgTAP → validação local →
-STOP. Sem seed obrigatório; empresa pode ter zero níveis. Depois seguem 1B (UI +
-Human Review) e os demais slices na ordem do plano. Nada iniciado neste documento.
+Definir, em modo **discovery only**, o contrato seguro que permitirá futuramente
+expor a perspectiva `direct_report` nos Assessment Results — deliberadamente
+omitida desde B2-A/B2-B2 até existir política de anonimato. Nenhuma implementação
+neste passo: discovery → (futuras) Product Decision/ADR → Implementation Plan
+versionado → implementação.
 
-### Estado confirmado (baseline `d5db5b3`)
+A discovery deve cobrir, no mínimo:
 
-- **Competency Catalog Core Mutation Boundary** concluída (commit `d5db5b3`,
-  migration `0099`): create/update/archive do catálogo por trusted boundaries,
-  Human Review dedicado PASS, pgTAP 43/43, full DB 1365/1365, zero DML direto
-  protegido no catálogo.
-- **AUTHENTICATED CORE SMOKE = PASS** — Auth/Tenant, Departments, Positions/Cargos,
-  People, Competency Catalog, Analytics e Recruitment validados na UI. O Human
-  Review core deixa de estar suspenso; os writes core (Organization, People,
-  Competency Catalog) e o ciclo de Recruitment operam por trusted boundaries sem
-  reads/writes diretos protegidos.
+- anonimato e proteção contra reidentificação;
+- cardinalidade mínima e comportamento para grupos pequenos;
+- estratégia de agregação (sem média individual que permita inferência);
+- relação com `assessment_visibility`;
+- ausência de qualquer evaluator identity leak;
+- apresentação em People e em Assessments;
+- coerência com o boundary administrativo já validado na migration `0118`.
 
-### Governança já decidida (não reabrir)
+### Estado confirmado (baseline `338efd5872a7f861c09fa5fe9815be23bfba846e`)
 
-A taxonomia está resolvida por **PD-021** (Approved) e **ADR-0017** (Accepted):
-Departamento/Cargo/Senioridade/Nível hierárquico como eixos ortogonais;
-`position_seniority_profiles` como âncora de aplicabilidade Cargo × Senioridade
-(base profile com senioridade NULL para cargos sem senioridade); lotação e matriz
-de competências referenciando o profile; Departamento derivado da Position;
-`expected_level`/`weight` migrando forward-only para a matriz; escalas 1–5 de
-proficiência e de peso definidas; gate de auditoria de homônimos antes de qualquer
-unicidade de Cargo.
+- Trilha **Assessment Results 0115–0118** concluída e alinhada em `0118` (Local e
+  Canonical Review); ver [CHANGELOG](./CHANGELOG.md) e
+  [ENVIRONMENT-MIGRATION-STATUS](./execution/ENVIRONMENT-MIGRATION-STATUS.md).
+- **B2-B2-B — People “Últimas avaliações” = CLOSED / PASS** (commit `338efd58`,
+  `feat(people): add recent assessment results`).
+- Canonical Review DB boundary (`0118`) validado (matriz multi-role transacionada,
+  27 assertions, `ROLLBACK`); application smoke **PASS no subset executado**.
+- **Explicit runtime coverage debt** (não executada; não marcada como executada):
+  render runtime in-tenant de Admin/HR e Manager/Employee por role específica;
+  resultados quantitativos e qualitativos reais; CTA/return-context e deep-link
+  `assessments-results` com `responseId` real. Não bloqueante — coberto pelo
+  boundary `0118` validado e por cobertura determinística automatizada.
 
-### Ordem de dependência (a ser confirmada no Implementation Plan)
+### Governança / adiado (não reabrir sem decisão)
 
-```text
-Seniority Catalog
-        ↓
-Position-Seniority Profiles (âncora de aplicabilidade)
-        ↓
-People lotação por profile (Departamento derivado)
-        ↓
-Competency matrix relocation ((profile, competency); catálogo enxuto)
-        ↓
-Competency Assignments (P1)  →  Gaps  →  Development / Promotion / Succession / Recruitment matching
-```
+- A trilha **Career / Seniority** (PD-021 Approved, ADR-0017 Accepted, Slice 1A —
+  Seniority Catalog Foundation) permanece **planejada e adiada**; não é o próximo
+  passo agora. A autoridade atual é o estado real do `main`/HEAD.
+- Production `gzrrwyiqfbnyprkdeqvm` — **UNKNOWN / REVERIFY BEFORE USE**.
+- Legacy `oudngmrdtgengilpqqnz` — **NOT A PROMOTION TARGET**.
 
-O backlog completo reconciliado após o smoke está registrado no
-[PROJECT_STATE](./PROJECT_STATE.md); o recorte e a ordem completa dos slices estão
-no Implementation Plan versionado. **Slice 1A é o próximo passo executável**;
-nenhum slice está iniciado.
+### Regra de parada
+
+- B2-C começa como **DISCOVERY ONLY**; nenhuma migration, RPC, RLS, UI ou `0119`.
+- Nenhuma implementação até discovery aprovada e Implementation Plan versionado.
+- Sem promoção de ambiente e sem push como parte desta reconciliação.

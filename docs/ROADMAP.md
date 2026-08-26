@@ -1,5 +1,16 @@
 # Evol OS — Roadmap
 
+> **Estado atual (2026-08-26; autoridade = `main`/HEAD `338efd58`).** A trilha
+> **Assessment Results (migrations 0115–0118)** está concluída e alinhada em
+> `0118` (Local e Canonical Review), com **B2-B2-B — People “Últimas avaliações”
+> = CLOSED / PASS** (ver `CHANGELOG.md`, `NEXT_STEPS.md` e
+> `execution/ENVIRONMENT-MIGRATION-STATUS.md`). **Próxima prioridade normativa:
+> Slice 0115-B2-C — Direct-Report Anonymity / Aggregation Discovery (DISCOVERY
+> ONLY).** A trilha Career / Seniority (PD-021/ADR-0017) permanece planejada e
+> **adiada**. Production: `UNKNOWN / REVERIFY BEFORE USE`. Legacy: `NOT A
+> PROMOTION TARGET`. As seções abaixo são **contexto histórico** de programas
+> anteriores e não a prioridade atual.
+
 ## O que vem agora?
 
 ### MVP Closure — ativação multiusuário do tenant

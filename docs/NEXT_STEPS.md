@@ -2,57 +2,57 @@
 
 ## Slice 0115-B2-C — Direct-Report Anonymity / Aggregation
 
-> **Governança versionada (2026-08-26).** A discovery foi concluída e aprovada. Os
-> artefatos normativos existem: **PD-022 (Approved)**, **ADR-0018 (Accepted)** e o
-> [Implementation Plan versionado](./execution/SLICE-0115-B2-C-DIRECT-REPORT-ANONYMITY-IMPLEMENTATION-PLAN.md)
-> (Approved). **Próximo passo executável = Phase 1 (DB-first): migration `0119` +
-> boundary agregado anônimo + pgTAP/threat-model → validação local → STOP.**
-> **A implementação NÃO está autorizada a iniciar** — aguarda aprovação explícita
-> do Product Architect. Não criar `0119` nem alterar produto até então.
+> **Governança (2026-08-27, autoridade = `main`/HEAD `865badd2`).** A **Phase 1
+> (DB-first)** está **CLOSED / PASS**: a migration `0119` (boundary agregado
+> anônimo `get_tenant_person_direct_report_aggregate_v1`) foi committada, validada
+> localmente (pgTAP `Files=62, Tests=2142, PASS`) e **promovida e validada no
+> Canonical Review** — `REVIEW 0119: ACTIVE / VALIDATED / PASS`. Detalhes em
+> [CHANGELOG](./CHANGELOG.md) e
+> [ENVIRONMENT-MIGRATION-STATUS](./execution/ENVIRONMENT-MIGRATION-STATUS.md).
+> **Esta validação cobre somente a boundary de banco; nenhuma integração de
+> aplicação/UI foi validada.**
 
-### Objetivo (discovery — concluído)
+### Próximo passo normativo — Phase 2: app integration da boundary `0119`
 
-Definiu o contrato seguro para expor a perspectiva `direct_report` de forma
-**agregada e anônima** (threshold `k = 4` por `(Person, Cycle)`, agregado-somente,
-sem cardinalidade no contrato público, server-side, anti-reidentificação). Detalhes
-funcionais na PD-022, arquiteturais na ADR-0018 e o recorte de entrega no
-Implementation Plan.
+Integrar a boundary `0119` ao produto, seguindo o Implementation Plan versionado
+([SLICE-0115-B2-C](./execution/SLICE-0115-B2-C-DIRECT-REPORT-ANONYMITY-IMPLEMENTATION-PLAN.md))
+e espelhando os padrões já validados na trilha `0115–0118`:
 
-A discovery deve cobrir, no mínimo:
+- **read boundary / query** que consome exclusivamente
+  `get_tenant_person_direct_report_aggregate_v1` (server-side; sem agregação
+  client-side; sem expor cardinalidade/evaluator/raw score);
+- **presenter → ViewModel** que traduz os três estados públicos (quantitative /
+  qualitative / suppressed) sem vazar `eligible_count`/`scored_count`;
+- **People / Assessments UX** em superfície separada e anônima (terceira dimensão
+  independente do Self × Manager), com estado neutro para suppressed;
+- testes determinísticos de domínio/aplicação para cada estado e para a matriz de
+  autorização.
 
-- anonimato e proteção contra reidentificação;
-- cardinalidade mínima e comportamento para grupos pequenos;
-- estratégia de agregação (sem média individual que permita inferência);
-- relação com `assessment_visibility`;
-- ausência de qualquer evaluator identity leak;
-- apresentação em People e em Assessments;
-- coerência com o boundary administrativo já validado na migration `0118`.
+> **Não implementar nesta iteração.** A Phase 2 exige seu próprio gate: recorte de
+> uma PR única com objetivo verificável, sob aprovação explícita, antes de escrever
+> código de produto.
 
-### Estado confirmado (baseline `338efd5872a7f861c09fa5fe9815be23bfba846e`)
+### Estado confirmado (baseline `865badd2`)
 
-- Trilha **Assessment Results 0115–0118** concluída e alinhada em `0118` (Local e
-  Canonical Review); ver [CHANGELOG](./CHANGELOG.md) e
-  [ENVIRONMENT-MIGRATION-STATUS](./execution/ENVIRONMENT-MIGRATION-STATUS.md).
-- **B2-B2-B — People “Últimas avaliações” = CLOSED / PASS** (commit `338efd58`,
-  `feat(people): add recent assessment results`).
-- Canonical Review DB boundary (`0118`) validado (matriz multi-role transacionada,
-  27 assertions, `ROLLBACK`); application smoke **PASS no subset executado**.
-- **Explicit runtime coverage debt** (não executada; não marcada como executada):
-  render runtime in-tenant de Admin/HR e Manager/Employee por role específica;
-  resultados quantitativos e qualitativos reais; CTA/return-context e deep-link
-  `assessments-results` com `responseId` real. Não bloqueante — coberto pelo
-  boundary `0118` validado e por cobertura determinística automatizada.
+- **Assessment Results 0115–0119** concluída e alinhada em `0119` (Local e
+  Canonical Review).
+- **B2-B2-B — People “Últimas avaliações” = CLOSED / PASS** (commit `338efd58`).
+- **B2-C Phase 1 — boundary de banco `0119` = CLOSED / PASS**; Review
+  `ACTIVE / VALIDATED / PASS` (history + `pg_proc` parity + ACL/security + matriz
+  funcional/threat-model `BEGIN … ROLLBACK`, zero `COMMIT`).
+- **Explicit runtime coverage debt** (da B2-B2-B, não bloqueante): render runtime
+  in-tenant por role; resultados quantitativos/qualitativos reais; deep-link com
+  `responseId` real.
 
 ### Governança / adiado (não reabrir sem decisão)
 
-- A trilha **Career / Seniority** (PD-021 Approved, ADR-0017 Accepted, Slice 1A —
-  Seniority Catalog Foundation) permanece **planejada e adiada**; não é o próximo
-  passo agora. A autoridade atual é o estado real do `main`/HEAD.
+- A trilha **Career / Seniority** (PD-021 Approved, ADR-0017 Accepted, Slice 1A)
+  permanece **planejada e adiada**; não é o próximo passo agora.
 - Production `gzrrwyiqfbnyprkdeqvm` — **UNKNOWN / REVERIFY BEFORE USE**.
 - Legacy `oudngmrdtgengilpqqnz` — **NOT A PROMOTION TARGET**.
 
 ### Regra de parada
 
-- B2-C começa como **DISCOVERY ONLY**; nenhuma migration, RPC, RLS, UI ou `0119`.
-- Nenhuma implementação até discovery aprovada e Implementation Plan versionado.
-- Sem promoção de ambiente e sem push como parte desta reconciliação.
+- Nenhuma implementação de app integration até um novo gate/aprovação explícita.
+- Não criar `0120`, não alterar `0119`, não promover Production/Legacy, sem push
+  como parte desta reconciliação de governança.

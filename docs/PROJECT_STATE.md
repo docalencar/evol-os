@@ -71,23 +71,26 @@ O PROJECT_STATE.md é uma fotografia oficial do estado do programa. Ele não cri
 | ADR-0015 — Tenant Multiuser Activation Architecture | ✅ Accepted; MVP-PR1 em andamento |
 | ADR-0016 — Invitation Delivery Architecture | ✅ Accepted e implementada nas Phases 5/6 |
 | ADR-0017 — Position-Seniority Profile as Career Assignment Boundary | ✅ Accepted; implementação pendente (Implementation Plan) |
-| ADR-0018 — Direct-Report Anonymity & Aggregation Architecture | ✅ Accepted; Implementation Plan versionado, implementação não autorizada |
+| ADR-0018 — Direct-Report Anonymity & Aggregation Architecture | ✅ Accepted; Phase 1 (boundary de banco `0119`) CLOSED/PASS e validada no Review; app integration pendente |
 
 O status normativo e o conteúdo completo permanecem no
 [índice de ADRs](./adr/README.md).
 
 ### Roadmap e execução
 
-- **Trilha vigente = Assessment Results (0115–0118).** Autoridade = estado real
-  do `main`/HEAD `338efd58`. A trilha está concluída e alinhada em `0118` (Local e
+- **Trilha vigente = Assessment Results (0115–0119).** Autoridade = estado real
+  do `main`/HEAD `865badd2`. A trilha está concluída e alinhada em `0119` (Local e
   Canonical Review); ver [CHANGELOG](./CHANGELOG.md) e
   [ENVIRONMENT-MIGRATION-STATUS](./execution/ENVIRONMENT-MIGRATION-STATUS.md).
-  **B2-B2-B — People “Últimas avaliações” = CLOSED / PASS** (DoD gates PASS; DB
-  boundary `0118` validado no Review; application smoke PASS no subset executado),
-  com **explicit runtime coverage debt** registrada e não bloqueante.
-- [NEXT_STEPS](./NEXT_STEPS.md): próximo passo executável é o
-  **Slice 0115-B2-C — Direct-Report Anonymity / Aggregation Discovery
-  (DISCOVERY ONLY)**.
+  **B2-B2-B — People “Últimas avaliações” = CLOSED / PASS**; **Slice 0115-B2-C
+  Phase 1 (Direct-Report anonymous aggregate boundary, `0119`) = CLOSED / PASS** —
+  `REVIEW 0119: ACTIVE / VALIDATED / PASS` (history, `pg_proc` parity, ACL/security
+  e matriz funcional/threat-model `BEGIN … ROLLBACK` todos PASS). Esta validação
+  cobre **somente a boundary de banco**; integração de aplicação/UI **não** foi
+  validada.
+- [NEXT_STEPS](./NEXT_STEPS.md): próximo passo normativo é o
+  **Slice 0115-B2-C — app integration da boundary `0119`** (read-model → presenter
+  → People/Assessments UX); **não implementado** nesta iteração.
 - [ROADMAP](./ROADMAP.md): a trilha Career / Seniority (PD-021 Approved, ADR-0017
   Accepted, Slice 1A) permanece **planejada e adiada** — não é retomada agora
   apenas porque os documentos narrativos ficaram defasados. O corpo histórico do
@@ -109,12 +112,14 @@ O status normativo e o conteúdo completo permanecem no
 
 ## 6. Próxima etapa
 
-> **Reconciliação 2026-08-26 (autoridade = `main`/HEAD `338efd58`).** O próximo
-> passo normativo é o **Slice 0115-B2-C — Direct-Report Anonymity / Aggregation
-> Discovery (DISCOVERY ONLY)** (ver `NEXT_STEPS.md`). A trilha **Assessment
-> Results 0115–0118** está concluída e a **B2-B2-B = CLOSED / PASS**. O texto
-> abaixo (Phase 9 — Multiuser UI/UX e trilha Seniority) é **contexto histórico**
-> de programas anteriores/adiados e não a prioridade atual.
+> **Reconciliação 2026-08-27 (autoridade = `main`/HEAD `865badd2`).** A **Slice
+> 0115-B2-C Phase 1** (boundary de banco `0119`) está **CLOSED / PASS** e validada
+> no Canonical Review (`ACTIVE / VALIDATED / PASS`). O próximo passo normativo é a
+> **app integration da boundary `0119`** (read-model → presenter → People/
+> Assessments UX), ainda **não implementada** (ver `NEXT_STEPS.md`). A trilha
+> **Assessment Results 0115–0119** está concluída e a **B2-B2-B = CLOSED / PASS**.
+> O texto abaixo (Phase 9 — Multiuser UI/UX e trilha Seniority) é **contexto
+> histórico** de programas anteriores/adiados e não a prioridade atual.
 
 A execução vigente é a Phase 9 — Multiuser UI/UX. As Phases 1–8 estão
 concluídas: a fundação persistente, Trusted Persistence, delivery/aceite,

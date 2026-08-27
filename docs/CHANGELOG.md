@@ -3,6 +3,33 @@
 Este changelog registra somente grandes entregas incorporadas à `main`. Commits
 locais e branches abertas não entram aqui.
 
+## 2026-08-27 — Review — Migration 0119 promovida e validada (Slice 0115-B2-C Phase 1)
+
+Boundary de banco da B2-C Phase 1 aplicada e validada no Canonical Review
+(`rwfvxvbzaosgcyfxdjpt` — **Evol Review**, `ACTIVE_HEALTHY`, `us-west-2`).
+Somente boundary de banco — **sem** integração de aplicação/UI.
+
+- **Migration `0119`** (`get_tenant_person_direct_report_aggregate_v1(uuid,uuid)`),
+  commit `865badd2`, SHA-256
+  `9f55cdcbe47bba48a78dbe5ace2caf93bb43b90fce94bb10bb74f466db622c16`. Gate local
+  oficial `supabase db reset && supabase test db` → **Files=62, Tests=2142, PASS**.
+- **Promoção** operador via `supabase migration up --linked --yes` em
+  **2026-08-27T11:46:45Z**; `db push --linked --dry-run` seguinte:
+  `Remote database is up to date`.
+- **Validação pós-promoção (read-only + 1 matriz transacionada):** history PASS
+  (`0119` uma vez em `supabase_migrations.schema_migrations`); `pg_proc`
+  existence/parity PASS (função única; args `p_company_id uuid, p_person_id uuid`;
+  RETURNS de 7 colunas; `prosrc` md5 `07312ce60208f7304a9bb1b8fb98b791`, 3534
+  bytes); ACL/security PASS (`SECURITY DEFINER`, `search_path = public, pg_temp`,
+  EXECUTE só `authenticated`, `anon`/`PUBLIC` revogados); matriz
+  funcional/threat-model PASS em `BEGIN … ROLLBACK` (estados A/B/C/D,
+  indistinguibilidade sub-threshold, `visibility = none` excluído, sem acumulação
+  entre ciclos, owner/admin/hr allow, manager/employee/cross-tenant deny,
+  `AUTH_REQUIRED`, no-oracle, ≤1 auditoria por leitura), **zero `COMMIT`, zero
+  persistência**.
+- **Classificação:** `REVIEW 0119: ACTIVE / VALIDATED / PASS`. Production
+  `UNKNOWN / REVERIFY BEFORE USE`; Legacy `NOT A PROMOTION TARGET`. Sem push.
+
 ## 2026-08-26 — Governança — Direct-Report Anonymity & Aggregation (Slice 0115-B2-C)
 
 Discovery da Slice 0115-B2-C concluída e aprovada; governança versionada

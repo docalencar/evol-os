@@ -128,6 +128,16 @@ export type {
   PersonAssessmentResultsViewModel,
 } from "./assessments/view-models/person-assessment-results-view-model"
 
+export {
+  presentPersonDirectReportAggregate,
+  SUPPRESSED_AGGREGATE_COPY,
+} from "./assessments/presenters/person-direct-report-aggregate-presenter"
+
+export type {
+  PersonDirectReportAggregateItemViewModel,
+  PersonDirectReportAggregateViewModel,
+} from "./assessments/view-models/person-direct-report-aggregate-view-model"
+
 
 export {
   EmployeeDevelopmentSummaryCard,

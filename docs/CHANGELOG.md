@@ -3,6 +3,44 @@
 Este changelog registra somente grandes entregas incorporadas à `main`. Commits
 locais e branches abertas não entram aqui.
 
+## 2026-08-27 — App — Direct-Report Anonymous Aggregate integrado (Slice 0115-B2-C Phases 2–5) — CLOSED / PASS
+
+Integração de aplicação da boundary anônima `0119` ao produto, em PRs por fase,
+preservando o contrato de anonimato PD-022 / ADR-0018 ponta a ponta. Nenhuma
+migration nova; `0119` intacta; sem `0120`.
+
+- **Phase 2 — App read boundary** (`853dfb44`,
+  `feat(assessment-feedback-read): add direct-report anonymous aggregate read boundary (0119)`):
+  schema Zod `.strict()` de 7 colunas, `personDirectReportAggregate` na repository,
+  `getPersonDirectReportAggregateReadModel` discriminado (`forbidden`/`unavailable`/
+  `ok`) com guard-before-RPC; RPC consumido **somente** pela repository; sem
+  agregação client-side.
+- **Phase 3 — Presenter / ViewModel** (`de166e0`,
+  `feat(people): present anonymous direct-report aggregate states (0119)`):
+  `presentPersonDirectReportAggregate` (rows → ViewModel discriminado quantitative/
+  qualitative/suppressed), precedência fail-closed, reuso de
+  `formatAssessmentPercentage` e da copy "Resultado qualitativo"; A e D
+  indistinguíveis; copy suprimida "Dados insuficientes para exibição anônima".
+- **Phase 4 — People UX** (`ff2ba6db`,
+  `feat(people): surface anonymous direct-report feedback`): superfície separada
+  **"Feedback de subordinados — anônimo"** na página da Pessoa, coexistindo com
+  "Últimas avaliações" e Self × Manager; sem CTA individual, sem link de resposta,
+  sem cardinalidade, sem identidade; `forbidden` oculta a seção, `unavailable`/
+  `empty` com copy neutra. Build **PASS no Mac** (Next 15.5.20, 34/34 páginas).
+- **Phase 5 — Final validation** (sem alteração de código): cadeia
+  `DB 0119 → repository → read-model → presenter → People UX` provada por auditoria
+  estática de arquitetura + no-leak, **73 testes determinísticos PASS**, `tsc`
+  PASS, `lint` PASS, `git diff --check` limpo; pgTAP inalterado (nenhum `supabase/`
+  tocado pelas fases de app). Autorização/anonimato validados ao vivo no Canonical
+  Review pela matriz da Phase 1.
+
+**Dívida residual explícita (aceita):** o app smoke autenticado ponta a ponta no
+Canonical Review permanece **NOT DEMONSTRATED (gated)** — exigiria toggle temporário
+de Confirm-email e fixtures descartáveis persistidas em Review, sob autorização; os
+invariantes que ele checaria já estão provados ao vivo (matriz Phase 1) e pela suíte
+determinística. Production `UNKNOWN / REVERIFY BEFORE USE`; Legacy `NOT A PROMOTION
+TARGET`; sem push.
+
 ## 2026-08-27 — Review — Migration 0119 promovida e validada (Slice 0115-B2-C Phase 1)
 
 Boundary de banco da B2-C Phase 1 aplicada e validada no Canonical Review

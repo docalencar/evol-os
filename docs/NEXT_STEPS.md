@@ -1,58 +1,62 @@
 # Evol OS — Próxima entrega
 
-## Slice 0115-B2-C — Direct-Report Anonymity / Aggregation
+## Slice 0115-B2-C — Direct-Report Anonymity / Aggregation — CLOSED / PASS
 
-> **Governança (2026-08-27, autoridade = `main`/HEAD `865badd2`).** A **Phase 1
-> (DB-first)** está **CLOSED / PASS**: a migration `0119` (boundary agregado
-> anônimo `get_tenant_person_direct_report_aggregate_v1`) foi committada, validada
-> localmente (pgTAP `Files=62, Tests=2142, PASS`) e **promovida e validada no
-> Canonical Review** — `REVIEW 0119: ACTIVE / VALIDATED / PASS`. Detalhes em
-> [CHANGELOG](./CHANGELOG.md) e
-> [ENVIRONMENT-MIGRATION-STATUS](./execution/ENVIRONMENT-MIGRATION-STATUS.md).
-> **Esta validação cobre somente a boundary de banco; nenhuma integração de
-> aplicação/UI foi validada.**
+> **Governança (2026-08-27, autoridade = `main`/HEAD `ff2ba6db`).** O slice está
+> **concluído em todas as fases** (DB boundary + app integration), com uma dívida
+> residual explícita registrada (item Phase 5 abaixo). Nenhuma migration nova além
+> da `0119`; contrato de anonimato PD-022 / ADR-0018 preservado ponta a ponta.
 
-### Próximo passo normativo — Phase 2: app integration da boundary `0119`
+### Fases (todas CLOSED / PASS)
 
-Integrar a boundary `0119` ao produto, seguindo o Implementation Plan versionado
-([SLICE-0115-B2-C](./execution/SLICE-0115-B2-C-DIRECT-REPORT-ANONYMITY-IMPLEMENTATION-PLAN.md))
-e espelhando os padrões já validados na trilha `0115–0118`:
+- **Phase 1 — DB boundary (`0119`)** — commit `865badd2`; validada localmente
+  (pgTAP `Files=62, Tests=2142, PASS`) e **promovida/validada no Canonical Review**
+  (`REVIEW 0119: ACTIVE / VALIDATED / PASS`: history + `pg_proc` parity +
+  ACL/security + matriz funcional/threat-model `BEGIN … ROLLBACK`, zero `COMMIT`).
+  Governança registrada em `3d91ccbb`.
+- **Phase 2 — App read boundary** — commit `853dfb44`. `assessment-feedback-read`:
+  schema Zod `.strict()` de 7 colunas, repository method, read-model discriminado
+  (`forbidden`/`unavailable`/`ok`) com guard-before-RPC, barrel; sem agregação
+  client-side; RPC consumido só pela repository.
+- **Phase 3 — Presenter / ViewModel** — commit `de166e0`.
+  `presentPersonDirectReportAggregate`: rows → ViewModel discriminado
+  (quantitative / qualitative / suppressed), precedência fail-closed, reuso de
+  `formatAssessmentPercentage` e da copy "Resultado qualitativo"; A e D produzem
+  representação indistinguível.
+- **Phase 4 — People UX** — commit `ff2ba6db`. Superfície separada **"Feedback de
+  subordinados — anônimo"** na página da Pessoa, coexistindo com "Últimas
+  avaliações" e Self × Manager; sem CTA individual, sem cardinalidade, sem
+  identidade; `forbidden` oculta, `unavailable`/`empty` neutros. Build **PASS no
+  Mac**.
+- **Phase 5 — Final validation** — sem alteração de código. Cadeia
+  `DB 0119 → repository → read-model → presenter → People UX` provada por auditoria
+  estática de arquitetura + no-leak, **73 testes determinísticos PASS**, `tsc`
+  PASS, `lint` PASS, `git diff --check` limpo; pgTAP inalterado (nenhum `supabase/`
+  tocado pelas fases de app). Os invariantes de autorização/anonimato foram
+  validados **ao vivo no Canonical Review** pela matriz da Phase 1.
 
-- **read boundary / query** que consome exclusivamente
-  `get_tenant_person_direct_report_aggregate_v1` (server-side; sem agregação
-  client-side; sem expor cardinalidade/evaluator/raw score);
-- **presenter → ViewModel** que traduz os três estados públicos (quantitative /
-  qualitative / suppressed) sem vazar `eligible_count`/`scored_count`;
-- **People / Assessments UX** em superfície separada e anônima (terceira dimensão
-  independente do Self × Manager), com estado neutro para suppressed;
-- testes determinísticos de domínio/aplicação para cada estado e para a matriz de
-  autorização.
+### Dívida residual explícita (aceita — Opção 1)
 
-> **Não implementar nesta iteração.** A Phase 2 exige seu próprio gate: recorte de
-> uma PR única com objetivo verificável, sob aprovação explícita, antes de escrever
-> código de produto.
+- **Canonical Review app smoke autenticado ponta a ponta = NOT DEMONSTRATED
+  (gated).** Exigiria toggle temporário de Confirm-email + fixtures descartáveis
+  persistidas em Review (owner+company+people+cycles+≥4 respostas `direct_report`),
+  operações remotas sensíveis que dependem de autorização. Não bloqueante: os
+  invariantes que ele checaria já foram provados ao vivo no Review (matriz Phase 1)
+  e pela suíte determinística do app. Registrado como dívida, no mesmo padrão da
+  "explicit runtime coverage debt" da B2-B2-B.
 
-### Estado confirmado (baseline `865badd2`)
+### Próximo passo normativo
 
-- **Assessment Results 0115–0119** concluída e alinhada em `0119` (Local e
-  Canonical Review).
-- **B2-B2-B — People “Últimas avaliações” = CLOSED / PASS** (commit `338efd58`).
-- **B2-C Phase 1 — boundary de banco `0119` = CLOSED / PASS**; Review
-  `ACTIVE / VALIDATED / PASS` (history + `pg_proc` parity + ACL/security + matriz
-  funcional/threat-model `BEGIN … ROLLBACK`, zero `COMMIT`).
-- **Explicit runtime coverage debt** (da B2-B2-B, não bloqueante): render runtime
-  in-tenant por role; resultados quantitativos/qualitativos reais; deep-link com
-  `responseId` real.
+- Não há próxima fase da B2-C. Candidatos (sob novo gate/autorização): retomar a
+  trilha **Career / Seniority** (PD-021 Approved, ADR-0017 Accepted, Slice 1A —
+  planejada e adiada), ou quitar a dívida do app smoke via runner hard-gated se o
+  Product Architect autorizar o setup sensível.
 
-### Governança / adiado (não reabrir sem decisão)
+### Invariantes de ambiente (não reabrir sem decisão)
 
-- A trilha **Career / Seniority** (PD-021 Approved, ADR-0017 Accepted, Slice 1A)
-  permanece **planejada e adiada**; não é o próximo passo agora.
 - Production `gzrrwyiqfbnyprkdeqvm` — **UNKNOWN / REVERIFY BEFORE USE**.
 - Legacy `oudngmrdtgengilpqqnz` — **NOT A PROMOTION TARGET**.
 
 ### Regra de parada
 
-- Nenhuma implementação de app integration até um novo gate/aprovação explícita.
-- Não criar `0120`, não alterar `0119`, não promover Production/Legacy, sem push
-  como parte desta reconciliação de governança.
+- Não criar `0120`, não alterar `0119`, não promover Production/Legacy, sem push.

@@ -71,7 +71,7 @@ O PROJECT_STATE.md é uma fotografia oficial do estado do programa. Ele não cri
 | ADR-0015 — Tenant Multiuser Activation Architecture | ✅ Accepted; MVP-PR1 em andamento |
 | ADR-0016 — Invitation Delivery Architecture | ✅ Accepted e implementada nas Phases 5/6 |
 | ADR-0017 — Position-Seniority Profile as Career Assignment Boundary | ✅ Accepted; implementação pendente (Implementation Plan) |
-| ADR-0018 — Direct-Report Anonymity & Aggregation Architecture | ✅ Accepted; Phase 1 (boundary de banco `0119`) CLOSED/PASS e validada no Review; app integration pendente |
+| ADR-0018 — Direct-Report Anonymity & Aggregation Architecture | ✅ Accepted; Slice 0115-B2-C **CLOSED/PASS** em todas as fases (DB `0119` validada no Review + app integration Phases 2–5); dívida residual: app smoke remoto NOT DEMONSTRATED (gated) |
 
 O status normativo e o conteúdo completo permanecem no
 [índice de ADRs](./adr/README.md).
@@ -79,18 +79,20 @@ O status normativo e o conteúdo completo permanecem no
 ### Roadmap e execução
 
 - **Trilha vigente = Assessment Results (0115–0119).** Autoridade = estado real
-  do `main`/HEAD `865badd2`. A trilha está concluída e alinhada em `0119` (Local e
+  do `main`/HEAD `ff2ba6db`. A trilha está concluída e alinhada em `0119` (Local e
   Canonical Review); ver [CHANGELOG](./CHANGELOG.md) e
   [ENVIRONMENT-MIGRATION-STATUS](./execution/ENVIRONMENT-MIGRATION-STATUS.md).
   **B2-B2-B — People “Últimas avaliações” = CLOSED / PASS**; **Slice 0115-B2-C
-  Phase 1 (Direct-Report anonymous aggregate boundary, `0119`) = CLOSED / PASS** —
-  `REVIEW 0119: ACTIVE / VALIDATED / PASS` (history, `pg_proc` parity, ACL/security
-  e matriz funcional/threat-model `BEGIN … ROLLBACK` todos PASS). Esta validação
-  cobre **somente a boundary de banco**; integração de aplicação/UI **não** foi
-  validada.
-- [NEXT_STEPS](./NEXT_STEPS.md): próximo passo normativo é o
-  **Slice 0115-B2-C — app integration da boundary `0119`** (read-model → presenter
-  → People/Assessments UX); **não implementado** nesta iteração.
+  (Direct-Report Anonymous Aggregate) = CLOSED / PASS em todas as fases** — DB
+  boundary `0119` (`REVIEW 0119: ACTIVE / VALIDATED / PASS`) + app integration
+  Phases 2–5 (read boundary `853dfb44`, presenter/ViewModel `de166e0`, People UX
+  `ff2ba6db`; validação final por auditoria estática + 73 testes determinísticos +
+  `tsc`/`lint`/build PASS). Dívida residual explícita aceita: **app smoke remoto
+  autenticado NOT DEMONSTRATED (gated)** — invariantes já provados ao vivo no Review
+  pela matriz da Phase 1.
+- [NEXT_STEPS](./NEXT_STEPS.md): não há próxima fase da B2-C. Candidatos sob novo
+  gate: retomar **Career / Seniority** (Slice 1A, adiada) ou quitar a dívida do app
+  smoke via runner hard-gated, se autorizado.
 - [ROADMAP](./ROADMAP.md): a trilha Career / Seniority (PD-021 Approved, ADR-0017
   Accepted, Slice 1A) permanece **planejada e adiada** — não é retomada agora
   apenas porque os documentos narrativos ficaram defasados. O corpo histórico do
@@ -112,14 +114,15 @@ O status normativo e o conteúdo completo permanecem no
 
 ## 6. Próxima etapa
 
-> **Reconciliação 2026-08-27 (autoridade = `main`/HEAD `865badd2`).** A **Slice
-> 0115-B2-C Phase 1** (boundary de banco `0119`) está **CLOSED / PASS** e validada
-> no Canonical Review (`ACTIVE / VALIDATED / PASS`). O próximo passo normativo é a
-> **app integration da boundary `0119`** (read-model → presenter → People/
-> Assessments UX), ainda **não implementada** (ver `NEXT_STEPS.md`). A trilha
-> **Assessment Results 0115–0119** está concluída e a **B2-B2-B = CLOSED / PASS**.
-> O texto abaixo (Phase 9 — Multiuser UI/UX e trilha Seniority) é **contexto
-> histórico** de programas anteriores/adiados e não a prioridade atual.
+> **Reconciliação 2026-08-27 (autoridade = `main`/HEAD `ff2ba6db`).** A **Slice
+> 0115-B2-C** está **CLOSED / PASS em todas as fases**: DB boundary `0119` validada
+> no Canonical Review (`ACTIVE / VALIDATED / PASS`) + app integration Phases 2–5
+> (read boundary → presenter/ViewModel → People UX), com dívida residual explícita
+> (app smoke remoto NOT DEMONSTRATED, gated — ver `NEXT_STEPS.md`). **Não há próxima
+> fase da B2-C.** A trilha **Assessment Results 0115–0119** está concluída e a
+> **B2-B2-B = CLOSED / PASS**. O texto abaixo (Phase 9 — Multiuser UI/UX e trilha
+> Seniority) é **contexto histórico** de programas anteriores/adiados e não a
+> prioridade atual.
 
 A execução vigente é a Phase 9 — Multiuser UI/UX. As Phases 1–8 estão
 concluídas: a fundação persistente, Trusted Persistence, delivery/aceite,

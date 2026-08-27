@@ -119,6 +119,10 @@ export {
 } from "./assessments/components/employee-recent-assessment-results-card"
 
 export {
+  EmployeeDirectReportFeedbackCard,
+} from "./assessments/components/employee-direct-report-feedback-card"
+
+export {
   presentPersonAssessmentResults,
   PERSON_ASSESSMENT_RESULTS_DEFAULT_LIMIT,
 } from "./assessments/presenters/person-assessment-results-presenter"

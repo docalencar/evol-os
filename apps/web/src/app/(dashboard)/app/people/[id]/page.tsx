@@ -7,7 +7,10 @@ import {
 import { EntityBackLink } from "@/components/shared/entity-back-link"
 
 import { getEmployeeAssessmentSummary } from "@/features/assessments"
-import { getPersonAssessmentResultDirectoryReadModel } from "@/features/assessment-feedback-read"
+import {
+  getPersonAssessmentResultDirectoryReadModel,
+  getPersonDirectReportAggregateReadModel,
+} from "@/features/assessment-feedback-read"
 import {
   getManagementCompetencies,
   getManagementCompetencyAssignments,
@@ -34,8 +37,10 @@ import {
   createEmployeeIntelligence,
   presentEmployeeIntelligence,
   presentPersonAssessmentResults,
+  presentPersonDirectReportAggregate,
   EmployeeAssessmentsSummaryCard,
   EmployeeRecentAssessmentResultsCard,
+  EmployeeDirectReportFeedbackCard,
   EmployeeCompetenciesSummaryCard,
   EmployeeDevelopmentSummaryCard,
   EmployeeNextActionsCard,
@@ -121,6 +126,7 @@ export default async function EmployeeProfilePage({
     allDevelopmentPlans,
     departments,
     personAssessmentResults,
+    directReportAggregate,
   ] = await Promise.all([
     getManagementPersonIncludingTerminated(companyId, id),
 
@@ -151,6 +157,12 @@ export default async function EmployeeProfilePage({
     // auditoria a cada render; a autorização definitiva continua sendo a do
     // banco.
     getPersonAssessmentResultDirectoryReadModel(companyId, id),
+
+    // Fronteira 0119 — agregado ANÔNIMO de feedback direct_report. Mesma
+    // disciplina guard-before-RPC da 0118; a autorização definitiva é a do banco
+    // (fail-closed, no-oracle). Terceira dimensão, separada de "Últimas
+    // avaliações" e de Self × Manager.
+    getPersonDirectReportAggregateReadModel(companyId, id),
   ])
 
   if (!employee) {
@@ -384,6 +396,24 @@ export default async function EmployeeProfilePage({
                   ? personAssessmentResults.rows
                   : [],
                 { personId: id }
+              )}
+            />
+          </DashboardSection>
+        </div>
+      )}
+
+      {directReportAggregate.status === "forbidden" ? null : (
+        <div id="feedback-subordinados-anonimo" className="scroll-mt-6">
+          <DashboardSection
+            title="Feedback de subordinados — anônimo"
+            description="Feedback agregado e anônimo dos liderados desta pessoa, por ciclo de avaliação."
+          >
+            <EmployeeDirectReportFeedbackCard
+              isUnavailable={directReportAggregate.status === "unavailable"}
+              feedback={presentPersonDirectReportAggregate(
+                directReportAggregate.status === "ok"
+                  ? directReportAggregate.rows
+                  : []
               )}
             />
           </DashboardSection>

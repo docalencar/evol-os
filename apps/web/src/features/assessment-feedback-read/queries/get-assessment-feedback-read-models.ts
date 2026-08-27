@@ -22,7 +22,10 @@ import {
   AssessmentFeedbackReadError,
   createAssessmentFeedbackReadRepository,
 } from "../repositories/assessment-feedback-read-repository"
-import type { PersonAssessmentResultDirectoryRow } from "../repositories/assessment-feedback-read-repository"
+import type {
+  PersonAssessmentResultDirectoryRow,
+  PersonDirectReportAggregateRow,
+} from "../repositories/assessment-feedback-read-repository"
 
 async function repository() {
   return createAssessmentFeedbackReadRepository(await createServerDatabase())
@@ -170,6 +173,47 @@ export async function getPersonAssessmentResultDirectoryReadModel(
 
   try {
     const rows = await (await repository()).personResultDirectory(
+      companyId,
+      personId
+    )
+    return { status: "ok", rows }
+  } catch (error) {
+    if (error instanceof AssessmentFeedbackReadError) {
+      return { status: "unavailable" }
+    }
+    throw error
+  }
+}
+
+/**
+ * Agregado ANÔNIMO de feedback `direct_report` (subordinados) de UMA Pessoa
+ * (fronteira 0119). Espelha exatamente o guard-before-RPC da fronteira 0118:
+ * o papel administrativo é conferido ANTES da chamada, para não gerar uma negação
+ * e um evento de auditoria a cada render de quem notoriamente não tem o propósito.
+ * Isso NÃO substitui a autorização do banco — que continua sendo a autoridade
+ * fail-closed e no-oracle — apenas evita ruído de auditoria.
+ *
+ * O resultado é discriminado: "forbidden" e "unavailable" são diferentes de
+ * "nenhum agregado", e colapsá-las em lista vazia faria a superfície mentir. As
+ * linhas retornadas já são o contrato minimizado de 7 colunas; a máquina de
+ * estados público (quantitative / qualitative / suppressed) é responsabilidade do
+ * presenter (fase seguinte), não deste read model. Nenhuma agregação client-side.
+ */
+export type PersonDirectReportAggregateReadModel =
+  | { status: "forbidden" }
+  | { status: "unavailable" }
+  | { status: "ok"; rows: PersonDirectReportAggregateRow[] }
+
+export async function getPersonDirectReportAggregateReadModel(
+  companyId: string,
+  personId: string
+): Promise<PersonDirectReportAggregateReadModel> {
+  const actor = await loadAssessmentActor()
+  if (actor.companyId !== companyId) return { status: "forbidden" }
+  if (!isAdministrativeRole(actor.role)) return { status: "forbidden" }
+
+  try {
+    const rows = await (await repository()).personDirectReportAggregate(
       companyId,
       personId
     )

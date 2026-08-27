@@ -295,3 +295,115 @@ test("0118 person directory keeps numeric coercion and qualitative NULL", async 
   assert.equal(rows[0].overall_score, 66.666667)
   assert.equal(rows[1].overall_score, null)
 })
+
+// --- Fronteira 0119 (agregado anônimo de direct_report de uma Pessoa) ---
+
+const directReportAggregateRow = {
+  cycle_id: "10000000-0000-4000-8000-000000000001",
+  cycle_name: "Ciclo 2026",
+  model_name: "Modelo Anual",
+  cycle_date: "2026-08-20",
+  aggregate_score: 80,
+  is_qualitative: false,
+  suppressed: false,
+}
+
+test("0119 direct-report aggregate parses the exact seven-column payload", async () => {
+  const { createAssessmentFeedbackReadRepository } = await repositoryModule
+  const { calls, database } = createDatabase(() => ({
+    data: [directReportAggregateRow],
+    error: null,
+  }))
+
+  const rows = await createAssessmentFeedbackReadRepository(database)
+    .personDirectReportAggregate(companyId, personId)
+
+  assert.deepEqual(rows, [directReportAggregateRow])
+  assert.equal(calls.length, 1)
+  assert.equal(calls[0].name, "get_tenant_person_direct_report_aggregate_v1")
+  assert.deepEqual(calls[0].parameters, {
+    p_company_id: companyId,
+    p_person_id: personId,
+  })
+})
+
+test("0119 aggregate rejects cardinality, evaluator and raw-score leaks", async () => {
+  // `.strict()` recusa qualquer coluna fora das 7 contratadas — o contrato
+  // anônimo não pode readmitir nenhuma chave de reidentificação.
+  const { AssessmentFeedbackReadError, createAssessmentFeedbackReadRepository } =
+    await repositoryModule
+
+  for (const leak of [
+    { respondent_count: 4 },
+    { scored_count: 4 },
+    { response_id: "20000000-0000-4000-8000-000000000001" },
+    { evaluator_id: "30000000-0000-4000-8000-000000000001" },
+    { raw_score: 8 },
+    { min_score: 1 },
+    { max_score: 10 },
+  ]) {
+    const { database } = createDatabase(() => ({
+      data: [{ ...directReportAggregateRow, ...leak }],
+      error: null,
+    }))
+    await assert.rejects(
+      createAssessmentFeedbackReadRepository(database)
+        .personDirectReportAggregate(companyId, personId),
+      AssessmentFeedbackReadError
+    )
+  }
+})
+
+test("0119 aggregate and the 0118 directory are not interchangeable", async () => {
+  // Um payload do directory individual (com response_id/perspective) não pode
+  // atravessar o schema agregado, e vice-versa; senão um erro de parsing se
+  // disfarçaria de outro estado.
+  const { AssessmentFeedbackReadError, createAssessmentFeedbackReadRepository } =
+    await repositoryModule
+  const { database } = createDatabase(() => ({
+    data: [personDirectoryRow],
+    error: null,
+  }))
+
+  await assert.rejects(
+    createAssessmentFeedbackReadRepository(database)
+      .personDirectReportAggregate(companyId, personId),
+    AssessmentFeedbackReadError
+  )
+})
+
+test("0119 aggregate coerces numeric score and never turns qualitative NULL into zero", async () => {
+  const { createAssessmentFeedbackReadRepository } = await repositoryModule
+  const { database } = createDatabase(() => ({
+    data: [
+      // quantitative: PostgREST entrega `numeric` como string
+      { ...directReportAggregateRow, aggregate_score: "72.5" },
+      // qualitative: score ausente permanece NULL
+      {
+        ...directReportAggregateRow,
+        cycle_id: "10000000-0000-4000-8000-000000000002",
+        aggregate_score: null,
+        is_qualitative: true,
+      },
+      // suppressed: indistinguível de A — sem score, sem qualitativo
+      {
+        ...directReportAggregateRow,
+        cycle_id: "10000000-0000-4000-8000-000000000003",
+        aggregate_score: null,
+        is_qualitative: false,
+        suppressed: true,
+      },
+    ],
+    error: null,
+  }))
+
+  const rows = await createAssessmentFeedbackReadRepository(database)
+    .personDirectReportAggregate(companyId, personId)
+
+  assert.equal(rows[0].aggregate_score, 72.5)
+  assert.equal(rows[1].aggregate_score, null)
+  assert.equal(rows[1].is_qualitative, true)
+  assert.equal(rows[2].aggregate_score, null)
+  assert.equal(rows[2].is_qualitative, false)
+  assert.equal(rows[2].suppressed, true)
+})

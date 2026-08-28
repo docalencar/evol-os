@@ -6,8 +6,10 @@
 > = CLOSED / PASS** (ver `CHANGELOG.md`, `NEXT_STEPS.md` e
 > `execution/ENVIRONMENT-MIGRATION-STATUS.md`). **Próxima prioridade normativa:
 > Slice 0115-B2-C — Direct-Report Anonymity / Aggregation Discovery (DISCOVERY
-> ONLY).** A trilha Career / Seniority (PD-021/ADR-0017) permanece planejada e
-> **adiada**. Production: `UNKNOWN / REVERIFY BEFORE USE`. Legacy: `NOT A
+> ONLY).** A trilha Career / Seniority (PD-021/ADR-0017) está **em execução —
+> Slices 1A–3B concluídas e em `main`** (catálogo, profiles, lotação de People);
+> próximo gate real = Slice 4A (Competency Matrix Relocation). Production: `UNKNOWN
+> / REVERIFY BEFORE USE`. Legacy: `NOT A
 > PROMOTION TARGET`. As seções abaixo são **contexto histórico** de programas
 > anteriores e não a prioridade atual.
 
@@ -215,7 +217,13 @@ está versionado (`docs/Execution/CAREER-SENIORITY-POSITION-TAXONOMY-IMPLEMENTAT
 Approved), com rollout additive → backfill → compatibility → cutover → deprecate e
 o slice map Seniority Catalog → Position-Seniority Profiles → People lotação →
 Competency matrix relocation → Competency Assignments → Gaps (+ gate de unicidade e
-follow-ups de Recruitment/Development/Succession). O **próximo passo executável**,
-registrado em `NEXT_STEPS.md`, é o Slice 1A — Seniority Catalog Foundation
-(DB-first). O backlog reconciliado pós-smoke está consolidado no `PROJECT_STATE.md`.
-Este registro é factual e não inicia implementação.
+follow-ups de Recruitment/Development/Succession). **Estado real reconciliado
+(2026-08-27):** o rollout já foi executado até **3B** e está em `main` — Slices
+1A–3B (Seniority Catalog `0100`/`0101` + Admin UI; Position-Seniority Profiles
+`0102`; Cargo↔Senioridade config `0106`; People lotação `0103–0105`) **CLOSED /
+PASS**; **não reimplementar 1A–3B**. O **próximo passo executável**, registrado em
+`NEXT_STEPS.md`, é a **Slice 4A — Competency Matrix Relocation**
+(`position_seniority_competencies`), ainda não implementada e de **alto risco de
+dados/backfill**, sob novo gate/autorização. O backlog reconciliado está
+consolidado no `PROJECT_STATE.md`. Este registro é factual e não inicia
+implementação.

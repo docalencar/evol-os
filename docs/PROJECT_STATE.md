@@ -70,7 +70,7 @@ O PROJECT_STATE.md é uma fotografia oficial do estado do programa. Ele não cri
 | ADR-0014 — Deterministic Development Template Application and Snapshots | ✅ Accepted e implementada; PR 3C encerrada em `5c2675b` |
 | ADR-0015 — Tenant Multiuser Activation Architecture | ✅ Accepted; MVP-PR1 em andamento |
 | ADR-0016 — Invitation Delivery Architecture | ✅ Accepted e implementada nas Phases 5/6 |
-| ADR-0017 — Position-Seniority Profile as Career Assignment Boundary | ✅ Accepted; implementação pendente (Implementation Plan) |
+| ADR-0017 — Position-Seniority Profile as Career Assignment Boundary | ✅ Accepted; **Slices 1A–3B implementadas e em `main`** (migrations `0100–0106` + features); pendentes 4A/4B/5 + gate de unicidade de Cargo |
 | ADR-0018 — Direct-Report Anonymity & Aggregation Architecture | ✅ Accepted; Slice 0115-B2-C **CLOSED/PASS** em todas as fases (DB `0119` validada no Review + app integration Phases 2–5); dívida residual: app smoke remoto NOT DEMONSTRATED (gated) |
 
 O status normativo e o conteúdo completo permanecem no
@@ -90,12 +90,14 @@ O status normativo e o conteúdo completo permanecem no
   `tsc`/`lint`/build PASS). Dívida residual explícita aceita: **app smoke remoto
   autenticado NOT DEMONSTRATED (gated)** — invariantes já provados ao vivo no Review
   pela matriz da Phase 1.
-- [NEXT_STEPS](./NEXT_STEPS.md): não há próxima fase da B2-C. Candidatos sob novo
-  gate: retomar **Career / Seniority** (Slice 1A, adiada) ou quitar a dívida do app
-  smoke via runner hard-gated, se autorizado.
+- [NEXT_STEPS](./NEXT_STEPS.md): não há próxima fase da B2-C. A trilha **Career /
+  Seniority** teve suas **Slices 1A–3B já implementadas e em `main`** (catálogo de
+  senioridade, profiles Cargo×Senioridade, lotação de People); **NÃO reimplementar**.
+  O próximo gate real é **Slice 4A — Competency Matrix Relocation** (novo, alto risco
+  de dados/backfill, exige recovery/design + autorização explícita antes de migration).
 - [ROADMAP](./ROADMAP.md): a trilha Career / Seniority (PD-021 Approved, ADR-0017
-  Accepted, Slice 1A) permanece **planejada e adiada** — não é retomada agora
-  apenas porque os documentos narrativos ficaram defasados. O corpo histórico do
+  Accepted) está **em execução — Slices 1A–3B concluídas em `main`**; a
+  reimplementação de 1A–3B **não** deve ocorrer. O corpo histórico do
   ROADMAP/§6 abaixo é contexto e não a prioridade atual.
 - [MVP Plan](./MVP_PLAN.md): jornada completa até o MVP.
 - [EPICS](./EPICS.md): estado funcional das capacidades.
@@ -373,12 +375,22 @@ NULL para cargos sem senioridade), a lotação de People e a matriz de competên
 referenciando o profile, o Departamento derivado da Position, a relocação
 forward-only de `expected_level`/`weight` para a matriz, as escalas 1–5 de
 proficiência e de peso, e o gate de auditoria de homônimos antes de qualquer
-unicidade de Cargo. Nenhuma migration/código foi criado. O
-Implementation Plan da taxonomia está versionado em
+unicidade de Cargo. O Implementation Plan da taxonomia está versionado em
 `docs/Execution/CAREER-SENIORITY-POSITION-TAXONOMY-IMPLEMENTATION-PLAN.md`
 (Approved), com o rollout additive → backfill → compatibility → cutover →
-deprecate e o slice map 1A→5 + gate de unicidade + follow-ups. O próximo passo
-executável é o **Slice 1A — Seniority Catalog Foundation (DB-first)**.
+deprecate e o slice map 1A→5 + gate de unicidade + follow-ups.
+
+**Estado real (reconciliado 2026-08-27):** o rollout **JÁ FOI EXECUTADO até 3B** e
+está em `main` — **Slice 1A** (Seniority Catalog Foundation, `0100`), **1B**
+(read boundary `0101` + Admin UI `/app/company/seniority`), **2A**
+(Position-Seniority Profiles, `0102`), **2B** (Cargo↔Senioridade config UI +
+`0106`), **3A/3B** (People profile assignment + lotação UX, `0103–0105`) — todas
+**CLOSED / PASS**. **Não reimplementar 1A–3B.** O próximo passo executável é o
+**Slice 4A — Competency Matrix Relocation** (`position_seniority_competencies`),
+ainda **não implementado** e com **alto risco de dados/backfill** — novo gate que
+exige recovery + design/re-read do plano + autorização explícita antes de qualquer
+migration. O **Position Uniqueness audit gate** permanece um gate separado de
+decisão humana/produto (plano §9).
 
 ## 7. Arquitetura consolidada
 

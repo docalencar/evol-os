@@ -47,9 +47,20 @@
 
 ### Próximo passo normativo
 
-- Não há próxima fase da B2-C. Candidatos (sob novo gate/autorização): retomar a
-  trilha **Career / Seniority** (PD-021 Approved, ADR-0017 Accepted, Slice 1A —
-  planejada e adiada), ou quitar a dívida do app smoke via runner hard-gated se o
+- Não há próxima fase da B2-C.
+- **Career / Seniority — estado reconciliado (2026-08-27):** as **Slices 1A–3B já
+  estão implementadas e em `main`** (catálogo de senioridade `0100`/`0101` + Admin
+  UI; profiles Cargo×Senioridade `0102`/`0106`; lotação de People `0103–0105`) —
+  todas **CLOSED / PASS**. **Não reimplementar 1A–3B.** O próximo gate real do
+  rollout é a **Slice 4A — Competency Matrix Relocation**
+  (`position_seniority_competencies` + backfill zero-loss de `position_competencies`
+  + pgTAP), **ainda não implementada** e classificada como **alto risco de
+  dados/backfill** (plano §8). Exige recovery + re-read do
+  [Implementation Plan](./execution/CAREER-SENIORITY-POSITION-TAXONOMY-IMPLEMENTATION-PLAN.md)
+  + **autorização explícita** antes de criar migration. O **Position Uniqueness
+  audit gate** (plano §9) é um gate separado de decisão humana/produto (read-only,
+  nunca automatizar merge), independente da 4A.
+- Alternativa: quitar a dívida do app smoke da B2-C via runner hard-gated, se o
   Product Architect autorizar o setup sensível.
 
 ### Invariantes de ambiente (não reabrir sem decisão)

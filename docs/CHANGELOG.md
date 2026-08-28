@@ -3,6 +3,48 @@
 Este changelog registra somente grandes entregas incorporadas à `main`. Commits
 locais e branches abertas não entram aqui.
 
+## 2026-08-27 — Governança — Reconciliação do estado real de Career / Seniority
+
+Correção de governança **stale**: a documentação afirmava que Career / Seniority
+estava "planejada e adiada" e que o próximo passo era "implementar a Slice 1A",
+mas o **código e o histórico do `git` provam que o rollout já foi executado até a
+Slice 3B e está em `main`**. Reconciliação apenas documental (nenhuma migration,
+nenhum código de produto, nenhum teste alterado; `0119` intacta; sem `0120`).
+
+Evidência por slice (todas **CLOSED / PASS**, commits em `main`):
+
+- **Slice 1A — Seniority Catalog Foundation (DB)** — migration `0100`
+  (`seniority_levels`: id, company_id, code, label, rank, active, timestamps;
+  chave composta tenant-safe; boundaries create/update/archive `SECURITY DEFINER`),
+  commit `3baff67`.
+- **Slice 1B — Catalog read boundary + Admin UI** — migration `0101` (read
+  boundary), commits `fb61323`/`f22b481`; rota `/app/company/seniority` real
+  (`getSeniorityLevels`, `SeniorityLevelTable`, `SeniorityLevelCreateDialog`).
+- **Slice 2A — Position-Seniority Profiles (DB)** — migration `0102`, commit
+  `bb1e72b` (base profile = senioridade NULL).
+- **Slice 2B — Cargo↔Senioridade config (UI)** — commit `c4c7b2e` + migration
+  `0106` (atomic Position config); feature `organization/position-seniorities`
+  wired em `/app/company/positions/[id]`.
+- **Slice 3A/3B — People profile assignment + lotação UX** — migrations `0103`
+  (People profile assignment), `0104`/`0105` (explicit assignment + historical),
+  commits `801c6d9`/`edf986d`/`40e0e67`; `people.position_seniority_profile_id`
+  (additive; `position_id` preservado), escrita via boundary
+  `create/update_tenant_person_v2` + `enforce_people_position_seniority_coherence`;
+  seleção de senioridade no formulário de People (`get-people-seniority-options`,
+  `employee-organization-step`).
+
+**Não implementado (gaps reais, sob novo gate):** Slice **4A — Competency Matrix
+Relocation** (`position_seniority_competencies` + backfill zero-loss; **alto risco
+de dados**), **4B** (Matrix UI + escalas), **5** (Competency Assignments + Gap), e o
+**Position Uniqueness audit gate** (plano §9, decisão humana/produto). **Out of
+scope** (plano §14): promotion readiness canônica / next-level / succession /
+nine-box — o `promotionReady` de `hr-intelligence` é heurística derivada, **não**
+regra canônica de Career. `hierarchical_level` (enum global do Cargo) e
+`seniority` (catálogo company-owned via profiles) permanecem **eixos ortogonais**.
+
+Próximo passo normativo: **Slice 4A**, precedido de recovery + re-read do
+Implementation Plan + autorização explícita antes de qualquer migration.
+
 ## 2026-08-27 — App — Direct-Report Anonymous Aggregate integrado (Slice 0115-B2-C Phases 2–5) — CLOSED / PASS
 
 Integração de aplicação da boundary anônima `0119` ao produto, em PRs por fase,

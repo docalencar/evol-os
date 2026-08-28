@@ -48,18 +48,23 @@
 ### Próximo passo normativo
 
 - Não há próxima fase da B2-C.
-- **Career / Seniority — estado reconciliado (2026-08-27):** as **Slices 1A–3B já
-  estão implementadas e em `main`** (catálogo de senioridade `0100`/`0101` + Admin
-  UI; profiles Cargo×Senioridade `0102`/`0106`; lotação de People `0103–0105`) —
-  todas **CLOSED / PASS**. **Não reimplementar 1A–3B.** O próximo gate real do
-  rollout é a **Slice 4A — Competency Matrix Relocation**
-  (`position_seniority_competencies` + backfill zero-loss de `position_competencies`
-  + pgTAP), **ainda não implementada** e classificada como **alto risco de
-  dados/backfill** (plano §8). Exige recovery + re-read do
+- **Career / Seniority — Slice 4A = CLOSED / PASS (2026-08-28, HEAD `cb6c68d`).**
+  As **Slices 1A–3B** já estavam em `main` (catálogo `0100`/`0101`; profiles
+  `0102`/`0106`; lotação `0103–0105`) e a **Slice 4A — Competency Matrix
+  Relocation** foi implementada e validada por **`0120`** (matriz
+  `position_seniority_competencies` + backfill zero-loss/fail-closed de
+  `position_competencies` para o base profile; fonte preservada; sem dual-write) e
+  **`0121`** (closed-table privilege hardening, revoke-only, descoberto na validação
+  do Review). **Promovidas e validadas no Canonical Review — PASS** (`HISTORY
+  0119/0120/0121 = 1`, `POST_CLIENT_EXPOSED_PRIV_COUNT=0`, integridade `0120`
+  intacta, RLS=1/POLICIES=2, EXECUTE dos 4 RPCs preservado). **Não reimplementar
+  1A–4A.** O próximo gate real do rollout é a **Slice 4B — Competency Matrix +
+  Scale Semantics (UI)** (plano §8) — **ainda não iniciada**; exige recovery +
+  re-read do
   [Implementation Plan](./execution/CAREER-SENIORITY-POSITION-TAXONOMY-IMPLEMENTATION-PLAN.md)
-  + **autorização explícita** antes de criar migration. O **Position Uniqueness
-  audit gate** (plano §9) é um gate separado de decisão humana/produto (read-only,
-  nunca automatizar merge), independente da 4A.
+  + **autorização explícita** (Human Review obrigatório por ser UI) antes de
+  qualquer código. O **Position Uniqueness audit gate** (plano §9) permanece um gate
+  separado de decisão humana/produto (read-only, nunca automatizar merge).
 - Alternativa: quitar a dívida do app smoke da B2-C via runner hard-gated, se o
   Product Architect autorizar o setup sensível.
 
@@ -70,4 +75,6 @@
 
 ### Regra de parada
 
-- Não criar `0120`, não alterar `0119`, não promover Production/Legacy, sem push.
+- Slice 4A encerrada em `0121`; **não criar `0122`** nem alterar `0119`/`0120`/`0121`
+  sem autorização. Não iniciar a Slice 4B (UI) sem autorização explícita. Não
+  promover Production/Legacy. Sem push.

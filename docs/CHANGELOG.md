@@ -3,6 +3,58 @@
 Este changelog registra somente grandes entregas incorporadas à `main`. Commits
 locais e branches abertas não entram aqui.
 
+## 2026-08-28 — Career / Seniority — Slice 4A (Competency Matrix Relocation) — CLOSED / PASS
+
+Fecha a **Slice 4A** do rollout Career / Seniority (plano §8), composta por duas
+migrations aplicadas e validadas **localmente e no Canonical Review**
+(`rwfvxvbzaosgcyfxdjpt`, HEAD `main` `cb6c68d`).
+
+- **`0120` — Position × Seniority competency matrix foundation** (commit `7481a42`,
+  SHA-256 `5ab8802d624fcc08a1e1ab0ef94a35df5d52ecea7bfa420f5ed3b3637b6e5831`).
+  Cria `position_seniority_competencies` (profile-based) e faz o **backfill
+  zero-loss e fail-closed** de `position_competencies` para o **base profile**
+  (`seniority_level_id NULL`, ativo), preservando `expected_level/weight/required/
+  type/notes/archived_at/timestamps`. **Fonte preservada:** `position_competencies`
+  **não** é removida fisicamente (período de compatibilidade, plano §5/§15); **sem
+  dual-write**; boundaries RPC trusted preservados. Integridade pós-0121 no Review:
+  `SOURCE=TARGET=3`, `SOURCE_ACTIVE=TARGET_ACTIVE=2`, `SOURCE_ARCHIVED=TARGET_
+  ARCHIVED=1`, `PARITY_MISMATCH=0`, `BASE_MAPPING_VIOLATION=0`.
+- **`0121` — Closed-table privilege hardening** (commit `cb6c68d`, SHA-256
+  `b67e5f19a82d13555cacbea4b0007e3205f64137647d0a40888105be58cc6d64`). Descoberta
+  **durante a validação no Review**: as três tabelas fechadas de Career / Seniority
+  (`seniority_levels`, `position_seniority_profiles`, `position_seniority_
+  competencies`) tinham **client table grants** herdados dos default privileges do
+  ambiente Supabase — uma **violação do contrato CLOSED TABLE / defense-in-depth**
+  (RLS já estava ativo), **não** uma data breach comprovada. `0121` é **revoke-only**
+  e corrige o drift explicitamente (`revoke all … from public, anon, authenticated`
+  nas três tabelas; padrão precedente `0076`). Pós-0121 no Review:
+  `POST_CLIENT_EXPOSED_PRIV_COUNT=0` (anon e authenticated com SELECT/INSERT/UPDATE/
+  DELETE = 0 nas três tabelas); `service_role` **inalterado** (por desenho); RLS=1 e
+  POLICIES=2 em cada tabela; EXECUTE preservado para `authenticated` nos quatro
+  boundaries trusted (`get_tenant_position_seniority_profiles_v1`,
+  `create_tenant_seniority_level_v1`, `create_tenant_position_with_seniorities_v1`,
+  `update_tenant_position_with_seniorities_v1`).
+
+Validação local antes do Review: `supabase db reset = PASS`; pgTAP **Files=64,
+Tests=2210, Result=PASS**. Promoção no Review: `REVIEW_PROMOTION=PASS`,
+`SLICE_0121_REVIEW_VALIDATION=PASS`, `HISTORY_0119=1 / 0120=1 / 0121=1 /
+GT_0121=0`. **Nenhuma validação em Production foi realizada** — Production
+permanece `UNKNOWN / REVERIFY BEFORE USE`; Legacy permanece `NOT A PROMOTION
+TARGET`. Detalhe operacional por migration em
+[ENVIRONMENT-MIGRATION-STATUS](./execution/ENVIRONMENT-MIGRATION-STATUS.md).
+
+**Nota de metodologia (follow-up leve, sem expandir o slice):** para futuras
+migrations `CREATE TABLE` sensíveis à segurança, classificar explicitamente o
+acesso da tabela como **CLOSED / RPC-only** ou **direct client access** e **codificar
+a postura GRANT/REVOKE pretendida na própria migration**; testes de tabelas CLOSED
+devem cobrir **anon e authenticated**. Isso evita que o drift de default privileges
+do ambiente passe nos testes locais e só apareça na promoção ao Review — exatamente
+o que originou a `0121`.
+
+**Escopo NÃO iniciado (permanece gated):** Slice **4B** (Matrix UI + escalas), Slice
+**5** (Competency Assignments + Gap), e o **Position Uniqueness audit gate** (plano
+§9). Próximo gate normativo = **Slice 4B**, sob autorização explícita.
+
 ## 2026-08-27 — Governança — Reconciliação do estado real de Career / Seniority
 
 Correção de governança **stale**: a documentação afirmava que Career / Seniority

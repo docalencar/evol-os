@@ -91,10 +91,13 @@ O status normativo e o conteúdo completo permanecem no
   autenticado NOT DEMONSTRATED (gated)** — invariantes já provados ao vivo no Review
   pela matriz da Phase 1.
 - [NEXT_STEPS](./NEXT_STEPS.md): não há próxima fase da B2-C. A trilha **Career /
-  Seniority** teve suas **Slices 1A–3B já implementadas e em `main`** (catálogo de
-  senioridade, profiles Cargo×Senioridade, lotação de People); **NÃO reimplementar**.
-  O próximo gate real é **Slice 4A — Competency Matrix Relocation** (novo, alto risco
-  de dados/backfill, exige recovery/design + autorização explícita antes de migration).
+  Seniority** teve suas **Slices 1A–4A implementadas e em `main`** (catálogo de
+  senioridade, profiles Cargo×Senioridade, lotação de People, e a **Slice 4A —
+  Competency Matrix Relocation** via `0120` matriz+backfill zero-loss e `0121`
+  closed-table hardening — **CLOSED / PASS**, promovidas e validadas no Canonical
+  Review em 2026-08-28); **NÃO reimplementar 1A–4A**. O próximo gate real é **Slice
+  4B — Competency Matrix + Scale Semantics (UI)** (ainda não iniciada; Human Review
+  obrigatório; exige autorização explícita).
 - [ROADMAP](./ROADMAP.md): a trilha Career / Seniority (PD-021 Approved, ADR-0017
   Accepted) está **em execução — Slices 1A–3B concluídas em `main`**; a
   reimplementação de 1A–3B **não** deve ocorrer. O corpo histórico do

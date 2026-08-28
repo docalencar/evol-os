@@ -7,9 +7,11 @@
 > `execution/ENVIRONMENT-MIGRATION-STATUS.md`). **Próxima prioridade normativa:
 > Slice 0115-B2-C — Direct-Report Anonymity / Aggregation Discovery (DISCOVERY
 > ONLY).** A trilha Career / Seniority (PD-021/ADR-0017) está **em execução —
-> Slices 1A–3B concluídas e em `main`** (catálogo, profiles, lotação de People);
-> próximo gate real = Slice 4A (Competency Matrix Relocation). Production: `UNKNOWN
-> / REVERIFY BEFORE USE`. Legacy: `NOT A
+> Slices 1A–4A concluídas e em `main`** (catálogo, profiles, lotação de People, e a
+> **Slice 4A — Competency Matrix Relocation** via `0120`/`0121`, **CLOSED / PASS**,
+> promovida e validada no Canonical Review em 2026-08-28); próximo gate real =
+> **Slice 4B — Competency Matrix + Scale Semantics (UI)** (não iniciada). Production:
+> `UNKNOWN / REVERIFY BEFORE USE`. Legacy: `NOT A
 > PROMOTION TARGET`. As seções abaixo são **contexto histórico** de programas
 > anteriores e não a prioridade atual.
 

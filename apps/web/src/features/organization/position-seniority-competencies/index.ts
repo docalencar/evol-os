@@ -14,3 +14,5 @@ export {
 } from "./presenters/present-position-seniority-competency-matrix"
 
 export { getPositionSeniorityCompetencyMatrix } from "./queries/get-position-seniority-competency-matrix"
+
+export { PositionSeniorityCompetencyMatrixSection } from "./components/position-seniority-competency-matrix-section"

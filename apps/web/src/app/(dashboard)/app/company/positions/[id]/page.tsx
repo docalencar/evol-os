@@ -21,6 +21,10 @@ import {
   type PositionRequirement,
 } from "@/features/organization/position-requirements"
 import {
+  getPositionSeniorityCompetencyMatrix,
+  PositionSeniorityCompetencyMatrixSection,
+} from "@/features/organization/position-seniority-competencies"
+import {
   PositionCompetenciesCard,
   PositionEditDialog,
   PositionWorkspaceOverview,
@@ -109,6 +113,7 @@ export default async function PositionDetailsPage({
     departments,
     positionTimeline,
     positionSeniorities,
+    positionSeniorityCompetencyMatrix,
   ] = await Promise.all([
     getManagementPositions(companyId).then(
       (rows) =>
@@ -132,6 +137,7 @@ export default async function PositionDetailsPage({
       20
     ),
     getPositionSeniorities(companyId, positionId),
+    getPositionSeniorityCompetencyMatrix(companyId, positionId),
   ])
 
   if (!position) {
@@ -243,6 +249,12 @@ export default async function PositionDetailsPage({
         positionId={position.id}
         competencies={competencies ?? []}
         positionCompetencies={positionCompetencies ?? []}
+      />
+
+      <PositionSeniorityCompetencyMatrixSection
+        matrix={positionSeniorityCompetencyMatrix}
+        competencies={competencies ?? []}
+        seniorities={positionSeniorities.applicable}
       />
 
       <DashboardSection

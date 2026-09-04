@@ -18,6 +18,7 @@ const detailPage = read(
 )
 const repository = read("./repositories/position-seniority-competency-repository.ts")
 const section = read("./components/position-seniority-competency-matrix-section.tsx")
+const successfulAction = async () => ({ success: true, message: "OK" })
 
 function cell(
   partial: Partial<CompetencyMatrixCellViewModel> &
@@ -62,18 +63,23 @@ test("Position detail uses the 4B-1 query and keeps the legacy competency card",
   assert.doesNotMatch(detailPage, /\.from\("position_seniority_competencies"\)/)
 })
 
-test("the read-only path has no direct table access or mutation RPC", () => {
+test("the UI has no direct table access and keeps RPC details in the repository", () => {
   for (const source of [detailPage, repository, section]) {
     assert.doesNotMatch(source, /\.from\("position_seniority_competencies"\)/)
+    assert.doesNotMatch(source, /createBrowserClient|service_role/)
+  }
+  for (const source of [detailPage, section]) {
     assert.doesNotMatch(source, /set_tenant_position_seniority_competency_v1/)
     assert.doesNotMatch(source, /clear_tenant_position_seniority_competency_v1/)
-    assert.doesNotMatch(source, /createBrowserClient|service_role/)
   }
 })
 
 test("Base precedes ordered seniorities and states use canonical semantic labels", () => {
   const html = renderToStaticMarkup(
     <PositionSeniorityCompetencyMatrixSection
+      positionId="00000000-0000-4000-8000-000000000001"
+      setAction={successfulAction}
+      clearAction={successfulAction}
       competencies={[{ id: "competency-1", name: "Comunicação" }]}
       seniorities={[
         { profileId: "junior", code: "JR", label: "Júnior" },
@@ -102,6 +108,9 @@ test("Base precedes ordered seniorities and states use canonical semantic labels
 test("undefined cells render Não definido without fabricated values", () => {
   const html = renderToStaticMarkup(
     <PositionSeniorityCompetencyMatrixSection
+      positionId="00000000-0000-4000-8000-000000000001"
+      setAction={successfulAction}
+      clearAction={successfulAction}
       competencies={[{ id: "competency-1", name: "Comunicação" }]}
       seniorities={[]}
       matrix={{
@@ -123,6 +132,9 @@ test("undefined cells render Não definido without fabricated values", () => {
 test("empty states distinguish missing profiles from an empty effective row-set", () => {
   const withoutProfiles = renderToStaticMarkup(
     <PositionSeniorityCompetencyMatrixSection
+      positionId="00000000-0000-4000-8000-000000000001"
+      setAction={successfulAction}
+      clearAction={successfulAction}
       competencies={[]}
       seniorities={[]}
       matrix={{ cells: [] }}
@@ -130,6 +142,9 @@ test("empty states distinguish missing profiles from an empty effective row-set"
   )
   const withoutCompetencies = renderToStaticMarkup(
     <PositionSeniorityCompetencyMatrixSection
+      positionId="00000000-0000-4000-8000-000000000001"
+      setAction={successfulAction}
+      clearAction={successfulAction}
       competencies={[]}
       seniorities={[{ profileId: "junior", code: "JR", label: "Júnior" }]}
       matrix={{ cells: [] }}

@@ -1,3 +1,5 @@
+"use client"
+
 import React from "react"
 
 import {
@@ -11,6 +13,7 @@ import type {
   CompetencyMatrixCellViewModel,
   PositionSeniorityCompetencyMatrixViewModel,
 } from "../presenters/present-position-seniority-competency-matrix"
+import { PositionSeniorityCompetencyEditorDialog } from "./position-seniority-competency-editor-dialog"
 
 type CompetencyOption = {
   id: string
@@ -24,6 +27,9 @@ type SeniorityOption = {
 }
 
 type PositionSeniorityCompetencyMatrixSectionProps = {
+  positionId: string
+  setAction: (input: unknown) => Promise<{ success: boolean; message: string }>
+  clearAction: (input: unknown) => Promise<{ success: boolean; message: string }>
   matrix: PositionSeniorityCompetencyMatrixViewModel
   competencies: CompetencyOption[]
   seniorities: SeniorityOption[]
@@ -110,6 +116,9 @@ function MatrixCell({ cell }: { cell: CompetencyMatrixCellViewModel | undefined 
 }
 
 export function PositionSeniorityCompetencyMatrixSection({
+  positionId,
+  setAction,
+  clearAction,
   matrix,
   competencies,
   seniorities,
@@ -213,9 +222,36 @@ export function PositionSeniorityCompetencyMatrixSection({
                       key={column.profileId}
                       className={`px-4 py-4 align-top ${column.base ? "bg-blue-50/50" : ""}`}
                     >
-                      <MatrixCell
-                        cell={cellsByKey.get(`${competencyId}:${column.profileId}`)}
-                      />
+                      {(() => {
+                        const cell = cellsByKey.get(
+                          `${competencyId}:${column.profileId}`
+                        )
+                        if (!cell) return <MatrixCell cell={undefined} />
+
+                        const competencyName =
+                          competencyNames.get(competencyId) ??
+                          "Competência não identificada"
+
+                        return (
+                          <PositionSeniorityCompetencyEditorDialog
+                            positionId={positionId}
+                            competencyName={competencyName}
+                            profileLabel={column.label}
+                            cell={cell}
+                            setAction={setAction}
+                            clearAction={clearAction}
+                            trigger={
+                              <button
+                                type="button"
+                                className="w-full rounded-md p-1 text-left outline-none transition hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-blue-500"
+                                aria-label={`Editar ${competencyName} no perfil ${column.label}. ${cell.stateLabel}.`}
+                              >
+                                <MatrixCell cell={cell} />
+                              </button>
+                            }
+                          />
+                        )
+                      })()}
                     </td>
                   ))}
                 </tr>

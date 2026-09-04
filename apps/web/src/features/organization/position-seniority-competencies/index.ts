@@ -16,3 +16,5 @@ export {
 export { getPositionSeniorityCompetencyMatrix } from "./queries/get-position-seniority-competency-matrix"
 
 export { PositionSeniorityCompetencyMatrixSection } from "./components/position-seniority-competency-matrix-section"
+export { setPositionSeniorityCompetencyAction } from "./actions/set-position-seniority-competency-action"
+export { clearPositionSeniorityCompetencyAction } from "./actions/clear-position-seniority-competency-action"

@@ -4,6 +4,7 @@ import type {
   CompetencyCellSource,
   PositionSeniorityCompetencyCell,
 } from "../types/position-seniority-competency-cell"
+import type { SetPositionSeniorityCompetencyInput } from "../schemas/position-seniority-competency-command-schema"
 
 // Row shape returned by get_tenant_position_seniority_competency_matrix_v1 (0122).
 // Kept in snake_case to mirror the RETURNS TABLE contract exactly before mapping.
@@ -75,6 +76,35 @@ export async function createPositionSeniorityCompetencyRepository() {
         data: ((data as MatrixRow[] | null) ?? []).map(mapCell),
         error: null,
       }
+    },
+
+    async set(
+      companyId: string,
+      profileId: string,
+      competencyId: string,
+      expectation: Omit<
+        SetPositionSeniorityCompetencyInput,
+        "positionId" | "profileId" | "competencyId"
+      >
+    ) {
+      return supabase.rpc("set_tenant_position_seniority_competency_v1", {
+        p_company_id: companyId,
+        p_position_seniority_profile_id: profileId,
+        p_competency_id: competencyId,
+        p_expected_level: expectation.expectedLevel,
+        p_weight: expectation.weight,
+        p_required: expectation.required,
+        p_type: expectation.type,
+        p_notes: expectation.notes,
+      })
+    },
+
+    async clear(companyId: string, profileId: string, competencyId: string) {
+      return supabase.rpc("clear_tenant_position_seniority_competency_v1", {
+        p_company_id: companyId,
+        p_position_seniority_profile_id: profileId,
+        p_competency_id: competencyId,
+      })
     },
   }
 }

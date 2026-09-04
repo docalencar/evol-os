@@ -202,8 +202,8 @@ test("no direct protected SELECT / browser client / service_role in the read pat
   }
 })
 
-test("no mutation RPCs are wired in this read-only slice", () => {
-  for (const source of [repository, query, presenter]) {
+test("the read query and presenter do not wire mutation RPCs", () => {
+  for (const source of [query, presenter]) {
     assert.doesNotMatch(source, /set_tenant_position_seniority_competency_v1/)
     assert.doesNotMatch(source, /clear_tenant_position_seniority_competency_v1/)
   }

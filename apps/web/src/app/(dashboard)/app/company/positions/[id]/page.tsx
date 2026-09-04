@@ -21,8 +21,10 @@ import {
   type PositionRequirement,
 } from "@/features/organization/position-requirements"
 import {
+  clearPositionSeniorityCompetencyAction,
   getPositionSeniorityCompetencyMatrix,
   PositionSeniorityCompetencyMatrixSection,
+  setPositionSeniorityCompetencyAction,
 } from "@/features/organization/position-seniority-competencies"
 import {
   PositionCompetenciesCard,
@@ -252,6 +254,9 @@ export default async function PositionDetailsPage({
       />
 
       <PositionSeniorityCompetencyMatrixSection
+        positionId={position.id}
+        setAction={setPositionSeniorityCompetencyAction}
+        clearAction={clearPositionSeniorityCompetencyAction}
         matrix={positionSeniorityCompetencyMatrix}
         competencies={competencies ?? []}
         seniorities={positionSeniorities.applicable}

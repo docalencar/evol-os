@@ -22,6 +22,23 @@ export { createCompetencyAction } from "./actions/create-competency-action"
 export { updateCompetencyAction } from "./actions/update-competency-action"
 export { archiveCompetencyAction } from "./actions/archive-competency-action"
 
+export {
+  PROFICIENCY_LEVELS,
+  WEIGHT_LEVELS,
+  COMPETENCY_TYPES,
+  PROFICIENCY_LABELS,
+  WEIGHT_LABELS,
+  COMPETENCY_TYPE_LABELS,
+  proficiencyLabel,
+  weightLabel,
+  competencyTypeLabel,
+} from "./constants/competency-scale"
+export type {
+  ProficiencyLevel,
+  WeightLevel,
+  CompetencyType,
+} from "./constants/competency-scale"
+
 export { CompetencyForm } from "./components/competency-form"
 export { CompetencyCreateDialog } from "./components/competency-create-dialog"
 export { CompetencyEditDialog } from "./components/competency-edit-dialog"

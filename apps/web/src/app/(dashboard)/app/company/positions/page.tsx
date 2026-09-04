@@ -2,7 +2,6 @@ import { EntityBackLink } from "@/components/shared/entity-back-link"
 import { PageHeader } from "@/components/shared/page-header"
 import {
   getManagementDepartments,
-  getManagementPositionCompetencies,
   getManagementPositions,
 } from "@/features/dashboard-read"
 import {
@@ -21,17 +20,6 @@ export default async function PositionsPage() {
     getManagementDepartments(companyId),
     getSeniorityLevels(companyId),
   ])
-  const positionCompetencies = (
-    await Promise.all(
-      positions.map((position) =>
-        getManagementPositionCompetencies(
-          companyId,
-          position.id
-        )
-      )
-    )
-  ).flat()
-
   // Only ACTIVE catalog levels are offered as new selections.
   const seniorityLevels = (seniorityCatalog ?? [])
     .filter((level) => level.active)
@@ -82,7 +70,6 @@ export default async function PositionsPage() {
       <PositionTable
         positions={positions ?? []}
         departments={departmentOptions}
-        positionCompetencies={positionCompetencies ?? []}
         seniorityLevels={seniorityLevels}
         applicableSeniorityLevelIdsByPosition={
           applicableSeniorityLevelIdsByPosition

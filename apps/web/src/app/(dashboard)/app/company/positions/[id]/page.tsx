@@ -11,7 +11,6 @@ import {
   getManagementDepartments,
   getManagementEntityTimeline,
   getManagementPeople,
-  getManagementPositionCompetencies,
   getManagementPositionRequirements,
   getManagementPositions,
 } from "@/features/dashboard-read"
@@ -27,7 +26,6 @@ import {
   setPositionSeniorityCompetencyAction,
 } from "@/features/organization/position-seniority-competencies"
 import {
-  PositionCompetenciesCard,
   PositionEditDialog,
   PositionWorkspaceOverview,
   presentPositionWorkspace,
@@ -108,7 +106,6 @@ export default async function PositionDetailsPage({
 
   const [
     position,
-    positionCompetencies,
     competencies,
     positionRequirementsData,
     employeesData,
@@ -120,10 +117,6 @@ export default async function PositionDetailsPage({
     getManagementPositions(companyId).then(
       (rows) =>
         rows.find((row) => row.id === positionId) ?? null
-    ),
-    getManagementPositionCompetencies(
-      companyId,
-      positionId
     ),
     getManagementCompetencies(companyId),
     getManagementPositionRequirements(
@@ -168,7 +161,11 @@ export default async function PositionDetailsPage({
     position,
     department: positionDepartment,
     employees,
-    competencyCount: positionCompetencies?.length ?? 0,
+    competencyCount: new Set(
+      positionSeniorityCompetencyMatrix.cells.map(
+        (cell) => cell.competencyId
+      )
+    ).size,
     requirementCount: positionRequirements.length,
   })
 
@@ -244,13 +241,6 @@ export default async function PositionDetailsPage({
       <PositionWorkspaceOverview
         positionId={position.id}
         workspace={workspace}
-      />
-
-      <PositionCompetenciesCard
-        companyId={companyId}
-        positionId={position.id}
-        competencies={competencies ?? []}
-        positionCompetencies={positionCompetencies ?? []}
       />
 
       <PositionSeniorityCompetencyMatrixSection

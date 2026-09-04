@@ -33,15 +33,9 @@ type PositionTableItem = {
   travel_requirement: PositionTravelRequirement
 }
 
-type PositionCompetencyTableItem = {
-  id: string
-  position_id: string
-}
-
 type PositionTableProps = {
   positions: PositionTableItem[]
   departments: DepartmentOption[]
-  positionCompetencies?: PositionCompetencyTableItem[]
   seniorityLevels?: SeniorityLevelOption[]
   applicableSeniorityLevelIdsByPosition?: Readonly<
     Record<string, string[]>

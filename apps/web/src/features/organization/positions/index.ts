@@ -39,9 +39,6 @@ export {
   PositionOverviewCard,
 } from "./components/position-overview-card"
 export {
-  PositionCompetenciesCard,
-} from "./components/position-competencies-card"
-export {
   PositionEmployeesCard,
 } from "./components/position-employees-card"
 
@@ -53,4 +50,3 @@ export type {
   ApplyPositionSyncItemInput,
   ApplyPositionSyncItemResult,
 } from "./services/apply-position-sync-item"
-

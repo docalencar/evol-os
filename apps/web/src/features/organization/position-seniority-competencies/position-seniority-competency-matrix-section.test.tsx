@@ -56,10 +56,10 @@ function cell(
   }
 }
 
-test("Position detail uses the 4B-1 query and keeps the legacy competency card", () => {
+test("Position detail uses the canonical matrix without the legacy competency card", () => {
   assert.match(detailPage, /getPositionSeniorityCompetencyMatrix\(companyId, positionId\)/)
   assert.match(detailPage, /<PositionSeniorityCompetencyMatrixSection/)
-  assert.match(detailPage, /<PositionCompetenciesCard/)
+  assert.doesNotMatch(detailPage, /<PositionCompetenciesCard/)
   assert.doesNotMatch(detailPage, /\.from\("position_seniority_competencies"\)/)
 })
 

@@ -13,7 +13,6 @@ import {
 } from "@/features/assessment-feedback-read"
 import {
   getManagementCompetencies,
-  getManagementCompetencyAssignments,
   getManagementDepartments,
   getManagementDevelopmentPlans,
   getManagementEmployeeCompetencies,
@@ -23,6 +22,10 @@ import {
   getManagementPositions,
   getManagementTeams,
 } from "@/features/dashboard-read"
+
+import {
+  getCanonicalPersonCompetencyCoverage,
+} from "@/features/competencies/person-competency-gaps"
 
 import {
   EmployeeCompetenciesCard,
@@ -50,6 +53,11 @@ import {
 } from "@/features/people"
 
 import {
+  PersonCompetencyGapCard,
+  presentPersonCompetencyCoverage,
+} from "@/features/people/competencies"
+
+import {
   EmployeeProfileHeader,
   EmployeeProfileLayout,
   EmployeeProfileSidebar,
@@ -58,9 +66,7 @@ import {
 } from "@/features/people/profile"
 
 import {
-  CompetencyGapCard,
   createEmployeeInsights,
-  deriveCompetencyCoverage,
   TalentSummaryCard,
 } from "@/features/talent"
 
@@ -117,7 +123,7 @@ export default async function EmployeeProfilePage({
     employee,
     employeeCompetencies,
     competencies,
-    competencyAssignments,
+    canonicalCompetencyCoverage,
     teams,
     positions,
     employees,
@@ -134,7 +140,7 @@ export default async function EmployeeProfilePage({
 
     getManagementCompetencies(companyId),
 
-    getManagementCompetencyAssignments(companyId),
+    getCanonicalPersonCompetencyCoverage(companyId, id),
 
     getManagementTeams(companyId),
     getManagementPositions(companyId),
@@ -169,34 +175,17 @@ export default async function EmployeeProfilePage({
     redirect("/app/people")
   }
 
-  // Development plans and competency gaps are derived from tenant-safe read
-  // models only: filter plans to this employee, and compute gaps from the
-  // subject's position requirements (competency directory) versus the
-  // employee's current levels, reusing the existing gap business rule.
+  // Development plans remain scoped to this person. Competency expectations and
+  // current evidence come exclusively from the trusted 0123 person boundary;
+  // the canonical 5B service already resolved the factual gap semantics.
   const developmentPlans = allDevelopmentPlans.filter(
     (plan) => plan.employeeId === id
   )
 
-  const competencyCoverage = deriveCompetencyCoverage({
-    positionId: employee.position_id,
-    expectations: competencyAssignments
-      .filter(
-        (assignment) =>
-          assignment.record_type === "position" &&
-          assignment.position_id === employee.position_id
-      )
-      .map((assignment) => ({
-        competencyId: assignment.competency_id,
-        competencyName: assignment.competency_name,
-        expectedLevel: assignment.expected_level as number,
-        weight: assignment.weight as number,
-        required: assignment.required as boolean,
-      })),
-    employeeLevels: employeeCompetencies.map((competency) => ({
-      competencyId: competency.competency_id,
-      currentLevel: competency.current_level,
-    })),
-  })
+  const competencyPresentation = presentPersonCompetencyCoverage(
+    canonicalCompetencyCoverage
+  )
+  const competencyCoverage = competencyPresentation.legacyTalentCoverage
   const competencyGaps = [...competencyCoverage.gaps]
 
   const teamOptions = ((teams ?? []) as NamedEntity[]).map(
@@ -453,7 +442,7 @@ export default async function EmployeeProfilePage({
           ) : undefined
         }
       >
-        <CompetencyGapCard coverage={competencyCoverage} />
+        <PersonCompetencyGapCard coverage={competencyPresentation.canonical} />
       </DashboardSection>
 
       <DashboardSection title="Competências registradas">

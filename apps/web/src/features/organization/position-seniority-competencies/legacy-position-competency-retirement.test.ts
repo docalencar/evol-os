@@ -55,7 +55,7 @@ test("legacy reads remain available for downstream compatibility", () => {
   assert.match(legacyRepository, /findById/)
 })
 
-test("People and Development retain their product-critical competency reads", () => {
+test("People uses 0123 while Development retains its compatibility read", () => {
   const dashboardRepository = read(
     "../../dashboard-read/repositories/tenant-dashboard-read-repository.ts"
   )
@@ -65,7 +65,8 @@ test("People and Development retain their product-critical competency reads", ()
   )
 
   assert.match(dashboardRepository, /get_tenant_competency_directory_v1/)
-  assert.match(peoplePage, /getManagementCompetencyAssignments\(companyId\)/)
+  assert.match(peoplePage, /getCanonicalPersonCompetencyCoverage\(companyId, id\)/)
+  assert.doesNotMatch(peoplePage, /getManagementCompetencyAssignments/)
   assert.match(
     developmentDashboard,
     /getManagementCompetencyAssignments\(companyId\)/

@@ -3,6 +3,8 @@ export {
   InvalidPersonCompetencyExpectationRowsError,
 } from "./services/derive-canonical-person-competency-coverage"
 
+export { getCanonicalPersonCompetencyCoverage } from "./queries/get-canonical-person-competency-coverage"
+
 export type {
   CanonicalPersonCompetencyCoverage,
   CanonicalPersonCompetencyGap,

@@ -12,10 +12,10 @@ test("profile route reads through tenant-safe management boundaries", () => {
   assert.match(page, /getManagementPersonIncludingTerminated\(companyId, id\)/)
   // Employee competencies via the 0091 boundary (full source/validated_at/notes).
   assert.match(page, /getManagementEmployeeCompetencies\(companyId, id\)/)
-  // Competency catalog, competency directory (for gaps) and development plans
-  // via the approved read boundaries.
+  // Competency catalog, canonical person gaps and development plans via the
+  // approved read boundaries.
   assert.match(page, /getManagementCompetencies\(companyId\)/)
-  assert.match(page, /getManagementCompetencyAssignments\(companyId\)/)
+  assert.match(page, /getCanonicalPersonCompetencyCoverage\(companyId, id\)/)
   assert.match(page, /getManagementDevelopmentPlans\(companyId\)/)
 })
 
@@ -35,13 +35,12 @@ test("profile route performs no direct read on protected tables", () => {
   assert.doesNotMatch(page, /createClient|company_members/)
 })
 
-test("competency coverage and real gaps are derived from safe read models", () => {
-  // Coverage is computed from the subject's position requirements (directory)
-  // versus recorded levels. The shared resolver reuses calculateCompetencyGap
-  // only for assessed competencies, so missing data never becomes level zero.
-  assert.match(page, /deriveCompetencyCoverage\(/)
-  assert.match(page, /assignment\.record_type === "position"/)
-  assert.match(page, /assignment\.position_id === employee\.position_id/)
+test("competency coverage comes from the canonical person boundary", () => {
+  assert.match(page, /getCanonicalPersonCompetencyCoverage\(companyId, id\)/)
+  assert.match(page, /presentPersonCompetencyCoverage\(/)
+  assert.match(page, /PersonCompetencyGapCard/)
+  assert.doesNotMatch(page, /getManagementCompetencyAssignments/)
+  assert.doesNotMatch(page, /deriveCompetencyCoverage/)
   assert.doesNotMatch(page, /currentLevel:[\s\S]{0,100}\?\? 0/)
 })
 

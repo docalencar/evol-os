@@ -15,12 +15,21 @@ import { existsSync, readFileSync } from "node:fs"
 import { expect, test } from "@playwright/test"
 
 import { expectAuthenticatedShell, loginThroughUi } from "../auth/login"
-import { readManifest, storageStatePath } from "../helpers/run-context"
+import { readManifest, storageStatePath, type RunManifest } from "../helpers/run-context"
 
-const manifest = readManifest()
+/**
+ * Read lazily, never at module scope: `playwright test --list` and IDE runners
+ * load spec modules without running global setup, so a top-level `readManifest()`
+ * would make the suite un-listable.
+ */
+let cached: RunManifest | null = null
+function manifest(): RunManifest {
+  if (!cached) cached = readManifest()
+  return cached
+}
 
 function user(role: "admin" | "manager" | "employee") {
-  const found = manifest.users.find((candidate) => candidate.role === role)
+  const found = manifest().users.find((candidate) => candidate.role === role)
   if (!found) throw new Error(`E2E_FIXTURE_MISSING_ROLE: ${role}`)
   return found
 }
@@ -37,7 +46,7 @@ test.describe("authenticated Review smoke", () => {
     await expectAuthenticatedShell(page)
 
     // Tenant context must be this run's company, not any pre-existing Review data.
-    await expect(page.getByText(manifest.companyName ?? "__unset__")).toBeVisible()
+    await expect(page.getByText(manifest().companyName ?? "__unset__")).toBeVisible()
 
     // Reusable session for later specs. Captured from a genuine login; never forged.
     await page.context().storageState({ path: storageStatePath("admin") })

@@ -9,9 +9,11 @@
     "lint": "next lint",
     "test:projection": "tsx --test src/features/organization-planning/projection/**/*.test.ts",
     "e2e": "playwright test",
-    "e2e:review": "npm run e2e:install --silent && npm run e2e",
+    "e2e:review": "npm run e2e:preflight --silent && npm run e2e:install --silent && npm run e2e",
+    "e2e:preflight": "tsx e2e/preflight.ts",
     "e2e:install": "playwright install chromium",
-    "e2e:report": "playwright show-report e2e/.run/report"
+    "e2e:report": "playwright show-report e2e/.run/report",
+    "test:e2e-helpers": "tsx --test e2e/helpers/*.test.ts e2e/*.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

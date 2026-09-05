@@ -12,11 +12,17 @@
  */
 
 import { existsSync, readFileSync } from "node:fs"
-import { dirname, resolve } from "node:path"
-import { fileURLToPath } from "node:url"
+import { resolve } from "node:path"
 
-const HERE = dirname(fileURLToPath(import.meta.url))
-export const WEB_ROOT = resolve(HERE, "../..")
+import { validateAnonKey, validateServiceRoleKey } from "./credentials"
+import { resolveWebRoot } from "./paths"
+
+/**
+ * Resolved by walking up from the working directory rather than from
+ * `import.meta.url`: Playwright transpiles this module to CommonJS (neither
+ * package.json sets `"type": "module"`), where `import.meta` is a syntax error.
+ */
+export const WEB_ROOT = resolveWebRoot()
 
 /** Canonical Review identity. Hard-coded on purpose: it is the fail-closed anchor. */
 export const REVIEW_SUPABASE_REF = "rwfvxvbzaosgcyfxdjpt" as const
@@ -140,6 +146,26 @@ export function e2eEnv(): E2eEnv {
       `E2E_TARGET_NOT_CANONICAL: expected host ${REVIEW_CANONICAL_HOST}, got ${baseHost}. ` +
         `A localhost run is for harness debugging only and is not Review evidence; ` +
         `set E2E_ALLOW_NON_REVIEW_TARGET=true to acknowledge that.`,
+    )
+  }
+
+  // Credential shape is validated here as well as in the standalone preflight, so
+  // that a run started by any entry point still fails closed rather than
+  // discovering the problem mid-bootstrap.
+  const anonCheck = validateAnonKey(anonKey, supabaseRef)
+  if (!anonCheck.ok) {
+    throw new Error(`E2E_ANON_KEY_INVALID: ${anonCheck.reason}.`)
+  }
+
+  const serviceCheck = validateServiceRoleKey(serviceRoleKey, supabaseRef)
+  if (!serviceCheck.ok) {
+    throw new Error(`E2E_SERVICE_ROLE_KEY_INVALID: ${serviceCheck.reason}.`)
+  }
+
+  if (anonKey === serviceRoleKey) {
+    throw new Error(
+      `E2E_KEYS_IDENTICAL: E2E_SUPABASE_ANON_KEY and E2E_SUPABASE_SERVICE_ROLE_KEY ` +
+        `hold the same value.`,
     )
   }
 

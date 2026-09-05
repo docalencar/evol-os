@@ -11,11 +11,36 @@ cp apps/web/.env.e2e.example apps/web/.env.e2e.local   # then fill in the two ke
 npm --workspace apps/web run e2e:review
 ```
 
-`e2e:review` is the single entry point: it makes sure the Chromium build is present
-(a fast no-op once installed) and then runs the suite, which does target-identity
-preflight, fixture setup, the authenticated smoke and teardown in that order.
-`npm run e2e` skips the browser check if you know it is installed;
-`npm run e2e:report` opens the HTML report afterwards.
+`e2e:review` is the single entry point and runs in this order:
+
+| Step | What | Fails closed? |
+| --- | --- | --- |
+| A | `e2e:preflight` — local env presence and key-format validation, no network | **yes**, exits non-zero before anything else happens |
+| B | `e2e:install` — Chromium, a fast no-op once present | |
+| C | hosted Review identity proof, in Playwright global setup | **yes**, before any fixture is created |
+| D | fixture setup (synthetic identities, run-owned tenant) | |
+| E | authenticated smoke | |
+| F | teardown | |
+
+A missing or invalid credential stops at **A**: no browser download, no spec
+loaded, no fixture, and Review is never contacted. That guarantee lives in the
+repository, not in whatever shell snippet launched the run.
+
+`npm run e2e` skips A and B if you know the environment is good;
+`npm run e2e:report` opens the HTML report; `npm run test:e2e-helpers` runs the
+harness unit tests.
+
+### Accepted key formats
+
+| Slot | Accepted | Identity |
+| --- | --- | --- |
+| `E2E_SUPABASE_SERVICE_ROLE_KEY` | legacy JWT with `role=service_role` | verified from the payload `ref` |
+| | new-format `sb_secret_…` | **operator-attested** — the format embeds no project id |
+| `E2E_SUPABASE_ANON_KEY` | legacy JWT with `role=anon`, or `sb_publishable_…` | as above |
+
+A broad prefix alone is never enough: `sb_secret_` with nothing after it, an anon
+key in the service-role slot, a publishable key in the secret slot, a JWT for
+another project, or the same value in both slots are each rejected by name.
 
 `.env.e2e.local` is gitignored. Variables may equally be exported in the runner
 environment instead of using the file — CI should do that.

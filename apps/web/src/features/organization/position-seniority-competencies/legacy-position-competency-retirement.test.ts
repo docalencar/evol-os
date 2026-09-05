@@ -55,16 +55,27 @@ test("legacy reads remain available for downstream compatibility", () => {
   assert.match(legacyRepository, /findById/)
 })
 
-test("People uses 0123 while Development retains its compatibility read", () => {
+test("People and Dashboard are canonical while Development retains its compatibility read", () => {
   const dashboardRepository = read(
     "../../dashboard-read/repositories/tenant-dashboard-read-repository.ts"
+  )
+  const dashboardBulkRepository = read(
+    "../../competencies/person-competency-gaps/repositories/company-person-competency-expectation-repository.ts"
   )
   const peoplePage = read("../../../app/(dashboard)/app/people/[id]/page.tsx")
   const developmentDashboard = read(
     "../../development/services/get-development-executive-dashboard.ts"
   )
 
-  assert.match(dashboardRepository, /get_tenant_competency_directory_v1/)
+  assert.match(
+    dashboardBulkRepository,
+    /get_tenant_company_person_competency_expectations_v1/
+  )
+  assert.doesNotMatch(dashboardRepository, /get_tenant_competency_directory_v1/)
+  assert.doesNotMatch(
+    dashboardBulkRepository,
+    /get_tenant_person_competency_expectations_v1["']/
+  )
   assert.match(peoplePage, /getCanonicalPersonCompetencyCoverage\(companyId, id\)/)
   assert.doesNotMatch(peoplePage, /getManagementCompetencyAssignments/)
   assert.match(

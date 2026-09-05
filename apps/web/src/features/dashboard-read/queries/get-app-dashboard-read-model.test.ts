@@ -28,7 +28,7 @@ test("presents an empty tenant without fabricating dashboard data", async () => 
       organization: [],
       people: [],
       development: [],
-      competencies: [],
+      competencyCoverages: [],
       recruitment: [],
       activity: [],
     },
@@ -41,7 +41,7 @@ test("presents an empty tenant without fabricating dashboard data", async () => 
     criticalEmployees: 0,
   })
   assert.deepEqual(model.organization, { departments: 0, positions: 0, teams: 0 })
-  assert.deepEqual(model.developmentPriorities, [])
+  assert.deepEqual(model.competencyDevelopment.priorities, [])
   assert.deepEqual(model.jobOpenings, [])
   assert.deepEqual(model.companyTimeline.items, [])
 })

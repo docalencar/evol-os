@@ -23,7 +23,7 @@ const expectedRpcs = [
   "get_tenant_organization_directory_v1",
   "get_tenant_people_directory_v1",
   "get_tenant_development_dashboard_v1",
-  "get_tenant_competency_directory_v1",
+  "get_tenant_company_person_competency_expectations_v1",
   "get_tenant_recruitment_job_openings_v1",
   "get_tenant_activity_timeline_v1",
 ] as const
@@ -50,7 +50,7 @@ test("loads all dashboard projections with server-supplied tenant scope", async 
   const result = await repository.load("11111111-1111-4111-8111-111111111111", 20)
 
   assert.deepEqual(Object.keys(result), [
-    "organization", "people", "development", "competencies", "recruitment", "activity",
+    "organization", "people", "development", "competencyCoverages", "recruitment", "activity",
   ])
   assert.deepEqual(calls.map((call) => call.name), expectedRpcs)
   assert.deepEqual(calls[0].parameters, {

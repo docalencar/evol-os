@@ -1,7 +1,5 @@
-import {
-  DevelopmentPrioritiesCard,
-} from "@/features/development"
 import { DashboardSection, StatCard } from "@/components/dashboard"
+import { DashboardCompetencyDevelopmentCard } from "@/features/dashboard-read/components/dashboard-competency-development-card"
 import {
   getOrganizationalRisks,
   getWorkforceInsights,
@@ -29,7 +27,7 @@ export default async function AppPage() {
     health,
     talentOverview,
     organization,
-    developmentPriorities,
+    competencyDevelopment,
     jobOpenings,
     recruitmentOptions,
     companyTimeline,
@@ -74,9 +72,7 @@ export default async function AppPage() {
         </div>
       </DashboardSection>
 
-      <DevelopmentPrioritiesCard
-        priorities={developmentPriorities}
-      />
+      <DashboardCompetencyDevelopmentCard development={competencyDevelopment} />
 
       <OrganizationalRisks
         viewModel={presentOrganizationalRisks(risks)}

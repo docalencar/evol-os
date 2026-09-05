@@ -2,9 +2,6 @@ import "server-only"
 
 import { createServerDatabase } from "@/lib/database/server-database"
 
-import { calculateCompetencyGap } from "@/features/talent"
-import { createEmployeeInsights } from "@/features/talent/services/create-employee-insights"
-import type { DevelopmentPriority } from "@/features/talent"
 import type { WorkforceHealth } from "@/features/hr-intelligence"
 import type { TalentOverview } from "@/features/hr-intelligence/types/talent-overview"
 import type { OrganizationSummary } from "@/features/organization"
@@ -12,11 +9,12 @@ import type { JobOpening } from "@/features/recruitment"
 import { presentActivityTimeline } from "@/features/timeline/presenters/activity-timeline-presenter"
 import type { ActivityTimelineViewModel } from "@/features/timeline/view-models/activity-timeline-item-view-model"
 
+import { presentDashboardCompetencyDevelopment } from "../presenters/dashboard-competency-development-presenter"
 import {
   createTenantDashboardReadRepository,
-  type TenantCompetencyDirectoryRow,
   type TenantDashboardReadRows,
 } from "../repositories/tenant-dashboard-read-repository"
+import type { DashboardCompetencyDevelopment } from "../types/dashboard-competency-development"
 
 export type DashboardJobOpening = Pick<
   JobOpening,
@@ -36,7 +34,7 @@ export type AppDashboardReadModel = Readonly<{
   health: WorkforceHealth
   talentOverview: TalentOverview
   organization: OrganizationSummary
-  developmentPriorities: DevelopmentPriority[]
+  competencyDevelopment: DashboardCompetencyDevelopment
   jobOpenings: DashboardJobOpening[]
   recruitmentOptions: Readonly<{
     departments: Readonly<{ id: string; name: string }>[]
@@ -60,55 +58,6 @@ export type AppDashboardReadModel = Readonly<{
     templates: TenantDashboardReadRows["development"]
   }>
 }>
-
-function getEmployeeGaps(
-  employeeId: string,
-  positionId: string | null,
-  competencies: readonly TenantCompetencyDirectoryRow[],
-) {
-  if (!positionId) return []
-
-  const currentLevelByCompetency = new Map(
-    competencies
-      .filter((row) => row.record_type === "employee" && row.employee_id === employeeId)
-      .map((row) => [row.competency_id, row.current_level ?? 0]),
-  )
-
-  return competencies
-    .filter((row) => row.record_type === "position" && row.position_id === positionId)
-    .map((row) => calculateCompetencyGap({
-      competencyId: row.competency_id,
-      competencyName: row.competency_name,
-      currentLevel: currentLevelByCompetency.get(row.competency_id) ?? 0,
-      expectedLevel: row.expected_level ?? 0,
-      weight: row.weight ?? 0,
-      required: row.required ?? false,
-    }))
-}
-
-function createDevelopmentPriorities(rows: TenantDashboardReadRows): DevelopmentPriority[] {
-  const priorities = rows.people
-    .filter((person) => person.status === "active" || person.status === "on_leave")
-    .map((person) => {
-      const gaps = getEmployeeGaps(person.person_id, person.position_id, rows.competencies)
-      const insights = createEmployeeInsights(gaps)
-
-      return {
-        employeeId: person.person_id,
-        employeeName: person.full_name,
-        risk: insights.risk,
-        criticalGaps: gaps.filter((gap) => gap.status === "critical").length,
-        attentionGaps: gaps.filter((gap) => gap.status === "attention").length,
-        biggestGap: insights.biggestGap,
-      }
-    })
-
-  const riskWeight = { high: 3, medium: 2, low: 1 } as const
-  return priorities.sort((left, right) =>
-    riskWeight[right.risk] - riskWeight[left.risk]
-      || right.criticalGaps - left.criticalGaps,
-  )
-}
 
 export function presentAppDashboardReadModel(
   companyId: string,
@@ -136,7 +85,13 @@ export function presentAppDashboardReadModel(
       positions: positions.length,
       teams: teams.length,
     },
-    developmentPriorities: createDevelopmentPriorities(rows),
+    competencyDevelopment: presentDashboardCompetencyDevelopment(
+      rows.people.map((person) => ({
+        personId: person.person_id,
+        personName: person.full_name,
+      })),
+      rows.competencyCoverages,
+    ),
     jobOpenings: rows.recruitment.map((row) => ({
       id: row.job_opening_id,
       title: row.title,

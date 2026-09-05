@@ -8,7 +8,7 @@ export type PersonCompetencyAssignmentState =
 export type PersonCompetencyEvidenceState = "assessed" | "unassessed"
 
 // Raw factual row returned by
-// get_tenant_person_competency_expectations_v1 (migration 0123).
+// The person and company factual RPCs introduced by migrations 0123 and 0124.
 export type PersonCompetencyExpectationRow = Readonly<{
   assignment_state: string
   person_id: string

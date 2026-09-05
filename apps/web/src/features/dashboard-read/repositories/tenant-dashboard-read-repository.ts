@@ -3,6 +3,10 @@ import "server-only"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { z } from "zod"
 
+import type { CanonicalPersonCompetencyCoverage } from "@/features/competencies/person-competency-gaps/types/person-competency-gap"
+import { createCompanyPersonCompetencyExpectationRepository } from "@/features/competencies/person-competency-gaps/repositories/company-person-competency-expectation-repository"
+import { deriveCanonicalCompanyPersonCompetencyCoverages } from "@/features/competencies/person-competency-gaps/services/derive-canonical-company-person-competency-coverages"
+
 const uuid = z.string().uuid()
 const nullableUuid = uuid.nullable()
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -82,31 +86,6 @@ const developmentRowSchema = z.object({
   }
 })
 
-const competencyRowSchema = z.object({
-  record_type: z.enum(["employee", "position"]),
-  record_id: uuid,
-  employee_id: nullableUuid,
-  position_id: nullableUuid,
-  competency_id: uuid,
-  competency_name: z.string().min(1),
-  current_level: z.number().int().nullable(),
-  expected_level: z.number().int().nullable(),
-  weight: z.coerce.number().nullable(),
-  required: z.boolean().nullable(),
-}).strict().superRefine((row, context) => {
-  const valid = row.record_type === "employee"
-    ? row.employee_id !== null && row.position_id === null && row.current_level !== null
-    : row.employee_id === null
-      && row.position_id !== null
-      && row.expected_level !== null
-      && row.weight !== null
-      && row.required !== null
-
-  if (!valid) {
-    context.addIssue({ code: "custom", message: "Invalid competency row shape" })
-  }
-})
-
 const recruitmentRowSchema = z.object({
   job_opening_id: uuid,
   title: z.string().min(1),
@@ -145,7 +124,6 @@ const responseSchemas = {
   organization: z.array(organizationRowSchema),
   people: z.array(peopleRowSchema),
   development: z.array(developmentRowSchema),
-  competencies: z.array(competencyRowSchema),
   recruitment: z.array(recruitmentRowSchema),
   activity: z.array(activityRowSchema),
 } as const
@@ -153,7 +131,6 @@ const responseSchemas = {
 export type TenantOrganizationDirectoryRow = z.infer<typeof organizationRowSchema>
 export type TenantPeopleDirectoryRow = z.infer<typeof peopleRowSchema>
 export type TenantDevelopmentDashboardRow = z.infer<typeof developmentRowSchema>
-export type TenantCompetencyDirectoryRow = z.infer<typeof competencyRowSchema>
 export type TenantRecruitmentJobOpeningRow = z.infer<typeof recruitmentRowSchema>
 export type TenantActivityTimelineRow = z.infer<typeof activityRowSchema>
 
@@ -161,7 +138,7 @@ export type TenantDashboardReadRows = Readonly<{
   organization: readonly TenantOrganizationDirectoryRow[]
   people: readonly TenantPeopleDirectoryRow[]
   development: readonly TenantDevelopmentDashboardRow[]
-  competencies: readonly TenantCompetencyDirectoryRow[]
+  competencyCoverages: readonly CanonicalPersonCompetencyCoverage[]
   recruitment: readonly TenantRecruitmentJobOpeningRow[]
   activity: readonly TenantActivityTimelineRow[]
 }>
@@ -187,6 +164,8 @@ function parseResponse<Output>(
 }
 
 export function createTenantDashboardReadRepository(supabase: SupabaseClient) {
+  const companyCompetencyRepository =
+    createCompanyPersonCompetencyExpectationRepository(supabase)
   async function loadProjection<Output>(
     rpcName: string,
     parameters: Readonly<Record<string, unknown>>,
@@ -222,11 +201,10 @@ export function createTenantDashboardReadRepository(supabase: SupabaseClient) {
     { p_company_id: companyId },
     responseSchemas.development,
   )
-  const loadCompetencies = (companyId: string) => loadProjection(
-    "get_tenant_competency_directory_v1",
-    { p_company_id: companyId },
-    responseSchemas.competencies,
-  )
+  const loadCompetencyCoverages = async (companyId: string) =>
+    deriveCanonicalCompanyPersonCompetencyCoverages(
+      await companyCompetencyRepository.findByCompany(companyId),
+    )
   const loadRecruitment = (companyId: string) => loadProjection(
     "get_tenant_recruitment_job_openings_v1",
     { p_company_id: companyId },
@@ -242,17 +220,24 @@ export function createTenantDashboardReadRepository(supabase: SupabaseClient) {
     loadOrganization,
     loadPeople,
     loadDevelopment,
-    loadCompetencies,
+    loadCompetencyCoverages,
     loadRecruitment,
     loadActivity,
 
     async load(companyId: string, activityLimit = 20): Promise<TenantDashboardReadRows> {
-      const [organization, people, development, competencies, recruitment, activity] =
+      const [
+        organization,
+        people,
+        development,
+        competencyCoverages,
+        recruitment,
+        activity,
+      ] =
         await Promise.all([
           loadOrganization(companyId),
           loadPeople(companyId),
           loadDevelopment(companyId),
-          loadCompetencies(companyId),
+          loadCompetencyCoverages(companyId),
           loadRecruitment(companyId),
           loadActivity(companyId, activityLimit),
         ])
@@ -261,7 +246,7 @@ export function createTenantDashboardReadRepository(supabase: SupabaseClient) {
         organization,
         people,
         development,
-        competencies,
+        competencyCoverages,
         recruitment,
         activity,
       })

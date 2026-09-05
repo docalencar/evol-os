@@ -7,9 +7,20 @@ imported by application code in `src/`.
 ## Running
 
 ```bash
-cp apps/web/.env.e2e.example apps/web/.env.e2e.local   # then fill in the two keys
+npm --workspace apps/web run e2e:set-service-key   # hidden prompt, once
 npm --workspace apps/web run e2e:review
 ```
+
+`e2e:set-service-key` reads the key from the terminal with echo disabled, validates
+it with the same validator the preflight uses, and writes only
+`apps/web/.env.e2e.local` at mode 600. The value never passes through `argv`, so it
+cannot appear in `ps` output or shell history, and it is never printed — success
+says only `E2E_SUPABASE_SERVICE_ROLE_KEY=CONFIGURED`. On rejection nothing is
+written and you get a metadata-only explanation.
+
+The other non-secret variables are seeded automatically if the file does not exist
+yet; `E2E_SUPABASE_ANON_KEY` still has to be filled in by hand or copied from
+`apps/web/.env.review.local`.
 
 `e2e:review` is the single entry point and runs in this order:
 
@@ -59,17 +70,15 @@ hash would be a stable identifier for the secret. Non-ASCII codepoints *are*
 named, because they cannot occur in a real key: `U+2022` means a masked dashboard
 field was copied instead of the revealed value.
 
-### Setting the key without a clipboard
+### Why there is no clipboard step
 
-Prefer a hidden prompt over `pbpaste`. If you copy a command block in order to run
-it, the clipboard holds the *command*, not your key — so a clipboard-based flow
-reads back the wrong thing:
+An earlier flow said "copy the key, then run this shell block", where the block
+read the clipboard. Copying the block in order to run it overwrites the clipboard
+first, so the block read its own text back and wrote a shell command into the env
+file. The two clipboard uses collide by construction.
 
-```bash
-read -rs -p "Review service-role key: " KEY && echo
-```
-
-The value is not echoed and does not enter shell history.
+`e2e:set-service-key` takes no arguments and reads no clipboard, which removes the
+whole class of failure.
 
 `.env.e2e.local` is gitignored. Variables may equally be exported in the runner
 environment instead of using the file — CI should do that.

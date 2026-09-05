@@ -57,7 +57,7 @@ test("in-scope pages consume management read models without legacy reads", () =>
   )
   assert.match(
     pages.position,
-    /getManagementPositionCompetencies/
+    /getPositionSeniorityCompetencyMatrix/
   )
   assert.match(
     pages.position,

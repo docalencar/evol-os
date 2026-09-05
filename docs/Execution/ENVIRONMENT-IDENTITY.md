@@ -22,7 +22,7 @@ Supabase project ref, branch. Keys, tokens and connection strings never do.
 | --- | --- | --- | --- |
 | `environment` | `LOCAL` | `REVIEW` | `PRODUCTION` |
 | `web_provider` | local dev server | Vercel | *not established* |
-| `web_project_name` | — | `evol-os-review` | *not established* |
+| `web_project_name` | — | `evol-os-review` *(proposed; confirm on creation)* | *not established* |
 | `web_project_id` | — | `TODO_AFTER_PROVISIONING` | — |
 | `web_root_directory` | `apps/web` | `apps/web` | — |
 | `web_base_url` | `http://localhost:3000` | `TODO_AFTER_PROVISIONING` | — |

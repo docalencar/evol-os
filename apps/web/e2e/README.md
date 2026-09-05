@@ -8,9 +8,14 @@ imported by application code in `src/`.
 
 ```bash
 cp apps/web/.env.e2e.example apps/web/.env.e2e.local   # then fill in the two keys
-npm --workspace apps/web run e2e:install                # one-time browser download
-npm --workspace apps/web run e2e
+npm --workspace apps/web run e2e:review
 ```
+
+`e2e:review` is the single entry point: it makes sure the Chromium build is present
+(a fast no-op once installed) and then runs the suite, which does target-identity
+preflight, fixture setup, the authenticated smoke and teardown in that order.
+`npm run e2e` skips the browser check if you know it is installed;
+`npm run e2e:report` opens the HTML report afterwards.
 
 `.env.e2e.local` is gitignored. Variables may equally be exported in the runner
 environment instead of using the file — CI should do that.

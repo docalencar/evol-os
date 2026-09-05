@@ -7,8 +7,18 @@
  */
 
 import assert from "node:assert/strict"
-import { existsSync, readFileSync, rmSync, statSync } from "node:fs"
+import { mkdtempSync, existsSync, readFileSync, rmSync, statSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { resolve } from "node:path"
 import test from "node:test"
+
+/**
+ * Redirect run state to a throwaway directory BEFORE importing anything that
+ * resolves it. An earlier revision ran these tests against the real `.run`
+ * directory, and `afterEach`'s `discardJournal()` silently deleted a live
+ * recovery journal. A test suite must never be able to destroy operational state.
+ */
+process.env.E2E_RUN_DIR = mkdtempSync(resolve(tmpdir(), "evol-e2e-journal-"))
 
 import {
   discardJournal,
@@ -50,6 +60,13 @@ test.afterEach(() => {
   if (existsSync(stray)) rmSync(stray, { force: true })
 })
 
+test("these tests operate on a temporary directory, never the real run state", () => {
+  const dir = process.env.E2E_RUN_DIR ?? ""
+  assert.notEqual(dir, "")
+  assert.equal(journalPath().startsWith(dir), true)
+  assert.equal(journalPath().includes("/apps/web/e2e/.run/"), false)
+})
+
 test("the journal exists before any resource is created", () => {
   openJournal(SEED)
   const onDisk = readJournal()
@@ -81,7 +98,7 @@ test("a crash after user creation still leaves recoverable ownership", () => {
   const recovered = readJournal()
   assert.equal(recovered?.setupComplete, false)
   assert.deepEqual(
-    recovered?.owned.map((resource) => resource.id),
+    recovered?.owned.map((resource) => (resource.kind === "membership" ? null : resource.id)),
     ["user-1", "user-2"],
   )
 })

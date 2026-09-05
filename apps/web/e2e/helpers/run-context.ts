@@ -8,15 +8,9 @@
 
 import { randomBytes } from "node:crypto"
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
-import { resolve } from "node:path"
+import { journalFile, runDir, storageStateFile } from "./run-paths"
 
-import { WEB_ROOT } from "./env"
 
-export const E2E_DIR = resolve(WEB_ROOT, "e2e")
-/** Untracked. Holds storage state and the run manifest. Never committed. */
-export const RUN_DIR = resolve(E2E_DIR, ".run")
-
-const MANIFEST = resolve(RUN_DIR, "run.json")
 
 export type SyntheticRole = "admin" | "manager" | "employee"
 
@@ -57,7 +51,7 @@ export function newRunId(): string {
 }
 
 export function ensureRunDir(): void {
-  if (!existsSync(RUN_DIR)) mkdirSync(RUN_DIR, { recursive: true })
+  if (!existsSync(runDir())) mkdirSync(runDir(), { recursive: true, mode: 0o700 })
 }
 
 /**
@@ -66,17 +60,17 @@ export function ensureRunDir(): void {
  */
 
 export function readManifest(): RunManifest {
-  if (!existsSync(MANIFEST)) {
+  if (!existsSync(journalFile())) {
     throw new Error(
       "E2E_RUN_MANIFEST_MISSING: global setup did not complete. Run the full " +
         "Playwright command rather than a single spec in isolation.",
     )
   }
-  return JSON.parse(readFileSync(MANIFEST, "utf8")) as RunManifest
+  return JSON.parse(readFileSync(journalFile(), "utf8")) as RunManifest
 }
 
 export function storageStatePath(role: SyntheticRole): string {
-  return resolve(RUN_DIR, `storage-state.${role}.json`)
+  return storageStateFile(role)
 }
 
 export function syntheticEmail(runId: string, role: SyntheticRole, domain: string): string {

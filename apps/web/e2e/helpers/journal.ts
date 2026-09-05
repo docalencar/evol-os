@@ -17,11 +17,8 @@
  */
 
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs"
-import { resolve } from "node:path"
-
-import { RUN_DIR, type RunManifest, type SyntheticUser } from "./run-context"
-
-const JOURNAL = resolve(RUN_DIR, "run.json")
+import { journalFile, runDir } from "./run-paths"
+import type { RunManifest, SyntheticUser } from "./run-context"
 
 /** Resource kinds the journal can own, in the order they must be destroyed. */
 export type OwnedResource =
@@ -44,7 +41,7 @@ function writeAtomic(path: string, contents: string): void {
 }
 
 export function journalPath(): string {
-  return JOURNAL
+  return journalFile()
 }
 
 /**
@@ -52,30 +49,30 @@ export function journalPath(): string {
  * an immediate failure leaves a file teardown can act on.
  */
 export function openJournal(seed: Omit<RunManifest, "users">): Journal {
-  if (!existsSync(RUN_DIR)) mkdirSync(RUN_DIR, { recursive: true, mode: 0o700 })
+  if (!existsSync(runDir())) mkdirSync(runDir(), { recursive: true, mode: 0o700 })
   const journal: Journal = { ...seed, users: [], owned: [], setupComplete: false }
-  writeAtomic(JOURNAL, JSON.stringify(journal, null, 2))
+  writeAtomic(journalFile(), JSON.stringify(journal, null, 2))
   return journal
 }
 
 /** Persist immediately. Every caller must treat this as part of the mutation. */
 export function record(journal: Journal, resource: OwnedResource): Journal {
   journal.owned.push(resource)
-  writeAtomic(JOURNAL, JSON.stringify(journal, null, 2))
+  writeAtomic(journalFile(), JSON.stringify(journal, null, 2))
   return journal
 }
 
 export function recordUser(journal: Journal, user: SyntheticUser): Journal {
   journal.users.push(user)
   journal.owned.push({ kind: "auth.user", id: user.userId })
-  writeAtomic(JOURNAL, JSON.stringify(journal, null, 2))
+  writeAtomic(journalFile(), JSON.stringify(journal, null, 2))
   return journal
 }
 
 /** Replace a user entry once later steps learn its person id. */
 export function updateUser(journal: Journal, updated: SyntheticUser): Journal {
   journal.users = journal.users.map((user) => (user.userId === updated.userId ? updated : user))
-  writeAtomic(JOURNAL, JSON.stringify(journal, null, 2))
+  writeAtomic(journalFile(), JSON.stringify(journal, null, 2))
   return journal
 }
 
@@ -87,25 +84,25 @@ export function setCompany(
   journal.companyName = company.name
   journal.companySlug = company.slug
   journal.owned.push({ kind: "company", id: company.id })
-  writeAtomic(JOURNAL, JSON.stringify(journal, null, 2))
+  writeAtomic(journalFile(), JSON.stringify(journal, null, 2))
   return journal
 }
 
 export function markSetupComplete(journal: Journal): Journal {
   journal.setupComplete = true
-  writeAtomic(JOURNAL, JSON.stringify(journal, null, 2))
+  writeAtomic(journalFile(), JSON.stringify(journal, null, 2))
   return journal
 }
 
 export function readJournal(): Journal | null {
-  if (!existsSync(JOURNAL)) return null
+  if (!existsSync(journalFile())) return null
   try {
-    return JSON.parse(readFileSync(JOURNAL, "utf8")) as Journal
+    return JSON.parse(readFileSync(journalFile(), "utf8")) as Journal
   } catch {
     return null
   }
 }
 
 export function discardJournal(): void {
-  if (existsSync(JOURNAL)) rmSync(JOURNAL, { force: true })
+  if (existsSync(journalFile())) rmSync(journalFile(), { force: true })
 }

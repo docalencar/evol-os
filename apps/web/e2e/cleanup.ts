@@ -14,12 +14,12 @@
 
 import { existsSync, rmSync } from "node:fs"
 
-import { destroyRunFixtures } from "./fixtures/tenant-fixture"
+import { destroyRunFixtures, reconcileOwnedCompanies } from "./fixtures/tenant-fixture"
 import { e2eEnv } from "./helpers/env"
 import { discardJournal, journalPath, readJournal } from "./helpers/journal"
 import { storageStatePath, type SyntheticRole } from "./helpers/run-context"
 
-const ROLES: SyntheticRole[] = ["admin", "manager", "employee"]
+const ROLES: SyntheticRole[] = ["admin", "manager", "employee", "onboarding"]
 
 export type CleanupOutcome = Readonly<{
   ok: boolean
@@ -51,6 +51,18 @@ export function validateJournal(journal: unknown): { ok: true } | { ok: false; r
   if (candidate.companyId !== null && candidate.companyId !== undefined) {
     if (typeof candidate.companyId !== "string" || !UUID.test(candidate.companyId)) {
       return { ok: false, reason: "companyId is not a complete UUID" }
+    }
+  }
+
+  // Tenant B, when the onboarding journey has run. Same standard as tenant A:
+  // a partial id here would be a different predicate, not a narrower one.
+  if (candidate.onboardingCompany !== null && candidate.onboardingCompany !== undefined) {
+    const tenant = candidate.onboardingCompany as Record<string, unknown>
+    if (typeof tenant?.companyId !== "string" || !UUID.test(tenant.companyId)) {
+      return { ok: false, reason: "onboardingCompany.companyId is not a complete UUID" }
+    }
+    if (typeof tenant.ownerUserId !== "string" || !UUID.test(tenant.ownerUserId)) {
+      return { ok: false, reason: "onboardingCompany.ownerUserId is not a complete UUID" }
     }
   }
 
@@ -114,6 +126,62 @@ export async function cleanupRecordedRun(): Promise<CleanupOutcome> {
     }
   }
 
+  // Complete the journal from an authoritative source BEFORE anything is deleted.
+  // The onboarding journey creates a company through the browser, so there is a
+  // window in which a company exists that the journal has not yet heard about.
+  // Only full UUIDs, only companies this run's own users OWN, and each one is
+  // written to the journal before it becomes a deletion candidate.
+  //
+  // Every uncertain outcome stops cleanup. Proceeding on a failed or ambiguous
+  // reconciliation would delete a partially-known set of resources and then
+  // report success, which is worse than stopping: it destroys the evidence
+  // needed to finish the job by hand.
+  const reconciliation = await reconcileOwnedCompanies(journal)
+
+  if (reconciliation.status === "unavailable") {
+    return {
+      ok: false,
+      message:
+        `could not reconcile run-owned companies (${reconciliation.reason}). Refusing to ` +
+        `delete: an unreadable control plane is not evidence that nothing was created. ` +
+        `The journal was kept.`,
+      orphaned: [],
+    }
+  }
+
+  if (reconciliation.status === "unusable") {
+    return {
+      ok: false,
+      message:
+        `reconciliation returned an id that is not a complete UUID (${reconciliation.reason}). ` +
+        `Refusing to delete: a partial id is a different predicate, not a narrower one.`,
+      orphaned: [],
+    }
+  }
+
+  if (reconciliation.status === "ambiguous") {
+    return {
+      ok: false,
+      message:
+        `ambiguous ownership: synthetic user ${reconciliation.userId} owns more than one ` +
+        `unjournalled company (${reconciliation.candidates.join(", ")}). One identity can own ` +
+        `at most one company, so this run's model does not match reality. Refusing to guess ` +
+        `which to delete — resolve these by hand, then re-run cleanup.`,
+      orphaned: reconciliation.candidates.map((id) => ({
+        kind: "company",
+        id,
+        reason: "ambiguous ownership — not deleted",
+      })),
+    }
+  }
+
+  if (reconciliation.adopted.length > 0) {
+    console.warn(
+      `[e2e] reconciled ${reconciliation.adopted.length} unjournalled company/companies ` +
+        `owned by this run's synthetic users: ${reconciliation.adopted.join(", ")}`,
+    )
+  }
+
   const report = await destroyRunFixtures(journal)
 
   for (const role of ROLES) {
@@ -126,8 +194,8 @@ export async function cleanupRecordedRun(): Promise<CleanupOutcome> {
     return {
       ok: true,
       message:
-        `run ${journal.runId} cleaned: company ${report.companyDeleted ? "removed" : "n/a"}, ` +
-        `${report.usersDeleted.length} auth user(s) removed.`,
+        `run ${journal.runId} cleaned: ${report.companiesDeleted.length} company/companies ` +
+        `removed, ${report.usersDeleted.length} auth user(s) removed.`,
       orphaned: [],
     }
   }

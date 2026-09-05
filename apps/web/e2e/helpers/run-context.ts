@@ -12,7 +12,19 @@ import { journalFile, runDir, storageStateFile } from "./run-paths"
 
 
 
-export type SyntheticRole = "admin" | "manager" | "employee"
+/**
+ * Roles the harness bootstraps.
+ *
+ * `admin`, `manager` and `employee` belong to the run's fixture tenant (tenant A),
+ * created by `createTenantFixture`.
+ *
+ * `onboarding` is deliberately different: it is created with **no membership at
+ * all**, because `create_company_with_owner` refuses a caller who already has an
+ * active one. It is the only identity that can walk the real first-access
+ * journey, and the company it creates through the UI becomes tenant B — the
+ * foreign tenant the isolation proof needs. No second fixture company exists.
+ */
+export type SyntheticRole = "admin" | "manager" | "employee" | "onboarding"
 
 export type SyntheticUser = Readonly<{
   role: SyntheticRole
@@ -30,14 +42,34 @@ export type SyntheticUser = Readonly<{
   password: string
 }>
 
+/**
+ * A tenant this run owns. Tenant A is written by the fixture; tenant B is written
+ * by the onboarding spec once the browser has actually created it.
+ */
+export type OwnedTenant = Readonly<{
+  companyId: string
+  companyName: string
+  /** Null for tenant B: the slug is generated server-side and never displayed. */
+  companySlug: string | null
+  /** The auth user that owns it — always one of this run's synthetic identities. */
+  ownerUserId: string
+}>
+
 export type RunManifest = {
   runId: string
   createdAt: string
   baseUrl: string
   supabaseRef: string
+  /** Tenant A. Kept as scalars so the E2E-0 manifest shape is unchanged. */
   companyId: string | null
   companySlug: string | null
   companyName: string | null
+  /**
+   * Tenant B — created through the real onboarding UI by the `onboarding`
+   * identity, so it exists only after spec 02 has run. Written by the spec, not
+   * by global setup, because a journey action is never bootstrap data.
+   */
+  onboardingCompany: OwnedTenant | null
   users: SyntheticUser[]
 }
 

@@ -16,7 +16,15 @@ import type { SyntheticUser } from "../helpers/run-context"
 /** Stable marker rendered by the dashboard header's tenant switcher. */
 export const TENANT_CONTEXT_LABEL = "Empresa atual"
 
-export async function loginThroughUi(page: Page, user: SyntheticUser): Promise<void> {
+/**
+ * Submit the real login form and wait until the app has left `/login`.
+ *
+ * Where it lands is deliberately NOT asserted here: a user with a tenant reaches
+ * `/app`, while a user with no membership is sent on to `/onboarding`. Both are
+ * correct product behaviour, and baking `/app` into the shared helper would have
+ * made the first-access journey untestable.
+ */
+export async function submitLoginForm(page: Page, user: SyntheticUser): Promise<void> {
   await page.goto("/login")
 
   await expect(page.getByRole("heading", { name: /Entrar na Evol/i })).toBeVisible()
@@ -30,9 +38,30 @@ export async function loginThroughUi(page: Page, user: SyntheticUser): Promise<v
     page.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 30_000 }),
     page.getByRole("button", { name: /^Entrar$/ }).click(),
   ])
+}
+
+/** Log in as a user that already has a tenant, and wait for the dashboard. */
+export async function loginThroughUi(page: Page, user: SyntheticUser): Promise<void> {
+  await submitLoginForm(page, user)
 
   // `/auth/continue` resolves any pending invitation and otherwise lands on /app.
   await page.waitForURL(/\/app(\/|$)/, { timeout: 30_000 })
+}
+
+/**
+ * Log in as a user with no membership and wait for the app's own redirect into
+ * first-access onboarding. The redirect is the product's, not the test's: `/app`
+ * resolves the tenant, fails to find one, and sends the user to `/onboarding`.
+ */
+export async function loginExpectingOnboarding(page: Page, user: SyntheticUser): Promise<void> {
+  await submitLoginForm(page, user)
+  await page.waitForURL(/\/onboarding(\/|\?|$)/, { timeout: 30_000 })
+}
+
+/** The company name the dashboard header shows for the resolved tenant. */
+export async function expectTenantContext(page: Page, companyName: string): Promise<void> {
+  await expect(page.getByText(TENANT_CONTEXT_LABEL)).toBeVisible()
+  await expect(page.getByText(companyName, { exact: false }).first()).toBeVisible()
 }
 
 export async function expectAuthenticatedShell(page: Page): Promise<void> {

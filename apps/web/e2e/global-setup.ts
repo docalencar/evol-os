@@ -22,7 +22,17 @@ import { assertReviewTarget } from "./helpers/target-identity"
 import { createSyntheticUser } from "./fixtures/synthetic-identity"
 import { createTenantFixture, destroyRunFixtures } from "./fixtures/tenant-fixture"
 
-const ROLES: SyntheticRole[] = ["admin", "manager", "employee"]
+/** Identities that become members of the run's fixture tenant (tenant A). */
+const TENANT_ROLES: SyntheticRole[] = ["admin", "manager", "employee"]
+
+/**
+ * Identities created with NO membership.
+ *
+ * `create_company_with_owner` raises `USER_ALREADY_HAS_COMPANY` for a caller who
+ * already has an active membership, so the real first-access journey is only
+ * walkable by an identity the fixture has deliberately left unattached.
+ */
+const UNATTACHED_ROLES: SyntheticRole[] = ["onboarding"]
 
 export default async function globalSetup(): Promise<void> {
   const env = e2eEnv()
@@ -64,16 +74,25 @@ export default async function globalSetup(): Promise<void> {
 
   try {
     const created: SyntheticUser[] = []
-    for (const role of ROLES) {
+    for (const role of TENANT_ROLES) {
       const user = await createSyntheticUser(runId, role)
       recordUser(journal, user) // journalled immediately, before the next call
       created.push(user)
+    }
+
+    // Created after the tenant roles and never passed to `createTenantFixture`,
+    // so it reaches the specs with no company at all — the only start state from
+    // which the onboarding journey is real.
+    for (const role of UNATTACHED_ROLES) {
+      const user = await createSyntheticUser(runId, role)
+      recordUser(journal, user)
     }
 
     const tenant = await createTenantFixture(runId, created, journal)
     markSetupComplete(journal)
 
     console.log("[e2e] company       : " + tenant.companySlug + " (" + tenant.companyId + ")")
+    console.log("[e2e] unattached    : " + UNATTACHED_ROLES.join(", ") + " (no membership)")
   } catch (cause) {
     console.error(
       "[e2e] setup failed — rolling back everything recorded in the journal for run " + runId,
@@ -86,8 +105,8 @@ export default async function globalSetup(): Promise<void> {
     // previous rollback left an orphan behind.
     const report = await destroyRunFixtures(journal)
     console.error(
-      "[e2e] rollback: company " + (report.companyDeleted ? "removed" : "n/a") +
-        ", " + report.usersDeleted.length + " auth user(s) removed",
+      "[e2e] rollback: " + report.companiesDeleted.length + " company/companies removed, " +
+        report.usersDeleted.length + " auth user(s) removed",
     )
     for (const orphan of report.orphaned) {
       console.error(

@@ -18,7 +18,7 @@
 
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs"
 import { journalFile, runDir } from "./run-paths"
-import type { RunManifest, SyntheticUser } from "./run-context"
+import type { OwnedTenant, RunManifest, SyntheticUser } from "./run-context"
 
 /** Resource kinds the journal can own, in the order they must be destroyed. */
 export type OwnedResource =
@@ -48,9 +48,15 @@ export function journalPath(): string {
  * Create the journal. Called before anything is created on Review, so that even
  * an immediate failure leaves a file teardown can act on.
  */
-export function openJournal(seed: Omit<RunManifest, "users">): Journal {
+export function openJournal(seed: Omit<RunManifest, "users" | "onboardingCompany">): Journal {
   if (!existsSync(runDir())) mkdirSync(runDir(), { recursive: true, mode: 0o700 })
-  const journal: Journal = { ...seed, users: [], owned: [], setupComplete: false }
+  const journal: Journal = {
+    ...seed,
+    onboardingCompany: null,
+    users: [],
+    owned: [],
+    setupComplete: false,
+  }
   writeAtomic(journalFile(), JSON.stringify(journal, null, 2))
   return journal
 }
@@ -86,6 +92,54 @@ export function setCompany(
   journal.owned.push({ kind: "company", id: company.id })
   writeAtomic(journalFile(), JSON.stringify(journal, null, 2))
   return journal
+}
+
+/**
+ * Record tenant B — the company the onboarding journey created through the UI.
+ *
+ * Deliberately does NOT touch the tenant-A scalars: `companyId` stays the fixture
+ * tenant so every existing reader keeps its meaning. The company still lands in
+ * `owned`, which is the only thing teardown deletes from.
+ *
+ * Called from a spec rather than from setup, because the browser created it. The
+ * window between the click and this call is covered by
+ * `reconcileOwnedCompanies` in teardown, which finds any company a journalled
+ * synthetic user owns and records it before anything is deleted.
+ */
+export function setOnboardingCompany(journal: Journal, tenant: OwnedTenant): Journal {
+  journal.onboardingCompany = tenant
+  if (!journal.owned.some((r) => r.kind === "company" && r.id === tenant.companyId)) {
+    journal.owned.push({ kind: "company", id: tenant.companyId })
+  }
+  writeAtomic(journalFile(), JSON.stringify(journal, null, 2))
+  return journal
+}
+
+/**
+ * Record a company found by reconciliation. Idempotent, and never overwrites the
+ * tenant-A scalars.
+ */
+export function recordCompany(journal: Journal, companyId: string): Journal {
+  if (journal.owned.some((r) => r.kind === "company" && r.id === companyId)) return journal
+  journal.owned.push({ kind: "company", id: companyId })
+  writeAtomic(journalFile(), JSON.stringify(journal, null, 2))
+  return journal
+}
+
+/** Every company this run owns, tenant A first. Full UUIDs only, no inference. */
+export function ownedCompanyIds(journal: {
+  companyId?: string | null
+  owned?: ReadonlyArray<{ kind: string; id?: string }>
+}): string[] {
+  const ids: string[] = []
+  const add = (id: string | null | undefined) => {
+    if (typeof id === "string" && id.length > 0 && !ids.includes(id)) ids.push(id)
+  }
+  add(journal.companyId ?? null)
+  for (const resource of journal.owned ?? []) {
+    if (resource.kind === "company") add(resource.id)
+  }
+  return ids
 }
 
 export function markSetupComplete(journal: Journal): Journal {

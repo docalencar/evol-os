@@ -48,7 +48,9 @@
 
 import { adminClient, userClient } from "../helpers/admin-client"
 import {
+  ownedCompanyIds,
   record,
+  recordCompany,
   recordUser,
   setCompany,
   updateUser,
@@ -203,7 +205,10 @@ export async function createTenantFixture(
 }
 
 export type CleanupReport = Readonly<{
+  /** True when at least one company went. Kept for existing readers. */
   companyDeleted: boolean
+  /** Every company actually removed — one per tenant this run owned. */
+  companiesDeleted: string[]
   usersDeleted: string[]
   orphaned: Array<{ kind: string; id: string; reason: string }>
   nothingToDo: boolean
@@ -226,18 +231,17 @@ export async function destroyRunFixtures(journal: {
   owned?: OwnedResourceLike[]
 }): Promise<CleanupReport> {
   const orphaned: CleanupReport["orphaned"] = []
-  let companyDeleted = false
+  const companiesDeleted: string[] = []
 
-  const recordedCompany = journal.owned?.find(
-    (resource): resource is { kind: "company"; id: string } =>
-      resource.kind === "company" && typeof resource.id === "string",
-  )
-  const companyId = journal.companyId ?? recordedCompany?.id ?? null
+  // Every journalled company, not just the first. E2E-1 introduced a second
+  // tenant — created through the onboarding UI — and the previous single-company
+  // path would have silently left it behind while still reporting success.
+  const companyIds = ownedCompanyIds(journal)
 
-  if (companyId) {
+  for (const companyId of companyIds) {
     const { error } = await adminClient().from("companies").delete().eq("id", companyId)
     if (error) orphaned.push({ kind: "company", id: companyId, reason: error.message })
-    else companyDeleted = true
+    else companiesDeleted.push(companyId)
   }
 
   const { deleteSyntheticUsers } = await import("./synthetic-identity")
@@ -252,11 +256,156 @@ export async function destroyRunFixtures(journal: {
   }
 
   return Object.freeze({
-    companyDeleted,
+    companyDeleted: companiesDeleted.length > 0,
+    companiesDeleted,
     usersDeleted: deleted,
     orphaned,
-    nothingToDo: !companyId && userIds.size === 0,
+    nothingToDo: companyIds.length === 0 && userIds.size === 0,
   })
+}
+
+/**
+ * Close the crash window around UI-created tenants.
+ *
+ * The onboarding journey creates a company by clicking a button. Between that
+ * click and the spec journalling the result, a crash would strand a company that
+ * teardown has no authority to delete — the journal would simply not know it.
+ *
+ * So before deleting anything, ask the database which companies this run's own
+ * synthetic users **own**, and record any that are missing. This is not a
+ * broadened predicate and not inference: the input is the set of full auth-user
+ * UUIDs the journal already owns, the output is full company UUIDs read from
+ * `company_members` filtered to `role = 'owner'`, and every one of them is
+ * written to the journal *before* it becomes a deletion candidate. The journal
+ * stays the only deletion authority.
+ *
+ * A synthetic user created minutes ago by this run cannot own a company that
+ * predates the run, so this can never reach pre-existing Review data.
+ *
+ * ## Why this fails closed three separate ways
+ *
+ * Reconciliation is the one place where the harness *discovers* a deletion
+ * target rather than being told about it, so every uncertain outcome must stop
+ * the run rather than shrink into "nothing to adopt":
+ *
+ *   - a failed read returns `unavailable`, never an empty adoption list. An
+ *     empty list would be indistinguishable from a healthy run with nothing to
+ *     reconcile, and cleanup would then report success while a company survived;
+ *   - a row with a malformed or partial company id returns `unusable`. A
+ *     truncated id is a *different* predicate, not a narrower one;
+ *   - two or more unknown owned companies for one user returns `ambiguous`.
+ *     `create_company_with_owner` raises `USER_ALREADY_HAS_COMPANY` for a caller
+ *     that already has an active membership, so one synthetic identity can only
+ *     ever own one company. Seeing two means the world does not match the model,
+ *     and guessing which to delete is exactly the improvisation this harness
+ *     refuses to make.
+ */
+export type ReconciliationResult =
+  | Readonly<{ status: "ok"; adopted: string[] }>
+  | Readonly<{ status: "unavailable"; reason: string }>
+  | Readonly<{ status: "unusable"; reason: string }>
+  | Readonly<{ status: "ambiguous"; userId: string; candidates: string[] }>
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+export function journalledUserIds(journal: {
+  users: readonly { userId: string }[]
+  owned?: ReadonlyArray<{ kind: string; id?: string }>
+}): string[] {
+  return [
+    ...new Set([
+      ...journal.users.map((user) => user.userId),
+      ...(journal.owned ?? [])
+        .filter((r) => r.kind === "auth.user" && typeof r.id === "string")
+        .map((r) => r.id as string),
+    ]),
+  ].filter((id) => typeof id === "string" && id.length > 0)
+}
+
+/**
+ * The whole decision, as a pure function of the rows and what is already known.
+ *
+ * Kept separate from the query so every refusal path can be tested exhaustively
+ * without a live control plane. This is the code that decides what may be
+ * deleted, so it is the code that most needs to be pinned by tests.
+ *
+ * Note it returns candidates rather than writing them: journalling stays with the
+ * caller, which does it before any deletion.
+ */
+export function classifyOwnershipRows(
+  rows: ReadonlyArray<{ company_id: unknown; user_id: unknown }>,
+  knownCompanyIds: readonly string[],
+): ReconciliationResult {
+  const known = new Set(knownCompanyIds)
+
+  // Grouped per identity, so ambiguity is judged per user rather than across the
+  // run as a whole — two users each owning one new company is not ambiguous.
+  const unknownByUser = new Map<string, string[]>()
+
+  for (const row of rows) {
+    const companyId = row.company_id
+    const userId = row.user_id
+
+    if (typeof companyId !== "string" || !UUID_RE.test(companyId)) {
+      return Object.freeze({
+        status: "unusable",
+        reason: "company_members returned a company_id that is not a complete UUID",
+      })
+    }
+    if (typeof userId !== "string" || !UUID_RE.test(userId)) {
+      return Object.freeze({
+        status: "unusable",
+        reason: "company_members returned a user_id that is not a complete UUID",
+      })
+    }
+    if (known.has(companyId)) continue
+
+    const existing = unknownByUser.get(userId) ?? []
+    if (!existing.includes(companyId)) existing.push(companyId)
+    unknownByUser.set(userId, existing)
+  }
+
+  for (const [userId, candidates] of unknownByUser) {
+    if (candidates.length > 1) {
+      return Object.freeze({ status: "ambiguous", userId, candidates: [...candidates].sort() })
+    }
+  }
+
+  return Object.freeze({
+    status: "ok",
+    adopted: [...unknownByUser.values()].map((candidates) => candidates[0]),
+  })
+}
+
+export async function reconcileOwnedCompanies(journal: Journal): Promise<ReconciliationResult> {
+  const userIds = journalledUserIds(journal)
+  if (userIds.length === 0) return Object.freeze({ status: "ok", adopted: [] })
+
+  const { data, error } = await adminClient()
+    .from("company_members")
+    .select("company_id, user_id")
+    .in("user_id", userIds) // the ONLY discovery key: journalled full UUIDs
+    .eq("role", "owner")
+
+  // Fail closed: an unreadable control plane is not evidence of nothing to adopt.
+  if (error || !data) {
+    return Object.freeze({
+      status: "unavailable",
+      reason: error?.message ?? "no rows returned from company_members",
+    })
+  }
+
+  const verdict = classifyOwnershipRows(
+    data as Array<{ company_id: unknown; user_id: unknown }>,
+    ownedCompanyIds(journal),
+  )
+
+  if (verdict.status !== "ok") return verdict
+
+  // Journalled BEFORE any of them becomes a deletion candidate.
+  for (const companyId of verdict.adopted) recordCompany(journal, companyId)
+
+  return verdict
 }
 
 type OwnedResourceLike = { kind: string; id?: string }

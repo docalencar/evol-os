@@ -45,7 +45,8 @@ const SEED = {
 function user(role: SyntheticUser["role"], id: string): SyntheticUser {
   return {
     role,
-    membershipRole: role === "admin" ? "owner" : role,
+    // `admin` and `onboarding` both end up owning a tenant; the rest map through.
+    membershipRole: role === "admin" || role === "onboarding" ? "owner" : role,
     email: `e2e+${id}@evol-e2e.invalid`,
     userId: id,
     personId: null,

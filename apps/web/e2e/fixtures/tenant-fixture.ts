@@ -1,26 +1,60 @@
 /**
  * Run-owned tenant fixture — RUNNER ONLY.
  *
- * Boundary between the two kinds of setup, per the fixture contract:
+ * BOOTSTRAP DATA is created here; JOURNEY ACTIONS never are.
  *
- *   BOOTSTRAP DATA   prerequisites a journey assumes, created here.
- *   JOURNEY ACTIONS  the thing a spec is meant to prove, never created here.
+ * ## The ordering contract, read from the schema
  *
- * The company itself is created through the **real** trusted domain boundary
- * `create_company_with_owner`, called with the synthetic admin's own session. That
- * function is `security definer` and reads `auth.uid()`, so it cannot be called
- * with the service role — using the real session is both more faithful and the
- * only thing that works.
+ * Two constraints pull in opposite directions:
  *
- * Additional members are inserted with the service role. Doing it "properly" would
- * mean driving the invitation issue/accept flow, which is itself an MVP journey
- * (J04) — bootstrapping through it would make the harness circular.
+ *   `people_company_user_membership_fkey`  (migration 0071)
+ *       people(company_id, user_id) → company_members(company_id, user_id)
+ *       ON DELETE RESTRICT, DEFERRABLE **INITIALLY IMMEDIATE**
+ *       ⇒ the membership must exist before the person.
+ *
+ *   `enforce_active_membership_has_people` (migration 0072)
+ *       constraint trigger on company_members, AFTER INSERT OR UPDATE,
+ *       DEFERRABLE **INITIALLY DEFERRED**, and it only checks rows whose
+ *       status is 'active'
+ *       ⇒ an *active* membership must have exactly one matching person by
+ *         COMMIT.
+ *
+ * `create_company_with_owner` inserts the active membership before the person and
+ * still works, because a plpgsql function body is a single transaction: the
+ * deferred trigger runs at COMMIT, by which time the person exists.
+ *
+ * The harness has no such luxury. Each PostgREST call is its own transaction, so
+ * neither order works with `status = 'active'`:
+ *   - person first  → immediate FK violation, no membership to reference;
+ *   - active membership first → deferred trigger fires at that statement's own
+ *     COMMIT, finds no person, and raises.
+ *
+ * The way through is the third documented status. `company_members.status` is
+ * `check (status in ('active', 'inactive', 'invited'))` (migration 0001), and the
+ * trigger ignores anything that is not 'active'. So:
+ *
+ *   1. insert the membership as 'invited'  — trigger skips a non-active row
+ *   2. insert the person                   — FK satisfied, membership exists
+ *   3. update the membership to 'active'   — deferred check now finds the person
+ *
+ * `invited` is the domain's own word for "membership row exists, user is not yet
+ * an active member", which is exactly the transient state here. No constraint is
+ * disabled, no trigger is bypassed, no RLS is weakened, and no E2E-only schema is
+ * introduced.
+ *
+ * The owner is not created this way: `create_company_with_owner` already does it
+ * atomically and correctly, and it is the real onboarding boundary.
  */
 
-import type { SupabaseClient } from "@supabase/supabase-js"
-
 import { adminClient, userClient } from "../helpers/admin-client"
-import type { RunManifest, SyntheticUser } from "../helpers/run-context"
+import {
+  record,
+  recordUser,
+  setCompany,
+  updateUser,
+  type Journal,
+} from "../helpers/journal"
+import type { SyntheticUser } from "../helpers/run-context"
 
 export type TenantFixture = Readonly<{
   companyId: string
@@ -34,15 +68,17 @@ function companyIdentity(runId: string): { name: string; slug: string } {
 }
 
 /**
- * Create the run's company via the real onboarding RPC, as the admin identity.
+ * Create the run's company through the real onboarding RPC, as the admin.
  *
- * Side effects of the RPC (schema 0044): inserts `companies`, an `owner` row in
- * `company_members`, and the owner's `people` row. We therefore do not create any
- * of those three for the admin ourselves.
+ * The function is `security definer` and reads `auth.uid()`, so the service role
+ * cannot call it — the synthetic admin's own session is both the faithful path
+ * and the only one that works. It creates the company, the owner membership and
+ * the owner's person row together.
  */
 async function createCompanyAsOwner(
   admin: SyntheticUser,
   runId: string,
+  journal: Journal,
 ): Promise<{ companyId: string; name: string; slug: string }> {
   const { name, slug } = companyIdentity(runId)
   const asAdmin = await userClient(admin.email, admin.password)
@@ -60,22 +96,35 @@ async function createCompanyAsOwner(
     )
   }
 
-  return { companyId: data as string, name, slug }
+  const companyId = data as string
+  // Journalled before anything else touches it: the company owns the cascade.
+  setCompany(journal, { id: companyId, name, slug })
+  return { companyId, name, slug }
 }
 
-/**
- * Attach a non-owner identity to the run's company.
- *
- * Ordering is forced by the schema: `enforce_active_membership_people_invariant`
- * (migration 0072) rejects an active membership unless exactly one matching
- * `people` row already exists, so the person is inserted first.
- */
+/** Attach a non-owner identity, following the three-step contract documented above. */
 async function attachMember(
   companyId: string,
   user: SyntheticUser,
+  journal: Journal,
 ): Promise<string> {
   const db = adminClient()
 
+  // 1. Membership as 'invited' — the deferred trigger only checks active rows.
+  const { error: pendingError } = await db.from("company_members").insert({
+    company_id: companyId,
+    user_id: user.userId,
+    role: user.membershipRole,
+    status: "invited",
+  })
+  if (pendingError) {
+    throw new Error(
+      `E2E_FIXTURE_MEMBERSHIP_PENDING_FAILED for ${user.role}: ${pendingError.message}`,
+    )
+  }
+  record(journal, { kind: "membership", companyId, userId: user.userId })
+
+  // 2. Person — the immediate FK now has its membership to reference.
   const { data: person, error: personError } = await db
     .from("people")
     .insert({
@@ -93,24 +142,26 @@ async function attachMember(
       `E2E_FIXTURE_PERSON_FAILED for ${user.role}: ${personError?.message ?? "no row"}`,
     )
   }
+  const personId = person.id as string
+  record(journal, { kind: "person", id: personId })
 
-  const { error: membershipError } = await db.from("company_members").insert({
-    company_id: companyId,
-    user_id: user.userId,
-    role: user.membershipRole,
-    status: "active",
-  })
+  // 3. Activate — the deferred check now finds exactly one matching person.
+  const { error: activateError } = await db
+    .from("company_members")
+    .update({ status: "active" })
+    .eq("company_id", companyId)
+    .eq("user_id", user.userId)
 
-  if (membershipError) {
+  if (activateError) {
     throw new Error(
-      `E2E_FIXTURE_MEMBERSHIP_FAILED for ${user.role}: ${membershipError.message}`,
+      `E2E_FIXTURE_MEMBERSHIP_ACTIVATE_FAILED for ${user.role}: ${activateError.message}`,
     )
   }
 
-  return person.id as string
+  return personId
 }
 
-/** Resolve the owner's auto-created `people` row so teardown can report on it. */
+/** Resolve the owner's auto-created person row so teardown can report on it. */
 async function findOwnerPersonId(companyId: string, userId: string): Promise<string | null> {
   const { data } = await adminClient()
     .from("people")
@@ -124,22 +175,23 @@ async function findOwnerPersonId(companyId: string, userId: string): Promise<str
 export async function createTenantFixture(
   runId: string,
   users: readonly SyntheticUser[],
+  journal: Journal,
 ): Promise<TenantFixture> {
   const admin = users.find((user) => user.role === "admin")
   if (!admin) throw new Error("E2E_FIXTURE_NO_ADMIN: an admin identity is required.")
 
-  const company = await createCompanyAsOwner(admin, runId)
+  const company = await createCompanyAsOwner(admin, runId, journal)
 
   const resolved: SyntheticUser[] = []
   for (const user of users) {
-    if (user.role === "admin") {
-      resolved.push({
-        ...user,
-        personId: await findOwnerPersonId(company.companyId, user.userId),
-      })
-      continue
-    }
-    resolved.push({ ...user, personId: await attachMember(company.companyId, user) })
+    const personId =
+      user.role === "admin"
+        ? await findOwnerPersonId(company.companyId, user.userId)
+        : await attachMember(company.companyId, user, journal)
+
+    const withPerson = { ...user, personId }
+    updateUser(journal, withPerson)
+    resolved.push(withPerson)
   }
 
   return Object.freeze({
@@ -154,41 +206,57 @@ export type CleanupReport = Readonly<{
   companyDeleted: boolean
   usersDeleted: string[]
   orphaned: Array<{ kind: string; id: string; reason: string }>
+  nothingToDo: boolean
 }>
 
 /**
- * Teardown, narrowest predicate first.
+ * Destroy exactly what the journal records, narrowest predicate first, and never
+ * anything else. Idempotent: a resource already gone is a success, not an error.
  *
- * Deleting the company cascades to `company_members` and `people`
- * (`on delete cascade`, migration 0001) inside one transaction, which also
- * satisfies the deferred `protect_active_membership_people_link` constraint:
- * by commit time no active membership remains to protect.
- *
- * Auth users are removed last. On failure nothing is retried with a broader
- * predicate — the orphan is reported by exact id instead.
+ * Order matters and the previous rollback path got it wrong. Deleting an auth
+ * user cascades to `company_members` (`on delete cascade`), which then collides
+ * with `people_company_user_membership_fkey`'s `on delete restrict` — so the auth
+ * delete fails and the user is stranded. Removing the company first cascades to
+ * both memberships and people inside one transaction, leaving the auth users free
+ * to go.
  */
-export async function destroyRunFixtures(manifest: RunManifest): Promise<CleanupReport> {
+export async function destroyRunFixtures(journal: {
+  companyId: string | null
+  users: readonly SyntheticUser[]
+  owned?: OwnedResourceLike[]
+}): Promise<CleanupReport> {
   const orphaned: CleanupReport["orphaned"] = []
   let companyDeleted = false
 
-  if (manifest.companyId) {
-    const { error } = await adminClient()
-      .from("companies")
-      .delete()
-      .eq("id", manifest.companyId)
+  const recordedCompany = journal.owned?.find(
+    (resource): resource is { kind: "company"; id: string } =>
+      resource.kind === "company" && typeof resource.id === "string",
+  )
+  const companyId = journal.companyId ?? recordedCompany?.id ?? null
 
-    if (error) {
-      orphaned.push({ kind: "company", id: manifest.companyId, reason: error.message })
-    } else {
-      companyDeleted = true
-    }
+  if (companyId) {
+    const { error } = await adminClient().from("companies").delete().eq("id", companyId)
+    if (error) orphaned.push({ kind: "company", id: companyId, reason: error.message })
+    else companyDeleted = true
   }
 
   const { deleteSyntheticUsers } = await import("./synthetic-identity")
-  const { deleted, failed } = await deleteSyntheticUsers(manifest.users)
+  const userIds = new Set<string>(journal.users.map((user) => user.userId))
+  for (const resource of journal.owned ?? []) {
+    if (resource.kind === "auth.user" && typeof resource.id === "string") userIds.add(resource.id)
+  }
+
+  const { deleted, failed } = await deleteSyntheticUsers([...userIds])
   for (const failure of failed) {
     orphaned.push({ kind: "auth.user", id: failure.userId, reason: failure.reason })
   }
 
-  return Object.freeze({ companyDeleted, usersDeleted: deleted, orphaned })
+  return Object.freeze({
+    companyDeleted,
+    usersDeleted: deleted,
+    orphaned,
+    nothingToDo: !companyId && userIds.size === 0,
+  })
 }
+
+type OwnedResourceLike = { kind: string; id?: string }

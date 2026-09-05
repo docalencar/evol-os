@@ -60,10 +60,10 @@ export function ensureRunDir(): void {
   if (!existsSync(RUN_DIR)) mkdirSync(RUN_DIR, { recursive: true })
 }
 
-export function writeManifest(manifest: RunManifest): void {
-  ensureRunDir()
-  writeFileSync(MANIFEST, JSON.stringify(manifest, null, 2), { mode: 0o600 })
-}
+/**
+ * Ownership is written through `helpers/journal.ts`, which appends after every
+ * mutation. This reader exists for specs, which only need the finished shape.
+ */
 
 export function readManifest(): RunManifest {
   if (!existsSync(MANIFEST)) {

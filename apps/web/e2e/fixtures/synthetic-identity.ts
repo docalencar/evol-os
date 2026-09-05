@@ -73,18 +73,23 @@ export async function createSyntheticUser(
   }
 }
 
-/** Delete synthetic auth users. Called last in teardown, after domain records. */
+/**
+ * Delete synthetic auth users by id. Called last in teardown, after domain rows.
+ *
+ * Idempotent: a user that is already gone counts as deleted, so re-running
+ * cleanup after a partial failure is safe.
+ */
 export async function deleteSyntheticUsers(
-  users: readonly SyntheticUser[],
+  userIds: readonly string[],
 ): Promise<{ deleted: string[]; failed: Array<{ userId: string; reason: string }> }> {
   const admin = adminClient()
   const deleted: string[] = []
   const failed: Array<{ userId: string; reason: string }> = []
 
-  for (const user of users) {
-    const { error } = await admin.auth.admin.deleteUser(user.userId)
-    if (error) failed.push({ userId: user.userId, reason: error.message })
-    else deleted.push(user.userId)
+  for (const userId of userIds) {
+    const { error } = await admin.auth.admin.deleteUser(userId)
+    if (!error || /not.?found/i.test(error.message)) deleted.push(userId)
+    else failed.push({ userId, reason: error.message })
   }
 
   return { deleted, failed }

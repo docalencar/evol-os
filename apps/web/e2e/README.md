@@ -100,9 +100,45 @@ Both run **before** any fixture exists.
 is never recorded. `redact()` in `helpers/env.ts` is the last-resort scrub for
 anything that would otherwise be written out.
 
-**Every resource is run-owned.** A run id tags the company slug, the synthetic
-e-mail addresses and the manifest. Teardown deletes by exact id and never widens a
-predicate on failure — an orphan is reported instead.
+**Every resource is run-owned, and ownership survives a crash.** The journal is
+created *before the first Review mutation* and appended to immediately after each
+resource is created, with atomic writes. Teardown deletes by exact id and never
+widens a predicate on failure — an orphan is reported instead.
+
+If a run dies part-way, recover it with:
+
+```bash
+npm --workspace apps/web run e2e:cleanup
+```
+
+It reads the journal, destroys exactly what is recorded, is idempotent, tolerates
+already-deleted resources, and **refuses to act without ownership evidence**. A run
+id, a company slug or a name pattern is not deletion authority — only the journal
+is. That distinction is what separates recovering your own resources from deleting
+someone else's.
+
+### Creation and destruction order
+
+The two orders are not mirror images, and both are forced by the schema.
+
+**Creating a non-owner member** (`people_company_user_membership_fkey` is
+`DEFERRABLE INITIALLY IMMEDIATE`, so it is checked per statement; the
+`enforce_active_membership_has_people` constraint trigger is
+`DEFERRABLE INITIALLY DEFERRED` and only inspects `status = 'active'`):
+
+1. insert the membership as `'invited'` — the trigger skips a non-active row
+2. insert the person — the immediate FK now has its membership
+3. update the membership to `'active'` — the deferred check finds the person
+
+`create_company_with_owner` can insert an active membership before the person only
+because a plpgsql body is one transaction. Each PostgREST call is its own
+transaction, so the harness cannot rely on that.
+
+**Destroying**: company first. Deleting an auth user cascades to `company_members`
+(`ON DELETE CASCADE`), which then collides with the people→company_members
+`ON DELETE RESTRICT` foreign key — the auth delete fails and the user is stranded.
+Removing the company cascades to both memberships and people inside one
+transaction, which frees the auth users.
 
 ## Fixture boundary
 

@@ -19,7 +19,6 @@ export {
   getManagementPeopleIncludingTerminated,
   getManagementPerson,
   getManagementPersonIncludingTerminated,
-  getManagementPositionCompetencies,
   getManagementPositionRequirements,
   getManagementPositions,
   getManagementTeams,
@@ -28,7 +27,6 @@ export {
 export {
   CompetencyDevelopmentReadError,
   getManagementCompetencies,
-  getManagementCompetencyAssignments,
   getManagementEmployeeCompetencies,
   getManagementDevelopmentActions,
   getManagementDevelopmentGoals,

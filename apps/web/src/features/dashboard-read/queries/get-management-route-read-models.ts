@@ -166,27 +166,6 @@ const requirementSchema = z
   })
   .strict()
 
-const competencySchema = z
-  .object({
-    position_competency_id: uuid,
-    position_id: uuid,
-    competency_id: uuid,
-    competency_name: z.string().min(1),
-    expected_level: z.number().int(),
-    weight: z.number().int(),
-    required: z.boolean(),
-    competency_type: z.enum([
-      "core",
-      "leadership",
-      "promotion",
-      "optional",
-    ]),
-    notes: nullableText,
-    created_at: timestamp,
-    updated_at: timestamp,
-  })
-  .strict()
-
 const activitySchema = z
   .object({
     activity_id: uuid,
@@ -480,32 +459,6 @@ export async function getManagementPositionRequirements(
     created_at: row.created_at,
     updated_at: row.updated_at,
     archived_at: null,
-  }))
-}
-
-export async function getManagementPositionCompetencies(
-  companyId: string,
-  positionId: string
-) {
-  const rows = await rpcRows(
-    "get_tenant_position_competencies_v1",
-    { p_company_id: companyId, p_position_id: positionId },
-    z.array(competencySchema)
-  )
-  return rows.map((row) => ({
-    id: row.position_competency_id,
-    company_id: companyId,
-    position_id: row.position_id,
-    competency_id: row.competency_id,
-    expected_level: row.expected_level,
-    weight: row.weight,
-    required: row.required,
-    type: row.competency_type,
-    notes: row.notes,
-    created_at: row.created_at,
-    updated_at: row.updated_at,
-    archived_at: null,
-    competencies: { name: row.competency_name },
   }))
 }
 

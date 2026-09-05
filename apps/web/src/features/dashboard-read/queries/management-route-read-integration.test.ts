@@ -84,7 +84,6 @@ test("adapter uses only approved RPCs with strict fail-closed validation", () =>
     "get_tenant_teams_management_v1",
     "get_tenant_positions_management_v1",
     "get_tenant_position_requirements_v1",
-    "get_tenant_position_competencies_v1",
     "get_tenant_entity_activity_timeline_v1",
   ])
     assert.match(adapter, new RegExp(rpc))

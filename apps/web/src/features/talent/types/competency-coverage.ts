@@ -7,19 +7,6 @@ export type CompetencyCoverageState =
   | "partially_assessed"
   | "assessed"
 
-export type CompetencyExpectation = Readonly<{
-  competencyId: string
-  competencyName: string
-  expectedLevel: number
-  weight: number
-  required: boolean
-}>
-
-export type EmployeeCompetencyLevel = Readonly<{
-  competencyId: string
-  currentLevel: number
-}>
-
 export type UnassessedCompetency = Readonly<{
   competencyId: string
   competencyName: string

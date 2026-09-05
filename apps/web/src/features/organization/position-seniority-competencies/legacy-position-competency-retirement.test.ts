@@ -12,10 +12,6 @@ const positionsPage = read(
   "../../../app/(dashboard)/app/company/positions/page.tsx"
 )
 const positionTable = read("../positions/components/position-table.tsx")
-const legacyIndex = read("../../competencies/position-competencies/index.ts")
-const legacyRepository = read(
-  "../../competencies/position-competencies/repositories/position-competency-repository.ts"
-)
 const matrixRepository = read(
   "./repositories/position-seniority-competency-repository.ts"
 )
@@ -41,18 +37,14 @@ test("the legacy Position competency write surface is absent", () => {
   ]
 
   for (const path of removedPaths) assert.equal(exists(path), false, path)
-  assert.doesNotMatch(
-    `${legacyIndex}\n${legacyRepository}`,
-    /createPositionCompetencyAction|updatePositionCompetencyAction|archivePositionCompetencyAction|create_position_competency_v1|update_position_competency_v1|archive_position_competency_v1/
-  )
 })
 
-test("legacy reads remain available for downstream compatibility", () => {
-  assert.match(legacyIndex, /getPositionCompetenciesByPosition/)
-  assert.match(legacyIndex, /getPositionCompetencyById/)
-  assert.match(legacyRepository, /findAll/)
-  assert.match(legacyRepository, /findByPosition/)
-  assert.match(legacyRepository, /findById/)
+test("legacy Position competency application reads are retired", () => {
+  assert.equal(exists("../../competencies/position-competencies/index.ts"), false)
+  assert.equal(
+    exists("../../competencies/position-competencies/repositories/position-competency-repository.ts"),
+    false,
+  )
 })
 
 test("People, Dashboard and Development use canonical competency reads", () => {

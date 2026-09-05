@@ -39,11 +39,6 @@ const employeeCompetencySchema = z.object({ employee_competency_id: uuid, employ
   competency_name: text.min(1), current_level: z.number().int(),
   source: z.enum(["manual", "assessment", "manager", "self"]),
   validated_at: timestamp.nullable(), notes: nullableText }).strict()
-const assignmentSchema = z.object({ record_type: z.enum(["employee", "position"]), record_id: uuid,
-  employee_id: nullableUuid, position_id: nullableUuid, competency_id: uuid, competency_name: text.min(1),
-  current_level: z.number().int().nullable(), expected_level: z.number().int().nullable(),
-  weight: z.coerce.number().nullable(), required: z.boolean().nullable() }).strict()
-
 export class CompetencyDevelopmentReadError extends Error {
   constructor() { super("Não foi possível carregar os dados desta página."); this.name = "CompetencyDevelopmentReadError" }
 }
@@ -111,10 +106,6 @@ export async function getManagementDevelopmentTemplateActions(companyId: string,
   return data.map((r) => ({ id: r.template_action_id, templateGoalId: r.template_goal_id, title: r.title,
     description: r.description, type: r.action_type, suggestedDueDays: r.suggested_due_days,
     orderIndex: r.order_index, createdAt: r.created_at, updatedAt: r.updated_at }))
-}
-
-export async function getManagementCompetencyAssignments(companyId: string) {
-  return rows("get_tenant_competency_directory_v1", { p_company_id: companyId }, z.array(assignmentSchema))
 }
 
 // Full employee-competency detail (source, validated_at, notes) for the authorized

@@ -92,12 +92,6 @@ export {
   DevelopmentDashboardKpiCards,
 } from "./components/development-dashboard-kpi-cards"
 export {
-  CompanyCompetencyGapCard,
-} from "./components/company-competency-gap-card"
-export {
-  DevelopmentPrioritiesCard,
-} from "./components/development-priorities-card"
-export {
   DevelopmentCompetencyIntelligenceCard,
 } from "./components/development-competency-intelligence-card"
 export type {

@@ -68,9 +68,14 @@ insert into public.competencies(id,company_id,name,category,expected_level,weigh
   ('a9000000-0000-4000-8000-000000000301','a9000000-0000-4000-8000-000000000101','Alpha Skill','technical',3,2,true),
   ('a9000000-0000-4000-8000-000000000302','a9000000-0000-4000-8000-000000000101','Inactive Skill','technical',3,2,false),
   ('a9000000-0000-4000-8000-000000000303','a9000000-0000-4000-8000-000000000102','Beta Skill','technical',3,2,true);
-insert into public.position_competencies(id,company_id,position_id,competency_id,expected_level,weight,required,type)
+insert into public.position_seniority_profiles(
+  id,company_id,position_id,seniority_level_id,active)
 values ('a9000000-0000-4000-8000-000000000351','a9000000-0000-4000-8000-000000000101',
-  'a9000000-0000-4000-8000-000000000251','a9000000-0000-4000-8000-000000000301',4,2,true,'core');
+  'a9000000-0000-4000-8000-000000000251',null,true);
+insert into public.position_seniority_competencies(
+  id,company_id,position_seniority_profile_id,competency_id,expected_level,weight,required,type)
+values ('a9000000-0000-4000-8000-000000000352','a9000000-0000-4000-8000-000000000101',
+  'a9000000-0000-4000-8000-000000000351','a9000000-0000-4000-8000-000000000301',4,2,true,'core');
 
 create temporary table ec_result(id uuid);
 grant select,insert on ec_result to authenticated;
@@ -145,9 +150,9 @@ select ok(exists(select 1 from public.competencies where id='a9000000-0000-4000-
   and active),'catalog competency remains intact');
 select ok(exists(select 1 from public.people where id='a9000000-0000-4000-8000-000000000201'
   and status='active'),'Person remains intact');
-select ok(exists(select 1 from public.position_competencies
-  where id='a9000000-0000-4000-8000-000000000351' and archived_at is null),
-  'Position expectation remains intact');
+select ok(exists(select 1 from public.position_seniority_competencies
+  where id='a9000000-0000-4000-8000-000000000352' and archived_at is null),
+  'canonical Position expectation remains intact');
 select is((select count(*)::int from public.activity_events
   where company_id='a9000000-0000-4000-8000-000000000101'
     and activity_type in ('employee_competency.created','employee_competency.updated',

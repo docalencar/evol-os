@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public, pg_temp;
 
-select plan(28);
+select plan(27);
 
 insert into public.companies (id, name, slug) values
   ('62000000-0000-4000-8000-000000000001', 'Integrity Alpha', 'integrity-alpha'),
@@ -23,6 +23,10 @@ insert into public.positions (id, company_id, name) values
   ('62000000-0000-4000-8000-000000000301', '62000000-0000-4000-8000-000000000001', 'Alpha Position'),
   ('62000000-0000-4000-8000-000000000302', '62000000-0000-4000-8000-000000000002', 'Beta Position'),
   ('62000000-0000-4000-8000-000000000303', '62000000-0000-4000-8000-000000000001', 'Alpha Cascade Position');
+
+insert into public.position_seniority_profiles (id, company_id, position_id, seniority_level_id, active) values
+  ('62000000-0000-4000-8000-000000000311', '62000000-0000-4000-8000-000000000001', '62000000-0000-4000-8000-000000000301', null, true),
+  ('62000000-0000-4000-8000-000000000312', '62000000-0000-4000-8000-000000000002', '62000000-0000-4000-8000-000000000302', null, true);
 
 insert into public.competencies (id, company_id, name, category) values
   ('62000000-0000-4000-8000-000000000401', '62000000-0000-4000-8000-000000000001', 'Alpha Competency', 'technical'),
@@ -73,11 +77,11 @@ select lives_ok(
         team_id = '62000000-0000-4000-8000-000000000202',
         position_id = '62000000-0000-4000-8000-000000000301'
     where id = '62000000-0000-4000-8000-000000000502';
-    insert into public.position_competencies (
-      company_id, position_id, competency_id
+    insert into public.position_seniority_competencies (
+      company_id, position_seniority_profile_id, competency_id
     ) values (
       '62000000-0000-4000-8000-000000000001',
-      '62000000-0000-4000-8000-000000000301',
+      '62000000-0000-4000-8000-000000000311',
       '62000000-0000-4000-8000-000000000401'
     );
     insert into public.position_requirements (
@@ -159,16 +163,16 @@ select throws_ok(
   'person position rejects cross-tenant reference'
 );
 select throws_ok(
-  $$ insert into public.position_competencies (company_id, position_id, competency_id)
-     values ('62000000-0000-4000-8000-000000000001', '62000000-0000-4000-8000-000000000302', '62000000-0000-4000-8000-000000000401') $$,
-  '23503', 'insert or update on table "position_competencies" violates foreign key constraint "position_competencies_position_company_fkey"',
-  'position competency rejects cross-tenant position'
+  $$ insert into public.position_seniority_competencies (company_id, position_seniority_profile_id, competency_id)
+     values ('62000000-0000-4000-8000-000000000001', '62000000-0000-4000-8000-000000000312', '62000000-0000-4000-8000-000000000401') $$,
+  '23503', 'insert or update on table "position_seniority_competencies" violates foreign key constraint "position_seniority_competencies_profile_company_fkey"',
+  'canonical position competency rejects cross-tenant profile'
 );
 select throws_ok(
-  $$ insert into public.position_competencies (company_id, position_id, competency_id)
-     values ('62000000-0000-4000-8000-000000000001', '62000000-0000-4000-8000-000000000301', '62000000-0000-4000-8000-000000000402') $$,
-  '23503', 'insert or update on table "position_competencies" violates foreign key constraint "position_competencies_competency_company_fkey"',
-  'position competency rejects cross-tenant competency'
+  $$ insert into public.position_seniority_competencies (company_id, position_seniority_profile_id, competency_id)
+     values ('62000000-0000-4000-8000-000000000001', '62000000-0000-4000-8000-000000000311', '62000000-0000-4000-8000-000000000402') $$,
+  '23503', 'insert or update on table "position_seniority_competencies" violates foreign key constraint "position_seniority_competencies_competency_company_fkey"',
+  'canonical position competency rejects cross-tenant competency'
 );
 select throws_ok(
   $$ insert into public.position_requirements (company_id, position_id, category, value)
@@ -198,12 +202,6 @@ select throws_ok(
 );
 reset role;
 
-insert into public.position_competencies (company_id, position_id, competency_id)
-values (
-  '62000000-0000-4000-8000-000000000001',
-  '62000000-0000-4000-8000-000000000303',
-  '62000000-0000-4000-8000-000000000401'
-);
 insert into public.position_requirements (company_id, position_id, category, value)
 values (
   '62000000-0000-4000-8000-000000000001',
@@ -212,16 +210,13 @@ values (
 );
 delete from public.positions where id = '62000000-0000-4000-8000-000000000303';
 select is(
-  (select count(*) from public.position_competencies where position_id = '62000000-0000-4000-8000-000000000303'),
-  0::bigint,
-  'CASCADE removes position competencies'
-);
-select is(
   (select count(*) from public.position_requirements where position_id = '62000000-0000-4000-8000-000000000303'),
   0::bigint,
   'CASCADE removes position requirements'
 );
 
+delete from public.position_seniority_competencies
+where competency_id = '62000000-0000-4000-8000-000000000401';
 delete from public.competencies where id = '62000000-0000-4000-8000-000000000401';
 select is(
   (select count(*) from public.employee_competencies where competency_id = '62000000-0000-4000-8000-000000000401'),

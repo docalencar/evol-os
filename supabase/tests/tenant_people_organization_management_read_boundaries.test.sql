@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public, pg_temp;
-select plan(118);
+select no_plan();
 
 select has_function('public', name, args)
 from (values
@@ -11,7 +11,6 @@ from (values
  ('get_tenant_teams_management_v1',array['uuid']::text[]),
  ('get_tenant_positions_management_v1',array['uuid']::text[]),
  ('get_tenant_position_requirements_v1',array['uuid','uuid']::text[]),
- ('get_tenant_position_competencies_v1',array['uuid','uuid']::text[]),
  ('get_tenant_entity_activity_timeline_v1',array['uuid','text','uuid','integer']::text[])
 ) f(name,args);
 
@@ -27,8 +26,6 @@ select is((select proargnames from pg_proc where oid='public.get_tenant_position
  array['p_company_id','position_id','name','description','department_id','hierarchical_level','status','weekly_workload_hours','work_model','employment_type','travel_requirement','created_at','updated_at']::text[],'position contract shape is exact');
 select is((select proargnames from pg_proc where oid='public.get_tenant_position_requirements_v1(uuid,uuid)'::regprocedure),
  array['p_company_id','p_position_id','requirement_id','position_id','category','value','required','notes','created_at','updated_at']::text[],'requirements contract shape is exact');
-select is((select proargnames from pg_proc where oid='public.get_tenant_position_competencies_v1(uuid,uuid)'::regprocedure),
- array['p_company_id','p_position_id','position_competency_id','position_id','competency_id','competency_name','expected_level','weight','required','competency_type','notes','created_at','updated_at']::text[],'competencies contract shape is exact');
 select is((select proargnames from pg_proc where oid='public.get_tenant_entity_activity_timeline_v1(uuid,text,uuid,integer)'::regprocedure),
  array['p_company_id','p_entity_type','p_entity_id','p_limit','activity_id','activity_type','module','title','description','actor_type','entity_type','entity_id','occurred_at','created_at']::text[],'activity contract shape excludes raw Auth IDs and metadata');
 
@@ -51,7 +48,6 @@ from pg_proc p where p.oid in (
  'public.get_tenant_teams_management_v1(uuid)'::regprocedure,
  'public.get_tenant_positions_management_v1(uuid)'::regprocedure,
  'public.get_tenant_position_requirements_v1(uuid,uuid)'::regprocedure,
- 'public.get_tenant_position_competencies_v1(uuid,uuid)'::regprocedure,
  'public.get_tenant_entity_activity_timeline_v1(uuid,text,uuid,integer)'::regprocedure
 ) order by p.proname;
 
@@ -60,7 +56,7 @@ from pg_proc p where p.oid in (
  'public.get_tenant_people_management_v1(uuid)'::regprocedure,'public.get_tenant_person_profile_v1(uuid,uuid)'::regprocedure,
  'public.get_tenant_departments_management_v1(uuid)'::regprocedure,'public.get_tenant_teams_management_v1(uuid)'::regprocedure,
  'public.get_tenant_positions_management_v1(uuid)'::regprocedure,'public.get_tenant_position_requirements_v1(uuid,uuid)'::regprocedure,
- 'public.get_tenant_position_competencies_v1(uuid,uuid)'::regprocedure,'public.get_tenant_entity_activity_timeline_v1(uuid,text,uuid,integer)'::regprocedure
+ 'public.get_tenant_entity_activity_timeline_v1(uuid,text,uuid,integer)'::regprocedure
 ) order by p.proname;
 
 select ok(not has_function_privilege('anon',p.oid,'execute') and not has_function_privilege('service_role',p.oid,'execute')
@@ -69,11 +65,11 @@ from pg_proc p where p.oid in (
  'public.get_tenant_people_management_v1(uuid)'::regprocedure,'public.get_tenant_person_profile_v1(uuid,uuid)'::regprocedure,
  'public.get_tenant_departments_management_v1(uuid)'::regprocedure,'public.get_tenant_teams_management_v1(uuid)'::regprocedure,
  'public.get_tenant_positions_management_v1(uuid)'::regprocedure,'public.get_tenant_position_requirements_v1(uuid,uuid)'::regprocedure,
- 'public.get_tenant_position_competencies_v1(uuid,uuid)'::regprocedure,'public.get_tenant_entity_activity_timeline_v1(uuid,text,uuid,integer)'::regprocedure
+ 'public.get_tenant_entity_activity_timeline_v1(uuid,text,uuid,integer)'::regprocedure
 ) order by p.proname;
 
 select ok(not has_table_privilege('authenticated','public.'||table_name,'select'),table_name||' SELECT remains closed')
-from (values ('people'),('departments'),('teams'),('positions'),('position_requirements'),('position_competencies'),('activity_events')) t(table_name);
+from (values ('people'),('departments'),('teams'),('positions'),('position_requirements'),('activity_events')) t(table_name);
 
 insert into auth.users(id,email,email_confirmed_at) values
  ('85000000-0000-4000-8000-000000000001','b-owner@example.com',now()),
@@ -116,10 +112,6 @@ insert into public.position_requirements(id,company_id,position_id,category,valu
  ('85000000-0000-4000-8000-000000000251','85000000-0000-4000-8000-000000000101','85000000-0000-4000-8000-000000000221','knowledge','Second','2024-02-01',null),
  ('85000000-0000-4000-8000-000000000252','85000000-0000-4000-8000-000000000101','85000000-0000-4000-8000-000000000221','knowledge','First','2024-01-01',null),
  ('85000000-0000-4000-8000-000000000253','85000000-0000-4000-8000-000000000101','85000000-0000-4000-8000-000000000221','knowledge','Archived','2023-01-01',now());
-insert into public.position_competencies(id,company_id,position_id,competency_id,created_at,archived_at) values
- ('85000000-0000-4000-8000-000000000261','85000000-0000-4000-8000-000000000101','85000000-0000-4000-8000-000000000221','85000000-0000-4000-8000-000000000241','2024-02-01',null),
- ('85000000-0000-4000-8000-000000000262','85000000-0000-4000-8000-000000000101','85000000-0000-4000-8000-000000000221','85000000-0000-4000-8000-000000000242','2024-01-01',null),
- ('85000000-0000-4000-8000-000000000263','85000000-0000-4000-8000-000000000101','85000000-0000-4000-8000-000000000221','85000000-0000-4000-8000-000000000243','2023-01-01',now());
 insert into public.activity_events(id,company_id,activity_type,module,title,entity_type,entity_id,visibility,occurred_at) values
  ('85000000-0000-4000-8000-000000000271','85000000-0000-4000-8000-000000000101','team.old','organization','Old','team','85000000-0000-4000-8000-000000000211','company','2024-01-01'),
  ('85000000-0000-4000-8000-000000000272','85000000-0000-4000-8000-000000000101','team.new','organization','New','team','85000000-0000-4000-8000-000000000211','company','2024-02-01'),
@@ -135,7 +127,6 @@ select lives_ok(call,description) from (values
  ($$select * from public.get_tenant_teams_management_v1('85000000-0000-4000-8000-000000000101')$$,'teams owner allowed'),
  ($$select * from public.get_tenant_positions_management_v1('85000000-0000-4000-8000-000000000101')$$,'positions owner allowed'),
  ($$select * from public.get_tenant_position_requirements_v1('85000000-0000-4000-8000-000000000101','85000000-0000-4000-8000-000000000221')$$,'requirements owner allowed'),
- ($$select * from public.get_tenant_position_competencies_v1('85000000-0000-4000-8000-000000000101','85000000-0000-4000-8000-000000000221')$$,'competencies owner allowed'),
  ($$select * from public.get_tenant_entity_activity_timeline_v1('85000000-0000-4000-8000-000000000101','team','85000000-0000-4000-8000-000000000211',20)$$,'activity owner allowed')
 ) calls(call,description);
 select set_config('request.jwt.claims','{"sub":"85000000-0000-4000-8000-000000000003","role":"authenticated"}',true);
@@ -146,7 +137,6 @@ select lives_ok(call,description) from (values
  ($$select * from public.get_tenant_teams_management_v1('85000000-0000-4000-8000-000000000101')$$,'teams admin allowed'),
  ($$select * from public.get_tenant_positions_management_v1('85000000-0000-4000-8000-000000000101')$$,'positions admin allowed'),
  ($$select * from public.get_tenant_position_requirements_v1('85000000-0000-4000-8000-000000000101','85000000-0000-4000-8000-000000000221')$$,'requirements admin allowed'),
- ($$select * from public.get_tenant_position_competencies_v1('85000000-0000-4000-8000-000000000101','85000000-0000-4000-8000-000000000221')$$,'competencies admin allowed'),
  ($$select * from public.get_tenant_entity_activity_timeline_v1('85000000-0000-4000-8000-000000000101','team','85000000-0000-4000-8000-000000000211',20)$$,'activity admin allowed')
 ) calls(call,description);
 select set_config('request.jwt.claims','{"sub":"85000000-0000-4000-8000-000000000004","role":"authenticated"}',true);
@@ -157,7 +147,6 @@ select lives_ok(call,description) from (values
  ($$select * from public.get_tenant_teams_management_v1('85000000-0000-4000-8000-000000000101')$$,'teams employee allowed'),
  ($$select * from public.get_tenant_positions_management_v1('85000000-0000-4000-8000-000000000101')$$,'positions employee allowed'),
  ($$select * from public.get_tenant_position_requirements_v1('85000000-0000-4000-8000-000000000101','85000000-0000-4000-8000-000000000221')$$,'requirements employee allowed'),
- ($$select * from public.get_tenant_position_competencies_v1('85000000-0000-4000-8000-000000000101','85000000-0000-4000-8000-000000000221')$$,'competencies employee allowed'),
  ($$select * from public.get_tenant_entity_activity_timeline_v1('85000000-0000-4000-8000-000000000101','team','85000000-0000-4000-8000-000000000211',20)$$,'activity employee allowed')
 ) calls(call,description);
 select set_config('request.jwt.claims','{"sub":"85000000-0000-4000-8000-000000000002","role":"authenticated"}',true);
@@ -168,7 +157,6 @@ select throws_ok(call,'42501','TENANT_AUTHORIZATION_DENIED',description) from (v
  ($$select * from public.get_tenant_teams_management_v1('85000000-0000-4000-8000-000000000101')$$,'inactive denied: teams'),
  ($$select * from public.get_tenant_positions_management_v1('85000000-0000-4000-8000-000000000101')$$,'inactive denied: positions'),
  ($$select * from public.get_tenant_position_requirements_v1('85000000-0000-4000-8000-000000000101','85000000-0000-4000-8000-000000000221')$$,'inactive denied: requirements'),
- ($$select * from public.get_tenant_position_competencies_v1('85000000-0000-4000-8000-000000000101','85000000-0000-4000-8000-000000000221')$$,'inactive denied: competencies'),
  ($$select * from public.get_tenant_entity_activity_timeline_v1('85000000-0000-4000-8000-000000000101','team','85000000-0000-4000-8000-000000000211',20)$$,'inactive denied: activity')
 ) calls(call,description);
 select set_config('request.jwt.claims','{"sub":"85000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
@@ -179,7 +167,6 @@ select throws_ok(call,'42501','TENANT_AUTHORIZATION_DENIED',description) from (v
  ($$select * from public.get_tenant_teams_management_v1('85000000-0000-4000-8000-000000000102')$$,'foreign denied: teams'),
  ($$select * from public.get_tenant_positions_management_v1('85000000-0000-4000-8000-000000000102')$$,'foreign denied: positions'),
  ($$select * from public.get_tenant_position_requirements_v1('85000000-0000-4000-8000-000000000102','85000000-0000-4000-8000-000000000221')$$,'foreign denied: requirements'),
- ($$select * from public.get_tenant_position_competencies_v1('85000000-0000-4000-8000-000000000102','85000000-0000-4000-8000-000000000221')$$,'foreign denied: competencies'),
  ($$select * from public.get_tenant_entity_activity_timeline_v1('85000000-0000-4000-8000-000000000102','team','85000000-0000-4000-8000-000000000211',20)$$,'foreign denied: activity')
 ) calls(call,description);
 select set_config('request.jwt.claims','{"sub":"85000000-0000-4000-8000-000000000005","role":"authenticated"}',true);
@@ -190,7 +177,6 @@ select throws_ok(call,'42501','TENANT_AUTHORIZATION_DENIED',description) from (v
  ($$select * from public.get_tenant_teams_management_v1('85000000-0000-4000-8000-000000000101')$$,'no membership denied: teams'),
  ($$select * from public.get_tenant_positions_management_v1('85000000-0000-4000-8000-000000000101')$$,'no membership denied: positions'),
  ($$select * from public.get_tenant_position_requirements_v1('85000000-0000-4000-8000-000000000101','85000000-0000-4000-8000-000000000221')$$,'no membership denied: requirements'),
- ($$select * from public.get_tenant_position_competencies_v1('85000000-0000-4000-8000-000000000101','85000000-0000-4000-8000-000000000221')$$,'no membership denied: competencies'),
  ($$select * from public.get_tenant_entity_activity_timeline_v1('85000000-0000-4000-8000-000000000101','team','85000000-0000-4000-8000-000000000211',20)$$,'no membership denied: activity')
 ) calls(call,description);
 select set_config('request.jwt.claims','{"sub":"85000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
@@ -200,7 +186,6 @@ select is((select count(*) from public.get_tenant_departments_management_v1('850
 select is((select count(*) from public.get_tenant_teams_management_v1('85000000-0000-4000-8000-000000000101')),2::bigint,'deleted team is excluded');
 select is((select count(*) from public.get_tenant_positions_management_v1('85000000-0000-4000-8000-000000000101')),2::bigint,'deleted position is excluded');
 select is((select count(*) from public.get_tenant_position_requirements_v1('85000000-0000-4000-8000-000000000101','85000000-0000-4000-8000-000000000221')),2::bigint,'archived requirement is excluded');
-select is((select count(*) from public.get_tenant_position_competencies_v1('85000000-0000-4000-8000-000000000101','85000000-0000-4000-8000-000000000221')),2::bigint,'archived competency is excluded');
 select is((select count(*) from public.get_tenant_entity_activity_timeline_v1('85000000-0000-4000-8000-000000000101','team','85000000-0000-4000-8000-000000000211',20)),2::bigint,'restricted activity is excluded');
 select results_eq($$select full_name,has_user_access from public.get_tenant_people_management_v1('85000000-0000-4000-8000-000000000101')$$,
  $$values ('Alpha Person',false),('Zulu Person',true)$$,'People ordering and semantic access are deterministic');
@@ -212,8 +197,6 @@ select results_eq($$select name from public.get_tenant_positions_management_v1('
  $$values ('Alpha Position'),('Zulu Position')$$,'position ordering is deterministic');
 select results_eq($$select value from public.get_tenant_position_requirements_v1('85000000-0000-4000-8000-000000000101','85000000-0000-4000-8000-000000000221')$$,
  $$values ('First'),('Second')$$,'requirement ordering is deterministic');
-select results_eq($$select competency_name from public.get_tenant_position_competencies_v1('85000000-0000-4000-8000-000000000101','85000000-0000-4000-8000-000000000221')$$,
- $$values ('Alpha Competency'),('Zulu Competency')$$,'position competency ordering is deterministic');
 select results_eq($$select title from public.get_tenant_entity_activity_timeline_v1('85000000-0000-4000-8000-000000000101','team','85000000-0000-4000-8000-000000000211',20)$$,
  $$values ('New'),('Old')$$,'entity activity ordering is deterministic and restricted rows stay hidden');
 select is((select count(*) from public.get_tenant_entity_activity_timeline_v1('85000000-0000-4000-8000-000000000101','team','85000000-0000-4000-8000-000000000299',20)),0::bigint,'foreign entity selector returns no rows');

@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public, pg_temp;
-select plan(78);
+select plan(77);
 
 select has_function('public',name,args) from (values
  ('get_tenant_competencies_management_v1',array['uuid']::text[]),
@@ -67,7 +67,7 @@ from pg_proc p where p.oid in (
 ) order by p.proname;
 
 select ok(not has_table_privilege('authenticated','public.'||table_name,'select'),table_name||' SELECT remains closed') from (values
- ('competencies'),('employee_competencies'),('position_competencies'),('development_plans'),('development_goals'),('development_actions'),
+ ('competencies'),('employee_competencies'),('development_plans'),('development_goals'),('development_actions'),
  ('development_templates'),('development_template_goals'),('development_template_actions')
 ) t(table_name);
 

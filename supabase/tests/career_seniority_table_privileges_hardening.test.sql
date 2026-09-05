@@ -59,8 +59,9 @@ select ok(
   has_function_privilege('authenticated','public.create_tenant_seniority_level_v1(uuid,text,text,integer,text)','execute'),
   'the seniority-level create boundary still executes for authenticated (EXECUTE not revoked)');
 
--- 0120 relocation target and its source both remain (no data/schema regression).
-select has_table('public','position_competencies','the 0120 source table is untouched');
+-- The canonical relocation target remains while the compatibility source is retired.
+select has_table('public','position_seniority_competencies','the canonical competency matrix remains');
+select hasnt_table('public','position_competencies','the legacy competency source is retired');
 
 select * from finish();
 rollback;

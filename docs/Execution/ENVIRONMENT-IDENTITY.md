@@ -22,22 +22,29 @@ Supabase project ref, branch. Keys, tokens and connection strings never do.
 | --- | --- | --- | --- |
 | `environment` | `LOCAL` | `REVIEW` | `PRODUCTION` |
 | `web_provider` | local dev server | Vercel | *not established* |
-| `web_project_name` | — | `evol-os-review` *(proposed; confirm on creation)* | *not established* |
-| `web_project_id` | — | `TODO_AFTER_PROVISIONING` | — |
+| `web_team` | — | `alencar6` (Hobby) | — |
+| `web_project_name` | — | `evol-os-review` | *not established* |
+| `web_project_id` | — | `prj_TVZCqCpRANk6wXVZwq2e8qWpY3Gs` | — |
 | `web_root_directory` | `apps/web` | `apps/web` | — |
-| `web_base_url` | `http://localhost:3000` | `TODO_AFTER_PROVISIONING` | — |
+| `web_base_url` | `http://localhost:3000` | `https://evol-os-review.vercel.app` | — |
 | `web_url_stability` | `EPHEMERAL` | `STABLE` (project alias) | — |
+| `web_node_version` | — | `22.x` | — |
 | `deployment_branch` | working tree | `main` | — |
 | `deployment_trigger` | manual `npm run dev` | push to `main` | — |
 | `supabase_project_ref` | local stack (`:54321`) | `rwfvxvbzaosgcyfxdjpt` | `gzrrwyiqfbnyprkdeqvm` (revalidate before use) |
 | `supabase_region` | — | `us-west-2` | — |
 | `last_verification_mechanism` | `npm run build` | §5 verification gates | — |
-| `last_verified_at` | — | `TODO_AFTER_PROVISIONING` | — |
+| `last_verified_at` | — | `2026-09-05T19:50Z` | — |
+| `last_verified_commit` | — | `88e89207acc59084cbd840a81f809bc06d6e8064` | — |
 
-> **Status: the Review web deployment does not exist yet.** Every `TODO_AFTER_PROVISIONING`
-> above is filled in by the Human Reviewer immediately after the first successful
-> Review deployment, in the same PR or a follow-up documentation PR. Until then, no
-> document may describe Review as a reachable web environment.
+> **Status: the Review web deployment is live and verified.** Provisioned
+> 2026-09-05 under GATE 2. §5 gates 1–6 pass; see the Stage B evidence report
+> outside the repository for the full record.
+>
+> **Supabase Auth for Review is still unconfigured (GATE 3).** Password login and
+> the authenticated application work, but **signup email confirmation does not**
+> until §4 is applied. No authenticated signup E2E result may be reported as PASS
+> before then.
 
 Review is a **dedicated Vercel project** — deployment model A in the E2E-0A
 taxonomy — rather than a preview environment of a shared project. This is what
@@ -112,8 +119,17 @@ Configuration**:
 
 | Setting | Value |
 | --- | --- |
-| Site URL | `<web_base_url>` |
-| Redirect URLs | `<web_base_url>/**` and `http://localhost:3000/**` and `http://localhost:3100/**` |
+| Site URL | `https://evol-os-review.vercel.app` |
+| Redirect URLs | `https://evol-os-review.vercel.app/auth/callback` |
+| Redirect URLs | `http://localhost:3000/**` |
+| Redirect URLs | `http://localhost:3100/**` |
+
+`/auth/callback` is the **only** redirect target the application can request —
+`signup-form.tsx` is the sole caller of `emailRedirectTo`, there is no
+password-recovery flow, and invitation links are ordinary navigation built from
+`APP_BASE_URL`. The exact path is therefore preferred over a `/**` globstar for the
+production entry. Note that a single `*` does not cross `/` in Supabase's matcher,
+so only `**` would work if the pattern were ever widened.
 
 Retaining the two localhost patterns keeps the existing local Review runtime
 (`validate-b2b2b-review-app.sh`, port 3100) working alongside the deployment.
@@ -149,7 +165,7 @@ may `E2E_BASE_URL` be treated as canonical.
 Once §5 passes:
 
 ```
-E2E_BASE_URL=<web_base_url>
+E2E_BASE_URL=https://evol-os-review.vercel.app
 E2E_SUPABASE_PROJECT_REF=rwfvxvbzaosgcyfxdjpt
 ```
 

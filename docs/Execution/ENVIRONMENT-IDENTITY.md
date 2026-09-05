@@ -41,10 +41,7 @@ Supabase project ref, branch. Keys, tokens and connection strings never do.
 > 2026-09-05 under GATE 2. §5 gates 1–6 pass; see the Stage B evidence report
 > outside the repository for the full record.
 >
-> **Supabase Auth for Review is still unconfigured (GATE 3).** Password login and
-> the authenticated application work, but **signup email confirmation does not**
-> until §4 is applied. No authenticated signup E2E result may be reported as PASS
-> before then.
+> **Supabase Auth for Review is configured (GATE 3 applied 2026-09-05).** See §4.
 
 Review is a **dedicated Vercel project** — deployment model A in the E2E-0A
 taxonomy — rather than a preview environment of a shared project. This is what
@@ -114,15 +111,23 @@ The application derives its own origin: `signup-form.tsx` requests
 therefore needs no host configuration — but **Supabase only honours a `redirectTo`
 that is on the project's allow list**, and otherwise falls back to Site URL.
 
-Required on Supabase project `rwfvxvbzaosgcyfxdjpt`, **Authentication → URL
-Configuration**:
+**Applied 2026-09-05 under GATE 3** on Supabase project `rwfvxvbzaosgcyfxdjpt`,
+**Authentication → URL Configuration**. Verified after a full page reload.
 
-| Setting | Value |
-| --- | --- |
-| Site URL | `https://evol-os-review.vercel.app` |
-| Redirect URLs | `https://evol-os-review.vercel.app/auth/callback` |
-| Redirect URLs | `http://localhost:3000/**` |
-| Redirect URLs | `http://localhost:3100/**` |
+| Setting | Value before | Value now |
+| --- | --- | --- |
+| Site URL | `http://localhost:3000` | `https://evol-os-review.vercel.app` |
+| Redirect URLs | *(empty — "No Redirect URLs")* | `https://evol-os-review.vercel.app/auth/callback` |
+| Redirect URLs | — | `http://localhost:3000/**` |
+| Redirect URLs | — | `http://localhost:3100/**` |
+
+The allow list was **empty** before this change, so every redirect fell back to Site
+URL. That means signup confirmation previously landed on `http://localhost:3000`
+(the site root) rather than `/auth/callback` — the local flow was silently degraded
+too, not only the deployed one. Both are now explicit.
+
+To revert: set Site URL back to `http://localhost:3000` and remove all three
+redirect entries.
 
 `/auth/callback` is the **only** redirect target the application can request —
 `signup-form.tsx` is the sole caller of `emailRedirectTo`, there is no
@@ -137,8 +142,23 @@ Retaining the two localhost patterns keeps the existing local Review runtime
 This is an **Auth configuration change on Review**. It is not a schema migration
 and is outside `ENVIRONMENT-GOVERNANCE.md`'s migration lifecycle, but it is still a
 remote mutation of a shared environment and requires explicit Human Reviewer
-authorization. Without it, signup email confirmation on the deployed Review app
-silently redirects to the wrong origin and authenticated E2E cannot pass.
+authorization. Any future change to these values needs the same authorization.
+
+### Signup state on Review (read-only observation, 2026-09-05)
+
+| Setting | Value |
+| --- | --- |
+| Allow new users to sign up | **enabled** |
+| **Confirm email** | **enabled** |
+| Allow anonymous sign-ins | disabled |
+| Allow manual linking | disabled |
+
+`Confirm email` being enabled is the concrete form of the `AUTH_BOOTSTRAP_MISSING`
+blocker: a browser harness cannot complete signup unaided, because a real inbox must
+receive and open the confirmation link. E2E-0 must choose a mechanism — a
+mail-catching inbox for the test domain, an admin-API bootstrap step that creates
+pre-confirmed users, or a scoped, reverted toggle — before any signup spec is
+written. Nothing here was changed.
 
 ---
 

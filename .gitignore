@@ -12,3 +12,11 @@ supabase/.temp/
 
 # TypeScript incremental build cache
 *.tsbuildinfo
+
+# E2E harness — run-local and SENSITIVE.
+# Holds the run manifest (synthetic passwords), captured storage state (live
+# session tokens), traces and reports. Never commit any of it.
+apps/web/e2e/.run/
+playwright-report/
+test-results/
+.env.e2e.local

@@ -55,7 +55,7 @@ test("legacy reads remain available for downstream compatibility", () => {
   assert.match(legacyRepository, /findById/)
 })
 
-test("People and Dashboard are canonical while Development retains its compatibility read", () => {
+test("People, Dashboard and Development use canonical competency reads", () => {
   const dashboardRepository = read(
     "../../dashboard-read/repositories/tenant-dashboard-read-repository.ts"
   )
@@ -80,8 +80,9 @@ test("People and Dashboard are canonical while Development retains its compatibi
   assert.doesNotMatch(peoplePage, /getManagementCompetencyAssignments/)
   assert.match(
     developmentDashboard,
-    /getManagementCompetencyAssignments\(companyId\)/
+    /getCanonicalCompanyPersonCompetencyCoverages\(companyId\)/
   )
+  assert.doesNotMatch(developmentDashboard, /getManagementCompetencyAssignments/)
 })
 
 test("matrix mutations remain isolated behind canonical RPCs", () => {

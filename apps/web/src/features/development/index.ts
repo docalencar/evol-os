@@ -97,6 +97,9 @@ export {
 export {
   DevelopmentPrioritiesCard,
 } from "./components/development-priorities-card"
+export {
+  DevelopmentCompetencyIntelligenceCard,
+} from "./components/development-competency-intelligence-card"
 export type {
   DevelopmentExecutiveDashboard,
 } from "./types/development-executive-dashboard"

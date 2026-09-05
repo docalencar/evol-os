@@ -36,9 +36,15 @@ function createDashboard(
       averageProgress: 0,
     },
 
-    competencyGaps: [],
-
-    developmentPriorities: [],
+    competencyDevelopment: {
+      assessed: 0,
+      unassessed: 0,
+      deficiencies: 0,
+      meets: 0,
+      exceeds: 0,
+      people: [],
+      priorities: [],
+    },
 
     planDistribution: [],
 
@@ -60,21 +66,29 @@ test("retorna feed vazio quando não existem sinais executivos", async () => {
   assert.deepEqual(feed.items, [])
 })
 
-test("converte prioridade alta em item crítico", async () => {
+test("converte deficiência canônica em item factual de desenvolvimento", async () => {
   const provider = new DevelopmentDecisionFeedProvider(
     generatedAt,
     createSource(
       createDashboard({
-        developmentPriorities: [
-          {
-            employeeId: "employee-1",
-            employeeName: "Ana Souza",
-            risk: "high",
-            criticalGaps: 2,
-            attentionGaps: 1,
-            biggestGap: "Liderança",
-          },
-        ],
+        competencyDevelopment: {
+          assessed: 1,
+          unassessed: 0,
+          deficiencies: 1,
+          meets: 0,
+          exceeds: 0,
+          people: [],
+          priorities: [{
+            personId: "employee-1",
+            personName: "Ana Souza",
+            competencyId: "competency-1",
+            competencyName: "Liderança",
+            expectedLevel: 4,
+            currentLevel: 2,
+            gap: 2,
+            status: "deficiency",
+          }],
+        },
       }),
     ),
   )
@@ -83,51 +97,27 @@ test("converte prioridade alta em item crítico", async () => {
   const item = feed.items[0]
 
   assert.equal(item?.source, "development")
-  assert.equal(item?.category, "people")
-  assert.equal(item?.priority, "critical")
+  assert.equal(item?.category, "recommendation")
+  assert.equal(item?.priority, "medium")
   assert.equal(item?.title, "Desenvolvimento: Ana Souza")
   assert.equal(item?.href, "/app/people/employee-1")
+  assert.match(item?.description ?? "", /Liderança: deficiência de 2/)
 })
 
-test("converte prioridade média em item de prioridade alta", async () => {
+test("não cria sinal executivo para atende, supera ou não avaliada", async () => {
   const provider = new DevelopmentDecisionFeedProvider(
     generatedAt,
     createSource(
       createDashboard({
-        developmentPriorities: [
-          {
-            employeeId: "employee-1",
-            employeeName: "Carlos Lima",
-            risk: "medium",
-            criticalGaps: 0,
-            attentionGaps: 3,
-            biggestGap: null,
-          },
-        ],
-      }),
-    ),
-  )
-
-  const feed = await provider.load()
-
-  assert.equal(feed.items[0]?.priority, "high")
-})
-
-test("ignora prioridades de baixo risco", async () => {
-  const provider = new DevelopmentDecisionFeedProvider(
-    generatedAt,
-    createSource(
-      createDashboard({
-        developmentPriorities: [
-          {
-            employeeId: "employee-1",
-            employeeName: "Marina Alves",
-            risk: "low",
-            criticalGaps: 0,
-            attentionGaps: 0,
-            biggestGap: null,
-          },
-        ],
+        competencyDevelopment: {
+          assessed: 2,
+          unassessed: 1,
+          deficiencies: 0,
+          meets: 1,
+          exceeds: 1,
+          people: [],
+          priorities: [],
+        },
       }),
     ),
   )
@@ -159,73 +149,4 @@ test("gera alerta agregado para planos cancelados", async () => {
   assert.equal(item?.category, "alert")
   assert.equal(item?.priority, "medium")
   assert.equal(item?.occurredAt, generatedAt)
-})
-
-test("gera recomendação para o maior gap de competência", async () => {
-  const provider = new DevelopmentDecisionFeedProvider(
-    generatedAt,
-    createSource(
-      createDashboard({
-        competencyGaps: [
-          {
-            competencyId: "competency-1",
-            competencyName: "Comunicação",
-            averageGap: 1.5,
-            worstGap: 2,
-            affectedEmployees: 7,
-          },
-          {
-            competencyId: "competency-2",
-            competencyName: "Liderança",
-            averageGap: 2.2,
-            worstGap: 4,
-            affectedEmployees: 3,
-          },
-        ],
-      }),
-    ),
-  )
-
-  const feed = await provider.load()
-  const item = feed.items[0]
-
-  assert.equal(
-    item?.id,
-    "development-competency-gap:competency-2",
-  )
-  assert.equal(item?.category, "recommendation")
-  assert.equal(
-    item?.title,
-    "Gap de competência: Liderança",
-  )
-})
-
-test("ignora gaps sem pessoas afetadas ou sem gap positivo", async () => {
-  const provider = new DevelopmentDecisionFeedProvider(
-    generatedAt,
-    createSource(
-      createDashboard({
-        competencyGaps: [
-          {
-            competencyId: "competency-1",
-            competencyName: "Comunicação",
-            averageGap: 0,
-            worstGap: 0,
-            affectedEmployees: 5,
-          },
-          {
-            competencyId: "competency-2",
-            competencyName: "Liderança",
-            averageGap: 2,
-            worstGap: 3,
-            affectedEmployees: 0,
-          },
-        ],
-      }),
-    ),
-  )
-
-  const feed = await provider.load()
-
-  assert.deepEqual(feed.items, [])
 })

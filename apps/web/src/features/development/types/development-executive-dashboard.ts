@@ -1,7 +1,4 @@
-import type {
-  CompanyCompetencyGap,
-  DevelopmentPriority,
-} from "@/features/talent"
+import type { DashboardCompetencyDevelopment } from "@/features/dashboard-read/types/dashboard-competency-development"
 
 import type {
   DevelopmentDashboardKpis,
@@ -23,9 +20,7 @@ export type DevelopmentExecutiveDashboard = {
 
   kpis: DevelopmentDashboardKpis
 
-  competencyGaps: CompanyCompetencyGap[]
-
-  developmentPriorities: DevelopmentPriority[]
+  competencyDevelopment: DashboardCompetencyDevelopment
 
   planDistribution: DevelopmentPlanDistribution
   

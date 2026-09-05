@@ -1,12 +1,11 @@
 import { PageHeader } from "@/components/shared/page-header"
 
 import {
-  CompanyCompetencyGapCard,
+  DevelopmentCompetencyIntelligenceCard,
   DevelopmentDashboardKpiCards,
   DevelopmentMonthlyEvolutionCard,
   DevelopmentPlanDistributionCard,
   DevelopmentPlanTable,
-  DevelopmentPrioritiesCard,
   getDevelopmentExecutiveDashboard,
 } from "@/features/development"
 
@@ -34,19 +33,9 @@ export default async function DevelopmentPage() {
         kpis={dashboard.kpis}
       />
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        <CompanyCompetencyGapCard
-          competencies={
-            dashboard.competencyGaps
-          }
-        />
-
-        <DevelopmentPrioritiesCard
-          priorities={
-            dashboard.developmentPriorities
-          }
-        />
-      </div>
+      <DevelopmentCompetencyIntelligenceCard
+        intelligence={dashboard.competencyDevelopment}
+      />
 
       <div className="grid gap-6 xl:grid-cols-2">
         <DevelopmentPlanDistributionCard

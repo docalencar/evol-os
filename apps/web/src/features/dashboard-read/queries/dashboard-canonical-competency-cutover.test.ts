@@ -26,7 +26,8 @@ test("Dashboard delegates grouping and canonical gap semantics to existing servi
   assert.doesNotMatch(dashboardPage, /DevelopmentPrioritiesCard/)
 })
 
-test("People remains canonical and Development remains on compatibility semantics", () => {
+test("People and Development use canonical competency coverage", () => {
   assert.match(peoplePage, /getCanonicalPersonCompetencyCoverage\(companyId, id\)/)
-  assert.match(developmentDashboard, /getManagementCompetencyAssignments\(companyId\)/)
+  assert.match(developmentDashboard, /getCanonicalCompanyPersonCompetencyCoverages\(companyId\)/)
+  assert.doesNotMatch(developmentDashboard, /getManagementCompetencyAssignments|calculateCompetencyGap|createEmployeeInsights/)
 })

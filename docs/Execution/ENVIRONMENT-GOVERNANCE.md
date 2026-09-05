@@ -17,6 +17,12 @@ Canonical Review is `rwfvxvbzaosgcyfxdjpt`. Its current migration and validation
 state is recorded in `ENVIRONMENT-MIGRATION-STATUS.md`; every later remote
 operation still requires explicit authorization.
 
+The table above describes **database** environments only. The corresponding **web**
+deployment identity — provider, project, canonical URL, deployment branch and the
+Supabase ref each deployment is bound to — is recorded in `ENVIRONMENT-IDENTITY.md`.
+Consult it before any work that needs to know what code is deployed where, or which
+URL automated tests should target.
+
 ## Migration lifecycle
 
 ```text

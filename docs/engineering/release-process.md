@@ -91,9 +91,13 @@ se existissem. Ficam registrados como evolução futura:
 - **Scripts e testes no CI.** Hoje o CI roda lint + build; não existem scripts
   agregados `test`/`check`, e os testes dependem de execução local. A evolução
   deve primeiro definir um runner geral confiável e depois incluí-lo no workflow.
-- **Pipeline de deploy.** A stack prevê hospedagem (ver `README.md`), mas não há
-  workflow/configuração de deploy versionada no repositório. Enquanto não houver,
-  o deploy não é um passo automatizado deste processo.
+- **Pipeline de deploy.** O **contrato** de deploy passa a existir e é versionado
+  (`apps/web/vercel.json` e `docs/Execution/ENVIRONMENT-IDENTITY.md`), mas **nenhum
+  ambiente web foi provisionado ainda**. Enquanto o provisionamento não ocorrer, o
+  deploy continua **não** sendo um passo deste processo, e nenhum documento deve
+  descrever Review ou Production como ambientes web alcançáveis. O provisionamento
+  é ação do Human Reviewer (`AGENTS.md` §3) e, quando concluído, preenche os campos
+  `TODO_AFTER_PROVISIONING` do `ENVIRONMENT-IDENTITY.md`.
 - **Versionamento / release formal.** Não há convenção de tags, changelog ou
   cadência de release. "Merge na branch principal" é a unidade de entrega atual.
 - **Rollback automatizado.** Não há mecanismo de rollback implantado. Na ausência

@@ -51,9 +51,12 @@ function read(name: string): string {
   return (process.env[name] ?? "").trim()
 }
 
-export function runPreflight(): { ok: boolean; checks: Check[] } {
-  const webRoot = resolveWebRoot()
-  loadEnvFile(webRoot)
+export function runPreflight(
+  options: { loadEnvFile?: boolean } = {},
+): { ok: boolean; checks: Check[] } {
+  // Tests pin the environment explicitly and must not be perturbed by whatever
+  // the developer happens to have in their untracked local file.
+  if (options.loadEnvFile !== false) loadEnvFile(resolveWebRoot())
 
   const checks: Check[] = []
   const allowNonReview = read("E2E_ALLOW_NON_REVIEW_TARGET").toLowerCase() === "true"

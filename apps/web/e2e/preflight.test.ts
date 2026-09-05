@@ -31,9 +31,8 @@ const VARS = [
 /**
  * Runs the preflight against an explicit environment.
  *
- * `runPreflight` also loads `.env.e2e.local` when present, and only fills in
- * variables that are unset — so every variable is pinned here, which makes the
- * result independent of whatever the developer has configured locally.
+ * File loading is disabled: otherwise a developer's untracked `.env.e2e.local`
+ * leaks into the assertions, and "missing" quietly becomes "invalid".
  */
 function withEnv(overrides: Partial<Record<(typeof VARS)[number], string>>) {
   const saved = new Map<string, string | undefined>()
@@ -44,7 +43,7 @@ function withEnv(overrides: Partial<Record<(typeof VARS)[number], string>>) {
     else process.env[name] = value
   }
   try {
-    return runPreflight()
+    return runPreflight({ loadEnvFile: false })
   } finally {
     for (const [name, value] of saved) {
       if (value === undefined) delete process.env[name]

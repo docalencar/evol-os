@@ -42,6 +42,35 @@ A broad prefix alone is never enough: `sb_secret_` with nothing after it, an ano
 key in the service-role slot, a publishable key in the secret slot, a JWT for
 another project, or the same value in both slots are each rejected by name.
 
+Supabase documents the prefixes but not the encoding of the random part, so the
+validator accepts base64, base64url, hex and dotted forms. It still refuses
+whitespace, control characters and non-ASCII.
+
+### Diagnosing a rejected key
+
+```bash
+npm --workspace apps/web run e2e:inspect-key -- --from-env   # what is in .env.e2e.local
+some-command-that-prints-it | npm --workspace apps/web run e2e:inspect-key
+```
+
+Reports length, prefix class, character composition, JWT decode and the verdict —
+**never the value, no substring of the random part, and no hash of it**, since a
+hash would be a stable identifier for the secret. Non-ASCII codepoints *are*
+named, because they cannot occur in a real key: `U+2022` means a masked dashboard
+field was copied instead of the revealed value.
+
+### Setting the key without a clipboard
+
+Prefer a hidden prompt over `pbpaste`. If you copy a command block in order to run
+it, the clipboard holds the *command*, not your key — so a clipboard-based flow
+reads back the wrong thing:
+
+```bash
+read -rs -p "Review service-role key: " KEY && echo
+```
+
+The value is not echoed and does not enter shell history.
+
 `.env.e2e.local` is gitignored. Variables may equally be exported in the runner
 environment instead of using the file — CI should do that.
 

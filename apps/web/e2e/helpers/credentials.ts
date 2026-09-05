@@ -31,9 +31,40 @@ export type KeyInspection = Readonly<{
   identityVerifiable: boolean
 }>
 
-const JWT_RE = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/
-const SB_SECRET_RE = /^sb_secret_[A-Za-z0-9_-]{16,}$/
-const SB_PUBLISHABLE_RE = /^sb_publishable_[A-Za-z0-9_-]{16,}$/
+const JWT_RE = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*$/
+
+/**
+ * Character set for the random part of a `sb_…` key.
+ *
+ * Supabase documents the *prefixes* (`sb_publishable_…`, `sb_secret_…`) but not
+ * the encoding of what follows. An earlier revision assumed base64url
+ * (`[A-Za-z0-9_-]`) and rejected a real Review key — over-specificity that read as
+ * "unrecognised key format".
+ *
+ * This set covers base64, base64url, hex and dotted variants, and still refuses
+ * whitespace, control characters, non-ASCII (a masked "••••" copy) and anything
+ * else that cannot be an API key. Broad enough to accept what Supabase issues,
+ * narrow enough to stay fail-closed.
+ */
+const SB_RANDOM_PART = "[A-Za-z0-9_\\-+/=.]{8,256}"
+const SB_SECRET_RE = new RegExp(`^sb_secret_${SB_RANDOM_PART}$`)
+const SB_PUBLISHABLE_RE = new RegExp(`^sb_publishable_${SB_RANDOM_PART}$`)
+
+/**
+ * Trim, and drop one layer of surrounding quotes — a value pasted into a `.env`
+ * file is frequently quoted, and that is not a reason to reject it.
+ */
+export function normaliseKey(raw: string): string {
+  let key = raw.trim()
+  if (key.length >= 2) {
+    const first = key[0]
+    const last = key[key.length - 1]
+    if ((first === '"' && last === '"') || (first === "'" && last === "'")) {
+      key = key.slice(1, -1).trim()
+    }
+  }
+  return key
+}
 
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
   const parts = token.split(".")
@@ -49,7 +80,7 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
 }
 
 export function inspectKey(raw: string): KeyInspection {
-  const key = raw.trim()
+  const key = normaliseKey(raw)
 
   if (SB_SECRET_RE.test(key)) {
     return { kind: "sb-secret", ref: null, identityVerifiable: false }
@@ -79,7 +110,7 @@ export type ValidationResult =
  * pasted by mistake. A broad prefix alone is never sufficient.
  */
 export function validateServiceRoleKey(raw: string, expectedRef: string): ValidationResult {
-  if (!raw || raw.trim() === "") return { ok: false, reason: "empty" }
+  if (!raw || normaliseKey(raw) === "") return { ok: false, reason: "empty" }
   const info = inspectKey(raw)
 
   switch (info.kind) {
@@ -103,13 +134,19 @@ export function validateServiceRoleKey(raw: string, expectedRef: string): Valida
       return { ok: false, reason: "JWT does not carry role=service_role" }
 
     default:
-      return { ok: false, reason: "unrecognised key format" }
+      return {
+        ok: false,
+        reason:
+          "unrecognised key format — expected sb_secret_… or a service_role JWT. " +
+          "Run `npm --workspace apps/web run e2e:inspect-key` to see what the value " +
+          "looks like without revealing it",
+      }
   }
 }
 
 /** The anon/publishable key: must be the *unprivileged* one, and the right project. */
 export function validateAnonKey(raw: string, expectedRef: string): ValidationResult {
-  if (!raw || raw.trim() === "") return { ok: false, reason: "empty" }
+  if (!raw || normaliseKey(raw) === "") return { ok: false, reason: "empty" }
   const info = inspectKey(raw)
 
   switch (info.kind) {

@@ -55,13 +55,49 @@ test("the publishable key pasted into the service-role slot is rejected", () => 
 })
 
 test("a broad prefix alone is not enough", () => {
-  for (const candidate of ["sb_secret_", "sb_secret_short", "sb_", "eyJ", "not-a-key", ""]) {
+  for (const candidate of ["sb_secret_", "sb_secret_abc", "sb_", "eyJ", "not-a-key", ""]) {
     assert.equal(
       validateServiceRoleKey(candidate, REF).ok,
       false,
       `expected ${JSON.stringify(candidate)} to be rejected`,
     )
   }
+})
+
+test("secret keys are accepted across every plausible encoding of the random part", () => {
+  // Supabase documents the prefix but not the encoding. An earlier revision
+  // assumed base64url and rejected a real Review key.
+  const randoms = [
+    "abcdefghijklmnopqrstuvwxyz",              // lowercase
+    "ABCdef123456789012345678",                // mixed alphanumeric
+    "abc-def_ghi-jkl_mno-pqr12",               // base64url
+    "abc+def/ghi+jkl/mno=pqr12",               // standard base64 with padding
+    "0123456789abcdef0123456789abcdef",        // hex
+    "part.one.two.three.four.five",            // dotted
+    "A".repeat(31),                            // the observed Review key length
+  ]
+  for (const random of randoms) {
+    const result = validateServiceRoleKey(`sb_secret_${random}`, REF)
+    assert.equal(result.ok, true, `expected sb_secret_ + ${random.length} chars to be accepted`)
+  }
+})
+
+test("surrounding quotes and whitespace do not cause a false rejection", () => {
+  const key = "sb_secret_" + "A".repeat(24)
+  for (const wrapped of [` ${key} `, `"${key}"`, `'${key}'`, `\n${key}\n`, ` "${key}" `]) {
+    assert.equal(validateServiceRoleKey(wrapped, REF).ok, true, `failed for ${JSON.stringify(wrapped)}`)
+  }
+})
+
+test("a masked copy of the field is rejected, not mistaken for a key", () => {
+  // Copying a hidden dashboard field yields bullets, not the value.
+  assert.equal(validateServiceRoleKey("sb_secret_" + "•".repeat(24), REF).ok, false)
+  assert.equal(validateServiceRoleKey("•".repeat(40), REF).ok, false)
+})
+
+test("a value with an embedded line break is rejected", () => {
+  const key = "sb_secret_" + "A".repeat(12) + "\n" + "B".repeat(12)
+  assert.equal(validateServiceRoleKey(key, REF).ok, false)
 })
 
 test("a JWT without role=service_role is rejected", () => {

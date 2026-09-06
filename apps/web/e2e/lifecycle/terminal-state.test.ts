@@ -22,7 +22,11 @@ process.env.E2E_RUN_DIR = TEST_RUN_DIR
 // statement order, so the assignment above still wins, and `runDir()` reads the
 // variable lazily anyway.
 import { runDir } from "../helpers/run-paths"
-import { COMPANY_RETENTION_TABLES, COMPANY_SCOPED_TABLES } from "./retention-registry"
+import {
+  COMPANY_RETENTION_TABLES,
+  COMPANY_SCOPED_TABLES,
+  PRIVILEGED_COUNT_TABLES,
+} from "./retention-registry"
 import {
   AUTH_BAN_DURATION,
   COMPANY_RETIRED_STATUS,
@@ -464,6 +468,26 @@ test("the inspector and the classifier read the same source of truth", () => {
     !/COMPANY_SCOPED_TABLES\s*(:|=)\s*\[/.test(inspectRun),
     "inspect-run must not declare a second list of its own",
   )
+})
+
+test("the tables needing the privileged boundary are exactly the 0069 family", () => {
+  assert.deepEqual([...PRIVILEGED_COUNT_TABLES].sort(), [
+    "development_template_application_attempts",
+    "development_template_application_lineage",
+    "development_template_application_snapshots",
+    "development_template_applications",
+  ])
+})
+
+test("no table is both directly readable and routed through the boundary", () => {
+  for (const entry of COMPANY_RETENTION_TABLES) {
+    const viaBoundary = PRIVILEGED_COUNT_TABLES.includes(entry.table)
+    assert.equal(
+      viaBoundary,
+      entry.access === "PRIVILEGED_COUNT_BOUNDARY",
+      `${entry.table} has an inconsistent access mode`,
+    )
+  }
 })
 
 test.after(() => {

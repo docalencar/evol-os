@@ -8,16 +8,19 @@
  *
  *     probe (read-only) -> classify -> plan -> TOCTOU reread -> mutate -> verify
  *
- * The probe step never calls an audited RPC. Every retention read is a plain
- * PostgREST `count` with `head: true`, which is important: several administrative
- * *read* RPCs append an `activity_events` row through
- * `audit_secure_administrative_read` (0062:55), so classifying with one of those
- * would create the very audit evidence it is trying to detect.
+ * Retention reads are plain PostgREST `count`s with `head: true` wherever
+ * `service_role` may SELECT, and the counts-only `get_company_retention_pressure_v1`
+ * boundary where migration 0069 deliberately revoked that privilege. Neither path
+ * touches an *audited* RPC: several administrative read RPCs append an
+ * `activity_events` row through `audit_secure_administrative_read` (0062:55), so
+ * classifying with one of those would create the very evidence it is looking for.
+ * The retention boundary is STABLE and writes nothing.
  */
 
 import { adminClient } from "../helpers/admin-client"
 import {
   COMPANY_RETENTION_TABLES,
+  RETENTION_PRESSURE_RPC,
   type RetentionTable,
 } from "./retention-registry"
 import {
@@ -93,10 +96,77 @@ async function probeDirect(companyId: string, entry: RetentionTable): Promise<Re
   }
 }
 
-/** Probe every retention table with a direct head-count. */
+/**
+ * Count the tables `service_role` may not read, through the counts-only boundary.
+ *
+ * One RPC call answers for all of them, so it is made once and its rows are
+ * distributed. A table the boundary does not report is left `rows: null` — never
+ * assumed empty, and never inferred from the 403 a direct read would have given.
+ */
+async function probePrivileged(
+  companyId: string,
+  entries: readonly RetentionTable[],
+): Promise<RetentionProbe[]> {
+  if (entries.length === 0) return []
+
+  let counts = new Map<string, number>()
+  let failure: ProbeFailure | undefined
+
+  try {
+    const response = await adminClient().rpc(RETENTION_PRESSURE_RPC, { p_company_id: companyId })
+    if (response.error) failure = toFailure(response)
+    else {
+      counts = new Map(
+        ((response.data ?? []) as Array<{ relation_name?: unknown; row_count?: unknown }>)
+          .filter((row) => typeof row.relation_name === "string")
+          .map((row) => [String(row.relation_name), Number(row.row_count)]),
+      )
+    }
+  } catch (thrown) {
+    failure = thrownFailure(thrown)
+  }
+
+  return entries.map((entry) => {
+    if (failure) {
+      return { table: entry.table, mechanism: entry.mechanism, rows: null, failure }
+    }
+    const count = counts.get(entry.table)
+    if (count === undefined) {
+      return {
+        table: entry.table,
+        mechanism: entry.mechanism,
+        rows: null,
+        failure: {
+          message: `${RETENTION_PRESSURE_RPC} returned no row for this table`,
+        },
+      }
+    }
+    return { table: entry.table, mechanism: entry.mechanism, rows: count }
+  })
+}
+
+/**
+ * Probe every retention table, using each one's declared access mode.
+ *
+ * Results are returned in registry order regardless of how they were obtained,
+ * so the classifier's "first unreadable" reporting stays deterministic.
+ */
 export async function probeCompanyRetention(companyId: string): Promise<RetentionProbe[]> {
+  const privilegedEntries = COMPANY_RETENTION_TABLES.filter(
+    (entry) => entry.access === "PRIVILEGED_COUNT_BOUNDARY",
+  )
+  const privileged = new Map(
+    (await probePrivileged(companyId, privilegedEntries)).map((probe) => [probe.table, probe]),
+  )
+
   const probes: RetentionProbe[] = []
-  for (const entry of COMPANY_RETENTION_TABLES) probes.push(await probeDirect(companyId, entry))
+  for (const entry of COMPANY_RETENTION_TABLES) {
+    if (entry.access === "PRIVILEGED_COUNT_BOUNDARY") {
+      probes.push(privileged.get(entry.table) as RetentionProbe)
+      continue
+    }
+    probes.push(await probeDirect(companyId, entry))
+  }
   return probes
 }
 

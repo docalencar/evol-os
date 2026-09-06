@@ -42,6 +42,31 @@ import type { RetentionTable } from "./retention-registry"
 
 export type RunTerminalState = "CLEANED" | "RETIRED" | "QUARANTINED"
 
+/**
+ * Everything the transport told us about a failed probe.
+ *
+ * The previous shape kept only `error.message` and threw the rest away. That cost
+ * two full diagnostic round-trips on hosted run 260906201436-5ecd5f: PostgREST
+ * answered `403` with an empty body, so `message` was the empty string, and the
+ * classifier rendered `could not be read ()` — the one fact that would have named
+ * the cause immediately, the status code, had already been discarded at capture.
+ *
+ * Every field is optional because different failure modes populate different
+ * ones: a PostgREST error carries `code`/`details`/`hint`, a fetch failure
+ * carries only a thrown message, and an empty-bodied HTTP error carries little
+ * more than a status.
+ */
+export type ProbeFailure = Readonly<{
+  status?: number
+  statusText?: string
+  code?: string
+  message?: string
+  details?: string
+  hint?: string
+  /** Set when the call threw instead of returning an error object. */
+  thrownName?: string
+}>
+
 /** One read-only probe of a company-scoped retention table. */
 export type RetentionProbe = Readonly<{
   table: string
@@ -49,8 +74,43 @@ export type RetentionProbe = Readonly<{
   /** Row count for this company, or null when the table could not be read. */
   rows: number | null
   /** Present only when `rows` is null. */
-  unreadableReason?: string
+  failure?: ProbeFailure
 }>
+
+/** Empty and whitespace-only values are as useless as absent ones. */
+function present(value: string | number | undefined): value is string | number {
+  if (value === undefined || value === null) return false
+  return typeof value === "number" ? true : value.trim().length > 0
+}
+
+/**
+ * Render a failure so that it always says something actionable.
+ *
+ * Never produces `()`. When a field is missing it is omitted; when a field
+ * exists but is empty it is rendered as `<empty>`, because "the server sent an
+ * empty message" is itself a diagnostic clue and is not the same as "there was
+ * no message field at all".
+ */
+export function describeProbeFailure(failure: ProbeFailure | undefined): string {
+  if (!failure) return "no failure detail was captured"
+
+  const parts: string[] = []
+
+  if (present(failure.status)) {
+    parts.push(`HTTP ${failure.status}${present(failure.statusText) ? ` ${failure.statusText}` : ""}`)
+  }
+  if (failure.thrownName) parts.push(`threw ${failure.thrownName}`)
+  if (present(failure.code)) parts.push(`code=${failure.code}`)
+
+  // `message` is reported even when empty: an empty body on a 403 is the signal.
+  if (failure.message !== undefined) {
+    parts.push(`message=${present(failure.message) ? failure.message : "<empty>"}`)
+  }
+  if (present(failure.details)) parts.push(`details=${failure.details}`)
+  if (present(failure.hint)) parts.push(`hint=${failure.hint}`)
+
+  return parts.length > 0 ? parts.join("; ") : "the transport reported a failure with no detail"
+}
 
 export type OwnershipFacts = Readonly<{
   runId: string
@@ -117,7 +177,7 @@ export function classifyTerminalStrategy(
       status: "unavailable",
       reason:
         `retention table ${unreadable.table} could not be read ` +
-        `(${unreadable.unreadableReason ?? "no reason given"}). An unreadable table is not ` +
+        `[${describeProbeFailure(unreadable.failure)}]. An unreadable table is not ` +
         `evidence that it is empty.`,
     })
   }

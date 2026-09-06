@@ -8,11 +8,11 @@
  *
  *     probe (read-only) -> classify -> plan -> TOCTOU reread -> mutate -> verify
  *
- * The probe step never calls an RPC. Every retention read is a plain PostgREST
- * `count` with `head: true`, which is important: several administrative *read*
- * RPCs append an `activity_events` row through `audit_secure_administrative_read`
- * (0062:55), so classifying with one of those would create the very audit
- * evidence it is trying to detect.
+ * The probe step never calls an audited RPC. Every retention read is a plain
+ * PostgREST `count` with `head: true`, which is important: several administrative
+ * *read* RPCs append an `activity_events` row through
+ * `audit_secure_administrative_read` (0062:55), so classifying with one of those
+ * would create the very audit evidence it is trying to detect.
  */
 
 import { adminClient } from "../helpers/admin-client"
@@ -33,38 +33,70 @@ import {
   type ObservedCompany,
   type ObservedState,
   type OwnershipFacts,
+  type ProbeFailure,
   type RetentionProbe,
   type RetirementPlan,
   type Verdict,
 } from "./terminal-state"
 
 /**
- * Count rows of one company-scoped retention table. READ ONLY.
+ * Capture every field the transport gave us — see `ProbeFailure`.
  *
- * A table that does not exist in this deployment is reported as unreadable
- * rather than as empty, and the classifier then fails closed. Silently treating
- * a missing table as zero would be an assumption dressed up as a measurement.
+ * A table that cannot be read is reported as unreadable, never as empty: a
+ * missing count treated as zero would be an assumption dressed up as a
+ * measurement, and it is exactly what would let a blocked tenant be classified
+ * CLEANED.
  */
-async function probeTable(companyId: string, entry: RetentionTable): Promise<RetentionProbe> {
-  const { count, error } = await adminClient()
-    .from(entry.table)
-    .select("*", { count: "exact", head: true })
-    .eq("company_id", companyId)
+function toFailure(response: {
+  status?: number
+  statusText?: string
+  error?: { code?: string; message?: string; details?: string; hint?: string } | null
+}): ProbeFailure {
+  return {
+    status: response.status,
+    statusText: response.statusText,
+    code: response.error?.code,
+    message: response.error?.message,
+    details: response.error?.details,
+    hint: response.error?.hint,
+  }
+}
 
-  if (error) {
+function thrownFailure(thrown: unknown): ProbeFailure {
+  const error = thrown as { name?: string; message?: string } | undefined
+  return { thrownName: error?.name ?? "Error", message: error?.message }
+}
+
+async function probeDirect(companyId: string, entry: RetentionTable): Promise<RetentionProbe> {
+  try {
+    const response = await adminClient()
+      .from(entry.table)
+      .select("*", { count: "exact", head: true })
+      .eq("company_id", companyId)
+
+    if (response.error) {
+      return {
+        table: entry.table,
+        mechanism: entry.mechanism,
+        rows: null,
+        failure: toFailure(response),
+      }
+    }
+    return { table: entry.table, mechanism: entry.mechanism, rows: response.count ?? 0 }
+  } catch (thrown) {
     return {
       table: entry.table,
       mechanism: entry.mechanism,
       rows: null,
-      unreadableReason: error.message,
+      failure: thrownFailure(thrown),
     }
   }
-  return { table: entry.table, mechanism: entry.mechanism, rows: count ?? 0 }
 }
 
+/** Probe every retention table with a direct head-count. */
 export async function probeCompanyRetention(companyId: string): Promise<RetentionProbe[]> {
   const probes: RetentionProbe[] = []
-  for (const entry of COMPANY_RETENTION_TABLES) probes.push(await probeTable(companyId, entry))
+  for (const entry of COMPANY_RETENTION_TABLES) probes.push(await probeDirect(companyId, entry))
   return probes
 }
 

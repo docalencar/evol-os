@@ -29,6 +29,7 @@ import {
   PERSON_RETIRED_STATUS,
   baselineFingerprint,
   classifyTerminalStrategy,
+  describeProbeFailure,
   evaluateRetirementPostconditions,
   planRetirement,
   redactJournalForArchive,
@@ -56,8 +57,8 @@ function ownership(overrides: Partial<OwnershipFacts> = {}): OwnershipFacts {
   }
 }
 
-function probe(table: string, rows: number | null, reason?: string): RetentionProbe {
-  return { table, mechanism: "immutable-trigger", rows, unreadableReason: reason }
+function probe(table: string, rows: number | null, failure?: Record<string, unknown>): RetentionProbe {
+  return { table, mechanism: "immutable-trigger", rows, failure: failure as never }
 }
 
 /** Every registry table empty — the shape of a run that wrote no audit rows. */
@@ -126,7 +127,7 @@ test("a blocker OTHER than activity_events also forces RETIRED", () => {
 
 test("an unreadable retention table fails closed, never CLEANED", () => {
   const probes = emptyProbes()
-  probes[2] = probe(probes[2].table, null, "permission denied")
+  probes[2] = probe(probes[2].table, null, { status: 403, message: "permission denied" })
   const verdict = classifyTerminalStrategy(probes, ownership())
 
   assert.equal("status" in verdict && verdict.status, "unavailable")
@@ -366,6 +367,71 @@ test("evidence archives carry no passwords", () => {
 
 test("the ban duration is an explicit long-lived value, not a password rotation", () => {
   assert.match(AUTH_BAN_DURATION, /^\d+h$/)
+})
+
+
+// ---------------------------------------------------------------------------
+// Structured probe failures — the diagnostic that run 260906201436-5ecd5f lost
+// ---------------------------------------------------------------------------
+
+test("a 403 with an EMPTY message still renders something actionable, never ()", () => {
+  // Exactly what Review returned for development_template_applications: PostgREST
+  // answered 403 with an empty body, so message was "" and the old
+  // `?? "no reason given"` let it through, printing "could not be read ()".
+  const rendered = describeProbeFailure({ status: 403, statusText: "Forbidden", message: "" })
+
+  assert.match(rendered, /HTTP 403 Forbidden/)
+  assert.match(rendered, /message=<empty>/)
+  assert.ok(!/^\s*$/.test(rendered))
+})
+
+test("the classifier's reason embeds the structured failure, not ()", () => {
+  const probes = emptyProbes()
+  probes[0] = probe("activity_events", null, { status: 403, statusText: "Forbidden", message: "" })
+  const verdict = classifyTerminalStrategy(probes, ownership())
+
+  assert.equal("status" in verdict && verdict.status, "unavailable")
+  const reason = (verdict as { reason: string }).reason
+  assert.match(reason, /HTTP 403 Forbidden/)
+  assert.ok(!reason.includes("()"), "the empty-parenthesis rendering must be gone")
+})
+
+test("PostgREST code, details and hint all survive to the message", () => {
+  const rendered = describeProbeFailure({
+    status: 400,
+    code: "42501",
+    message: "permission denied for table x",
+    details: "some details",
+    hint: "some hint",
+  })
+  assert.match(rendered, /code=42501/)
+  assert.match(rendered, /details=some details/)
+  assert.match(rendered, /hint=some hint/)
+})
+
+test("a thrown network exception is described by class and message", () => {
+  const rendered = describeProbeFailure({ thrownName: "TypeError", message: "fetch failed" })
+  assert.match(rendered, /threw TypeError/)
+  assert.match(rendered, /message=fetch failed/)
+})
+
+test("a failure with no detail at all still says so", () => {
+  assert.match(describeProbeFailure({}), /no detail/)
+  assert.match(describeProbeFailure(undefined), /no failure detail/)
+})
+
+test("an unreadable table can NEVER yield CLEANED, whatever the failure shape", () => {
+  for (const failure of [
+    { status: 403, message: "" },
+    { thrownName: "TypeError", message: "fetch failed" },
+    {},
+  ]) {
+    const probes = emptyProbes()
+    probes[probes.length - 1] = probe(probes[probes.length - 1].table, null, failure)
+    const verdict = classifyTerminalStrategy(probes, ownership())
+    assert.ok(!("strategy" in verdict), "must not classify a strategy")
+    assert.equal((verdict as { status: string }).status, "unavailable")
+  }
 })
 
 test.after(() => {

@@ -119,8 +119,38 @@ export default async function EmployeeProfilePage({
 
   const { companyId } = await getCurrentCompanyContext()
 
+  // ---------------------------------------------------------------------------
+  // PHASE 1 — tenant identity gate.
+  //
+  // Resolve the target person WITHIN the current tenant, alone, before anything
+  // else runs. `get_tenant_person_profile_v3` authorizes on `p_company_id` and
+  // then filters by person, so a person belonging to another company and a person
+  // that exists nowhere both come back as zero rows — one answer, no oracle.
+  //
+  // Ordering is the point, not merely error handling. Everything in phase 2 is
+  // parameterised by this person id, and two of those reads (0118/0119) plus
+  // `getEmployeeAssessmentSummary` are *audited*: they write an immutable
+  // `activity_events` row through `audit_secure_administrative_read` BEFORE they
+  // check the target. Launching them alongside the identity lookup meant a
+  // request for an inaccessible person left a permanent audit record of a read
+  // that never happened — and, because `Promise.all` rejects on the first
+  // failure, the redirect below was never reached and the user saw an error
+  // boundary instead. Catching those rejections would have hidden the symptom
+  // while still writing the audit rows. The gate removes both problems.
+  // ---------------------------------------------------------------------------
+  const employee = await getManagementPersonIncludingTerminated(companyId, id)
+
+  if (!employee) {
+    redirect("/app/people")
+  }
+
+  // ---------------------------------------------------------------------------
+  // PHASE 2 — derived reads for a target already proven to be in this tenant.
+  //
+  // Still parallel: these are independent of each other, and the identity gate
+  // is the only ordering the correctness argument needs.
+  // ---------------------------------------------------------------------------
   const [
-    employee,
     employeeCompetencies,
     competencies,
     canonicalCompetencyCoverage,
@@ -134,8 +164,6 @@ export default async function EmployeeProfilePage({
     personAssessmentResults,
     directReportAggregate,
   ] = await Promise.all([
-    getManagementPersonIncludingTerminated(companyId, id),
-
     getManagementEmployeeCompetencies(companyId, id),
 
     getManagementCompetencies(companyId),
@@ -170,10 +198,6 @@ export default async function EmployeeProfilePage({
     // avaliações" e de Self × Manager.
     getPersonDirectReportAggregateReadModel(companyId, id),
   ])
-
-  if (!employee) {
-    redirect("/app/people")
-  }
 
   // Development plans remain scoped to this person. Competency expectations and
   // current evidence come exclusively from the trusted 0123 person boundary;

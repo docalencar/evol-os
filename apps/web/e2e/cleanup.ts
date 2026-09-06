@@ -12,17 +12,44 @@
  * difference between recovering your own resources and deleting someone else's.
  */
 
-import { existsSync, rmSync } from "node:fs"
+import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs"
+import { resolve } from "node:path"
 
 import { destroyRunFixtures, reconcileOwnedCompanies } from "./fixtures/tenant-fixture"
 import { e2eEnv } from "./helpers/env"
-import { discardJournal, journalPath, readJournal } from "./helpers/journal"
+import {
+  discardJournal,
+  journalPath,
+  ownedCompanyIds,
+  readJournal,
+} from "./helpers/journal"
+import { journalledUserIds } from "./fixtures/tenant-fixture"
+import { runDir } from "./helpers/run-paths"
 import { storageStatePath, type SyntheticRole } from "./helpers/run-context"
+import {
+  baselineFingerprint,
+  classifyRun,
+  executeRetirement,
+  observeRunState,
+  retentionSnapshot,
+} from "./lifecycle/retire"
+import {
+  planRetirement,
+  redactJournalForArchive,
+  shouldFinalizeJournal,
+  type OwnershipFacts,
+  type RunTerminalState,
+} from "./lifecycle/terminal-state"
 
 const ROLES: SyntheticRole[] = ["admin", "manager", "employee", "onboarding"]
 
 export type CleanupOutcome = Readonly<{
   ok: boolean
+  /**
+   * The terminal state actually reached. `null` when nothing was decided —
+   * a refusal before classification, or a run that owned nothing.
+   */
+  terminalState: RunTerminalState | null
   message: string
   orphaned: Array<{ kind: string; id: string; reason: string }>
 }>
@@ -89,6 +116,7 @@ export async function cleanupRecordedRun(): Promise<CleanupOutcome> {
   if (!journal) {
     return {
       ok: true,
+      terminalState: null,
       message:
         `no ownership journal at ${journalPath()} — nothing is recorded as owned ` +
         `by a run, so nothing will be deleted. This is not an error.`,
@@ -100,6 +128,7 @@ export async function cleanupRecordedRun(): Promise<CleanupOutcome> {
   if (!shape.ok) {
     return {
       ok: false,
+      terminalState: null,
       message:
         `ownership journal at ${journalPath()} is malformed (${shape.reason}). ` +
         `Refusing to delete anything: a journal that cannot be trusted is not ` +
@@ -110,7 +139,12 @@ export async function cleanupRecordedRun(): Promise<CleanupOutcome> {
 
   if (journal.owned.length === 0 && journal.users.length === 0 && !journal.companyId) {
     discardJournal()
-    return { ok: true, message: `run ${journal.runId} recorded no resources.`, orphaned: [] }
+    return {
+      ok: true,
+      terminalState: "CLEANED",
+      message: `run ${journal.runId} recorded no resources.`,
+      orphaned: [],
+    }
   }
 
   // The env guard refuses Production and Legacy outright; deleting is exactly when
@@ -119,6 +153,7 @@ export async function cleanupRecordedRun(): Promise<CleanupOutcome> {
   if (journal.supabaseRef && journal.supabaseRef !== env.supabaseRef) {
     return {
       ok: false,
+      terminalState: null,
       message:
         `journal was written against Supabase ref ${journal.supabaseRef} but the ` +
         `current environment points at ${env.supabaseRef}. Refusing to delete.`,
@@ -141,6 +176,7 @@ export async function cleanupRecordedRun(): Promise<CleanupOutcome> {
   if (reconciliation.status === "unavailable") {
     return {
       ok: false,
+      terminalState: null,
       message:
         `could not reconcile run-owned companies (${reconciliation.reason}). Refusing to ` +
         `delete: an unreadable control plane is not evidence that nothing was created. ` +
@@ -152,6 +188,7 @@ export async function cleanupRecordedRun(): Promise<CleanupOutcome> {
   if (reconciliation.status === "unusable") {
     return {
       ok: false,
+      terminalState: null,
       message:
         `reconciliation returned an id that is not a complete UUID (${reconciliation.reason}). ` +
         `Refusing to delete: a partial id is a different predicate, not a narrower one.`,
@@ -162,6 +199,7 @@ export async function cleanupRecordedRun(): Promise<CleanupOutcome> {
   if (reconciliation.status === "ambiguous") {
     return {
       ok: false,
+      terminalState: null,
       message:
         `ambiguous ownership: synthetic user ${reconciliation.userId} owns more than one ` +
         `unjournalled company (${reconciliation.candidates.join(", ")}). One identity can own ` +
@@ -182,46 +220,162 @@ export async function cleanupRecordedRun(): Promise<CleanupOutcome> {
     )
   }
 
-  const report = await destroyRunFixtures(journal)
-
-  for (const role of ROLES) {
-    const file = storageStatePath(role)
-    if (existsSync(file)) rmSync(file, { force: true })
+  // -------------------------------------------------------------------------
+  // CLASSIFY BEFORE MUTATING.
+  //
+  // The previous design attempted a delete, caught the immutability error and
+  // read its message. That performed a destructive action in order to answer a
+  // read-only question, and could only ever recognise the first blocker Postgres
+  // happened to name. Now the graph is inspected first and the strategy chosen
+  // from evidence.
+  // -------------------------------------------------------------------------
+  const ownership: OwnershipFacts = {
+    runId: journal.runId,
+    supabaseRef: journal.supabaseRef,
+    companyIds: ownedCompanyIds(journal),
+    authUserIds: journalledUserIds(journal),
   }
+
+  const before = await observeRunState(ownership)
+  const classification = classifyRun(before, ownership)
+
+  if ("status" in classification) {
+    return {
+      ok: false,
+      terminalState: null,
+      message:
+        `run ${journal.runId}: cannot classify a terminal state (${classification.status} — ` +
+        `${classification.reason}). Refusing to mutate: an unclassifiable graph is not a ` +
+        `safe one. The journal was kept.`,
+      orphaned: [],
+    }
+  }
+
+  if (classification.strategy === "RETIRED") {
+    return retireRun(journal, ownership, before, classification.blockedBy)
+  }
+
+  // ---------------------------------------------------------------------------
+  // CLEANED — no retention evidence, so physical deletion remains valid and
+  // remains the default. We do not want to accumulate tenants.
+  // ---------------------------------------------------------------------------
+  const report = await destroyRunFixtures(journal)
+  clearStorageState()
 
   if (report.orphaned.length === 0) {
     discardJournal()
     return {
       ok: true,
+      terminalState: "CLEANED",
       message:
-        `run ${journal.runId} cleaned: ${report.companiesDeleted.length} company/companies ` +
+        `run ${journal.runId} CLEANED: ${report.companiesDeleted.length} company/companies ` +
         `removed, ${report.usersDeleted.length} auth user(s) removed.`,
       orphaned: [],
     }
   }
 
-  // Journal deliberately kept, so the next run of this command can retry.
-  const quarantine = report.orphaned.filter(
-    (orphan) => orphan.classification === "REQUIRES_QUARANTINE",
+  // Classification said deletion was safe and it was not. That is a genuine
+  // inconsistency — the graph moved, or the registry is incomplete — and it is
+  // exceptional, not a healthy terminal state.
+  return {
+    ok: false,
+    terminalState: "QUARANTINED",
+    message:
+      `run ${journal.runId}: classified CLEANED but ${report.orphaned.length} resource(s) ` +
+      `could not be removed. The graph changed under us, or a retention table is missing ` +
+      `from the registry. Journal kept; run \`npm --workspace apps/web run e2e:inspect-run\`.`,
+    orphaned: [...report.orphaned],
+  }
+}
+
+function clearStorageState(): void {
+  for (const role of ROLES) {
+    const file = storageStatePath(role)
+    if (existsSync(file)) rmSync(file, { force: true })
+  }
+}
+
+/** Archive the journal, redacted, then retire the operational path. */
+function finalizeJournal(journal: unknown, runId: string, state: RunTerminalState): string {
+  const archiveDir = resolve(runDir(), "archive")
+  if (!existsSync(archiveDir)) mkdirSync(archiveDir, { recursive: true, mode: 0o700 })
+
+  const archivePath = resolve(archiveDir, `${runId}.${state.toLowerCase()}.json`)
+  writeFileSync(archivePath, JSON.stringify(redactJournalForArchive(journal), null, 2), {
+    mode: 0o600,
+  })
+
+  // Renamed rather than deleted: the operational path is freed for the next run
+  // and nothing is destroyed.
+  if (existsSync(journalPath())) {
+    renameSync(journalPath(), resolve(archiveDir, `${runId}.run.json.retired`))
+  }
+  return archivePath
+}
+
+async function retireRun(
+  journal: NonNullable<ReturnType<typeof readJournal>>,
+  ownership: OwnershipFacts,
+  before: Awaited<ReturnType<typeof observeRunState>>,
+  blockedBy: readonly { table: string; rows: number | null }[],
+): Promise<CleanupOutcome> {
+  const retained = blockedBy.map((probe) => `${probe.table}=${probe.rows}`).join(", ")
+  console.log(
+    `[e2e] run ${journal.runId}: immutable retention detected (${retained}). ` +
+      `Physical deletion is incompatible with the domain; retiring instead.`,
   )
 
-  if (quarantine.length > 0) {
+  const plan = planRetirement(ownership)
+  const snapshot = retentionSnapshot(before)
+
+  // TOCTOU: the plan was built for an observed world. Refuse if it moved.
+  const recheck = await observeRunState(ownership)
+  if (baselineFingerprint(recheck) !== baselineFingerprint(before)) {
     return {
       ok: false,
+      terminalState: null,
       message:
-        `run ${journal.runId}: REQUIRES_QUARANTINE — ${quarantine.length} resource(s) are ` +
-        `referenced by immutable audit history and cannot be deleted by design. This is not ` +
-        `a retryable orphan: retrying will fail identically. Do not weaken the ` +
-        `activity_events triggers; these resources need a documented retirement decision. ` +
-        `Run \`npm --workspace apps/web run e2e:inspect-run\` for the residual graph.`,
-      orphaned: [...report.orphaned],
+        `run ${journal.runId}: the run-owned graph changed between classification and ` +
+        `retirement. Refusing to apply a plan built for a different state.`,
+      orphaned: [],
     }
   }
 
+  const outcome = await executeRetirement(plan, snapshot, ownership)
+  for (const step of outcome.applied) console.log(`[e2e]   applied: ${step}`)
+
+  if (!shouldFinalizeJournal(outcome.postconditions ?? { ok: false, mismatches: ["no verdict"] })) {
+    const mismatches =
+      outcome.postconditions && !outcome.postconditions.ok
+        ? outcome.postconditions.mismatches
+        : [outcome.failure ?? "unknown failure"]
+
+    // Deliberately NOT reported as RETIRED. A partial mutation is inconsistent,
+    // and calling it a healthy terminal state would be the most damaging lie
+    // this module could tell.
+    return {
+      ok: false,
+      terminalState: "QUARANTINED",
+      message:
+        `run ${journal.runId}: retirement did not complete. This is NOT a healthy terminal ` +
+        `state. The journal was KEPT so recovery authority survives. Reasons: ` +
+        mismatches.join(" | "),
+      orphaned: [],
+    }
+  }
+
+  clearStorageState()
+  const archivePath = finalizeJournal(journal, journal.runId, "RETIRED")
+
   return {
-    ok: false,
-    message: `run ${journal.runId}: ${report.orphaned.length} resource(s) could not be removed.`,
-    orphaned: [...report.orphaned],
+    ok: true,
+    terminalState: "RETIRED",
+    message:
+      `run ${journal.runId} RETIRED: ${ownership.companyIds.length} company/companies made ` +
+      `inactive with their people terminated, ${ownership.authUserIds.length} run-owned auth ` +
+      `identity/identities banned, immutable audit rows unchanged (${retained}). ` +
+      `Evidence: ${archivePath}`,
+    orphaned: [],
   }
 }
 

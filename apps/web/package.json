@@ -16,7 +16,7 @@
     "e2e:inspect-key": "tsx e2e/inspect-key.ts",
     "e2e:install": "playwright install chromium",
     "e2e:report": "playwright show-report e2e/.run/report",
-    "test:e2e-helpers": "tsx --test e2e/helpers/*.test.ts e2e/fixtures/*.test.ts e2e/*.test.ts",
+    "test:e2e-helpers": "tsx --test e2e/helpers/*.test.ts e2e/fixtures/*.test.ts e2e/lifecycle/*.test.ts e2e/*.test.ts",
     "e2e:cleanup": "tsx e2e/cleanup.ts",
     "e2e:inspect-run": "tsx e2e/inspect-run.ts"
   },

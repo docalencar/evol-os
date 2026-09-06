@@ -104,3 +104,76 @@ export const AUTH_RETENTION_NOTES: readonly Readonly<{ column: string; evidence:
     { column: "notification_audit.actor_id (RESTRICT, NOT NULL)", evidence: "0063:172" },
     { column: "tenant_access_operations.actor_user_id (RESTRICT)", evidence: "0070:11" },
   ])
+
+/**
+ * Company-scoped tables the residual-graph inspector reports on.
+ *
+ * This is a superset of the retention list: it answers "what does this tenant
+ * still hold?", not "what stops it being deleted?". It lives here so there is
+ * exactly ONE place where company-scoped tables are enumerated.
+ *
+ * It is written out explicitly and reviewed by hand. An earlier revision
+ * generated the inspector's list with a regex over the migrations that required
+ * `create table if not exists`; `development_template_applications` is declared
+ * with a plain `create table`, so it was silently dropped and the inspector's
+ * clean run looked like evidence when it had never probed the table at all.
+ * Generated lists fail quietly — explicit ones fail in review.
+ */
+export const COMPANY_SCOPED_TABLES: readonly string[] = Object.freeze([
+  "activity_events",
+  "approval_assignments",
+  "approval_decisions",
+  "approval_domain_events",
+  "approval_requests",
+  "approval_stages",
+  "assessment_cycle_participants",
+  "assessment_cycles",
+  "assessment_responses",
+  "assessment_sections",
+  "assessment_templates",
+  "assessments",
+  "company_members",
+  "competencies",
+  "departments",
+  "development_actions",
+  "development_goals",
+  "development_plans",
+  "development_template_application_attempts",
+  "development_template_application_lineage",
+  "development_template_application_snapshots",
+  "development_template_applications",
+  "development_template_version_goals",
+  "development_template_versions",
+  "development_templates",
+  "employee_competencies",
+  "events",
+  "feedback_acknowledgements",
+  "feedback_attachments",
+  "feedback_mentions",
+  "feedback_messages",
+  "feedback_threads",
+  "feedbacks",
+  // Notification and tenant-access domains. These were absent from the
+  // inspector's regex-generated list even though several are retention
+  // blockers — the same silent omission that hid the template ledger.
+  "notification_audit",
+  "notification_deliveries",
+  "notification_delivery_attempts",
+  "notification_events",
+  "notifications",
+  "tenant_access_audit_events",
+  "organization_planning_change_sets",
+  "organization_planning_scenarios",
+  "organization_planning_snapshots",
+  "organization_planning_workspaces",
+  "organization_sync_timeline",
+  "people",
+  "position_competencies",
+  "position_requirements",
+  "position_seniority_competencies",
+  "position_seniority_profiles",
+  "positions",
+  "recruitment_job_openings",
+  "seniority_levels",
+  "teams",
+])

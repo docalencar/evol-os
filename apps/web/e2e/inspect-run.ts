@@ -17,6 +17,7 @@
  */
 
 import { adminClient } from "./helpers/admin-client"
+import { COMPANY_SCOPED_TABLES } from "./lifecycle/retention-registry"
 import { e2eEnv } from "./helpers/env"
 import { journalPath, ownedCompanyIds, readJournal } from "./helpers/journal"
 import { journalledUserIds } from "./fixtures/tenant-fixture"
@@ -105,55 +106,10 @@ async function activityEventPressure(
   return `activity_events referencing company=${byCompany.count ?? 0}, naming a run user as actor=${actorCount}`
 }
 
-/**
- * Every table directly scoped by `company_id references companies(id)`, derived
- * from the migrations. The journal records only what the harness *created*; a
- * residual-state audit has to ask what a surviving company still *owns*, which is
- * a different and larger question.
- */
-const COMPANY_SCOPED_TABLES = [
-  "activity_events",
-  "approval_assignments",
-  "approval_decisions",
-  "approval_domain_events",
-  "approval_requests",
-  "approval_stages",
-  "assessment_cycle_participants",
-  "assessment_cycles",
-  "assessment_responses",
-  "assessment_sections",
-  "assessment_templates",
-  "assessments",
-  "company_members",
-  "competencies",
-  "departments",
-  "development_actions",
-  "development_goals",
-  "development_plans",
-  "development_templates",
-  "employee_competencies",
-  "events",
-  "feedback_acknowledgements",
-  "feedback_attachments",
-  "feedback_mentions",
-  "feedback_messages",
-  "feedback_threads",
-  "feedbacks",
-  "organization_planning_change_sets",
-  "organization_planning_scenarios",
-  "organization_planning_snapshots",
-  "organization_planning_workspaces",
-  "organization_sync_timeline",
-  "people",
-  "position_competencies",
-  "position_requirements",
-  "position_seniority_competencies",
-  "position_seniority_profiles",
-  "positions",
-  "recruitment_job_openings",
-  "seniority_levels",
-  "teams",
-] as const
+// The company-scoped table list is CANONICAL and lives in the retention
+// registry. inspect-run used to keep its own regex-generated copy, which
+// silently omitted every table declared without `if not exists` — including
+// development_template_applications, the one that broke run 260906201436-5ecd5f.
 
 /** Row counts per company-scoped table. Counts only — never row contents. */
 async function residualGraph(companyId: string): Promise<Array<{ table: string; count: number }>> {

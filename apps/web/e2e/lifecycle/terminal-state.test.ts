@@ -22,7 +22,7 @@ process.env.E2E_RUN_DIR = TEST_RUN_DIR
 // statement order, so the assignment above still wins, and `runDir()` reads the
 // variable lazily anyway.
 import { runDir } from "../helpers/run-paths"
-import { COMPANY_RETENTION_TABLES } from "./retention-registry"
+import { COMPANY_RETENTION_TABLES, COMPANY_SCOPED_TABLES } from "./retention-registry"
 import {
   AUTH_BAN_DURATION,
   COMPANY_RETIRED_STATUS,
@@ -432,6 +432,38 @@ test("an unreadable table can NEVER yield CLEANED, whatever the failure shape", 
     assert.ok(!("strategy" in verdict), "must not classify a strategy")
     assert.equal((verdict as { status: string }).status, "unavailable")
   }
+})
+
+// ---------------------------------------------------------------------------
+// One canonical registry — no second list anywhere
+// ---------------------------------------------------------------------------
+
+test("every retention table is also a known company-scoped table", () => {
+  for (const entry of COMPANY_RETENTION_TABLES) {
+    assert.ok(
+      COMPANY_SCOPED_TABLES.includes(entry.table),
+      `${entry.table} is a retention blocker but missing from COMPANY_SCOPED_TABLES — ` +
+        `the inspector would not see it, which is exactly the drift that hid ` +
+        `development_template_applications`,
+    )
+  }
+})
+
+test("the inspector and the classifier read the same source of truth", () => {
+  const inspectRun = require("node:fs").readFileSync(
+    resolve(__dirname, "..", "inspect-run.ts"),
+    "utf8",
+  ) as string
+
+  assert.match(
+    inspectRun,
+    /import \{ COMPANY_SCOPED_TABLES \} from "\.\/lifecycle\/retention-registry"/,
+    "inspect-run must import the canonical list",
+  )
+  assert.ok(
+    !/COMPANY_SCOPED_TABLES\s*(:|=)\s*\[/.test(inspectRun),
+    "inspect-run must not declare a second list of its own",
+  )
 })
 
 test.after(() => {

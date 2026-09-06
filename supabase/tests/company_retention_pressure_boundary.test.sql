@@ -46,11 +46,21 @@ select is(
   's'::"char",
   'boundary is STABLE — it must never be able to write');
 
-select is(
-  (select proconfig from pg_proc
-   where oid = 'public.get_company_retention_pressure_v1(uuid)'::regprocedure),
-  array['search_path=']::text[],
-  'search_path is empty; every reference in the body is schema-qualified');
+-- Assert the PROPERTY, not one spelling of it. `SET search_path = ''` is stored
+-- by the catalog as `search_path=""` — with literal quotes — so comparing
+-- proconfig to array['search_path='] tested a representation that never occurs.
+-- This parses the entry instead: exactly one search_path setting must be pinned,
+-- and its value must resolve to empty once the quoting is stripped. A function
+-- with no SET at all yields zero rows and fails; `search_path=public, pg_temp`
+-- fails; both `search_path=` and `search_path=""` pass.
+select ok(
+  (select count(*) = 1
+     from unnest(p.proconfig) cfg
+    where cfg like 'search_path=%'
+      and btrim(split_part(cfg, '=', 2), '"') = ''),
+  'search_path is pinned and effectively empty; every reference in the body is schema-qualified')
+from pg_proc p
+where p.oid = 'public.get_company_retention_pressure_v1(uuid)'::regprocedure;
 
 -- 4, 5, 6. execute privileges ---------------------------------------------
 select ok(
@@ -110,7 +120,7 @@ select is(
   'exactly four relations are reported');
 
 select is(
-  (select coalesce(sum(row_count),0) from public.get_company_retention_pressure_v1(
+  (select coalesce(sum(row_count),0)::bigint from public.get_company_retention_pressure_v1(
      'aaaaaaaa-0000-4000-8000-000000000001')),
   0::bigint,
   'an untouched company has zero retention pressure');
@@ -161,7 +171,7 @@ select is(
   'a real ledger row is counted for its own company');
 
 select is(
-  (select coalesce(sum(row_count),0) from public.get_company_retention_pressure_v1(
+  (select coalesce(sum(row_count),0)::bigint from public.get_company_retention_pressure_v1(
      'bbbbbbbb-0000-4000-8000-000000000002')),
   0::bigint,
   'another tenant sees none of it — counts never cross the company boundary');

@@ -204,13 +204,38 @@ export async function createTenantFixture(
   })
 }
 
+/**
+ * Why a journalled resource could not be removed.
+ *
+ * `REQUIRES_QUARANTINE` is the one that matters. `activity_events` is an
+ * intentionally immutable audit log — `BEFORE UPDATE` and `BEFORE DELETE`
+ * triggers that always raise — and it references both `companies` (ON DELETE
+ * CASCADE) and `auth.users` (ON DELETE SET NULL, which is an UPDATE). So a tenant
+ * that has emitted a single audit event, and the user named as its actor, become
+ * permanently undeletable *by design*.
+ *
+ * That is not an orphan and reporting it as one invites someone to "fix" cleanup
+ * by weakening the audit contract. It is a resource the product says must be
+ * retired rather than erased, and it needs a decision, not a retry.
+ */
+export type DeletionFailureClassification = "REQUIRES_QUARANTINE" | "UNKNOWN"
+
+export function classifyDeletionFailure(reason: string): DeletionFailureClassification {
+  return /activity events are immutable/i.test(reason) ? "REQUIRES_QUARANTINE" : "UNKNOWN"
+}
+
 export type CleanupReport = Readonly<{
   /** True when at least one company went. Kept for existing readers. */
   companyDeleted: boolean
   /** Every company actually removed — one per tenant this run owned. */
   companiesDeleted: string[]
   usersDeleted: string[]
-  orphaned: Array<{ kind: string; id: string; reason: string }>
+  orphaned: Array<{
+    kind: string
+    id: string
+    reason: string
+    classification?: DeletionFailureClassification
+  }>
   nothingToDo: boolean
 }>
 
@@ -240,8 +265,14 @@ export async function destroyRunFixtures(journal: {
 
   for (const companyId of companyIds) {
     const { error } = await adminClient().from("companies").delete().eq("id", companyId)
-    if (error) orphaned.push({ kind: "company", id: companyId, reason: error.message })
-    else companiesDeleted.push(companyId)
+    if (error) {
+      orphaned.push({
+        kind: "company",
+        id: companyId,
+        reason: error.message,
+        classification: classifyDeletionFailure(error.message),
+      })
+    } else companiesDeleted.push(companyId)
   }
 
   const { deleteSyntheticUsers } = await import("./synthetic-identity")
@@ -252,7 +283,12 @@ export async function destroyRunFixtures(journal: {
 
   const { deleted, failed } = await deleteSyntheticUsers([...userIds])
   for (const failure of failed) {
-    orphaned.push({ kind: "auth.user", id: failure.userId, reason: failure.reason })
+    orphaned.push({
+      kind: "auth.user",
+      id: failure.userId,
+      reason: failure.reason,
+      classification: classifyDeletionFailure(failure.reason),
+    })
   }
 
   return Object.freeze({

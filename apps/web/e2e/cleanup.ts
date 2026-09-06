@@ -201,6 +201,23 @@ export async function cleanupRecordedRun(): Promise<CleanupOutcome> {
   }
 
   // Journal deliberately kept, so the next run of this command can retry.
+  const quarantine = report.orphaned.filter(
+    (orphan) => orphan.classification === "REQUIRES_QUARANTINE",
+  )
+
+  if (quarantine.length > 0) {
+    return {
+      ok: false,
+      message:
+        `run ${journal.runId}: REQUIRES_QUARANTINE — ${quarantine.length} resource(s) are ` +
+        `referenced by immutable audit history and cannot be deleted by design. This is not ` +
+        `a retryable orphan: retrying will fail identically. Do not weaken the ` +
+        `activity_events triggers; these resources need a documented retirement decision. ` +
+        `Run \`npm --workspace apps/web run e2e:inspect-run\` for the residual graph.`,
+      orphaned: [...report.orphaned],
+    }
+  }
+
   return {
     ok: false,
     message: `run ${journal.runId}: ${report.orphaned.length} resource(s) could not be removed.`,

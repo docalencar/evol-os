@@ -22,7 +22,7 @@ process.env.E2E_RUN_DIR = TEST_RUN_DIR
 // error — the same trap that `import.meta` sprang earlier in this harness. The
 // assignment above still runs first because CJS `require` calls keep statement
 // order, and `runDir()` reads the variable lazily in any case.
-import { classifyOwnershipRows } from "./tenant-fixture"
+import { classifyDeletionFailure, classifyOwnershipRows } from "./tenant-fixture"
 
 const KNOWN_COMPANY = "11111111-1111-4111-8111-111111111111"
 const NEW_COMPANY = "22222222-2222-4222-8222-222222222222"
@@ -120,6 +120,22 @@ test("a duplicate row for the same user and company is not mistaken for ambiguit
 
   assert.equal(verdict.status, "ok")
   assert.deepEqual((verdict as { adopted: string[] }).adopted, [NEW_COMPANY])
+})
+
+test("an immutable-audit refusal is classified as quarantine, not as a retryable orphan", () => {
+  // The exact message Postgres raised during hosted run 260905235830-c0b9ba.
+  assert.equal(
+    classifyDeletionFailure("Activity events are immutable and cannot be updated or deleted."),
+    "REQUIRES_QUARANTINE",
+  )
+})
+
+test("an ordinary deletion failure is not mislabelled as quarantine", () => {
+  assert.equal(classifyDeletionFailure("connection reset by peer"), "UNKNOWN")
+  assert.equal(
+    classifyDeletionFailure('update or delete on table "companies" violates foreign key'),
+    "UNKNOWN",
+  )
 })
 
 test.after(() => {

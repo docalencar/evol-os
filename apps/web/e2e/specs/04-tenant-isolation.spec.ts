@@ -58,11 +58,27 @@ function tenantB() {
   return tenant
 }
 
-/** Where the app ends up when tenant A's admin asks for a person id. */
-async function outcomeForPersonId(page: Page, personId: string): Promise<string> {
+/** What the app does when tenant A's admin asks for a person id. */
+type Outcome = Readonly<{
+  /** Where the browser ended up. */
+  pathname: string
+  /** Did the page render the People error boundary rather than a real state? */
+  errorBoundary: boolean
+  /** Visible text, for absence assertions only — never asserted as present. */
+  body: string
+}>
+
+async function outcomeForPersonId(page: Page, personId: string): Promise<Outcome> {
   await page.goto(`/app/people/${personId}`)
   await page.waitForLoadState("networkidle")
-  return new URL(page.url()).pathname
+
+  const body = (await page.locator("body").innerText()) ?? ""
+
+  return {
+    pathname: new URL(page.url()).pathname,
+    errorBoundary: /Não foi possível carregar Pessoas/i.test(body),
+    body,
+  }
 }
 
 test.describe("cross-tenant denial", () => {
@@ -78,11 +94,23 @@ test.describe("cross-tenant denial", () => {
     await loginThroughUi(page, tenantAAdmin())
     await expectAuthenticatedShell(page)
 
-    const foreignOutcome = await outcomeForPersonId(page, foreignPersonId)
+    const foreign = await outcomeForPersonId(page, foreignPersonId)
 
     // Denied: the app refused to open the foreign profile and put the user back
     // on their own people list.
-    expect(foreignOutcome).toBe("/app/people")
+    //
+    // The redirect assertion is kept deliberately. The first hosted run failed
+    // here — the page threw before reaching its own `redirect("/app/people")`
+    // and rendered an error boundary instead. That was a real control-flow
+    // defect, not a wrong expectation, so the fix went into the product and this
+    // assertion stayed as written.
+    expect(foreign.pathname).toBe("/app/people")
+
+    // And it is a genuine denial, not a crash that happens to hide the data.
+    expect(
+      foreign.errorBoundary,
+      "an error boundary is not a denial: it means the page failed rather than refused",
+    ).toBe(false)
 
     const body = page.locator("body")
 
@@ -105,13 +133,22 @@ test.describe("cross-tenant denial", () => {
 
     await loginThroughUi(page, tenantAAdmin())
 
-    const foreignOutcome = await outcomeForPersonId(page, foreignPersonId)
-    const nonexistentOutcome = await outcomeForPersonId(page, nonexistentPersonId)
+    const foreign = await outcomeForPersonId(page, foreignPersonId)
+    const nonexistent = await outcomeForPersonId(page, nonexistentPersonId)
 
     // The oracle test. If a real-but-foreign id behaved differently from a
     // fictional one, the application would be confirming which ids are real.
-    expect(foreignOutcome).toBe(nonexistentOutcome)
-    expect(foreignOutcome).toBe("/app/people")
+    expect(foreign.pathname).toBe(nonexistent.pathname)
+    expect(foreign.pathname).toBe("/app/people")
+
+    // Equivalent presentation, not merely an equivalent URL. Both must reach the
+    // same real page rather than the same failure.
+    expect(foreign.errorBoundary).toBe(false)
+    expect(nonexistent.errorBoundary).toBe(false)
+
+    // Neither rendering may mention the foreign tenant.
+    expect(foreign.body).not.toContain(tenantB().companyName)
+    expect(foreign.body).not.toContain(foreignPersonId)
   })
 
   test("tenant A's people list never contains tenant B's owner", async ({ page }) => {

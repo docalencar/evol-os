@@ -139,19 +139,38 @@ select is(
   'reports exactly the four relations whose SELECT 0069 revoked from service_role');
 
 -- 9 & 10. a real ledger row is counted, and only for its own tenant --------
--- A domain-valid application needs a template version to point at.
-insert into public.development_templates (id, company_id, name, scope)
+--
+-- The application ledger has a real domain invariant behind it:
+-- `validate_development_template_application_version` (0068:547) refuses any
+-- application whose version is not `published`, and whose company does not match
+-- a `company`-scoped version. An earlier draft of this fixture created the
+-- version as `draft`, which is a perfectly ordinary state for a version and a
+-- completely invalid one to apply — the trigger raised
+-- DEVELOPMENT_TEMPLATE_APPLICATION_VERSION_INVALID and aborted the file before
+-- finish().
+--
+-- The fix is to build a version that is genuinely applicable, not to weaken the
+-- check. `development_template_versions_lifecycle_check` requires a published
+-- version to carry both `published_by` and `published_at`, and the immutability
+-- trigger `protect_development_template_version` fires BEFORE UPDATE OR DELETE
+-- only — so inserting a fully-formed published row is the honest minimal path
+-- and needs no state transition.
+insert into public.development_templates
+  (id, company_id, name, scope, active, created_by)
 values ('cccccccc-0000-4000-8000-000000000003',
         'aaaaaaaa-0000-4000-8000-000000000001',
-        'Retention Probe Template', 'company');
+        'Retention Probe Template', 'company', true,
+        '99000000-0000-4000-8000-000000000009');
 
 insert into public.development_template_versions
-  (id, company_id, template_id, scope, version_number, status, name, created_by)
+  (id, company_id, template_id, scope, version_number, status, name,
+   created_by, published_by, published_at)
 values ('dddddddd-0000-4000-8000-000000000004',
         'aaaaaaaa-0000-4000-8000-000000000001',
         'cccccccc-0000-4000-8000-000000000003',
-        'company', 1, 'draft', 'Retention Probe Version',
-        '99000000-0000-4000-8000-000000000009');
+        'company', 1, 'published', 'Retention Probe Version',
+        '99000000-0000-4000-8000-000000000009',
+        '99000000-0000-4000-8000-000000000009', now());
 
 insert into public.development_template_applications
   (id, company_id, template_version_id, actor_user_id, technical_principal,

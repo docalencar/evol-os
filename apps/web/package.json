@@ -18,9 +18,7 @@
     "e2e:report": "playwright show-report e2e/.run/report",
     "test:e2e-helpers": "tsx --test e2e/helpers/*.test.ts e2e/fixtures/*.test.ts e2e/*.test.ts",
     "e2e:cleanup": "tsx e2e/cleanup.ts",
-    "e2e:inspect-run": "tsx e2e/inspect-run.ts",
-    "e2e:quarantine-run": "tsx e2e/quarantine-run.ts",
-    "test:e2e-quarantine": "tsx --test e2e/quarantine/*.test.ts"
+    "e2e:inspect-run": "tsx e2e/inspect-run.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

@@ -69,13 +69,26 @@ async function expectOrganizationRow(page: Page, label: string, value: string): 
   await expect(row, `Organização card should show ${label} = ${value}`).toContainText(value)
 }
 
+/**
+ * Open a person's profile from their row in the People list.
+ *
+ * "Ver perfil" is rendered as `<Button nativeButton={false} render={<Link/>}>`,
+ * so Base UI emits an anchor that carries an explicit `role="button"`. That role
+ * overrides the anchor's implicit link role, and an earlier revision of this
+ * helper asked for `getByRole("link", …)` — which can never match, and timed out
+ * against a control that was present, visible and working. The product is
+ * correct here; the locator was not.
+ *
+ * The navigation assertion is kept deliberately: it is what would fail loudly if
+ * the control ever stopped being a link underneath.
+ */
 async function openPersonProfile(page: Page, name: string): Promise<void> {
   await page.getByRole("link", { name: "Pessoas" }).click()
   await page.waitForURL(/\/app\/people(\/|\?|$)/, { timeout: 30_000 })
 
   const row = page.getByRole("row").filter({ hasText: name })
   await expect(row).toHaveCount(1)
-  await row.getByRole("link", { name: /Ver perfil/i }).click()
+  await row.getByRole("button", { name: /Ver perfil/i }).click()
 
   await page.waitForURL(/\/app\/people\/[0-9a-f-]{36}/, { timeout: 30_000 })
   await expect(page.getByText(name).first()).toBeVisible()

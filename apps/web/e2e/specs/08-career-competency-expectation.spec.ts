@@ -94,6 +94,14 @@ const SAVE_SUCCESS_MESSAGE = "Expectativa de competência salva."
  */
 const APPLY_SUCCESS_MESSAGE = "Senioridade aplicada ao cargo."
 
+/**
+ * Exact success messages the catalog create actions return and their forms
+ * raise as toasts before the dialog closes. Read from
+ * `createCompetencyAction` and `createSeniorityLevelAction` — never invented.
+ */
+const COMPETENCY_CREATE_SUCCESS_MESSAGE = "Competência criada com sucesso."
+const SENIORITY_CREATE_SUCCESS_MESSAGE = "Senioridade criada com sucesso."
+
 async function enterTenantA(page: Page): Promise<void> {
   await loginThroughUi(page, tenantAAdmin())
   await expectAuthenticatedShell(page)
@@ -145,6 +153,28 @@ test.describe("career expectations configured through the real UI", () => {
     await page.locator("#weight").fill(CATALOG_WEIGHT)
 
     await page.getByRole("button", { name: "Criar competência" }).click()
+
+    // Primary success signal BEFORE the list readback.
+    //
+    // Waiting for the name to appear in the table waits on a *secondary* effect:
+    // it depends on the action returning, `revalidatePath("/app/competencies")`
+    // firing, and the list re-rendering. When the write hangs — as the seniority
+    // write did in run 260907184219-ec1320, POST status -1 with the dialog still
+    // open — that wait burns its full timeout and reports "row not found", which
+    // says nothing about whether the write was even accepted.
+    //
+    // Contract read from the action, the form and the dialog: on success
+    // `createCompetencyAction` returns "Competência criada com sucesso.", the
+    // form toasts it and calls onSuccess, which closes the dialog; on failure it
+    // toasts the error and returns, leaving the dialog OPEN. Closing is
+    // therefore a success-only signal.
+    await expect(
+      page.getByText(COMPETENCY_CREATE_SUCCESS_MESSAGE, { exact: true })
+    ).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByRole("heading", { name: "Nova competência" })).toBeHidden({
+      timeout: 15_000,
+    })
+
     await expect(page.getByText(name, { exact: true }).first()).toBeVisible({
       timeout: 30_000,
     })
@@ -180,6 +210,24 @@ test.describe("career expectations configured through the real UI", () => {
     await page.locator("#rank").fill(SENIORITY_RANK)
 
     await page.getByRole("button", { name: "Criar senioridade" }).click()
+
+    // Primary success signal BEFORE the list readback. This is the exact test
+    // that failed in run 260907184219-ec1320: the POST to /app/company/seniority
+    // never returned (status -1), the "Nova senioridade" dialog was still open
+    // in the captured DOM, and the spec spent 30s hunting for a label in a list
+    // that was never going to update — then the whole test timed out at 60s.
+    //
+    // Contract read from the action, the form and the dialog: on success
+    // `createSeniorityLevelAction` returns "Senioridade criada com sucesso.",
+    // the form toasts it and calls onSuccess, which closes the dialog; on
+    // failure it toasts the error and returns, leaving the dialog OPEN.
+    await expect(
+      page.getByText(SENIORITY_CREATE_SUCCESS_MESSAGE, { exact: true })
+    ).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByRole("heading", { name: "Nova senioridade" })).toBeHidden({
+      timeout: 15_000,
+    })
+
     await expect(page.getByText(label, { exact: true }).first()).toBeVisible({
       timeout: 30_000,
     })

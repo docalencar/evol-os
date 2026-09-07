@@ -1,80 +1,156 @@
 # Evol OS — Próxima entrega
 
-## Slice 0115-B2-C — Direct-Report Anonymity / Aggregation — CLOSED / PASS
+```
+MAIN=4a0e4c250c80f486a00d23e8445b1fd4d25e0086   (merge do PR #90)
+E2E-3=CLOSED/PASS   run 260907195352-b20ffd   39/39   RETIRED
+PRÓXIMO=E2E-4 — Ciclo completo de Avaliação
+```
 
-> **Governança (2026-08-27, autoridade = `main`/HEAD `ff2ba6db`).** O slice está
-> **concluído em todas as fases** (DB boundary + app integration), com uma dívida
-> residual explícita registrada (item Phase 5 abaixo). Nenhuma migration nova além
-> da `0119`; contrato de anonimato PD-022 / ADR-0018 preservado ponta a ponta.
+## 1. Estado canônico
 
-### Fases (todas CLOSED / PASS)
+**E2E-3 — Career / Seniority / Competencies: CLOSED / PASS.** Provado em hosted
+Canonical Review pelo run `260907195352-b20ffd` (39/39 PASS, 6.1 min, terminal
+state `RETIRED`), sem regressão de produto nem de segurança. A cadeia
+Competency → Seniority → Position×Seniority → expectativa contextual → Person
+Seniority → evidência → gap canônico → transição de status está provada ponta a
+ponta pela UI real. Evidência completa em
+[`Execution/E2E-3-CAREER-COMPETENCY-CLOSURE.md`](./Execution/E2E-3-CAREER-COMPETENCY-CLOSURE.md).
 
-- **Phase 1 — DB boundary (`0119`)** — commit `865badd2`; validada localmente
-  (pgTAP `Files=62, Tests=2142, PASS`) e **promovida/validada no Canonical Review**
-  (`REVIEW 0119: ACTIVE / VALIDATED / PASS`: history + `pg_proc` parity +
-  ACL/security + matriz funcional/threat-model `BEGIN … ROLLBACK`, zero `COMMIT`).
-  Governança registrada em `3d91ccbb`.
-- **Phase 2 — App read boundary** — commit `853dfb44`. `assessment-feedback-read`:
-  schema Zod `.strict()` de 7 colunas, repository method, read-model discriminado
-  (`forbidden`/`unavailable`/`ok`) com guard-before-RPC, barrel; sem agregação
-  client-side; RPC consumido só pela repository.
-- **Phase 3 — Presenter / ViewModel** — commit `de166e0`.
-  `presentPersonDirectReportAggregate`: rows → ViewModel discriminado
-  (quantitative / qualitative / suppressed), precedência fail-closed, reuso de
-  `formatAssessmentPercentage` e da copy "Resultado qualitativo"; A e D produzem
-  representação indistinguível.
-- **Phase 4 — People UX** — commit `ff2ba6db`. Superfície separada **"Feedback de
-  subordinados — anônimo"** na página da Pessoa, coexistindo com "Últimas
-  avaliações" e Self × Manager; sem CTA individual, sem cardinalidade, sem
-  identidade; `forbidden` oculta, `unavailable`/`empty` neutros. Build **PASS no
-  Mac**.
-- **Phase 5 — Final validation** — sem alteração de código. Cadeia
-  `DB 0119 → repository → read-model → presenter → People UX` provada por auditoria
-  estática de arquitetura + no-leak, **73 testes determinísticos PASS**, `tsc`
-  PASS, `lint` PASS, `git diff --check` limpo; pgTAP inalterado (nenhum `supabase/`
-  tocado pelas fases de app). Os invariantes de autorização/anonimato foram
-  validados **ao vivo no Canonical Review** pela matriz da Phase 1.
+**Não rerodar E2E-3.** Um rerun só se justifica com mudança invalidante:
+alteração nas migrations `0120`–`0125`, no boundary
+`get_tenant_person_competency_expectations_v1`, em
+`deriveCanonicalPersonCompetencyCoverage`, ou nas superfícies que as specs 08/09/10
+dirigem. Fora disso o run é custo sem informação.
 
-### Dívida residual explícita (aceita — Opção 1)
+## 2. Orientação anterior — SUPERSEDED
 
-- **Canonical Review app smoke autenticado ponta a ponta = NOT DEMONSTRATED
-  (gated).** Exigiria toggle temporário de Confirm-email + fixtures descartáveis
-  persistidas em Review (owner+company+people+cycles+≥4 respostas `direct_report`),
-  operações remotas sensíveis que dependem de autorização. Não bloqueante: os
-  invariantes que ele checaria já foram provados ao vivo no Review (matriz Phase 1)
-  e pela suíte determinística do app. Registrado como dívida, no mesmo padrão da
-  "explicit runtime coverage debt" da B2-B2-B.
+> **SUPERSEDED (2026-09-07, autoridade `main`/`4a0e4c2`).** A revisão anterior
+> deste documento apontava a **Career Slice 4B — Competency Matrix + Scale
+> Semantics (UI)** como próximo gate "ainda não iniciada", e proibia criar a
+> migration `0122`. Ambas as afirmações deixaram de descrever o produto: a UI da
+> matriz existe e foi dirigida por navegador em hosted Review (spec 08), e as
+> migrations `0122`–`0126` já estão em `main`. **Não reimplementar Career 4B.**
+> O histórico permanece em
+> [`Execution/CAREER-SENIORITY-POSITION-TAXONOMY-IMPLEMENTATION-PLAN.md`](./Execution/CAREER-SENIORITY-POSITION-TAXONOMY-IMPLEMENTATION-PLAN.md)
+> como registro, não como direção. O **Position Uniqueness audit gate** (plano §9)
+> segue sendo um gate separado de decisão humana, read-only.
 
-### Próximo passo normativo
+Dívidas documentais correlatas, registradas e não corrigidas aqui: a revisão
+anterior linkava `docs/execution/` em minúscula (o caminho tracked canônico é
+`docs/Execution/`), e `apps/web/e2e/README.md` ainda descreve apenas as specs 00
+e 01.
 
-- Não há próxima fase da B2-C.
-- **Career / Seniority — Slice 4A = CLOSED / PASS (2026-08-28, HEAD `cb6c68d`).**
-  As **Slices 1A–3B** já estavam em `main` (catálogo `0100`/`0101`; profiles
-  `0102`/`0106`; lotação `0103–0105`) e a **Slice 4A — Competency Matrix
-  Relocation** foi implementada e validada por **`0120`** (matriz
-  `position_seniority_competencies` + backfill zero-loss/fail-closed de
-  `position_competencies` para o base profile; fonte preservada; sem dual-write) e
-  **`0121`** (closed-table privilege hardening, revoke-only, descoberto na validação
-  do Review). **Promovidas e validadas no Canonical Review — PASS** (`HISTORY
-  0119/0120/0121 = 1`, `POST_CLIENT_EXPOSED_PRIV_COUNT=0`, integridade `0120`
-  intacta, RLS=1/POLICIES=2, EXECUTE dos 4 RPCs preservado). **Não reimplementar
-  1A–4A.** O próximo gate real do rollout é a **Slice 4B — Competency Matrix +
-  Scale Semantics (UI)** (plano §8) — **ainda não iniciada**; exige recovery +
-  re-read do
-  [Implementation Plan](./execution/CAREER-SENIORITY-POSITION-TAXONOMY-IMPLEMENTATION-PLAN.md)
-  + **autorização explícita** (Human Review obrigatório por ser UI) antes de
-  qualquer código. O **Position Uniqueness audit gate** (plano §9) permanece um gate
-  separado de decisão humana/produto (read-only, nunca automatizar merge).
-- Alternativa: quitar a dívida do app smoke da B2-C via runner hard-gated, se o
-  Product Architect autorizar o setup sensível.
+## 3. Próximo journey — E2E-4: ciclo completo de Avaliação
 
-### Invariantes de ambiente (não reabrir sem decisão)
+**Escolhido:** template → seção → pergunta vinculada a competência → ciclo →
+participantes → ativação → geração → resposta → submit → resultado pontuado, com
+isolamento de tenant e autorização por ator.
 
-- Production `gzrrwyiqfbnyprkdeqvm` — **UNKNOWN / REVERIFY BEFORE USE**.
-- Legacy `oudngmrdtgengilpqqnz` — **NOT A PROMOTION TARGET**.
+**Por que este, e não a hipótese Assessment → Feedback → Development.** A
+discovery mediu os três domínios no código de `main` e a cadeia está partida em
+dois dos três elos:
 
-### Regra de parada
+| Elo | Situação real |
+| --- | --- |
+| Assessment (template → submit → resultado) | **IMPLEMENTED_AND_WIRED** ponta a ponta, RPCs `0110`–`0118`, rotas `/app/assessments/**`, sem `service_role` no caminho |
+| Assessment → Feedback | **schema-only.** `feedback_threads.assessment_id` existe (`0043`) mas nenhum RPC de leitura o retorna e nada no submit abre thread |
+| Feedback (autoria) | **sem superfície.** `createFeedbackConversationAction` não é chamada por nenhum componente; o módulo é inbox de leitura/resposta |
+| Gap → Development | **inexistente.** Nenhum caminho cria PDI a partir do gap canônico; a única origem de plano é aplicação de template |
+| Development (execução) | ações nascem congeladas — não há caminho para concluir uma ação, então o progresso é estruturalmente 0% |
 
-- Slice 4A encerrada em `0121`; **não criar `0122`** nem alterar `0119`/`0120`/`0121`
-  sem autorização. Não iniciar a Slice 4B (UI) sem autorização explícita. Não
-  promover Production/Legacy. Sem push.
+Provar a cadeia completa exigiria **implementar produto** (superfície de criação
+de feedback, boundary de leitura do vínculo, caminho de criação de PDI) dentro de
+um gate cujo propósito é produzir evidência. Avaliações também é a dependência
+normativa correta: no `MVP_PLAN.md`, Desenvolvimento depende de Avaliações **e**
+Feedback, e o Gate do MVP nomeia a jornada de avaliação explicitamente.
+
+## 4. Propriedades a provar
+
+Cada uma exige sinal primário de sucesso do produto **antes** do readback
+durável, conforme a lição de E2E-3.
+
+1. Template criado como `active` e lido de volta no catálogo.
+2. Seção criada dentro do template e lida de volta na estrutura.
+3. Pergunta criada **vinculada a uma competência** do catálogo do tenant.
+4. Preview renderiza a estrutura persistida.
+5. Ciclo criado em `draft` sobre o template ativo.
+6. Participante adicionado ao ciclo.
+7. Ciclo transicionado `draft → active`.
+8. Geração produz as avaliações e o snapshot de execução.
+9. Avaliador responde e a resposta sobrevive a reload (autosave + readback).
+10. Submit é aceito e a resposta fica imutável.
+11. Resultado pontuado é **derivado pelo servidor** — a spec lê o valor renderizado, nunca recalcula.
+12. Avaliado vê o próprio resultado no diretório "Meus resultados".
+13. Isolamento: tenant B não vê template, ciclo nem resultado de A; id estrangeiro indistinguível de inexistente.
+14. Autorização: ator sem papel administrativo não obtém superfície administrativa do ciclo.
+15. Teardown alcança estado terminal saudável com auditoria preservada.
+
+## 5. Gaps conhecidos
+
+**REQUIRED_FOR_JOURNEY**
+
+- *HARNESS_GAP* — `assessment_questions`, `assessment_answers` e as três tabelas
+  de snapshot da `0114` não estão **nem** em `COMPANY_RETENTION_TABLES` **nem** em
+  `COMPANY_SCOPED_TABLES` (`apps/web/e2e/lifecycle/retention-registry.ts`). O
+  inspetor residual não as sonda e as postconditions de retirement não as
+  fotografam. Hoje isso fica mascarado porque `activity_events` já força `RETIRED`
+  em qualquer run que crie organização e pessoas — é lacuna de observabilidade e
+  de completude do registro, não uma falha iminente.
+- *WIRING_GAP* — o único controle `draft → active` de ciclo vive no diálogo de
+  edição da tabela na home, não na página de detalhe onde o operador está. A spec
+  consegue navegar; registrar para não parecer defeito quando aparecer no trace.
+
+**BLOCKER** — nenhum para E2E-4.
+
+**DEFERRED_DEBT**
+
+- *DOMAIN_GAP* — a resolução de template de PDI lê `competencies.expected_level`
+  (catálogo global), não `position_seniority_competencies`. O `expected_level`
+  gravado em `development_goals` diverge do gap canônico sempre que a expectativa
+  contextual difere do default. O dashboard executivo de Development **já** usa o
+  boundary canônico (`0124`); o caminho que produz conteúdo de PDI não.
+- *DOMAIN_GAP* — a sugestão de PDI por IA na página da Pessoa usa a fórmula legada
+  de sinal invertido (`currentLevel - expectedLevel`) via adaptador de
+  compatibilidade, e não persiste nada.
+- *PRODUCT_GAP* — Development: sem criação manual de plano, sem conclusão de ação,
+  sem revisões periódicas, sem superfície do próprio colaborador; `/app/development/templates`
+  fora da navegação e nenhuma UI publica versão de template, o que torna a
+  aplicação inalcançável a partir de um template novo.
+- *PRODUCT_GAP* — Feedback: sem CTA de criação; a tier de visibilidade `management`
+  existe na RLS mas é inalcançável pelo RPC de listagem.
+- *SECURITY_GAP (contido)* — anonimato de direct report vale na superfície
+  agregada da `0119`, mas a visão administrativa do ciclo lista o avaliador
+  nominalmente, inclusive em respostas `direct_report`. Não bloqueia E2E-4; a
+  spec 14 não deve assumir anonimato fora da superfície `0119`.
+- *POLISH* — `/app/assessments/cycles/[id]` chama leitura administrativa sem guarda
+  e cai em `error.tsx` para não-administrador, em vez de estado de negação;
+  `DevelopmentMonthlyEvolutionCard` é renderizado duas vezes.
+
+## 6. Primeiro slice recomendado
+
+**E4-S1 — prontidão de teardown para o domínio de Avaliações.** Somente harness:
+completar o registro de retenção/inspeção com as cinco tabelas ausentes, com
+evidência de migration por linha, e estender o guard que hoje só verifica um dos
+sentidos da relação entre as duas listas. Sem produto, sem migration, sem hosted
+run. É o menor passo que torna o run seguinte auditável.
+
+Depois: **E4-S2** catálogo + ciclo (propriedades 1–7), **E4-S3** geração,
+execução, submit e resultado (8–12), **E4-S4** isolamento e autorização (13–14).
+
+## 7. Fora de escopo
+
+Implementar criação de feedback; criar PDI a partir de gap ou de avaliação;
+migrar a resolução de template para o boundary canônico; conclusão de ação e
+revisões de PDI; corrigir o anonimato na visão administrativa; qualquer migration
+nova; reabrir Career 4B; rerodar E2E-3.
+
+## 8. Invariantes de ambiente
+
+- Production `gzrrwyiqfbnyprkdeqvm` — **UNKNOWN / REVERIFY BEFORE USE.**
+- Legacy `oudngmrdtgengilpqqnz` — **NOT A PROMOTION TARGET.**
+
+## 9. Regra de parada
+
+Não iniciar E4-S1 sem autorização explícita. Não implementar produto sob cobertura
+de gate de teste. Não criar migration. Não rodar hosted Review sem gate próprio.
+Não promover Production/Legacy. Sem push sem autorização.

@@ -34,7 +34,16 @@ export default defineConfig({
 
   use: {
     baseURL: env.baseUrl,
-    trace: "on-first-retry",
+    // Hosted runs are expensive: they mutate Review and leave a RETIRED tenant
+    // behind. "on-first-retry" never fires for the operator, who runs without
+    // CI retries, so run 260907120642-8774b5 failed twice and produced no trace
+    // at all — the failure could not be diagnosed without paying for another
+    // run. Retaining on failure costs nothing on a green run and makes the
+    // first failure the one that explains itself.
+    //
+    // Traces can contain request bodies and storage state, so the artifacts
+    // directory is inside the gitignored `.run/` tree and is never committed.
+    trace: "retain-on-failure",
     screenshot: "only-on-failure",
     // Video is deliberately off: it adds weight and would capture the typed
     // password keystroke-by-keystroke. Trace + screenshot are enough to debug.

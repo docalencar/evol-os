@@ -79,6 +79,14 @@ const EXPECTED_TYPE_LABEL = "Essencial" // type "core", the dialog default
 
 const SENIORITY_RANK = "70"
 
+/**
+ * The exact success message `setPositionSeniorityCompetencyAction` returns and
+ * the dialog raises as a toast. Taken from the action, not invented — if the
+ * product ever changes the wording, this assertion should fail and be updated
+ * deliberately rather than silently degrade into "something was submitted".
+ */
+const SAVE_SUCCESS_MESSAGE = "Expectativa de competência salva."
+
 async function enterTenantA(page: Page): Promise<void> {
   await loginThroughUi(page, tenantAAdmin())
   await expectAuthenticatedShell(page)
@@ -260,6 +268,26 @@ test.describe("career expectations configured through the real UI", () => {
     await page.locator("#add-expectation-weight").selectOption({ label: EXPECTED_WEIGHT_LABEL })
 
     await page.getByRole("button", { name: "Salvar expectativa", exact: true }).click()
+
+    // Immediate write evidence, BEFORE the reload.
+    //
+    // Run 260907120642-8774b5 failed here with an empty matrix after reload, and
+    // the artifacts could not say whether the write had been rejected or the
+    // readback was wrong — the spec only learned something was amiss 30s later,
+    // waiting for a cell that never existed.
+    //
+    // This is the product's real contract, read from the action and the dialog,
+    // not an invented string: on success the action returns
+    // "Expectativa de competência salva.", the dialog raises it as a success
+    // toast and closes; on failure it raises the error message and STAYS OPEN.
+    // So a failed write now fails right here, and the error toast that explains
+    // why is captured in the trace instead of being lost.
+    await expect(page.getByText(SAVE_SUCCESS_MESSAGE, { exact: true })).toBeVisible({
+      timeout: 15_000,
+    })
+    await expect(
+      page.getByRole("heading", { name: "Adicionar competência à matriz" })
+    ).toBeHidden({ timeout: 15_000 })
 
     await page.reload()
 

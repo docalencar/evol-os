@@ -65,6 +65,19 @@ test("spec 09 proves a status transition, not just two numbers", () => {
   assert.match(source, /Atende ao esperado/)
 })
 
+test("spec 09 opens the profile through the role the DOM actually exposes", () => {
+  // "Ver perfil" is `<Button nativeButton={false} render={<Link/>}>`: Base UI
+  // emits an anchor carrying an explicit role="button", which overrides the
+  // anchor's implicit link role. Asking for `link` matches nothing and times
+  // out against a control that is present and working.
+  //
+  // This has now cost two hosted runs — spec 06 hit it, documented it and fixed
+  // it, and spec 09 reintroduced it in run 260907120642-8774b5. The canonical
+  // pattern is pinned here so a third time is impossible.
+  assert.match(source, /getByRole\(\s*"button",\s*\{\s*name:\s*\/Ver perfil\/i\s*\}\s*\)/)
+  assert.doesNotMatch(source, /getByRole\(\s*"link"[^\n]*Ver perfil/)
+})
+
 test("spec 09 mutates through the product, not through privileged clients", () => {
   // The only privileged helper allowed is the canonical read-only id lookup.
   assert.doesNotMatch(source, /adminClient/)

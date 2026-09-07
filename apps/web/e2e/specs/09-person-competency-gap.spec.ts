@@ -94,9 +94,16 @@ async function openRunPersonProfile(page: Page): Promise<void> {
   // The list holds every person in the tenant, including the fixture identities,
   // so "Ver perfil" must be taken from the row naming THIS run's person — never
   // the first one on the page.
+  //
+  // The role is `button`, not `link`. "Ver perfil" is
+  // `<Button nativeButton={false} render={<Link/>}>`, so Base UI emits an anchor
+  // carrying an explicit `role="button"` that overrides the anchor's implicit
+  // link role. Spec 06 hit this, documented it, and fixed it; this helper asked
+  // for `link` anyway and timed out against a control that was present, visible
+  // and working. Same product, same correct control, wrong locator.
   const row = page.getByRole("row", { name: new RegExp(personName(manifest().runId)) })
   await expect(row).toBeVisible({ timeout: 30_000 })
-  await row.getByRole("link", { name: "Ver perfil" }).click()
+  await row.getByRole("button", { name: /Ver perfil/i }).click()
 
   await page.waitForURL(new RegExp(`/app/people/${id}(\\?|$)`), { timeout: 30_000 })
 }

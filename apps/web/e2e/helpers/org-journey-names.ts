@@ -25,3 +25,24 @@ export function teamName(runId: string): string {
 export function personName(runId: string): string {
   return `E2E Person ${runId}`
 }
+
+/**
+ * Career / competency journey (spec 08). Same contract as above: exact,
+ * run-scoped, ASCII — an accent in a selector buys nothing and costs encoding
+ * surprises. The seniority `code` is a separate short identifier because the
+ * catalog stores and displays it apart from the label, and its column is
+ * `char_length(btrim(code)) between 1 and 40` (0100) — the run id fits with
+ * room to spare.
+ */
+
+export function competencyName(runId: string): string {
+  return `E2E Competency ${runId}`
+}
+
+export function seniorityLabel(runId: string): string {
+  return `E2E Seniority ${runId}`
+}
+
+export function seniorityCode(runId: string): string {
+  return `E2E-${runId}`
+}

@@ -8,9 +8,12 @@ import type { PositionSenioritiesViewModel } from "../presenters/present-positio
 import { AddPositionSeniorityDialog } from "./add-position-seniority-dialog"
 import { RemovePositionSeniorityButton } from "./remove-position-seniority-button"
 
+// Only the two lists this section renders. `baseProfileId` also lives on the
+// view model, for the competency matrix — Base stays infrastructure here and is
+// never surfaced as an applicable seniority, so it is deliberately not picked up.
 type PositionSenioritiesSectionProps = {
   positionId: string
-} & PositionSenioritiesViewModel
+} & Pick<PositionSenioritiesViewModel, "applicable" | "available">
 
 export function PositionSenioritiesSection({
   positionId,

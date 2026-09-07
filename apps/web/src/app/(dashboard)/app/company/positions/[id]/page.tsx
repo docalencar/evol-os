@@ -250,6 +250,7 @@ export default async function PositionDetailsPage({
         matrix={positionSeniorityCompetencyMatrix}
         competencies={competencies ?? []}
         seniorities={positionSeniorities.applicable}
+        baseProfileId={positionSeniorities.baseProfileId}
       />
 
       <DashboardSection

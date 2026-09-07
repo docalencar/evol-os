@@ -13,6 +13,7 @@ import type {
   CompetencyMatrixCellViewModel,
   PositionSeniorityCompetencyMatrixViewModel,
 } from "../presenters/present-position-seniority-competency-matrix"
+import { AddPositionSeniorityCompetencyDialog } from "./add-position-seniority-competency-dialog"
 import { PositionSeniorityCompetencyEditorDialog } from "./position-seniority-competency-editor-dialog"
 
 type CompetencyOption = {
@@ -33,6 +34,12 @@ type PositionSeniorityCompetencyMatrixSectionProps = {
   matrix: PositionSeniorityCompetencyMatrixViewModel
   competencies: CompetencyOption[]
   seniorities: SeniorityOption[]
+  /**
+   * Active BASE profile of the position. Every other profile id can be read off
+   * the matrix cells, but in the zero state there are none — and Base is the
+   * profile the first expectation almost always belongs to.
+   */
+  baseProfileId?: string | null
 }
 
 type MatrixColumn = {
@@ -122,7 +129,29 @@ export function PositionSeniorityCompetencyMatrixSection({
   matrix,
   competencies,
   seniorities,
+  baseProfileId = null,
 }: PositionSeniorityCompetencyMatrixSectionProps) {
+  // The add affordance is built once and rendered by BOTH branches below. The
+  // zero-row state is precisely where the first expectation has to be created,
+  // so offering this only alongside existing cells would leave the defect it
+  // exists to fix exactly as it was.
+  const canAddExpectation =
+    competencies.length > 0 && (baseProfileId !== null || seniorities.length > 0)
+
+  const addExpectationAction = canAddExpectation ? (
+    <AddPositionSeniorityCompetencyDialog
+      positionId={positionId}
+      baseProfileId={baseProfileId}
+      seniorityProfiles={seniorities.map((seniority) => ({
+        profileId: seniority.profileId,
+        label: seniority.label,
+      }))}
+      competencies={competencies}
+      cells={matrix.cells}
+      setAction={setAction}
+    />
+  ) : null
+
   if (matrix.cells.length === 0) {
     const hasSpecificProfiles = seniorities.length > 0
 
@@ -130,6 +159,7 @@ export function PositionSeniorityCompetencyMatrixSection({
       <DashboardSection
         title="Matriz de competências por senioridade"
         description="Compare as expectativas Base do cargo com as expectativas de cada senioridade."
+        actions={addExpectationAction}
       >
         <DashboardCard>
           <DashboardEmptyState
@@ -139,9 +169,11 @@ export function PositionSeniorityCompetencyMatrixSection({
                 : "Nenhuma senioridade ativa para comparar"
             }
             description={
-              hasSpecificProfiles
-                ? "Os perfis existem, mas ainda não há competências no conjunto de expectativas deste cargo."
-                : "Configure senioridades aplicáveis ao cargo para comparar expectativas específicas com a Base."
+              canAddExpectation
+                ? "Este cargo ainda não tem expectativas de competência. Use “Adicionar competência à matriz” para criar a primeira — comece pela Base para valer em todas as senioridades."
+                : competencies.length === 0
+                  ? "Cadastre competências no catálogo da empresa para poder definir as expectativas deste cargo."
+                  : "Configure senioridades aplicáveis ao cargo para comparar expectativas específicas com a Base."
             }
           />
         </DashboardCard>
@@ -171,7 +203,8 @@ export function PositionSeniorityCompetencyMatrixSection({
   return (
     <DashboardSection
       title="Matriz de competências por senioridade"
-      description="Compare as expectativas Base do cargo com as expectativas herdadas ou específicas de cada senioridade. Esta visualização é somente leitura."
+      description="Compare as expectativas Base do cargo com as expectativas herdadas ou específicas de cada senioridade. Clique em uma célula para editá-la."
+      actions={addExpectationAction}
     >
       <DashboardCard className="overflow-hidden p-0">
         <div className="overflow-x-auto">

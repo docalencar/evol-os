@@ -18,6 +18,13 @@ export type AvailableSeniority = {
 export type PositionSenioritiesViewModel = {
   applicable: ApplicableSeniority[]
   available: AvailableSeniority[]
+  // Identity of the position's active BASE profile, exposed so the competency
+  // matrix can target it when the position has no expectation rows at all. The
+  // matrix derives every other profile id from its own cells, and in the zero
+  // state there are none — so without this the common "Base" expectation, which
+  // is exactly the first one a user needs to create, would be unreachable.
+  // It stays out of `applicable`: Base is infrastructure, not a seniority.
+  baseProfileId: string | null
 }
 
 // Joins the position's active specific profiles with the seniority catalog.
@@ -55,5 +62,10 @@ export function presentPositionSeniorities(input: {
     .sort((a, b) => a.rank - b.rank || a.label.localeCompare(b.label))
     .map((entry) => ({ id: entry.id, code: entry.code, label: entry.label }))
 
-  return { applicable, available }
+  const baseProfileId =
+    input.profiles.find(
+      (profile) => profile.active && profile.seniorityLevelId === null
+    )?.id ?? null
+
+  return { applicable, available, baseProfileId }
 }

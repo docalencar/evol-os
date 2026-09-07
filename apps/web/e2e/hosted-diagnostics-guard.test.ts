@@ -102,6 +102,107 @@ test("no spec reloads immediately after a click, with no evidence in between", (
   )
 })
 
+/**
+ * Submit controls whose success contract is known and asserted.
+ *
+ * Deliberately an explicit list rather than a heuristic. "Is this click a
+ * mutation?" is not decidable from the locator text alone: `Adicionar
+ * competência` is both a dialog trigger and a form submit, and `Nova
+ * senioridade` only opens a dialog. A pattern broad enough to catch every
+ * mutation would flag every trigger too, and a guard that cries wolf gets
+ * disabled.
+ *
+ * LIMITATION, stated rather than hidden: specs 05 and 06 create departments,
+ * positions, teams and people without asserting a primary success signal, so
+ * they carry the same latent risk and are NOT covered here. Closing them is
+ * out of scope for this slice; adding their controls to this list is the whole
+ * change needed when that is authorised.
+ */
+const SUBMIT_CONTROLS: readonly string[] = [
+  "Criar competência",
+  "Criar senioridade",
+  "Aplicar",
+  "Salvar expectativa",
+  "Salvar alterações",
+]
+
+/** Executable lines of a spec, comments and blanks removed. */
+function executableLines(file: string): string[] {
+  return readFileSync(new URL(`./specs/${file}`, import.meta.url), "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line !== "" && !line.startsWith("//") && !line.startsWith("*"))
+}
+
+test("every known submit proves success before waiting on a secondary effect", () => {
+  // Run 260907184219-ec1320 lost spec 08 to this exact shape: the create POST
+  // hung (status -1, dialog still open) and the spec spent its whole budget
+  // waiting for a row to appear in a list. A list row is a *secondary* effect —
+  // it needs the action to return, revalidatePath to fire and the page to
+  // re-render. The toast and the dialog closing are the *primary* signal.
+  const offenders: string[] = []
+
+  for (const file of readdirSync(new URL("./specs/", import.meta.url)).filter((n) =>
+    n.endsWith(".spec.ts")
+  )) {
+    const lines = executableLines(file)
+
+    lines.forEach((line, index) => {
+      if (!line.includes(".click()")) return
+      const control = SUBMIT_CONTROLS.find((name) => line.includes(`"${name}"`))
+      if (!control) return
+
+      // A submit must be followed, within the next few executable lines, by the
+      // product's own success message and by the dialog disappearing.
+      const window = lines.slice(index + 1, index + 9).join(" ")
+      const hasMessage = /SUCCESS_MESSAGE/.test(window)
+      const hasClose = /toBeHidden/.test(window)
+      if (!hasMessage || !hasClose) {
+        offenders.push(
+          `${file}: "${control}" submit lacks ${
+            !hasMessage ? "a success-message assertion" : "a dialog-close assertion"
+          }`
+        )
+      }
+    })
+  }
+
+  assert.deepEqual(
+    offenders,
+    [],
+    `A submit must assert the product's own success signal — the exact toast text ` +
+      `from the action, plus the dialog closing — before any list readback or ` +
+      `reload. Waiting only on a secondary effect turns a hung write into a ` +
+      `misleading "not found" after a full timeout:\n` + offenders.join("\n")
+  )
+})
+
+test("opening a dialog is not mistaken for a submit", () => {
+  // The guard must stay quiet on triggers, or it becomes noise and gets ignored.
+  // These open dialogs and are correctly followed by a heading assertion, not by
+  // a success message.
+  const spec08 = executableLines("08-career-competency-expectation.spec.ts").join(" ")
+
+  for (const trigger of [
+    "Nova Competência",
+    "Nova senioridade",
+    "Adicionar senioridade",
+    "Adicionar competência à matriz",
+  ]) {
+    // The trigger really is clicked by the spec — otherwise this test would be
+    // asserting against names that no longer exist and would quietly rot.
+    assert.ok(
+      spec08.includes(`"${trigger}"`),
+      `"${trigger}" is expected to appear in spec 08; update this list if the UI changed`
+    )
+    assert.ok(
+      !SUBMIT_CONTROLS.includes(trigger),
+      `"${trigger}" opens a dialog and must never be treated as a submit`
+    )
+  }
+})
+
 test("spec 08 proves the write was accepted before it trusts a reload", () => {
   // The failure in run 260907120642-8774b5 could not be attributed: the matrix
   // was empty after reload, and nothing in the spec distinguished "the write

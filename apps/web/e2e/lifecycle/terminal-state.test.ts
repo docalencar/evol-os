@@ -31,6 +31,8 @@ import {
   AUTH_BAN_DURATION,
   COMPANY_RETIRED_STATUS,
   PERSON_RETIRED_STATUS,
+  MEMBERSHIP_RETIRED_STATUS,
+  PROTECTED_OWNER_ROLE,
   baselineFingerprint,
   classifyTerminalStrategy,
   describeProbeFailure,
@@ -189,9 +191,12 @@ test("the plan never touches a foreign company", () => {
   assert.deepEqual([...new Set(touched)], [COMPANY])
 })
 
-test("the plan never attempts to deactivate a membership, and says why", () => {
+test("the plan deactivates non-owner memberships but never the owner", () => {
   const plan = planRetirement(ownership())
-  assert.ok(!plan.steps.some((s) => JSON.stringify(s).includes("membership")))
+  const membershipSteps = plan.steps.filter((s) => s.kind === "retire-nonowner-memberships")
+  assert.equal(membershipSteps.length, 1, "exactly one membership step per owned company")
+  // No step may carry the owner role as a target.
+  assert.ok(!plan.steps.some((s) => (s as { role?: string }).role === "owner"))
   assert.match(plan.notAttempted.join(" "), /LAST_ACTIVE_OWNER_REQUIRED/)
 })
 
@@ -218,7 +223,10 @@ function retiredState(overrides: Partial<ObservedState> = {}): ObservedState {
           { id: PERSON_A, status: PERSON_RETIRED_STATUS },
           { id: PERSON_B, status: PERSON_RETIRED_STATUS },
         ],
-        memberships: [{ userId: OWNER_USER, role: "owner", status: "active" }],
+        memberships: [
+          { userId: OWNER_USER, role: "owner", status: "active" },
+          { userId: MEMBER_USER, role: "manager", status: MEMBERSHIP_RETIRED_STATUS },
+        ],
         probes: [probe("activity_events", 4)],
       },
     ],
@@ -488,6 +496,89 @@ test("no table is both directly readable and routed through the boundary", () =>
       `${entry.table} has an inconsistent access mode`,
     )
   }
+})
+
+
+// ---------------------------------------------------------------------------
+// Extended retirement: non-owner memberships are neutralised directly
+// ---------------------------------------------------------------------------
+
+test("the canonical inactive membership status comes from the 0001 CHECK constraint", () => {
+  assert.equal(MEMBERSHIP_RETIRED_STATUS, "inactive")
+  assert.equal(PROTECTED_OWNER_ROLE, "owner")
+})
+
+test("the plan deactivates non-owner memberships per owned company", () => {
+  const plan = planRetirement(ownership())
+  const steps = plan.steps.filter((s) => s.kind === "retire-nonowner-memberships")
+  assert.deepEqual(steps, [{ kind: "retire-nonowner-memberships", companyId: COMPANY }])
+})
+
+test("people are retired BEFORE memberships, and the company last", () => {
+  // 0072 counts people ROWS for an active membership and never reads status, so
+  // this order keeps every intermediate state domain-valid.
+  const kinds = planRetirement(ownership()).steps.map((s) => s.kind)
+  const people = kinds.indexOf("retire-people")
+  const members = kinds.indexOf("retire-nonowner-memberships")
+  const company = kinds.indexOf("retire-company")
+  assert.ok(people < members, "people must precede membership deactivation")
+  assert.ok(members < company, "company must be last of the three")
+})
+
+test("the plan still never deactivates the owner, and says why", () => {
+  const plan = planRetirement(ownership())
+  // NB: the step kind is "retire-nonowner-memberships", which contains the
+  // substring "owner" — assert on the target role, not on raw text.
+  assert.ok(!plan.steps.some((s) => (s as { role?: string }).role === "owner"))
+  assert.ok(plan.steps.every((s) => s.kind !== ("retire-owner-membership" as never)))
+  assert.match(plan.notAttempted.join(" "), /LAST_ACTIVE_OWNER_REQUIRED/)
+  assert.match(plan.notAttempted.join(" "), /Non-owner memberships ARE deactivated/)
+})
+
+test("postconditions FAIL when a non-owner membership is left active", () => {
+  const state = retiredState({
+    companies: [
+      {
+        ...retiredState().companies[0],
+        memberships: [
+          { userId: OWNER_USER, role: "owner", status: "active" },
+          { userId: MEMBER_USER, role: "manager", status: "active" },
+        ],
+      },
+    ],
+  })
+  const verdict = evaluateRetirementPostconditions(state, before)
+  assert.equal(verdict.ok, false)
+  assert.match(reasons(verdict), /manager membership .* is active, expected inactive/)
+})
+
+test("postconditions FAIL if the owner membership disappeared entirely", () => {
+  const state = retiredState({
+    companies: [
+      {
+        ...retiredState().companies[0],
+        memberships: [
+          { userId: MEMBER_USER, role: "manager", status: MEMBERSHIP_RETIRED_STATUS },
+        ],
+      },
+    ],
+  })
+  const verdict = evaluateRetirementPostconditions(state, before)
+  assert.equal(verdict.ok, false)
+  assert.match(reasons(verdict), /owner membership disappeared/)
+})
+
+test("a company whose only membership is the owner still passes", () => {
+  // Company B in the residual run: sole owner, nothing to deactivate.
+  const state = retiredState({
+    companies: [
+      {
+        ...retiredState().companies[0],
+        memberships: [{ userId: OWNER_USER, role: "owner", status: "active" }],
+      },
+    ],
+  })
+  assert.deepEqual(evaluateRetirementPostconditions(state, before), { ok: true })
 })
 
 test.after(() => {

@@ -207,6 +207,18 @@ export const COMPANY_RETIRED_STATUS = "inactive"
 export const PERSON_RETIRED_STATUS = "terminated"
 
 /**
+ * Canonical inactive state for a membership.
+ *
+ * Read from the schema, not invented: `company_members.status` is
+ * `check (status in ('active', 'inactive', 'invited'))` in migration 0001, and no
+ * later migration alters that constraint.
+ */
+export const MEMBERSHIP_RETIRED_STATUS = "inactive"
+
+/** The one role whose membership retirement is forbidden by the domain. */
+export const PROTECTED_OWNER_ROLE = "owner"
+
+/**
  * Supabase's first-class account disable. `ban_duration` is a Go duration on
  * `AdminUserAttributes`; `'none'` reverses it. Chosen over rotating a password
  * because it is explicit, reversible, verifiable afterwards through
@@ -216,6 +228,7 @@ export const AUTH_BAN_DURATION = "876000h"
 
 export type RetirementStep =
   | Readonly<{ kind: "retire-people"; companyId: string }>
+  | Readonly<{ kind: "retire-nonowner-memberships"; companyId: string }>
   | Readonly<{ kind: "retire-company"; companyId: string }>
   | Readonly<{ kind: "ban-auth-user"; userId: string }>
 
@@ -262,7 +275,13 @@ export function planRetirement(ownership: OwnershipFacts): RetirementPlan {
   const steps: RetirementStep[] = []
 
   for (const companyId of ownership.companyIds) {
+    // People first, memberships second. `enforce_active_membership_people_invariant`
+    // (0072) counts people ROWS for an active membership and never reads
+    // `people.status`, so terminating people leaves every membership valid; doing
+    // it in this order keeps each intermediate state domain-valid rather than
+    // relying on the end state.
     steps.push({ kind: "retire-people", companyId })
+    steps.push({ kind: "retire-nonowner-memberships", companyId })
     steps.push({ kind: "retire-company", companyId })
   }
   for (const userId of ownership.authUserIds) {
@@ -274,9 +293,12 @@ export function planRetirement(ownership: OwnershipFacts): RetirementPlan {
     companyIds: [...ownership.companyIds],
     steps: Object.freeze(steps),
     notAttempted: Object.freeze([
-      "company_members.status -> inactive: forbidden by LAST_ACTIVE_OWNER_REQUIRED (0071) " +
-        "for a tenant's only owner, and by OWNER_ADMINISTRATION_REQUIRES_ACTIVE_OWNER for a " +
-        "service-role caller. The ban removes access instead.",
+      "the OWNER membership stays active: LAST_ACTIVE_OWNER_REQUIRED (0071) forbids " +
+        "deactivating a tenant's only owner, and OWNER_ADMINISTRATION_REQUIRES_ACTIVE_OWNER " +
+        "forbids it for a service-role caller whose auth.uid() is null. Non-owner " +
+        "memberships ARE deactivated — 0071 returns early when the row does not touch an " +
+        "owner, and 0072 skips non-active rows — so the ban is no longer the only thing " +
+        "removing their access.",
       "auth user deletion: an auth identity named as an actor on an immutable row cannot be " +
         "deleted (SET NULL is an UPDATE the immutability trigger rejects). Banned, not deleted.",
       "any write to a retention table: audit immutability wins.",
@@ -377,15 +399,33 @@ export function evaluateRetirementPostconditions(
       )
     }
 
-    // Unchanged BY DESIGN. Asserted so that a future change to the owner
-    // invariant surfaces here as a deviation instead of passing silently.
-    const owners = company.memberships.filter((m) => m.role === "owner")
+    // The owner stays active BY DESIGN. Asserted so that a future change to the
+    // owner invariant surfaces here as a deviation instead of passing silently.
+    const owners = company.memberships.filter((m) => m.role === PROTECTED_OWNER_ROLE)
+    fail(
+      mismatches,
+      owners.length > 0,
+      `${where}: the owner membership disappeared; retirement must never remove it`,
+    )
     fail(
       mismatches,
       owners.every((owner) => owner.status === "active"),
       `${where}: an owner membership is no longer active; LAST_ACTIVE_OWNER_REQUIRED forbids ` +
         `deactivating a tenant's only owner, so this must not have changed`,
     )
+
+    // Non-owner memberships are neutralised directly, so "no operational access"
+    // is an observable fact about the domain rather than something inferred from
+    // the auth ban alone.
+    const nonOwners = company.memberships.filter((m) => m.role !== PROTECTED_OWNER_ROLE)
+    for (const membership of nonOwners) {
+      fail(
+        mismatches,
+        membership.status === MEMBERSHIP_RETIRED_STATUS,
+        `${where}: ${membership.role} membership for ${membership.userId} is ` +
+          `${membership.status}, expected ${MEMBERSHIP_RETIRED_STATUS}`,
+      )
+    }
 
     const before = retentionBefore.get(company.companyId)
     if (!before) {

@@ -21,6 +21,10 @@ import { COMPANY_SCOPED_TABLES } from "./lifecycle/retention-registry"
 import { e2eEnv } from "./helpers/env"
 import { journalPath, ownedCompanyIds, readJournal } from "./helpers/journal"
 import { journalledUserIds } from "./fixtures/tenant-fixture"
+// Read-only members only. `executeRetirement` is deliberately NOT imported:
+// this command must be structurally incapable of mutating anything.
+import { classifyRun, observeRunState, probeCompanyRetention } from "./lifecycle/retire"
+import { describeProbeFailure, type OwnershipFacts } from "./lifecycle/terminal-state"
 
 type State = "EXISTS" | "MISSING" | "UNKNOWN"
 
@@ -271,9 +275,67 @@ async function main(): Promise<void> {
 
   const stillThere = rows.filter((row) => row.state === "EXISTS")
   console.log(
-    `\n[e2e] ${stillThere.length} of ${rows.length} journalled resources still exist. ` +
-      `No mutation was performed.`,
+    `\n[e2e] ${stillThere.length} of ${rows.length} journalled resources still exist.`,
   )
+
+  // -------------------------------------------------------------------------
+  // Terminal-state classification — READ-ONLY.
+  //
+  // Reuses the canonical pieces rather than re-deriving them: the retention
+  // registry decides which tables matter and how each may be counted,
+  // `probeCompanyRetention` honours that (direct head-count where service_role
+  // may SELECT, the counts-only 0126 boundary where migration 0069 revoked it),
+  // and `classifyTerminalStrategy` makes the decision. Nothing here mutates:
+  // `observeRunState` and `classifyRun` only read, and the retirement executor
+  // is deliberately not imported.
+  //
+  // Before 0126 existed this section could not have worked at all — the four
+  // ledger tables answered 403 and the classifier correctly refused to guess.
+  // -------------------------------------------------------------------------
+  const ownership: OwnershipFacts = {
+    runId: journal.runId,
+    supabaseRef: journal.supabaseRef,
+    companyIds: ownedCompanyIds(journal),
+    authUserIds: journalledUserIds(journal),
+  }
+
+  console.log("\n[e2e] retention pressure per owned company (read-only):")
+  for (const companyId of ownership.companyIds) {
+    const probes = await probeCompanyRetention(companyId)
+    const blocked = probes.filter((probe) => (probe.rows ?? 0) > 0)
+    const unreadable = probes.filter((probe) => probe.rows === null)
+
+    console.log(`  company ${companyId}`)
+    for (const probe of probes) {
+      const value = probe.rows === null ? `UNREADABLE (${describeProbeFailure(probe.failure)})` : probe.rows
+      if (probe.rows === null || probe.rows > 0) {
+        console.log(`    ${probe.table.padEnd(46)} ${value}`)
+      }
+    }
+    if (blocked.length === 0 && unreadable.length === 0) {
+      console.log("    every retention table is empty and readable")
+    }
+  }
+
+  const observed = await observeRunState(ownership)
+  const classification = classifyRun(observed, ownership)
+
+  console.log("")
+  if ("status" in classification) {
+    console.log(`[e2e] TERMINAL_STATE=UNCLASSIFIABLE (${classification.status})`)
+    console.log(`      ${classification.reason}`)
+  } else if (classification.strategy === "CLEANED") {
+    console.log("[e2e] TERMINAL_STATE=CLEANED — no retained immutable evidence;")
+    console.log("      physical removal of the run-owned graph is structurally possible.")
+  } else {
+    console.log("[e2e] TERMINAL_STATE=RETIRED — immutable retention forbids physical deletion.")
+    console.log("      blocked by:")
+    for (const probe of classification.blockedBy) {
+      console.log(`        ${probe.table} rows=${probe.rows}`)
+    }
+  }
+
+  console.log("\n[e2e] No mutation was performed. This command cannot clean, retire or quarantine.")
 }
 
 if (process.argv[1] && /inspect-run\.(ts|js|mjs|cjs)$/.test(process.argv[1])) {

@@ -26,7 +26,9 @@ import {
 import {
   AUTH_BAN_DURATION,
   COMPANY_RETIRED_STATUS,
+  MEMBERSHIP_RETIRED_STATUS,
   PERSON_RETIRED_STATUS,
+  PROTECTED_OWNER_ROLE,
   baselineFingerprint,
   classifyTerminalStrategy,
   evaluateRetirementPostconditions,
@@ -304,6 +306,29 @@ export async function executeRetirement(
         return { ok: false, applied, failure: `people of ${step.companyId}: ${error.message}` }
       }
       applied.push(`people of company ${step.companyId} -> ${PERSON_RETIRED_STATUS}`)
+      continue
+    }
+
+    if (step.kind === "retire-nonowner-memberships") {
+      // Scoped to one journalled company and explicitly NOT the owner role.
+      // 0071's trigger returns early for a row that touches no owner, and 0072
+      // only enforces the people-link invariant on rows that stay active, so
+      // this neutralises access without weakening either invariant.
+      const { error } = await db
+        .from("company_members")
+        .update({ status: MEMBERSHIP_RETIRED_STATUS })
+        .eq("company_id", step.companyId)
+        .neq("role", PROTECTED_OWNER_ROLE)
+      if (error) {
+        return {
+          ok: false,
+          applied,
+          failure: `non-owner memberships of ${step.companyId}: ${error.message}`,
+        }
+      }
+      applied.push(
+        `non-owner memberships of company ${step.companyId} -> ${MEMBERSHIP_RETIRED_STATUS}`,
+      )
       continue
     }
 

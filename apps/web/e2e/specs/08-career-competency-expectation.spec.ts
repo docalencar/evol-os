@@ -87,6 +87,13 @@ const SENIORITY_RANK = "70"
  */
 const SAVE_SUCCESS_MESSAGE = "Expectativa de competência salva."
 
+/**
+ * The exact success message `addPositionSeniorityAction` returns and the
+ * AddPositionSeniorityDialog raises as a toast before closing. Taken from the
+ * action, not invented.
+ */
+const APPLY_SUCCESS_MESSAGE = "Senioridade aplicada ao cargo."
+
 async function enterTenantA(page: Page): Promise<void> {
   await loginThroughUi(page, tenantAAdmin())
   await expectAuthenticatedShell(page)
@@ -216,6 +223,26 @@ test.describe("career expectations configured through the real UI", () => {
     await select.selectOption({ label })
 
     await page.getByRole("button", { name: "Aplicar", exact: true }).click()
+
+    // Immediate write evidence, BEFORE the reload.
+    //
+    // Run 260907175655-ecd9b6 failed here, and the trace showed why: the reload
+    // fired 1.6ms after the server action's POST started, aborting it in flight
+    // (status -1) and re-rendering the page from the pre-mutation state. The
+    // product was never at fault — the test raced its own write, and had been
+    // winning that race by luck until then.
+    //
+    // Contract read from the action and the dialog, not invented: on success
+    // `addPositionSeniorityAction` returns "Senioridade aplicada ao cargo.",
+    // the dialog raises it as a success toast and closes; on failure it raises
+    // the error and STAYS OPEN. So the dialog closing is itself a success-only
+    // signal, and both are asserted.
+    await expect(page.getByText(APPLY_SUCCESS_MESSAGE, { exact: true })).toBeVisible({
+      timeout: 15_000,
+    })
+    await expect(
+      page.getByRole("heading", { name: "Adicionar senioridade ao cargo" })
+    ).toBeHidden({ timeout: 15_000 })
 
     await page.reload()
 

@@ -16,7 +16,7 @@
  */
 
 import assert from "node:assert/strict"
-import { readFileSync } from "node:fs"
+import { readdirSync, readFileSync } from "node:fs"
 import test from "node:test"
 
 /** Executable source: block comments, line comments and doc prose removed. */
@@ -51,6 +51,55 @@ test("diagnosability was not bought by weakening the run contract", () => {
   // Video stays off. It is heavy and it records the password keystroke by
   // keystroke during login; the trace already carries what diagnosis needs.
   assert.match(config, /video:\s*"off"/)
+})
+
+/**
+ * STRUCTURAL: no spec may reload straight after a click.
+ *
+ * Run 260907175655-ecd9b6 lost two tests to the same shape. In spec 08 the
+ * reload fired 1.6ms after the server action's POST began and aborted it in
+ * flight (status -1); in spec 09 it fired 2.7ms after, so the navigation
+ * fetched server-rendered HTML from before the write committed. Neither was a
+ * product fault, and neither test noticed for 30 seconds.
+ *
+ * A previous slice fixed one instance of this and left two behind, because the
+ * guard pinned that instance rather than the class. This scans every spec and
+ * flags the signature directly: a `page.reload()` whose preceding executable
+ * line is a `.click()`.
+ *
+ * It is deliberately narrow. A click that navigates is normally followed by a
+ * `waitForURL` or an assertion, so it does not trip; and a click followed
+ * immediately by a reload is suspicious whether or not it mutates — there is
+ * nothing to gain by discarding the page before observing anything.
+ */
+test("no spec reloads immediately after a click, with no evidence in between", () => {
+  const specsDir = new URL("./specs/", import.meta.url)
+  const offenders: string[] = []
+
+  for (const file of readdirSync(specsDir).filter((name) => name.endsWith(".spec.ts"))) {
+    const lines = readFileSync(new URL(file, specsDir), "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line !== "" && !line.startsWith("//") && !line.startsWith("*"))
+
+    lines.forEach((line, index) => {
+      if (!/page\.reload\(\)/.test(line)) return
+      const previous = lines[index - 1] ?? ""
+      if (/\.click\(\)/.test(previous)) {
+        offenders.push(`${file}: reload directly after ${previous.slice(0, 70)}`)
+      }
+    })
+  }
+
+  assert.deepEqual(
+    offenders,
+    [],
+    `A reload immediately after a click races the write it was meant to persist. ` +
+      `Assert the product's own success signal first (toast text from the action, ` +
+      `and the dialog closing), then reload for the durable readback:\n` +
+      offenders.join("\n")
+  )
 })
 
 test("spec 08 proves the write was accepted before it trusts a reload", () => {

@@ -78,6 +78,32 @@ test("spec 09 opens the profile through the role the DOM actually exposes", () =
   assert.doesNotMatch(source, /getByRole\(\s*"link"[^\n]*Ver perfil/)
 })
 
+test("spec 09 opens the person editor by the name the header actually renders", () => {
+  // `EmployeeEditDialog` takes an optional `trigger`. Its fallback is
+  // `<Button>Editar</Button>` — what the People *table* renders — while the
+  // profile *header* passes `<Button>Editar perfil</Button>`. Run
+  // 260907130453-0a716b asked for the fallback's name with exact:true and
+  // matched nothing. Reading the component was not enough; the call site is
+  // what the page renders.
+  assert.match(
+    source,
+    /page\.getByRole\(\s*"button",\s*\{\s*name:\s*"Editar perfil",\s*exact:\s*true\s*\}\s*\)/
+  )
+
+  // The unscoped fallback name must never come back for the profile editor.
+  // Scoped uses stay legal: the registered-competencies section genuinely has a
+  // control named exactly "Editar", and that one is reached through `registered`.
+  assert.doesNotMatch(source, /page\.getByRole\(\s*"button",\s*\{\s*name:\s*"Editar",\s*exact/)
+
+  // No positional disambiguation on this locator: the name is unique, and
+  // `.first()` would quietly pick a winner if that ever stopped being true.
+  const profileEditor = source
+    .split("\n")
+    .filter((line) => line.includes('"Editar perfil"'))
+  assert.equal(profileEditor.length, 1, "exactly one profile-editor locator")
+  assert.doesNotMatch(profileEditor[0] ?? "", /\.first\(\)/)
+})
+
 test("spec 09 mutates through the product, not through privileged clients", () => {
   // The only privileged helper allowed is the canonical read-only id lookup.
   assert.doesNotMatch(source, /adminClient/)

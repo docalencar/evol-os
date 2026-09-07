@@ -131,10 +131,19 @@ test.describe("a person's competency gap is derived, not entered", () => {
     await enterTenantA(page)
     await openRunPersonProfile(page)
 
-    await page.getByRole("button", { name: "Editar", exact: true }).first().click()
+    // "Editar perfil", not "Editar". `EmployeeEditDialog` takes an optional
+    // `trigger`; its fallback is `<Button>Editar</Button>`, which is what the
+    // People table renders — but the profile header passes its own
+    // `<Button>Editar perfil</Button>`. Run 260907130453-0a716b asked for the
+    // fallback's name with `exact: true` and matched nothing, against a control
+    // that was present, visible and the only one on the page.
+    //
+    // No `.first()`: the name is unique here, and disambiguating by position
+    // would quietly pick a winner if a second control ever shared the name.
+    await page.getByRole("button", { name: "Editar perfil", exact: true }).click()
 
-    // If the wrong "Editar" were clicked, this heading would be
-    // "Editar competência" and the test fails here rather than silently
+    // If the wrong control were clicked, this heading would not be
+    // "Editar colaborador" and the test fails here rather than silently
     // asserting against the wrong dialog.
     const dialog = page.getByRole("dialog")
     await expect(dialog.getByRole("heading", { name: "Editar colaborador" })).toBeVisible()

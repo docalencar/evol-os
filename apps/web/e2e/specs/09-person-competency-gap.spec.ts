@@ -76,6 +76,19 @@ const CATALOG_LEVEL_THAT_MUST_NOT_APPEAR = "3"
 const INITIAL_CURRENT_LEVEL = "2"
 const FINAL_CURRENT_LEVEL = "4"
 
+/**
+ * Exact success messages the product returns and the dialogs raise as toasts
+ * before closing. Read from `updateEmployeeAction` and
+ * `updateEmployeeCompetencyAction` — never invented. If the product rewords
+ * one, this assertion should fail and be updated deliberately rather than
+ * silently decaying into "something was submitted".
+ */
+const PERSON_SAVE_SUCCESS_MESSAGE = "Colaborador atualizado com sucesso."
+const EVIDENCE_CREATE_SUCCESS_MESSAGE =
+  "Competência do colaborador criada com sucesso."
+const EVIDENCE_SAVE_SUCCESS_MESSAGE =
+  "Competência do colaborador atualizada com sucesso."
+
 const DEFICIENCY_LABEL = "Gap de desenvolvimento"
 const MEETS_LABEL = "Atende ao esperado"
 
@@ -168,6 +181,24 @@ test.describe("a person's competency gap is derived, not entered", () => {
     // Step 4: review, then the real mutation.
     await dialog.getByRole("button", { name: "Salvar alterações", exact: true }).click()
 
+    // Immediate write evidence, BEFORE the reload — the same race that broke
+    // spec 08 in run 260907175655-ecd9b6: the reload fired 2.7ms after the
+    // server action's POST started, so the navigation fetched server-rendered
+    // HTML from before the write committed. The 30s `toBeVisible` that followed
+    // could never see the change, because Playwright does not reload while
+    // waiting.
+    //
+    // Contract read from `updateEmployeeAction` and the form: on success it
+    // returns "Colaborador atualizado com sucesso.", the form raises it as a
+    // toast and calls onSuccess, which closes the dialog; on failure it raises
+    // the error and STAYS OPEN. Closing is therefore a success-only signal.
+    await expect(page.getByText(PERSON_SAVE_SUCCESS_MESSAGE, { exact: true })).toBeVisible({
+      timeout: 15_000,
+    })
+    await expect(
+      page.getByRole("heading", { name: "Editar colaborador" })
+    ).toBeHidden({ timeout: 15_000 })
+
     await page.reload()
 
     // Durable readback through the profile's own sidebar.
@@ -203,6 +234,17 @@ test.describe("a person's competency gap is derived, not entered", () => {
     await dialog.locator("#currentLevel").selectOption(INITIAL_CURRENT_LEVEL)
 
     await dialog.getByRole("button", { name: "Adicionar competência", exact: true }).click()
+
+    // Same guarantee here. The structural guard caught this one after the other
+    // two were fixed by hand — evidence that pinning instances misses siblings.
+    // `createEmployeeCompetencyAction` returns "Competência do colaborador
+    // criada com sucesso."; the form toasts it and onSuccess closes the dialog.
+    await expect(
+      page.getByText(EVIDENCE_CREATE_SUCCESS_MESSAGE, { exact: true })
+    ).toBeVisible({ timeout: 15_000 })
+    await expect(
+      page.getByRole("heading", { name: "Adicionar competência" })
+    ).toBeHidden({ timeout: 15_000 })
 
     // Fresh load: the gap is computed server-side on render, so this is the only
     // honest way to read it.
@@ -251,6 +293,18 @@ test.describe("a person's competency gap is derived, not entered", () => {
 
     await dialog.locator("#currentLevel").selectOption(FINAL_CURRENT_LEVEL)
     await dialog.getByRole("button", { name: "Salvar alterações", exact: true }).click()
+
+    // Same guarantee for this write. This test never reached a browser, but it
+    // carried the identical click→reload shape, so it would have raced too.
+    // `updateEmployeeCompetencyAction` returns "Competência do colaborador
+    // atualizada com sucesso."; the form toasts it and onSuccess closes the
+    // dialog. On failure it toasts the error and stays open.
+    await expect(
+      page.getByText(EVIDENCE_SAVE_SUCCESS_MESSAGE, { exact: true })
+    ).toBeVisible({ timeout: 15_000 })
+    await expect(
+      page.getByRole("heading", { name: "Editar competência" })
+    ).toBeHidden({ timeout: 15_000 })
 
     await page.reload()
 

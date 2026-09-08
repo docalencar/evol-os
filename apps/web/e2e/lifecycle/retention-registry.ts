@@ -65,9 +65,9 @@ export type BlockingMechanism =
  * works. This is the default and covers almost everything.
  *
  * `PRIVILEGED_COUNT_BOUNDARY` — `service_role` has had `SELECT` **deliberately
- * revoked** (migration 0069), so a direct read returns `403` and no amount of
- * retrying will change that. Counting goes through the counts-only
- * `SECURITY DEFINER` boundary instead.
+ * revoked**, so a direct read returns `403` and no amount of retrying will
+ * change that. Counting goes through a counts-only `SECURITY DEFINER` boundary
+ * instead, named per entry by `boundary`.
  *
  * The distinction is recorded here rather than inferred from a failed request,
  * for the same reason the classifier no longer infers strategy from a failed
@@ -76,11 +76,40 @@ export type BlockingMechanism =
  */
 export type RetentionAccess = "DIRECT_READ" | "PRIVILEGED_COUNT_BOUNDARY"
 
+/**
+ * Counts-only boundary over the four development-template ledger tables whose
+ * SELECT migration 0069 revoked from `service_role`. Signature pinned by pgTAP.
+ */
+export const RETENTION_PRESSURE_RPC = "get_company_retention_pressure_v1"
+
+/**
+ * Counts-only boundary over the three Assessment execution snapshot tables whose
+ * SELECT migration 0114 revoked from `service_role`. Signature pinned by pgTAP.
+ *
+ * Deliberately a SECOND function rather than three more relations inside
+ * `RETENTION_PRESSURE_RPC`. The two revokes protect unrelated domains — 0069 a
+ * write ledger, 0114 an immutable execution record — and will not be lifted or
+ * tightened together, so each boundary stays grantable, revocable and droppable
+ * on its own. 0126's own scope note asked for exactly this. The full reasoning
+ * is in migration 0127.
+ */
+export const ASSESSMENT_SNAPSHOT_PRESSURE_RPC = "get_company_assessment_snapshot_pressure_v1"
+
 export type RetentionTable = Readonly<{
   /** PostgREST table name. Every entry is company-scoped via `company_id`. */
   table: string
   mechanism: BlockingMechanism
   access: RetentionAccess
+  /**
+   * Which counts-only RPC answers for this table.
+   *
+   * Set if and only if `access` is `PRIVILEGED_COUNT_BOUNDARY`. Named per entry
+   * rather than assumed, because there is more than one such boundary and a
+   * silent default would send a table's count request to a function that has
+   * never heard of it — which surfaces as `rows: null` and makes the whole run
+   * unclassifiable.
+   */
+  boundary?: string
   /** Migration that establishes the block, for anyone re-deriving this list. */
   evidence: string
 }>
@@ -134,39 +163,36 @@ export const COMPANY_RETENTION_TABLES: readonly RetentionTable[] = Object.freeze
     table: "development_template_applications",
     mechanism: "restrict-fk",
     access: "PRIVILEGED_COUNT_BOUNDARY",
+    boundary: RETENTION_PRESSURE_RPC,
     evidence: "0068:226 blocker; 0069:89 service_role SELECT revoked",
   },
   {
     table: "development_template_application_attempts",
     mechanism: "immutable-trigger",
     access: "PRIVILEGED_COUNT_BOUNDARY",
+    boundary: RETENTION_PRESSURE_RPC,
     evidence: "0068:775 immutable; 0069:89 service_role SELECT revoked",
   },
   {
     table: "development_template_application_snapshots",
     mechanism: "immutable-trigger",
     access: "PRIVILEGED_COUNT_BOUNDARY",
+    boundary: RETENTION_PRESSURE_RPC,
     evidence: "0068:781 immutable; 0069:89 service_role SELECT revoked",
   },
   {
     table: "development_template_application_lineage",
     mechanism: "immutable-trigger",
     access: "PRIVILEGED_COUNT_BOUNDARY",
+    boundary: RETENTION_PRESSURE_RPC,
     evidence: "0068:787 immutable; 0069:89 service_role SELECT revoked",
   },
 
-  // Assessment execution. Both cascade from `companies` on their own edge, and
-  // both carry RESTRICT foreign keys into the 0114 execution snapshot — the
-  // `intra-tenant-restrict-fk` shape documented above. They are the readable
-  // half of the assessment footprint: `service_role` keeps SELECT on them (0112
-  // and 0113 revoke only from public/anon/authenticated), so a plain head-count
-  // still works and no new boundary is needed.
-  //
-  // Between them they cover every E2E-4 shape that reaches generation: a
-  // response cannot exist without a snapshot (`assessment_execution_snapshot_id`
-  // is NOT NULL, 0114:306), and an answer cannot exist without a snapshot
-  // question (0114:314). See UNCOUNTABLE_COMPANY_SCOPED_TABLES for the one
-  // window this does not close.
+  // Assessment execution, readable half. Both cascade from `companies` on their
+  // own edge and both carry RESTRICT foreign keys into the 0114 execution
+  // snapshot — the `intra-tenant-restrict-fk` shape documented above.
+  // `service_role` keeps SELECT on them (0112 and 0113 revoke only from
+  // public/anon/authenticated), so a plain head-count works.
   {
     table: "assessment_responses",
     mechanism: "intra-tenant-restrict-fk",
@@ -181,17 +207,53 @@ export const COMPANY_RETENTION_TABLES: readonly RetentionTable[] = Object.freeze
       "0028:1 company cascade; 0114:323 RESTRICT into assessment_execution_snapshot_questions, " +
       "0114:333 RESTRICT into assessment_questions",
   },
+
+  // Assessment execution, snapshot family. Same blocking shape — each is the
+  // referencing side of a RESTRICT edge to a sibling that cascades from the same
+  // company (0114:35,38 / 63,66 / 104,110,115,117). E4-S1 could only document
+  // these: 0114:885 revokes SELECT from `service_role`, so a direct probe answers
+  // 403 and the classifier refuses to read that as "empty". Migration 0127 adds
+  // the counts-only boundary that closes the gap without restoring SELECT.
+  {
+    table: "assessment_execution_snapshots",
+    mechanism: "intra-tenant-restrict-fk",
+    access: "PRIVILEGED_COUNT_BOUNDARY",
+    boundary: ASSESSMENT_SNAPSHOT_PRESSURE_RPC,
+    evidence: "0114:35,38 RESTRICT into cycles/templates; 0114:885 service_role SELECT revoked",
+  },
+  {
+    table: "assessment_execution_snapshot_sections",
+    mechanism: "intra-tenant-restrict-fk",
+    access: "PRIVILEGED_COUNT_BOUNDARY",
+    boundary: ASSESSMENT_SNAPSHOT_PRESSURE_RPC,
+    evidence: "0114:63,66 RESTRICT into snapshots/sections; 0114:885 service_role SELECT revoked",
+  },
+  {
+    table: "assessment_execution_snapshot_questions",
+    mechanism: "intra-tenant-restrict-fk",
+    access: "PRIVILEGED_COUNT_BOUNDARY",
+    boundary: ASSESSMENT_SNAPSHOT_PRESSURE_RPC,
+    evidence:
+      "0114:104,110,115,117 RESTRICT into snapshots/sections/questions/competencies; " +
+      "0114:885 service_role SELECT revoked",
+  },
 ])
 
-/** Tables the counts-only boundary is responsible for. Derived, never hand-listed. */
+/** Tables reached through a counts-only boundary. Derived, never hand-listed. */
 export const PRIVILEGED_COUNT_TABLES: readonly string[] = Object.freeze(
   COMPANY_RETENTION_TABLES.filter((entry) => entry.access === "PRIVILEGED_COUNT_BOUNDARY").map(
     (entry) => entry.table,
   ),
 )
 
-/** The counts-only boundary. Signature is pinned by pgTAP. */
-export const RETENTION_PRESSURE_RPC = "get_company_retention_pressure_v1"
+/** Every counts-only boundary the registry depends on. Derived, never hand-listed. */
+export const PRIVILEGED_COUNT_BOUNDARIES: readonly string[] = Object.freeze([
+  ...new Set(
+    COMPANY_RETENTION_TABLES.filter((entry) => entry.access === "PRIVILEGED_COUNT_BOUNDARY").map(
+      (entry) => entry.boundary as string,
+    ),
+  ),
+])
 
 /**
  * Company-scoped tables the residual-graph inspector reports on.
@@ -217,12 +279,11 @@ export const COMPANY_SCOPED_TABLES: readonly string[] = Object.freeze([
   "assessment_answers",
   "assessment_cycle_participants",
   "assessment_cycles",
-  // The three 0114 snapshot tables are listed so the inspector SAYS SOMETHING
-  // about them. `service_role` has no SELECT here (0114:885), so the head-count
-  // answers 403 and the residual graph prints `UNREADABLE (…)`. That is the
-  // intended outcome: a named access boundary is a fact worth printing, and
-  // silence would read as "this tenant holds nothing" — the exact
-  // misinterpretation this registry exists to prevent.
+  // The three 0114 snapshot tables. `service_role` has no SELECT here
+  // (0114:885), so the inspector's own head-count still answers 403 and the
+  // residual graph prints `UNREADABLE (…)` — which is the honest output, and is
+  // why they are listed rather than omitted. The CLASSIFIER does not depend on
+  // that: it reaches them through the 0127 counts-only boundary instead.
   "assessment_execution_snapshot_questions",
   "assessment_execution_snapshot_sections",
   "assessment_execution_snapshots",
@@ -278,53 +339,20 @@ export const COMPANY_SCOPED_TABLES: readonly string[] = Object.freeze([
 ])
 
 /**
- * Company-scoped tables the harness can LIST but cannot COUNT.
+ * There is no longer a list of company-scoped tables the classifier cannot
+ * count.
  *
- * `service_role` has no SELECT on the three 0114 execution-snapshot tables
- * (`revoke all … from public,anon,authenticated,service_role`, 0114:885), and
- * `BYPASSRLS` does not bypass table privileges. Two consequences, and it matters
- * that they are different:
+ * E4-S1 exported `UNCOUNTABLE_COMPANY_SCOPED_TABLES` to record the three 0114
+ * execution-snapshot tables: `service_role` has no SELECT on them (0114:885),
+ * `BYPASSRLS` does not bypass table privileges, and a retention entry that
+ * probes `rows: null` makes the WHOLE run `unavailable` — so they could be
+ * listed for the inspector but never weighed by the classifier.
  *
- * **The inspector** may still name them — a `403` printed as `UNREADABLE` is
- * information. They are therefore in `COMPANY_SCOPED_TABLES`.
- *
- * **The classifier** may not use them. `probeDirect` would return `rows: null`,
- * and `classifyTerminalStrategy` turns any unreadable retention table into
- * `unavailable` — refusing, correctly, to treat "I could not look" as "it is
- * empty". Adding these three to `COMPANY_RETENTION_TABLES` today would make
- * EVERY run unclassifiable, including E2E-0 through E2E-3, and cleanup would
- * stop mutating anything at all. The counts-only boundary cannot rescue them
- * either: `get_company_retention_pressure_v1` (0126) answers for a closed list
- * of exactly the four development-template ledger tables, and 0126's own scope
- * note already anticipated this — *"If it is ever added to the registry, it
- * needs its own reviewed extension of this list."*
- *
- * So they are recorded here rather than added anywhere they would do harm.
- *
- * ## The window this leaves open, stated rather than hidden
- *
- * A run holding snapshot rows but ZERO `assessment_responses` and ZERO
- * `assessment_answers` would not be seen. That shape is not reachable by an
- * assessment journey: generation writes the snapshot and its responses in one
- * RPC, and any journey that gets as far as a cycle has already created people
- * and organization rows, each of which writes an `activity_events` row — itself
- * a retention blocker. The window is real but empty; closing it properly needs
- * an authorised migration extending 0126, which is out of scope here.
+ * Migration 0127 closed that window with a counts-only boundary, so the three
+ * are ordinary `PRIVILEGED_COUNT_BOUNDARY` entries now and the list has nothing
+ * left to hold. It is removed rather than left empty: a vestigial export invites
+ * someone to put a table in it instead of writing the boundary that table needs.
  */
-export const UNCOUNTABLE_COMPANY_SCOPED_TABLES: readonly Readonly<{
-  table: string
-  evidence: string
-}>[] = Object.freeze([
-  { table: "assessment_execution_snapshots", evidence: "0114:885 service_role SELECT revoked" },
-  {
-    table: "assessment_execution_snapshot_sections",
-    evidence: "0114:885 service_role SELECT revoked",
-  },
-  {
-    table: "assessment_execution_snapshot_questions",
-    evidence: "0114:885 service_role SELECT revoked",
-  },
-])
 
 /**
  * Tables that make a run-owned AUTH IDENTITY undeletable.

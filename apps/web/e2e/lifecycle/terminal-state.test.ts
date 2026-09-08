@@ -23,10 +23,12 @@ process.env.E2E_RUN_DIR = TEST_RUN_DIR
 // variable lazily anyway.
 import { runDir } from "../helpers/run-paths"
 import {
+  ASSESSMENT_SNAPSHOT_PRESSURE_RPC,
   COMPANY_RETENTION_TABLES,
   COMPANY_SCOPED_TABLES,
+  PRIVILEGED_COUNT_BOUNDARIES,
   PRIVILEGED_COUNT_TABLES,
-  UNCOUNTABLE_COMPANY_SCOPED_TABLES,
+  RETENTION_PRESSURE_RPC,
 } from "./retention-registry"
 import {
   AUTH_BAN_DURATION,
@@ -479,13 +481,60 @@ test("the inspector and the classifier read the same source of truth", () => {
   )
 })
 
-test("the tables needing the privileged boundary are exactly the 0069 family", () => {
+test("the tables needing a privileged boundary are the 0069 and 0114 families", () => {
   assert.deepEqual([...PRIVILEGED_COUNT_TABLES].sort(), [
+    "assessment_execution_snapshot_questions",
+    "assessment_execution_snapshot_sections",
+    "assessment_execution_snapshots",
     "development_template_application_attempts",
     "development_template_application_lineage",
     "development_template_application_snapshots",
     "development_template_applications",
   ])
+})
+
+test("each privileged table names the boundary that actually answers for it", () => {
+  // Two boundaries exist and they have disjoint closed lists. Sending a table to
+  // the wrong one is not a type error — the RPC simply returns no row for it,
+  // which becomes `rows: null` and makes the whole run unclassifiable. So the
+  // pairing is asserted, not assumed.
+  const byBoundary = new Map<string, string[]>()
+  for (const entry of COMPANY_RETENTION_TABLES) {
+    if (entry.access !== "PRIVILEGED_COUNT_BOUNDARY") continue
+    assert.ok(entry.boundary, `${entry.table} routes through a boundary but does not name one`)
+    byBoundary.set(entry.boundary as string, [
+      ...(byBoundary.get(entry.boundary as string) ?? []),
+      entry.table,
+    ])
+  }
+
+  assert.deepEqual([...(byBoundary.get(RETENTION_PRESSURE_RPC) ?? [])].sort(), [
+    "development_template_application_attempts",
+    "development_template_application_lineage",
+    "development_template_application_snapshots",
+    "development_template_applications",
+  ])
+  assert.deepEqual([...(byBoundary.get(ASSESSMENT_SNAPSHOT_PRESSURE_RPC) ?? [])].sort(), [
+    "assessment_execution_snapshot_questions",
+    "assessment_execution_snapshot_sections",
+    "assessment_execution_snapshots",
+  ])
+
+  assert.deepEqual([...PRIVILEGED_COUNT_BOUNDARIES].sort(), [
+    ASSESSMENT_SNAPSHOT_PRESSURE_RPC,
+    RETENTION_PRESSURE_RPC,
+  ].sort())
+})
+
+test("a directly readable table never names a boundary", () => {
+  for (const entry of COMPANY_RETENTION_TABLES) {
+    if (entry.access !== "DIRECT_READ") continue
+    assert.equal(
+      entry.boundary,
+      undefined,
+      `${entry.table} is counted directly and must not claim a boundary`,
+    )
+  }
 })
 
 test("no table is both directly readable and routed through the boundary", () => {
@@ -525,24 +574,44 @@ test("every table the E2E-4 discovery found is now known to the inspector", () =
   }
 })
 
-test("the assessment tables that block deletion are exactly the two readable ones", () => {
+test("every assessment blocker carries the intra-tenant RESTRICT shape", () => {
   const intraTenant = COMPANY_RETENTION_TABLES.filter(
     (entry) => entry.mechanism === "intra-tenant-restrict-fk",
-  ).map((entry) => entry.table)
+  )
 
-  assert.deepEqual([...intraTenant].sort(), ["assessment_answers", "assessment_responses"])
+  assert.deepEqual([...intraTenant.map((entry) => entry.table)].sort(), [
+    "assessment_answers",
+    "assessment_execution_snapshot_questions",
+    "assessment_execution_snapshot_sections",
+    "assessment_execution_snapshots",
+    "assessment_responses",
+  ])
 
-  for (const entry of COMPANY_RETENTION_TABLES) {
-    if (entry.mechanism !== "intra-tenant-restrict-fk") continue
-    // A blocker the classifier cannot count is worse than no blocker: it makes
-    // every run unclassifiable. These two must be plain head-counts.
-    assert.equal(entry.access, "DIRECT_READ", `${entry.table} must be directly countable`)
+  for (const entry of intraTenant) {
+    // Every one of them must be countable SOMEHOW. A blocker the classifier
+    // cannot count is worse than no blocker: it makes every run unclassifiable.
+    if (entry.access === "PRIVILEGED_COUNT_BOUNDARY") {
+      assert.equal(
+        entry.boundary,
+        ASSESSMENT_SNAPSHOT_PRESSURE_RPC,
+        `${entry.table} must be counted by the 0127 boundary`,
+      )
+      assert.match(entry.evidence, /0114:885/, `${entry.table} must cite the revoke`)
+    }
     assert.match(entry.evidence, /RESTRICT/, `${entry.table} must cite the RESTRICT edge`)
   }
 })
 
-test("an assessment residual alone forces RETIRED, with nothing else retained", () => {
-  for (const table of ["assessment_responses", "assessment_answers"]) {
+test("a residual in ANY assessment table alone forces RETIRED", () => {
+  // One row in one table, everything else empty — each of the five must be
+  // enough on its own, and must be named as the thing that blocked.
+  for (const table of [
+    "assessment_responses",
+    "assessment_answers",
+    "assessment_execution_snapshots",
+    "assessment_execution_snapshot_sections",
+    "assessment_execution_snapshot_questions",
+  ]) {
     const probes = emptyProbes()
     const index = probes.findIndex((p) => p.table === table)
     assert.notEqual(index, -1, `${table} must be in the retention registry`)
@@ -552,6 +621,17 @@ test("an assessment residual alone forces RETIRED, with nothing else retained", 
     assert.ok("strategy" in verdict && verdict.strategy === "RETIRED", `${table} must block`)
     assert.deepEqual(verdict.blockedBy.map((p) => p.table), [table])
   }
+})
+
+test("zero rows everywhere still yields CLEANED — no table became a false blocker", () => {
+  // The registry grew by three entries. Presence in the list must not by itself
+  // retire a run that genuinely holds nothing.
+  const verdict = classifyTerminalStrategy(emptyProbes(), ownership())
+  assert.equal("strategy" in verdict && verdict.strategy, "CLEANED")
+  assert.ok(
+    emptyProbes().some((probe) => probe.table === "assessment_execution_snapshots"),
+    "the snapshot tables really are among the probes being asserted as empty",
+  )
 })
 
 test("assessment_questions is observable but is NOT claimed to block deletion", () => {
@@ -567,46 +647,97 @@ test("assessment_questions is observable but is NOT claimed to block deletion", 
   )
 })
 
-test("the uncountable snapshot tables are listed, and kept out of the classifier", () => {
-  const uncountable = UNCOUNTABLE_COMPANY_SCOPED_TABLES.map((entry) => entry.table)
-
-  assert.deepEqual([...uncountable].sort(), [
-    "assessment_execution_snapshot_questions",
-    "assessment_execution_snapshot_sections",
+test("no snapshot table is left depending on a direct read", () => {
+  // This is the E4-S1 window, closed. Each of the three had SELECT revoked from
+  // service_role by 0114:885, so a DIRECT_READ entry would probe `rows: null`.
+  for (const table of [
     "assessment_execution_snapshots",
-  ])
-
-  for (const entry of UNCOUNTABLE_COMPANY_SCOPED_TABLES) {
-    assert.match(entry.evidence, /0114:885/, "each entry must cite the revoke that causes this")
-    assert.ok(
-      COMPANY_SCOPED_TABLES.includes(entry.table),
-      `${entry.table} must still be nameable by the inspector`,
-    )
-    assert.equal(
-      COMPANY_RETENTION_TABLES.some((table) => table.table === entry.table),
-      false,
-      `${entry.table} cannot be a retention entry — see the next test for why`,
-    )
+    "assessment_execution_snapshot_sections",
+    "assessment_execution_snapshot_questions",
+  ]) {
+    const entry = COMPANY_RETENTION_TABLES.find((candidate) => candidate.table === table)
+    assert.ok(entry, `${table} must be a retention entry now that 0127 can count it`)
+    assert.equal(entry?.access, "PRIVILEGED_COUNT_BOUNDARY", `${table} must not be read directly`)
+    assert.ok(COMPANY_SCOPED_TABLES.includes(table), `${table} must stay nameable by the inspector`)
   }
 })
 
-test("proof of why: one uncountable retention table would break every run", () => {
-  // Not an argument, a demonstration. `service_role` cannot SELECT these tables
-  // (0114:885), so as a retention entry each would probe `rows: null`, and the
-  // classifier turns a single unreadable table into `unavailable` for the WHOLE
-  // run — E2E-0 through E2E-3 included. Cleanup would then refuse to mutate
-  // anything. This is the cost of "just add the five tables to both lists".
+test("a boundary that fails still fails closed for the whole run", () => {
+  // The reason the three tables could not simply be listed before 0127, kept as
+  // a live demonstration rather than prose: an unreadable retention table makes
+  // the WHOLE run `unavailable`, E2E-0 through E2E-3 included, and cleanup then
+  // refuses to mutate anything. That is the correct behaviour and must survive —
+  // it is what a broken or dropped boundary looks like.
   const probes = emptyProbes()
-  probes.push({
-    table: "assessment_execution_snapshots",
-    mechanism: "intra-tenant-restrict-fk",
+  const index = probes.findIndex((p) => p.table === "assessment_execution_snapshots")
+  assert.notEqual(index, -1)
+  probes[index] = {
+    ...probes[index],
     rows: null,
     failure: { status: 403, message: "" },
-  })
+  }
 
   const verdict = classifyTerminalStrategy(probes, ownership())
   assert.ok(!("strategy" in verdict), "must refuse to classify")
   assert.equal((verdict as { status: string }).status, "unavailable")
+})
+
+test("the 0127 boundary is pinned by name and never granted beyond service_role", () => {
+  // Structural, against the migration itself: the harness names an RPC, and the
+  // security of that name lives in SQL. If the migration is edited to widen the
+  // grant or to hand the caller a relation name, this fails.
+  // Executable SQL only. The migration's own prose necessarily says the words
+  // "does not grant SELECT" in order to explain the boundary, and a negative
+  // assertion over raw text would fail on that documentation — a trap this
+  // repository has fallen into before.
+  const migration = readFileSync(
+    resolve(
+      __dirname,
+      "..",
+      "..",
+      "..",
+      "..",
+      "supabase",
+      "migrations",
+      "0127_create_assessment_snapshot_retention_pressure_boundary.sql",
+    ),
+    "utf8",
+  )
+    .split("\n")
+    .filter((line) => !line.trim().startsWith("--"))
+    .join("\n")
+
+  assert.ok(
+    migration.includes(`create or replace function public.${ASSESSMENT_SNAPSHOT_PRESSURE_RPC}(`),
+    "the migration must define exactly the function the registry names",
+  )
+  assert.match(migration, /security definer/)
+  assert.match(migration, /set search_path = ''/)
+  assert.match(migration, /^stable$/m)
+  assert.match(
+    migration,
+    new RegExp(`revoke all on function public\\.${ASSESSMENT_SNAPSHOT_PRESSURE_RPC}\\(uuid\\)\\s*\\nfrom public, anon, authenticated;`),
+  )
+  assert.match(
+    migration,
+    new RegExp(`grant execute on function public\\.${ASSESSMENT_SNAPSHOT_PRESSURE_RPC}\\(uuid\\)\\s*\\nto service_role;`),
+  )
+
+  // The whole point: counting must not become reading.
+  assert.equal(/grant\s+select/i.test(migration), false, "must not grant SELECT on any table")
+  assert.equal(/execute\s+format|execute\s+'/i.test(migration), false, "no dynamic SQL")
+
+  // Every relation it counts is one of the three, spelled out in the body.
+  for (const table of [
+    "assessment_execution_snapshots",
+    "assessment_execution_snapshot_sections",
+    "assessment_execution_snapshot_questions",
+  ]) {
+    assert.ok(
+      migration.includes(`from public.${table}\n  where company_id = p_company_id`),
+      `${table} must be counted for one exact company`,
+    )
+  }
 })
 
 test("the pre-existing blocking mechanisms are untouched", () => {
@@ -658,10 +789,19 @@ test("widening the registry cannot widen what teardown deletes", () => {
 test("every retention table is counted for one exact company, never discovered", () => {
   const retire = readFileSync(resolve(__dirname, "retire.ts"), "utf8")
 
-  // The direct probe is scoped by a full company id passed in, and the
-  // privileged one hands that same id to the counts-only boundary.
+  // The direct probe is scoped by a full company id passed in, and every
+  // privileged one hands that same id to its counts-only boundary.
   assert.match(retire, /\.eq\("company_id", companyId\)/)
-  assert.match(retire, /RETENTION_PRESSURE_RPC, \{ p_company_id: companyId \}/)
+  assert.match(retire, /\.rpc\(boundary, \{ p_company_id: companyId \}\)/)
+
+  // The boundary name comes from the registry, never from anything the caller
+  // or the database could influence.
+  assert.match(retire, /for \(const boundary of PRIVILEGED_COUNT_BOUNDARIES\)/)
+  assert.equal(
+    /\.rpc\((`|")/.test(retire),
+    false,
+    "no RPC name is spelled inline — the registry is the single source",
+  )
 
   // No pattern matching anywhere near a retention read.
   for (const forbidden of [/\.like\(/, /\.ilike\(/, /\.neq\("company_id"/, /\.not\("company_id"/]) {

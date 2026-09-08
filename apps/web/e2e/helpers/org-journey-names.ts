@@ -46,3 +46,28 @@ export function seniorityLabel(runId: string): string {
 export function seniorityCode(runId: string): string {
   return `E2E-${runId}`
 }
+
+/**
+ * Assessment catalog and cycle journey (spec 11). Same contract again.
+ *
+ * The question text is a sentence rather than a label because the field is the
+ * question a human would be asked and the schema demands at least five
+ * characters; the run id keeps it unique so the questions table can be matched
+ * on an exact row instead of on generic chrome.
+ */
+
+export function assessmentTemplateName(runId: string): string {
+  return `E2E Model ${runId}`
+}
+
+export function assessmentSectionName(runId: string): string {
+  return `E2E Section ${runId}`
+}
+
+export function assessmentQuestionText(runId: string): string {
+  return `E2E question for run ${runId}`
+}
+
+export function assessmentCycleName(runId: string): string {
+  return `E2E Cycle ${runId}`
+}

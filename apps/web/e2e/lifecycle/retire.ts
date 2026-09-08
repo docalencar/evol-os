@@ -20,7 +20,7 @@
 import { adminClient } from "../helpers/admin-client"
 import {
   COMPANY_RETENTION_TABLES,
-  RETENTION_PRESSURE_RPC,
+  PRIVILEGED_COUNT_BOUNDARIES,
   type RetentionTable,
 } from "./retention-registry"
 import {
@@ -99,14 +99,22 @@ async function probeDirect(companyId: string, entry: RetentionTable): Promise<Re
 }
 
 /**
- * Count the tables `service_role` may not read, through the counts-only boundary.
+ * Count the tables `service_role` may not read, through a counts-only boundary.
  *
- * One RPC call answers for all of them, so it is made once and its rows are
- * distributed. A table the boundary does not report is left `rows: null` — never
- * assumed empty, and never inferred from the 403 a direct read would have given.
+ * One RPC call answers for every entry that names this boundary, so it is made
+ * once and its rows are distributed. A table the boundary does not report is
+ * left `rows: null` — never assumed empty, and never inferred from the 403 a
+ * direct read would have given.
+ *
+ * There is more than one such boundary: 0126 answers for the development
+ * template ledger (SELECT revoked by 0069) and 0127 for the assessment execution
+ * snapshots (revoked by 0114). They are separate functions because the two
+ * revokes protect unrelated domains and are granted, audited and dropped
+ * independently, so the caller says which one it means rather than assuming.
  */
 async function probePrivileged(
   companyId: string,
+  boundary: string,
   entries: readonly RetentionTable[],
 ): Promise<RetentionProbe[]> {
   if (entries.length === 0) return []
@@ -115,7 +123,7 @@ async function probePrivileged(
   let failure: ProbeFailure | undefined
 
   try {
-    const response = await adminClient().rpc(RETENTION_PRESSURE_RPC, { p_company_id: companyId })
+    const response = await adminClient().rpc(boundary, { p_company_id: companyId })
     if (response.error) failure = toFailure(response)
     else {
       counts = new Map(
@@ -139,7 +147,7 @@ async function probePrivileged(
         mechanism: entry.mechanism,
         rows: null,
         failure: {
-          message: `${RETENTION_PRESSURE_RPC} returned no row for this table`,
+          message: `${boundary} returned no row for this table`,
         },
       }
     }
@@ -154,12 +162,17 @@ async function probePrivileged(
  * so the classifier's "first unreadable" reporting stays deterministic.
  */
 export async function probeCompanyRetention(companyId: string): Promise<RetentionProbe[]> {
-  const privilegedEntries = COMPANY_RETENTION_TABLES.filter(
-    (entry) => entry.access === "PRIVILEGED_COUNT_BOUNDARY",
-  )
-  const privileged = new Map(
-    (await probePrivileged(companyId, privilegedEntries)).map((probe) => [probe.table, probe]),
-  )
+  // One call per distinct boundary, not one per table: a boundary answers for
+  // every relation in its own closed list in a single round trip.
+  const privileged = new Map<string, RetentionProbe>()
+  for (const boundary of PRIVILEGED_COUNT_BOUNDARIES) {
+    const entries = COMPANY_RETENTION_TABLES.filter(
+      (entry) => entry.access === "PRIVILEGED_COUNT_BOUNDARY" && entry.boundary === boundary,
+    )
+    for (const probe of await probePrivileged(companyId, boundary, entries)) {
+      privileged.set(probe.table, probe)
+    }
+  }
 
   const probes: RetentionProbe[] = []
   for (const entry of COMPANY_RETENTION_TABLES) {

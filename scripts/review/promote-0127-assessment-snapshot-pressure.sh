@@ -5,6 +5,13 @@
 #
 #   bash scripts/review/promote-0127-assessment-snapshot-pressure.sh --local-pgtap-verified
 #
+# 0127 HAS ALREADY BEEN APPLIED TO CANONICAL REVIEW, EXACTLY ONCE. Running this
+# again takes the APPLIED_AND_CONTRACT_PRESENT path and pushes nothing, but for
+# routine checking use the read-only verifier instead — it has no code path to a
+# mutation at all:
+#
+#   bash scripts/review/verify-0127-assessment-snapshot-pressure-post.sh
+#
 # WHY THIS IS A FILE AND NOT A PASTED BLOCK
 #
 # Two operator Terminal sessions were once killed by pasting a large runner into
@@ -270,8 +277,13 @@ select 'COLUMN_CONTRACT=' || string_agg(table_name||'.'||column_name, ' ' order 
 select 'RPC_NAMECOUNT=' || count(*)::text from pg_proc p join pg_namespace n on n.oid=p.pronamespace
  where n.nspname='public' and p.proname='get_company_assessment_snapshot_pressure_v1';
 select 'RPC_EXACT_SIGNATURE_PRESENT=' || (to_regprocedure('public.get_company_assessment_snapshot_pressure_v1(uuid)') is not null)::int::text;
+-- Overloads ONLY. The canonical signature is excluded by oid: an earlier
+-- revision aggregated every function of that name, so once 0127 was applied it
+-- reported the approved signature back as if it were an unexpected overload.
 select 'RPC_ALTERNATE_SIGNATURES=' || coalesce(string_agg(pg_get_function_identity_arguments(p.oid),' | ' order by p.oid),'(none)')
-  from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='get_company_assessment_snapshot_pressure_v1';
+  from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+ where n.nspname='public' and p.proname='get_company_assessment_snapshot_pressure_v1'
+   and p.oid is distinct from to_regprocedure('public.get_company_assessment_snapshot_pressure_v1(uuid)');
 select 'COMPANION_0126_NAMECOUNT=' || count(*)::text from pg_proc p join pg_namespace n on n.oid=p.pronamespace
  where n.nspname='public' and p.proname='get_company_retention_pressure_v1';
 select 'COMPANION_0126_SIGNATURE_PRESENT=' || (to_regprocedure('public.get_company_retention_pressure_v1(uuid)') is not null)::int::text;
@@ -451,7 +463,10 @@ fi
 
 if [ "$POST_OK" -eq 1 ]; then
   cat >"$T3.sql" <<'CONTRACT'
-select 'SECURITY_DEFINER_POST=' || p.prosecdef::text || ' VOLATILITY=' || p.provolatile
+-- `provolatile` is "char", which has no unambiguous || with text. Without the
+-- explicit cast Postgres raises 'operator is not unique: text || "char"' and
+-- ON_ERROR_STOP aborts the whole POST file — which is how this defect surfaced.
+select 'SECURITY_DEFINER_POST=' || p.prosecdef::text || ' VOLATILITY=' || p.provolatile::text
   from pg_proc p where p.oid='public.get_company_assessment_snapshot_pressure_v1(uuid)'::regprocedure;
 select 'SEARCH_PATH_SAFE_POST=' || (select (count(*)=1)::text from unnest(p.proconfig) cfg
    where cfg like 'search_path=%' and btrim(split_part(cfg,'=',2),'"')='')

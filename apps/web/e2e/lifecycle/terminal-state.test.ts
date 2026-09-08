@@ -9,7 +9,7 @@
  */
 
 import assert from "node:assert/strict"
-import { mkdtempSync, rmSync } from "node:fs"
+import { mkdtempSync, readFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { resolve } from "node:path"
 import test from "node:test"
@@ -26,6 +26,7 @@ import {
   COMPANY_RETENTION_TABLES,
   COMPANY_SCOPED_TABLES,
   PRIVILEGED_COUNT_TABLES,
+  UNCOUNTABLE_COMPANY_SCOPED_TABLES,
 } from "./retention-registry"
 import {
   AUTH_BAN_DURATION,
@@ -495,6 +496,176 @@ test("no table is both directly readable and routed through the boundary", () =>
       entry.access === "PRIVILEGED_COUNT_BOUNDARY",
       `${entry.table} has an inconsistent access mode`,
     )
+  }
+})
+
+// ---------------------------------------------------------------------------
+// E4-S1. The assessment footprint the next journey will create
+//
+// E2E-4 writes rows nine assessment tables never touched before. Five of them
+// were in NEITHER registry list, so the inspector could not name them and the
+// classifier could not weigh them. These tests pin what each one is for.
+// ---------------------------------------------------------------------------
+
+/** The five tables the E2E-4 discovery found missing from both lists. */
+const E2E4_DISCOVERED_TABLES = [
+  "assessment_answers",
+  "assessment_execution_snapshot_questions",
+  "assessment_execution_snapshot_sections",
+  "assessment_execution_snapshots",
+  "assessment_questions",
+] as const
+
+test("every table the E2E-4 discovery found is now known to the inspector", () => {
+  for (const table of E2E4_DISCOVERED_TABLES) {
+    assert.ok(
+      COMPANY_SCOPED_TABLES.includes(table),
+      `${table} will hold E2E-4 rows and must be nameable by the residual inspector`,
+    )
+  }
+})
+
+test("the assessment tables that block deletion are exactly the two readable ones", () => {
+  const intraTenant = COMPANY_RETENTION_TABLES.filter(
+    (entry) => entry.mechanism === "intra-tenant-restrict-fk",
+  ).map((entry) => entry.table)
+
+  assert.deepEqual([...intraTenant].sort(), ["assessment_answers", "assessment_responses"])
+
+  for (const entry of COMPANY_RETENTION_TABLES) {
+    if (entry.mechanism !== "intra-tenant-restrict-fk") continue
+    // A blocker the classifier cannot count is worse than no blocker: it makes
+    // every run unclassifiable. These two must be plain head-counts.
+    assert.equal(entry.access, "DIRECT_READ", `${entry.table} must be directly countable`)
+    assert.match(entry.evidence, /RESTRICT/, `${entry.table} must cite the RESTRICT edge`)
+  }
+})
+
+test("an assessment residual alone forces RETIRED, with nothing else retained", () => {
+  for (const table of ["assessment_responses", "assessment_answers"]) {
+    const probes = emptyProbes()
+    const index = probes.findIndex((p) => p.table === table)
+    assert.notEqual(index, -1, `${table} must be in the retention registry`)
+    probes[index] = { ...probes[index], rows: 1 }
+
+    const verdict = classifyTerminalStrategy(probes, ownership())
+    assert.ok("strategy" in verdict && verdict.strategy === "RETIRED", `${table} must block`)
+    assert.deepEqual(verdict.blockedBy.map((p) => p.table), [table])
+  }
+})
+
+test("assessment_questions is observable but is NOT claimed to block deletion", () => {
+  // It is only ever the TARGET of a RESTRICT edge (from assessment_answers and
+  // from the snapshot questions); its own foreign keys cascade or set null. The
+  // rows that do the blocking are counted in those tables, so listing this one
+  // as a blocker would inflate the registry with a claim the schema does not
+  // make. Observability and blocking are different jobs.
+  assert.ok(COMPANY_SCOPED_TABLES.includes("assessment_questions"))
+  assert.equal(
+    COMPANY_RETENTION_TABLES.some((entry) => entry.table === "assessment_questions"),
+    false,
+  )
+})
+
+test("the uncountable snapshot tables are listed, and kept out of the classifier", () => {
+  const uncountable = UNCOUNTABLE_COMPANY_SCOPED_TABLES.map((entry) => entry.table)
+
+  assert.deepEqual([...uncountable].sort(), [
+    "assessment_execution_snapshot_questions",
+    "assessment_execution_snapshot_sections",
+    "assessment_execution_snapshots",
+  ])
+
+  for (const entry of UNCOUNTABLE_COMPANY_SCOPED_TABLES) {
+    assert.match(entry.evidence, /0114:885/, "each entry must cite the revoke that causes this")
+    assert.ok(
+      COMPANY_SCOPED_TABLES.includes(entry.table),
+      `${entry.table} must still be nameable by the inspector`,
+    )
+    assert.equal(
+      COMPANY_RETENTION_TABLES.some((table) => table.table === entry.table),
+      false,
+      `${entry.table} cannot be a retention entry — see the next test for why`,
+    )
+  }
+})
+
+test("proof of why: one uncountable retention table would break every run", () => {
+  // Not an argument, a demonstration. `service_role` cannot SELECT these tables
+  // (0114:885), so as a retention entry each would probe `rows: null`, and the
+  // classifier turns a single unreadable table into `unavailable` for the WHOLE
+  // run — E2E-0 through E2E-3 included. Cleanup would then refuse to mutate
+  // anything. This is the cost of "just add the five tables to both lists".
+  const probes = emptyProbes()
+  probes.push({
+    table: "assessment_execution_snapshots",
+    mechanism: "intra-tenant-restrict-fk",
+    rows: null,
+    failure: { status: 403, message: "" },
+  })
+
+  const verdict = classifyTerminalStrategy(probes, ownership())
+  assert.ok(!("strategy" in verdict), "must refuse to classify")
+  assert.equal((verdict as { status: string }).status, "unavailable")
+})
+
+test("the pre-existing blocking mechanisms are untouched", () => {
+  const byMechanism = (mechanism: string) =>
+    COMPANY_RETENTION_TABLES.filter((entry) => entry.mechanism === mechanism)
+      .map((entry) => entry.table)
+      .sort()
+
+  assert.deepEqual(byMechanism("immutable-trigger"), [
+    "activity_events",
+    "approval_decisions",
+    "approval_domain_events",
+    "development_template_application_attempts",
+    "development_template_application_lineage",
+    "development_template_application_snapshots",
+    "notification_audit",
+    "notification_deliveries",
+    "notification_delivery_attempts",
+    "notification_events",
+    "notifications",
+    "organization_planning_snapshots",
+    "tenant_access_audit_events",
+  ])
+
+  assert.deepEqual(byMechanism("restrict-fk"), [
+    "development_template_applications",
+    "development_template_version_goals",
+    "development_template_versions",
+  ])
+})
+
+test("widening the registry cannot widen what teardown deletes", () => {
+  // Neither list is a delete predicate. Physical cleanup issues exactly one
+  // delete — the journalled company, by exact id — and lets the cascade do the
+  // rest; the registries only decide CLEANED vs RETIRED and what gets counted.
+  // Pinned structurally so a future "cleanup helper" cannot start reading them.
+  const fixture = readFileSync(resolve(__dirname, "..", "fixtures/tenant-fixture.ts"), "utf8")
+  const destroy = fixture.slice(fixture.indexOf("export async function destroyRunFixtures"))
+
+  const deleted = [...destroy.matchAll(/from\("([a-z_]+)"\)\.delete\(\)/g)].map((m) => m[1])
+  assert.deepEqual(deleted, ["companies"], "physical cleanup deletes companies and nothing else")
+  assert.match(destroy, /\.eq\("id", companyId\)/, "the one delete is by exact company id")
+
+  for (const list of ["COMPANY_RETENTION_TABLES", "COMPANY_SCOPED_TABLES"]) {
+    assert.ok(!fixture.includes(list), `${list} must never reach the destructive path`)
+  }
+})
+
+test("every retention table is counted for one exact company, never discovered", () => {
+  const retire = readFileSync(resolve(__dirname, "retire.ts"), "utf8")
+
+  // The direct probe is scoped by a full company id passed in, and the
+  // privileged one hands that same id to the counts-only boundary.
+  assert.match(retire, /\.eq\("company_id", companyId\)/)
+  assert.match(retire, /RETENTION_PRESSURE_RPC, \{ p_company_id: companyId \}/)
+
+  // No pattern matching anywhere near a retention read.
+  for (const forbidden of [/\.like\(/, /\.ilike\(/, /\.neq\("company_id"/, /\.not\("company_id"/]) {
+    assert.equal(forbidden.test(retire), false, `retire.ts must not use ${forbidden}`)
   }
 })
 

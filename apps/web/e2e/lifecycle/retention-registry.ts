@@ -32,7 +32,31 @@
  * exception-as-control-flow, but now with a wrong classification in front of it.
  */
 
-export type BlockingMechanism = "immutable-trigger" | "restrict-fk"
+/**
+ * `immutable-trigger` and `restrict-fk` both describe the edge from the table
+ * **straight to `companies`**: cascade-plus-refusing-trigger, or a plain
+ * `company_id references companies(id) on delete restrict`.
+ *
+ * `intra-tenant-restrict-fk` is a third shape, found while preparing E2E-4. The
+ * table's own `company_id` is `on delete cascade`, so the edge to `companies`
+ * looks harmless — but the row carries a `RESTRICT` foreign key to a *sibling*
+ * that cascades from the same company. Deleting the company therefore asks
+ * Postgres to remove parent and child in one statement while a `RESTRICT` edge
+ * runs between them, and `RESTRICT` is checked immediately rather than deferred
+ * to the end of the statement the way `NO ACTION` is.
+ *
+ * Whether that aborts depends on the order the referential-integrity triggers
+ * happen to fire, which is not part of any contract we can rely on. **This
+ * registry does not claim the delete fails; it declines to claim it succeeds.**
+ * Assuming the cascade unwinds cleanly would be inferring safety from the
+ * outcome we want, which is the precise habit this module was written to
+ * replace. A run holding these rows is classified RETIRED, and RETIRED is
+ * always a safe answer: it deletes nothing.
+ */
+export type BlockingMechanism =
+  | "immutable-trigger"
+  | "restrict-fk"
+  | "intra-tenant-restrict-fk"
 
 /**
  * How the harness is permitted to count rows in this table.
@@ -130,6 +154,33 @@ export const COMPANY_RETENTION_TABLES: readonly RetentionTable[] = Object.freeze
     access: "PRIVILEGED_COUNT_BOUNDARY",
     evidence: "0068:787 immutable; 0069:89 service_role SELECT revoked",
   },
+
+  // Assessment execution. Both cascade from `companies` on their own edge, and
+  // both carry RESTRICT foreign keys into the 0114 execution snapshot — the
+  // `intra-tenant-restrict-fk` shape documented above. They are the readable
+  // half of the assessment footprint: `service_role` keeps SELECT on them (0112
+  // and 0113 revoke only from public/anon/authenticated), so a plain head-count
+  // still works and no new boundary is needed.
+  //
+  // Between them they cover every E2E-4 shape that reaches generation: a
+  // response cannot exist without a snapshot (`assessment_execution_snapshot_id`
+  // is NOT NULL, 0114:306), and an answer cannot exist without a snapshot
+  // question (0114:314). See UNCOUNTABLE_COMPANY_SCOPED_TABLES for the one
+  // window this does not close.
+  {
+    table: "assessment_responses",
+    mechanism: "intra-tenant-restrict-fk",
+    access: "DIRECT_READ",
+    evidence: "0027:8 company cascade; 0114:308 RESTRICT into assessment_execution_snapshots",
+  },
+  {
+    table: "assessment_answers",
+    mechanism: "intra-tenant-restrict-fk",
+    access: "DIRECT_READ",
+    evidence:
+      "0028:1 company cascade; 0114:323 RESTRICT into assessment_execution_snapshot_questions, " +
+      "0114:333 RESTRICT into assessment_questions",
+  },
 ])
 
 /** Tables the counts-only boundary is responsible for. Derived, never hand-listed. */
@@ -163,8 +214,19 @@ export const COMPANY_SCOPED_TABLES: readonly string[] = Object.freeze([
   "approval_domain_events",
   "approval_requests",
   "approval_stages",
+  "assessment_answers",
   "assessment_cycle_participants",
   "assessment_cycles",
+  // The three 0114 snapshot tables are listed so the inspector SAYS SOMETHING
+  // about them. `service_role` has no SELECT here (0114:885), so the head-count
+  // answers 403 and the residual graph prints `UNREADABLE (…)`. That is the
+  // intended outcome: a named access boundary is a fact worth printing, and
+  // silence would read as "this tenant holds nothing" — the exact
+  // misinterpretation this registry exists to prevent.
+  "assessment_execution_snapshot_questions",
+  "assessment_execution_snapshot_sections",
+  "assessment_execution_snapshots",
+  "assessment_questions",
   "assessment_responses",
   "assessment_sections",
   "assessment_templates",
@@ -213,6 +275,55 @@ export const COMPANY_SCOPED_TABLES: readonly string[] = Object.freeze([
   "recruitment_job_openings",
   "seniority_levels",
   "teams",
+])
+
+/**
+ * Company-scoped tables the harness can LIST but cannot COUNT.
+ *
+ * `service_role` has no SELECT on the three 0114 execution-snapshot tables
+ * (`revoke all … from public,anon,authenticated,service_role`, 0114:885), and
+ * `BYPASSRLS` does not bypass table privileges. Two consequences, and it matters
+ * that they are different:
+ *
+ * **The inspector** may still name them — a `403` printed as `UNREADABLE` is
+ * information. They are therefore in `COMPANY_SCOPED_TABLES`.
+ *
+ * **The classifier** may not use them. `probeDirect` would return `rows: null`,
+ * and `classifyTerminalStrategy` turns any unreadable retention table into
+ * `unavailable` — refusing, correctly, to treat "I could not look" as "it is
+ * empty". Adding these three to `COMPANY_RETENTION_TABLES` today would make
+ * EVERY run unclassifiable, including E2E-0 through E2E-3, and cleanup would
+ * stop mutating anything at all. The counts-only boundary cannot rescue them
+ * either: `get_company_retention_pressure_v1` (0126) answers for a closed list
+ * of exactly the four development-template ledger tables, and 0126's own scope
+ * note already anticipated this — *"If it is ever added to the registry, it
+ * needs its own reviewed extension of this list."*
+ *
+ * So they are recorded here rather than added anywhere they would do harm.
+ *
+ * ## The window this leaves open, stated rather than hidden
+ *
+ * A run holding snapshot rows but ZERO `assessment_responses` and ZERO
+ * `assessment_answers` would not be seen. That shape is not reachable by an
+ * assessment journey: generation writes the snapshot and its responses in one
+ * RPC, and any journey that gets as far as a cycle has already created people
+ * and organization rows, each of which writes an `activity_events` row — itself
+ * a retention blocker. The window is real but empty; closing it properly needs
+ * an authorised migration extending 0126, which is out of scope here.
+ */
+export const UNCOUNTABLE_COMPANY_SCOPED_TABLES: readonly Readonly<{
+  table: string
+  evidence: string
+}>[] = Object.freeze([
+  { table: "assessment_execution_snapshots", evidence: "0114:885 service_role SELECT revoked" },
+  {
+    table: "assessment_execution_snapshot_sections",
+    evidence: "0114:885 service_role SELECT revoked",
+  },
+  {
+    table: "assessment_execution_snapshot_questions",
+    evidence: "0114:885 service_role SELECT revoked",
+  },
 ])
 
 /**

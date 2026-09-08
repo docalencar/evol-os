@@ -22,22 +22,45 @@
 #   PARTIALLY_APPLIED            -> fail closed, never db push
 #   UNDETERMINED                 -> fail closed, never db push
 #
-# THREE THINGS THAT DIFFER FROM THE 0126 RUNNER, DELIBERATELY
+# THIS RUNS AFTER THE MERGE, AND THAT IS PINNED BY ANCESTRY, NOT BY A SHA
 #
-# 1. The candidate is NOT on main yet. 0126 was promoted from a commit that was
-#    already `origin/main`, so its runner demanded HEAD == origin/main == an
-#    approved SHA. Here the migration lives on an unmerged branch, so identity is
-#    pinned to what is actually stable and meaningful: the CONTENT hash of the
-#    migration and of its pgTAP, the branch name, a clean tracked worktree, and
-#    `origin/main` sitting exactly where the branch was cut. A commit SHA cannot
-#    be pinned inside a tracked script that is itself part of that commit.
+# The governance order is: push -> PR -> CI -> human review -> merge ->
+# post-main CI -> promote. So Review must never receive 0127 before main has it.
 #
-#    CONSEQUENCE, STATED PLAINLY: once this runs, Review holds a migration that
-#    main does not. If the PR is later changed, 0127 is already recorded in
-#    Review's `schema_migrations` and CANNOT be edited into correctness — the fix
-#    would have to be a new 0128. That is why the local gate below is mandatory.
+# An earlier draft of this script enforced that by demanding
+# `origin/main == <the SHA main had when the branch was cut>`. That is exactly
+# backwards: it holds only BEFORE the merge and breaks the moment the merge
+# lands — the script would refuse at precisely the moment it is meant to be
+# used, and repairing it would need a second publication cycle for no reason.
 #
-# 2. The local pgTAP gate is required, not assumed. `supabase db reset &&
+# The correct proof is ancestry plus immutable content:
+#
+#   * `origin/main` is re-fetched here and HEAD must equal it, so the operator is
+#     demonstrably standing on canonical main and not on a branch, a stale
+#     checkout or a local experiment. Compared by SHA, so a detached HEAD at the
+#     same commit is equally acceptable;
+#   * the implementation commit must be an ANCESTOR of `origin/main`. Before the
+#     merge that is false and this script refuses; after the merge it is true for
+#     every future main, whatever the merge commit turns out to be. No future SHA
+#     has to be predicted, and no follow-up commit is needed;
+#   * the migration and its pgTAP must match pinned SHA256 content hashes. A
+#     merge cannot change file content, so these survive it untouched — and they
+#     are what the local pgTAP run actually validated.
+#
+# THE CIRCULARITY, AND HOW IT IS AVOIDED
+#
+# A tracked script cannot pin the commit that introduces it: the SHA does not
+# exist until the commit is written, and writing it changes the SHA. So this
+# script pins the IMPLEMENTATION commit — which does not contain this file, and
+# is therefore nameable without circularity — and verifies ITSELF by content
+# instead: the bytes being executed must equal the blob canonical main carries at
+# this path. That answers "am I the reviewed runner?" without the file ever
+# needing to know which commit added it. A locally edited runner mismatches and
+# stops.
+#
+# TWO THINGS THAT DIFFER FROM THE 0126 RUNNER, DELIBERATELY
+#
+# 1. The local pgTAP gate is required, not assumed. `supabase db reset &&
 #    supabase test db` is this repository's official database validation
 #    (CLAUDE.md, docs/engineering/database-standards.md) and it is cheap and
 #    fully reversible, unlike a Review promotion. It catches exactly the class of
@@ -46,7 +69,7 @@
 #    without `--local-pgtap-verified`, which is the operator asserting that gate
 #    passed on THIS migration content.
 #
-# 3. PRE baselines are measured, not pinned. The 0126 runner could hard-code ACL
+# 2. PRE baselines are measured, not pinned. The 0126 runner could hard-code ACL
 #    and RLS fingerprints because a prior read had produced them. Nothing has
 #    ever measured these three tables on Review, so inventing a constant would
 #    fail closed for the wrong reason. Phase A captures the fingerprints and
@@ -58,10 +81,12 @@
 
 set -uo pipefail   # NOT -e: every failure is handled explicitly and fails closed.
 
+# Content hashes survive a merge, so they are pinned. The commit below does NOT
+# contain this file, which is what makes naming it non-circular.
 APPROVED_MIGRATION_SHA="d2dabd5e6323c75bf6ac3d1c05fdf0db5a814628b0cef2ca73996e83e8d3e2ce"
 APPROVED_PGTAP_SHA="c2ea2263985e410af3f0a61cacbafb49123225aeb3d46fe8cd22bd3ecfafed2e"
-APPROVED_PARENT_MAIN="69f441d31ef99faadd31b5449659fa292e76a1b5"
-APPROVED_BRANCH="fix/e2e4-assessment-snapshot-count-boundary"
+APPROVED_IMPLEMENTATION_COMMIT="0a642f2b0e015a25abe33ed4f87fd626ac5bd849"
+RUNNER_PATH="scripts/review/promote-0127-assessment-snapshot-pressure.sh"
 
 MIGRATION_FILE="supabase/migrations/0127_create_assessment_snapshot_retention_pressure_boundary.sql"
 MIGRATION_BASENAME="0127_create_assessment_snapshot_retention_pressure_boundary.sql"
@@ -117,38 +142,71 @@ REPO_ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 cd "$REPO_ROOT" || { say "STOP: cannot reach repository root"; exit 1; }
 say "[0127] repo: $REPO_ROOT"
 
+# Refresh the remote-tracking ref first: every judgement below is about
+# canonical main, and a stale ref would answer about yesterday's main.
+if ! git fetch --no-tags origin main >>"$LOG" 2>&1; then
+  say "STOP: could not fetch origin/main — refusing to judge canonical state from a stale ref"; exit 1
+fi
+
 HEAD_SHA=$(git rev-parse HEAD 2>/dev/null)
 BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
-ORIGIN_SHA=$(git ls-remote origin main 2>/dev/null | cut -f1)
+ORIGIN_SHA=$(git rev-parse origin/main 2>/dev/null)
 MIG_SHA=$(shasum -a 256 "$MIGRATION_FILE" 2>/dev/null | cut -d' ' -f1)
 TAP_SHA=$(shasum -a 256 "$PGTAP_FILE" 2>/dev/null | cut -d' ' -f1)
-MIG_COMMITTED=$(git show "HEAD:$MIGRATION_FILE" 2>/dev/null | shasum -a 256 | cut -d' ' -f1)
-TAP_COMMITTED=$(git show "HEAD:$PGTAP_FILE" 2>/dev/null | shasum -a 256 | cut -d' ' -f1)
+RUN_SHA=$(shasum -a 256 "$REPO_ROOT/$RUNNER_PATH" 2>/dev/null | cut -d' ' -f1)
+MIG_CANON=$(git show "origin/main:$MIGRATION_FILE" 2>/dev/null | shasum -a 256 | cut -d' ' -f1)
+TAP_CANON=$(git show "origin/main:$PGTAP_FILE" 2>/dev/null | shasum -a 256 | cut -d' ' -f1)
+RUN_CANON=$(git show "origin/main:$RUNNER_PATH" 2>/dev/null | shasum -a 256 | cut -d' ' -f1)
 DIRTY=$(git status --porcelain --untracked-files=no | wc -l | tr -d ' ')
 
-if [ "$BRANCH" != "$APPROVED_BRANCH" ]; then
-  say "STOP: branch is $BRANCH, approved is $APPROVED_BRANCH"; exit 1
-fi
 if [ "$DIRTY" != "0" ]; then
   say "STOP: tracked worktree is not clean ($DIRTY change(s)) — refusing to promote an unrecorded file"; exit 1
 fi
-if [ "$ORIGIN_SHA" != "$APPROVED_PARENT_MAIN" ]; then
-  say "STOP: origin/main is $ORIGIN_SHA, approved parent is $APPROVED_PARENT_MAIN"
-  say "      main moved since this branch was cut. Re-audit before promoting."
+
+# Standing on canonical main. Compared by SHA rather than by branch name, so a
+# detached checkout of the same commit is equally acceptable and a feature
+# branch never is.
+if [ -z "$ORIGIN_SHA" ]; then
+  say "STOP: origin/main could not be resolved"; exit 1
+fi
+if [ "$HEAD_SHA" != "$ORIGIN_SHA" ]; then
+  say "STOP: HEAD is $HEAD_SHA but origin/main is $ORIGIN_SHA."
+  say "      Promotion runs from canonical main only. Check out main and pull first."
   exit 1
 fi
+
+# The slice is actually IN main. False before the merge, true for every main
+# after it — which is what removes the need to predict the merge SHA.
+if ! git merge-base --is-ancestor "$APPROVED_IMPLEMENTATION_COMMIT" origin/main 2>/dev/null; then
+  say "STOP: $APPROVED_IMPLEMENTATION_COMMIT is not an ancestor of origin/main."
+  say "      0127 has not been merged yet. Review must never receive a migration"
+  say "      that main does not already have."
+  exit 1
+fi
+
 if [ "$MIG_SHA" != "$APPROVED_MIGRATION_SHA" ]; then
   say "STOP: migration sha is $MIG_SHA, approved is $APPROVED_MIGRATION_SHA"; exit 1
 fi
 if [ "$TAP_SHA" != "$APPROVED_PGTAP_SHA" ]; then
   say "STOP: pgTAP sha is $TAP_SHA, approved is $APPROVED_PGTAP_SHA"; exit 1
 fi
-if [ "$MIG_SHA" != "$MIG_COMMITTED" ] || [ "$TAP_SHA" != "$TAP_COMMITTED" ]; then
-  say "STOP: working tree differs from HEAD for the migration or its pgTAP"; exit 1
+if [ "$MIG_SHA" != "$MIG_CANON" ] || [ "$TAP_SHA" != "$TAP_CANON" ]; then
+  say "STOP: working tree differs from origin/main for the migration or its pgTAP"; exit 1
 fi
-say "[0127] identity OK  head=$HEAD_SHA  branch=$BRANCH"
-say "[0127] migration and pgTAP content hashes match the approved candidate"
-say "[0127] NOTE: after this runs, Review holds 0127 and main does not, until the PR merges."
+
+# Self-check by content, never by commit SHA — see the circularity note above.
+if [ -z "$RUN_CANON" ]; then
+  say "STOP: $RUNNER_PATH is not present in origin/main"; exit 1
+fi
+if [ "$RUN_SHA" != "$RUN_CANON" ]; then
+  say "STOP: the runner being executed is not the version canonical main carries."
+  say "      running=$RUN_SHA canonical=$RUN_CANON"
+  exit 1
+fi
+
+say "[0127] identity OK  head=$HEAD_SHA (== origin/main)  branch=$BRANCH"
+say "[0127] $APPROVED_IMPLEMENTATION_COMMIT is an ancestor of origin/main — 0127 is merged"
+say "[0127] migration, pgTAP and runner content all match canonical main"
 
 # --------------------------------------------------------------------------
 # credential

@@ -44,6 +44,26 @@ export async function createAssessmentCycleRepository() {
         .order("created_at", { ascending: false })
     },
 
+    /**
+     * The cycles behind a known set of ids.
+     *
+     * Exists so an evaluator who is not an administrator can be told WHICH
+     * assessment is waiting for them. The caller passes only the cycles its own
+     * open responses point at, so the result is already narrower than the
+     * "members can read assessment cycles" policy (0021) would allow — this
+     * method widens nothing, and the policy remains the boundary.
+     */
+    async findByIds(companyId: string, assessmentCycleIds: string[]) {
+      return supabase
+        .from("assessment_cycles")
+        .select("*")
+        .eq("company_id", companyId)
+        .in("id", assessmentCycleIds)
+        .is("deleted_at", null)
+        .order("start_date", { ascending: false })
+        .order("created_at", { ascending: false })
+    },
+
     async findById(
       companyId: string,
       assessmentCycleId: string

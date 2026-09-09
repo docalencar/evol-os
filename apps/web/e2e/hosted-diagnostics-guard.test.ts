@@ -132,6 +132,12 @@ const SUBMIT_CONTROLS: readonly string[] = [
   "Criar pergunta",
   "Criar ciclo",
   "Adicionar selecionados",
+  // Assessment execution (spec 12). The confirmation button inside the submit
+  // dialog is the control that actually posts, so it carries the same contract.
+  // `Gerar avaliações` is deliberately NOT here: it is a plain button with no
+  // dialog to close, and spec 12's own guard covers its success-then-readback
+  // ordering instead.
+  "Confirmar envio",
 ]
 
 /** Executable lines of a spec, comments and blanks removed. */

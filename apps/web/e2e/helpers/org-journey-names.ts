@@ -71,3 +71,17 @@ export function assessmentQuestionText(runId: string): string {
 export function assessmentCycleName(runId: string): string {
   return `E2E Cycle ${runId}`
 }
+
+/**
+ * Assessment execution journey (spec 12).
+ *
+ * A SECOND cycle over the same template, and it has to be a second one. The
+ * cycle spec 11 builds is created with the wizard's default privacy, "Sem
+ * acesso aos resultados", and `assessment_visibility` cannot be edited once a
+ * cycle leaves `draft` — so on that cycle the assessed person is never shown a
+ * result, by correct product design. Proving that they can see it needs a cycle
+ * that was configured to disclose from the start.
+ */
+export function assessmentResultCycleName(runId: string): string {
+  return `E2E Result Cycle ${runId}`
+}

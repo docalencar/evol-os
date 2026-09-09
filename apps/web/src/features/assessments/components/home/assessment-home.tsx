@@ -16,6 +16,7 @@ import {
   AssessmentTemplateOverviewCard,
   AssessmentTemplateTable,
   presentAssessmentHome,
+  presentAssessmentPriority,
   presentAssessments,
   type AssessmentCycle,
   type AssessmentTemplate,
@@ -59,8 +60,24 @@ export function AssessmentHome({
     </div>
   )
 
+  // An evaluator who is not an administrator gets exactly two things: the work
+  // that is waiting for them, and their own results. Nothing administrative —
+  // no catalog, no cycle management, no participants, no other evaluator's
+  // response. The cycles reaching this branch are already restricted by the page
+  // to the ones this person's own open responses point at, and the priority card
+  // renders nothing at all when there is no such cycle, so an evaluator with
+  // nothing pending sees the same page they saw before.
   if (!canManageAssessments) {
-    return <div className="space-y-8">{resultDirectorySection}</div>
+    const pendingWork = presentAssessmentPriority(
+      presentAssessments(cycles, evaluatorResponses)
+    )
+
+    return (
+      <div className="space-y-8">
+        <AssessmentPriorityCard priority={pendingWork} />
+        {resultDirectorySection}
+      </div>
+    )
   }
 
   const assessments =

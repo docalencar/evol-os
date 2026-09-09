@@ -124,6 +124,14 @@ const SUBMIT_CONTROLS: readonly string[] = [
   "Aplicar",
   "Salvar expectativa",
   "Salvar alterações",
+  // Assessment catalog and cycle (spec 11). Same contract: each of these is the
+  // control that actually posts, so each must prove the product's own success
+  // message and its dialog closing before anything waits on a list.
+  "Criar modelo",
+  "Criar seção",
+  "Criar pergunta",
+  "Criar ciclo",
+  "Adicionar selecionados",
 ]
 
 /** Executable lines of a spec, comments and blanks removed. */

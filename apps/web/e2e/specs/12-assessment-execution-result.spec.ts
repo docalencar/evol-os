@@ -139,10 +139,56 @@ async function enterAs(page: Page, role: "admin" | "employee"): Promise<void> {
  * that was never on screen to be found.
  */
 const ASSESSMENTS_HOME_HEADING = "Avaliações de desempenho"
+const ASSESSMENTS_HOME_PATH = "/app/assessments"
 
+function isOn(page: Page, path: string): boolean {
+  return new URL(page.url()).pathname === path
+}
+
+/**
+ * A SECOND hosted run, 260910160422-9ffd9e, failed on the same navigation — this
+ * time saying so honestly: the H1 assertion above timed out at 30s with the
+ * cycle-detail URL in the address bar and the assessments home still rendered.
+ * The trace explains why, and it is not the destination.
+ *
+ * `openAssessmentsHome` was being called from `/app/assessments` itself. The
+ * sidebar click therefore started an App Router transition to the page already
+ * on screen, and NEITHER of this helper's two waits can observe such a
+ * transition: `waitForURL` returned in 0.00s with `not waiting, "load" event
+ * already fired`, and the H1 assertion returned in 0.00s because that H1 was
+ * already rendered by the page being replaced. 36ms later the cycle link was
+ * clicked, so two client navigations ran at once (`/app/assessments?_rsc=…` at
+ * 16:11:11.374 and `…/cycles/e4259ae5…?_rsc=…` at 16:11:11.392), on top of the
+ * twelve-route prefetch burst the preceding reload had just triggered.
+ *
+ * What followed: both RSC responses returned 200, the router pushed the cycle
+ * URL, React fetched the `cycles/[id]` page chunk — and then the client went
+ * completely silent for 29.3s. No further request, DOM byte-identical, frames
+ * pixel-identical. The router ended with the cycle URL and the home's tree, and
+ * scheduled no work to reconcile them.
+ *
+ * The correlation is exhaustive. Every other navigation-helper call in the whole
+ * suite — all of spec 11's, including the cycle detail it opens successfully in
+ * this very run, and every other one here — runs straight after a login, from
+ * `/app`, so it is always a real navigation with a real settle. This call site
+ * was the only one that re-navigated to the page it was already on, and it is
+ * the only navigation that has ever failed: twice, in both hosted runs.
+ *
+ * So the helper stops issuing a navigation that is not one. Every genuine
+ * navigation still goes through the sidebar entry, and the destination is still
+ * proven by the H1 rather than the URL.
+ */
 async function openAssessmentsHome(page: Page): Promise<void> {
-  await page.getByRole("link", { name: "Avaliações" }).click()
-  await page.waitForURL(/\/app\/assessments(\/|\?|$)/, { timeout: 30_000 })
+  if (!isOn(page, ASSESSMENTS_HOME_PATH)) {
+    await page.getByRole("link", { name: "Avaliações" }).click()
+
+    // The home itself, not anything under it. The prefix form of this pattern
+    // is already satisfied by `/app/assessments/cycles/<id>`, so leaving a cycle
+    // detail would resolve it instantly and hand back an unsettled page — the
+    // same hole this helper just closed, one route deeper.
+    await page.waitForURL(/\/app\/assessments(\?|$)/, { timeout: 30_000 })
+  }
+
   await expect(
     page.getByRole("heading", { level: 1, name: ASSESSMENTS_HOME_HEADING })
   ).toBeVisible({ timeout: 30_000 })

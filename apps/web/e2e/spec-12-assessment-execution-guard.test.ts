@@ -242,6 +242,49 @@ test("the cycle detail is proven by the run's own cycle name", () => {
   )
 })
 
+/**
+ * STRUCTURAL: spec 12 never re-navigates to the page it is already on.
+ *
+ * Hosted runs 260910000901-890ae9 and 260910160422-9ffd9e failed on the same
+ * navigation, and the second trace named the cause. `openAssessmentsHome` was
+ * called from `/app/assessments`, so its sidebar click started a transition to
+ * the page already on screen — a transition neither of its waits can see: the
+ * URL never changes, and the H1 it asserts is already rendered by the page being
+ * replaced. Both returned in 0.00s, the cycle link was clicked 36ms later, and
+ * two client navigations ran at once. The router finished holding the cycle URL
+ * over the home's tree, silent, with nothing left to reconcile.
+ *
+ * Every other navigation-helper call in the suite runs from `/app` right after a
+ * login and is a real navigation. This was the only one that was not, and it is
+ * the only one that has ever failed.
+ */
+test("spec 12 never re-navigates to the page it is already on", () => {
+  const start = source.indexOf("async function openAssessmentsHome")
+  assert.notEqual(start, -1, "spec 12 must still reach the assessments home through a helper")
+  const body = source.slice(start, source.indexOf("\n}", start))
+
+  assert.match(
+    body,
+    /if \(!isOn\(page, ASSESSMENTS_HOME_PATH\)\) \{[\s\S]*?name: "Avaliações" \}\)\.click\(\)/,
+    "the sidebar click must be skipped when the page is already the assessments home"
+  )
+  assert.match(source, /new URL\(page\.url\(\)\)\.pathname === path/)
+})
+
+test("the assessments home wait cannot be satisfied by a page under it", () => {
+  // `/app/assessments(\/|\?|$)` matches `/app/assessments/cycles/<id>` too, so
+  // leaving a cycle detail for the home would resolve it before the transition
+  // even started. Written as literal text because the pattern is what is pinned.
+  assert.ok(
+    source.includes("assessments(\\?|$)"),
+    "the home wait must match the home itself"
+  )
+  assert.ok(
+    !source.includes("assessments(\\/|\\?|$)"),
+    "the prefix form of the home wait is satisfied by every page under the home"
+  )
+})
+
 test("spec 12 stays inside its slice", () => {
   // Tenant isolation and non-administrative authorization are E4-S4.
   assert.doesNotMatch(source, /onboardingCompany|resolveAndJournalOnboardingTenant/)

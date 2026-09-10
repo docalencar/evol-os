@@ -181,6 +181,67 @@ test("the assessed person's own result is actually read back", () => {
   assert.match(body, /RENDERED_SCORE/)
 })
 
+/**
+ * STRUCTURAL: a URL is never the last word on a navigation.
+ *
+ * Hosted run 260910000901-890ae9 failed here. `waitForURL` was satisfied on the
+ * cycle-detail URL while the document was still the assessments home — App
+ * Router pushes the URL and keeps the previous tree on screen until the
+ * destination resolves, and there is no `loading.tsx` under `app/assessments`
+ * to interrupt that. The spec then drove "Adicionar participantes" against a
+ * page that had never rendered, and reported a missing product control.
+ *
+ * The class, not that instance: after any `waitForURL`, the next thing spec 12
+ * does must be an assertion, never an action. Written on indices rather than
+ * line windows because these waits span several lines.
+ */
+test("no navigation in spec 12 is trusted on the URL alone", () => {
+  const offenders: string[] = []
+  const wait = /page\.waitForURL\(/g
+
+  for (let match = wait.exec(source); match; match = wait.exec(source)) {
+    const after = source.slice(match.index + match[0].length)
+    const assertAt = after.indexOf("expect(")
+    const actAt = after.indexOf(".click()")
+
+    if (actAt !== -1 && (assertAt === -1 || actAt < assertAt)) {
+      const line = source.slice(0, match.index).split("\n").length
+      offenders.push(
+        `line ${line}: the first thing after this waitForURL is ${after
+          .slice(0, actAt + 8)
+          .split("\n")
+          .filter((text) => text.trim() !== "")
+          .pop()
+          ?.trim()}`
+      )
+    }
+  }
+
+  assert.deepEqual(
+    offenders,
+    [],
+    `A URL proves the router changed its mind, not that the destination is on ` +
+      `screen. Assert the surface — the H1 the page renders — before acting on ` +
+      `it, or a pending navigation is silently charged to the next action's ` +
+      `timeout and reported as a missing control:\n` + offenders.join("\n")
+  )
+})
+
+test("the cycle detail is proven by the run's own cycle name", () => {
+  // Surface is not enough on its own: any heading assertion would satisfy the
+  // structural guard above. The cycle page's H1 is `cycle.name`, so this is
+  // what separates "a cycle rendered" from "OUR cycle rendered".
+  const start = source.indexOf("async function openResultCycleDetail")
+  assert.notEqual(start, -1, "spec 12 must still reach the cycle detail through a helper")
+  const body = source.slice(start, source.indexOf("\n}", start))
+
+  assert.match(
+    body,
+    /getByRole\("heading", \{ level: 1, name: assessmentResultCycleName\(manifest\(\)\.runId\) \}\)/,
+    "the helper must prove the destination H1 is this run's cycle"
+  )
+})
+
 test("spec 12 stays inside its slice", () => {
   // Tenant isolation and non-administrative authorization are E4-S4.
   assert.doesNotMatch(source, /onboardingCompany|resolveAndJournalOnboardingTenant/)

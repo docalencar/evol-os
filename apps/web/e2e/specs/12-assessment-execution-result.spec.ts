@@ -109,15 +109,56 @@ async function enterAs(page: Page, role: "admin" | "employee"): Promise<void> {
   await expectAuthenticatedShell(page)
 }
 
+/**
+ * A URL is not an arrival — the destination surface is.
+ *
+ * Hosted run 260910000901-890ae9 lost this spec to that distinction. The trace
+ * shows the cycle link clicked correctly (`href` =
+ * `/app/assessments/cycles/d8eee5cc-…`), `waitForURL` satisfied 1.34s later, and
+ * then the document sitting on the assessments HOME — same DOM, same pixels —
+ * for the whole 15s that the next click spent looking for "Adicionar
+ * participantes". Nothing was broken about the button: the cycle page had not
+ * rendered at all.
+ *
+ * That is structural, not incidental. There is no `loading.tsx` anywhere under
+ * `app/assessments`, so an App Router client navigation keeps the previous tree
+ * on screen until the destination resolves in full, while the URL has already
+ * been pushed. `waitForURL` therefore cannot distinguish "arrived" from "still
+ * pending", and the same trace shows the weaker case too: the wait inside
+ * `openAssessmentsHome` returned in 0.00s with `not waiting, "load" event
+ * already fired`, because the page was on that URL before the click.
+ *
+ * So both helpers now prove the surface they claim to have reached, by the H1
+ * the product renders (`PageHeader`). The budget is the navigation budget these
+ * waits already used, not the 15s action budget the failure silently borrowed;
+ * the action timeout is untouched.
+ *
+ * What this does NOT claim: it does not make a slow destination fast. If the
+ * cycle page again takes longer than the navigation budget, this fails — but it
+ * fails saying the cycle detail never rendered, instead of blaming a control
+ * that was never on screen to be found.
+ */
+const ASSESSMENTS_HOME_HEADING = "Avaliações de desempenho"
+
 async function openAssessmentsHome(page: Page): Promise<void> {
   await page.getByRole("link", { name: "Avaliações" }).click()
   await page.waitForURL(/\/app\/assessments(\/|\?|$)/, { timeout: 30_000 })
+  await expect(
+    page.getByRole("heading", { level: 1, name: ASSESSMENTS_HOME_HEADING })
+  ).toBeVisible({ timeout: 30_000 })
 }
 
 async function openResultCycleDetail(page: Page): Promise<void> {
   await openAssessmentsHome(page)
   await page.getByRole("link", { name: assessmentResultCycleName(manifest().runId) }).click()
   await page.waitForURL(/\/app\/assessments\/cycles\/[0-9a-f-]{36}(\?|$)/, { timeout: 30_000 })
+
+  // Identity, not just shape: the H1 is `cycle.name`, so this proves the run's
+  // OWN cycle rendered — a different cycle, or the home still on screen behind
+  // a changed URL, both fail here rather than three lines later.
+  await expect(
+    page.getByRole("heading", { level: 1, name: assessmentResultCycleName(manifest().runId) })
+  ).toBeVisible({ timeout: 30_000 })
 }
 
 /** Informações -> Cronograma -> Participantes -> Privacidade -> Revisão. */
@@ -296,6 +337,14 @@ test.describe("an assessment is answered, submitted and scored through the real 
     await page.waitForURL(/\/app\/assessments\/responses\/[0-9a-f-]{36}(\?|$)/, {
       timeout: 30_000,
     })
+
+    // The same shape that failed in the setup test: a URL wait followed straight
+    // by a mutation on a surface nobody proved was there. Property 9 already
+    // waits for this workspace before touching it; property 10 has to as well,
+    // or a pending navigation is charged to the submit button's action budget.
+    await expect(
+      page.getByRole("radiogroup", { name: "Escala de resposta" })
+    ).toBeVisible({ timeout: 30_000 })
 
     await page.getByRole("button", { name: "Enviar avaliação" }).click()
     await expect(page.getByRole("heading", { name: SUBMIT_CONFIRM_HEADING })).toBeVisible({

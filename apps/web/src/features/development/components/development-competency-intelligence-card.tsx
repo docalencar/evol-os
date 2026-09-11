@@ -5,10 +5,10 @@ import {
   DashboardEmptyState,
   DashboardSection,
 } from "@/components/dashboard"
-import type { DashboardCompetencyDevelopment } from "@/features/dashboard-read/types/dashboard-competency-development"
+import type { DashboardCompetencyIntelligence } from "@/features/dashboard-read/types/dashboard-competency-development"
 
 type DevelopmentCompetencyIntelligenceCardProps = Readonly<{
-  intelligence: DashboardCompetencyDevelopment
+  intelligence: DashboardCompetencyIntelligence
 }>
 
 const UNAVAILABLE_LABELS = {
@@ -21,7 +21,26 @@ const UNAVAILABLE_LABELS = {
 export function DevelopmentCompetencyIntelligenceCard({
   intelligence,
 }: DevelopmentCompetencyIntelligenceCardProps) {
-  const unavailable = intelligence.people.filter(
+  // Not authorized is stated, never rendered as zeros.
+  if (intelligence.status === "forbidden") {
+    return (
+      <DashboardSection
+        title="Inteligência de competências"
+        description="Visão factual das expectativas de cargo e senioridade para orientar o desenvolvimento."
+      >
+        <DashboardCard>
+          <p className="text-sm text-slate-500">
+            Esta visão consolidada da empresa está disponível apenas para
+            administradores. Nenhum número é exibido aqui porque nenhum foi
+            consultado — o que não significa ausência de dados.
+          </p>
+        </DashboardCard>
+      </DashboardSection>
+    )
+  }
+
+  const { development } = intelligence
+  const unavailable = development.people.filter(
     (person) => person.assignmentState !== "active_assignment_with_expectations",
   )
 
@@ -32,13 +51,13 @@ export function DevelopmentCompetencyIntelligenceCard({
     >
       <DashboardCard>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Summary label="Deficiência" value={intelligence.deficiencies} icon={<AlertTriangle size={16} />} />
-          <Summary label="Atende" value={intelligence.meets} icon={<CheckCircle2 size={16} />} />
-          <Summary label="Supera" value={intelligence.exceeds} icon={<TrendingUp size={16} />} />
-          <Summary label="Não avaliada" value={intelligence.unassessed} icon={<CircleHelp size={16} />} />
+          <Summary label="Deficiência" value={development.deficiencies} icon={<AlertTriangle size={16} />} />
+          <Summary label="Atende" value={development.meets} icon={<CheckCircle2 size={16} />} />
+          <Summary label="Supera" value={development.exceeds} icon={<TrendingUp size={16} />} />
+          <Summary label="Não avaliada" value={development.unassessed} icon={<CircleHelp size={16} />} />
         </div>
 
-        {intelligence.priorities.length === 0 ? (
+        {development.priorities.length === 0 ? (
           <div className="mt-6">
             <DashboardEmptyState
               title="Nenhuma deficiência avaliada"
@@ -48,7 +67,7 @@ export function DevelopmentCompetencyIntelligenceCard({
           </div>
         ) : (
           <div className="mt-6 divide-y divide-slate-100">
-            {intelligence.priorities.slice(0, 5).map((item) => (
+            {development.priorities.slice(0, 5).map((item) => (
               <div key={`${item.personId}:${item.competencyId}`} className="flex items-center justify-between gap-4 py-3">
                 <div className="min-w-0">
                   <p className="font-medium text-slate-900">{item.personName}</p>

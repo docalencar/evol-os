@@ -47,10 +47,13 @@ test("loads all dashboard projections with server-supplied tenant scope", async 
   const { calls, database } = createDatabase(() => ({ data: [], error: null }))
   const repository = createTenantDashboardReadRepository(database)
 
-  const result = await repository.load("11111111-1111-4111-8111-111111111111", 20)
+  const result = await repository.load("11111111-1111-4111-8111-111111111111", {
+    activityLimit: 20,
+    competencyIntelligence: "authorized",
+  })
 
   assert.deepEqual(Object.keys(result), [
-    "organization", "people", "development", "competencyCoverages", "recruitment", "activity",
+    "organization", "people", "development", "competencyIntelligence", "recruitment", "activity",
   ])
   assert.deepEqual(calls.map((call) => call.name), expectedRpcs)
   assert.deepEqual(calls[0].parameters, {
@@ -89,6 +92,7 @@ test("accepts valid empty tenants and fails closed for malformed RPC rows", asyn
   await assert.doesNotReject(
     createTenantDashboardReadRepository(valid.database).load(
       "11111111-1111-4111-8111-111111111111",
+      { competencyIntelligence: "authorized" },
     ),
   )
 
@@ -100,6 +104,7 @@ test("accepts valid empty tenants and fails closed for malformed RPC rows", asyn
   await assert.rejects(
     createTenantDashboardReadRepository(malformed.database).load(
       "11111111-1111-4111-8111-111111111111",
+      { competencyIntelligence: "authorized" },
     ),
     (error: unknown) =>
       error instanceof TenantDashboardReadError
@@ -119,6 +124,7 @@ test("does not collapse authorization or PostgREST failures into empty data", as
   await assert.rejects(
     createTenantDashboardReadRepository(database).load(
       "11111111-1111-4111-8111-111111111111",
+      { competencyIntelligence: "authorized" },
     ),
     (error: unknown) =>
       error instanceof TenantDashboardReadError

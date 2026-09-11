@@ -14,7 +14,7 @@ import {
   createTenantDashboardReadRepository,
   type TenantDashboardReadRows,
 } from "../repositories/tenant-dashboard-read-repository"
-import type { DashboardCompetencyDevelopment } from "../types/dashboard-competency-development"
+import type { DashboardCompetencyIntelligence } from "../types/dashboard-competency-development"
 
 export type DashboardJobOpening = Pick<
   JobOpening,
@@ -34,7 +34,7 @@ export type AppDashboardReadModel = Readonly<{
   health: WorkforceHealth
   talentOverview: TalentOverview
   organization: OrganizationSummary
-  competencyDevelopment: DashboardCompetencyDevelopment
+  competencyDevelopment: DashboardCompetencyIntelligence
   jobOpenings: DashboardJobOpening[]
   recruitmentOptions: Readonly<{
     departments: Readonly<{ id: string; name: string }>[]
@@ -85,13 +85,21 @@ export function presentAppDashboardReadModel(
       positions: positions.length,
       teams: teams.length,
     },
-    competencyDevelopment: presentDashboardCompetencyDevelopment(
-      rows.people.map((person) => ({
-        personId: person.person_id,
-        personName: person.full_name,
-      })),
-      rows.competencyCoverages,
-    ),
+    // Forbidden is carried through as itself. Presenting it as a zeroed
+    // `DashboardCompetencyDevelopment` would be indistinguishable from a company
+    // with no gaps at all.
+    competencyDevelopment: rows.competencyIntelligence.status === "ok"
+      ? Object.freeze({
+        status: "ok" as const,
+        development: presentDashboardCompetencyDevelopment(
+          rows.people.map((person) => ({
+            personId: person.person_id,
+            personName: person.full_name,
+          })),
+          rows.competencyIntelligence.coverages,
+        ),
+      })
+      : Object.freeze({ status: "forbidden" as const }),
     jobOpenings: rows.recruitment.map((row) => ({
       id: row.job_opening_id,
       title: row.title,
@@ -153,9 +161,21 @@ export function presentAppDashboardReadModel(
   })
 }
 
-export async function getAppDashboardReadModel(companyId: string): Promise<AppDashboardReadModel> {
+/**
+ * `canReadCompetencyIntelligence` is required and comes from the caller's
+ * server-resolved membership role (`isAdministrativeRole`), which holds the same
+ * `owner`/`admin`/`hr` set the 0124 boundary enforces. It narrows what is asked
+ * for; it grants nothing, and the database remains the authority.
+ */
+export async function getAppDashboardReadModel(
+  companyId: string,
+  canReadCompetencyIntelligence: boolean,
+): Promise<AppDashboardReadModel> {
   const database = await createServerDatabase()
   const repository = createTenantDashboardReadRepository(database)
-  const rows = await repository.load(companyId, 20)
+  const rows = await repository.load(companyId, {
+    activityLimit: 20,
+    competencyIntelligence: canReadCompetencyIntelligence ? "authorized" : "forbidden",
+  })
   return presentAppDashboardReadModel(companyId, rows)
 }

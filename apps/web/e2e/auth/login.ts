@@ -48,6 +48,16 @@ export async function loginThroughUi(page: Page, user: SyntheticUser): Promise<v
   await page.waitForURL(/\/app(\/|$)/, { timeout: 30_000 })
 }
 
+/** End the current browser session through the product and prove the login boundary. */
+export async function signOutThroughUi(page: Page): Promise<void> {
+  await Promise.all([
+    page.waitForURL(/\/login(\?|$)/, { timeout: 30_000 }),
+    page.getByRole("button", { name: /^Sair$/ }).click(),
+  ])
+
+  await expect(page.getByRole("heading", { name: /Entrar na Evol/i })).toBeVisible()
+}
+
 /**
  * Log in as a user with no membership and wait for the app's own redirect into
  * first-access onboarding. The redirect is the product's, not the test's: `/app`

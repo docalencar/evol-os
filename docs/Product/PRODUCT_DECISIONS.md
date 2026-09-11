@@ -1120,13 +1120,123 @@ do reader normal, purpose-bound e auditada. Esta decisão não autoriza sua cria
 Attachments e mentions permanecem fora do contrato enquanto não houver consumer
 navegável e matriz de autorização específica aprovada.
 
+## Feedback de Avaliação no MVP
+
+O recorte de Feedback da jornada MVP transforma uma resposta finalizada de
+avaliação do gestor em uma conversa privada entre quem avaliou e quem foi
+avaliado. Ele usa somente `type = 'feedback'`; `feedforward`, `recognition`,
+`check_in` e `one_on_one` permanecem capacidades distintas e fora desta jornada.
+
+A origem canônica é uma `assessment_response`, identificada por
+`assessment_response_id`. O campo histórico `assessment_id` não representa essa
+origem, e `public.feedbacks` não participa da jornada nem recebe dual-write.
+
+Uma response é elegível quando:
+
+- pertence à mesma empresa e está em estado `submitted` ou `completed`;
+- sua perspectiva é `manager`;
+- possui `evaluator_id` e `employee_id` válidos no mesmo tenant;
+- o ator autenticado corresponde ao `evaluator_id` da response.
+
+O `evaluator_id` determina o sender e o `employee_id` determina o receiver. Ambos
+são derivados da response e do contexto confiável; o caller não escolhe essas
+identidades. Ser owner, admin, HR ou manager sem essa participação como evaluator
+não autoriza iniciar a conversa.
+
+## Criação e visibility
+
+Feedback de Avaliação nasce em `awaiting_acknowledgement`, com
+`visibility = 'participants'`. Type, status inicial, visibility, sender, receiver
+e empresa são definidos pelo contrato; não são escolhas livres do caller.
+
+A criação compreende uma única decisão de negócio: thread, mensagem inicial
+obrigatória e auditoria são persistidas atomicamente, ou nenhuma delas é
+persistida. Uma thread sem mensagem inicial não constitui Feedback de Avaliação
+válido.
+
+`visibility = 'management'` permanece um valor técnico histórico e não concede
+privilégio adicional. Esta jornada não cria threads `management` ou `hr` e não
+remove valores existentes do modelo. A semântica já aprovada para outras threads
+`visibility = 'hr'` permanece inalterada.
+
+## Participantes e mutações
+
+Somente sender e receiver participam da conversa. Ambos podem responder enquanto
+o estado for `awaiting_acknowledgement` ou `acknowledged`; responder não altera o
+estado.
+
+Somente o receiver pode confirmar recebimento. A confirmação representa ciência
+formal e realiza `awaiting_acknowledgement → acknowledged`. Ela não é pré-condição
+para responder ou encerrar. Repetir semanticamente a mesma confirmação não pode
+produzir uma segunda confirmação funcional; a arquitetura definirá o mecanismo
+idempotente.
+
+Sender e receiver podem encerrar a conversa em `awaiting_acknowledgement` ou
+`acknowledged`. O encerramento realiza a transição para `closed`, não exige
+confirmação anterior e é terminal para interação no MVP.
+
+Archive é um estado global da conversa, não uma preferência individual. Sender e
+receiver podem realizar somente `closed → archived`. A conversa arquivada
+permanece legível no histórico para seus participantes autorizados, mas não aceita
+mutação conversacional. Não existem reopen, unarchive ou archive individual nesta
+jornada.
+
+## Matriz de transições do Feedback de Avaliação
+
+| Origem | Ação | Ator | Destino | Condições |
+| --- | --- | --- | --- | --- |
+| inexistente | create | evaluator da response | `awaiting_acknowledgement` | response `manager` same-tenant em `submitted` ou `completed`; evaluator = sender; employee = receiver; mensagem inicial e auditoria obrigatórias |
+| `awaiting_acknowledgement` | reply | sender ou receiver | `awaiting_acknowledgement` | participante autenticado da thread |
+| `acknowledged` | reply | sender ou receiver | `acknowledged` | participante autenticado da thread |
+| `awaiting_acknowledgement` | acknowledge | receiver | `acknowledged` | confirmação semanticamente única |
+| `awaiting_acknowledgement` | close | sender ou receiver | `closed` | acknowledgement não é pré-condição |
+| `acknowledged` | close | sender ou receiver | `closed` | participante autenticado da thread |
+| `closed` | archive | sender ou receiver | `archived` | participante autenticado da thread |
+
+São sempre negados: reply em `closed` ou `archived`; acknowledge em `closed` ou
+`archived`; close em `archived`; archive antes de `closed`; qualquer mutação de
+conversa `archived`; mutação por não participante; referência ou mutação
+cross-tenant. O estado técnico `open` pode continuar atendendo outros tipos de
+conversa, mas não é estado inicial nem integra a máquina desta jornada.
+
+## Roles sem participação
+
+HR, owner e admin não participantes não recebem override de leitura ou mutação.
+Eles não podem, apenas pela role, criar, responder, confirmar, encerrar ou
+arquivar Feedback de Avaliação. HR não participante também não lê uma thread
+`participants`. Acesso administrativo extraordinário e moderação HR permanecem
+fora do MVP e exigem decisão própria.
+
+## Auditoria das mutações
+
+Create, reply, acknowledge, close e archive produzem auditoria atômica com a
+mutação. Falha de auditoria aborta a operação. O registro identifica empresa,
+ator derivado, thread, operação e timestamp, sem copiar conteúdo de mensagem,
+título, nomes humanos desnecessários ou metadata sensível.
+
+A auditoria de uma conversa privada não torna sua existência visível para toda a
+empresa. Sua projeção e autorização preservam a mesma privacidade da conversa.
+
 ## Invariantes
 
 - privacy by default e least privilege;
 - identidade derivada de `auth.uid()` e membership ativa;
 - isolamento tenant sem revelar existência de selector estrangeiro;
+- response, sender, receiver, thread, mensagem inicial e children pertencem à
+  mesma empresa;
+- ator, empresa, sender e receiver são derivados de contexto confiável;
+- referências humanas ou funcionais cross-tenant são sempre rejeitadas;
 - nenhum bypass por `service_role` ou grant amplo de tabela;
 - nenhum conteúdo textual sai da boundary antes da autorização por row.
+
+## Fora do recorte
+
+Permanecem fora desta jornada: attachments, mentions, conteúdo gerado por IA,
+envio automático, Development/PDI, conclusão de ações de Development, reviews
+periódicas, acesso administrativo extraordinário, retirement de
+`public.feedbacks`, outros tipos de conversa, reopen, unarchive, archive
+individual, moderação HR, novas semânticas para `management` e criação peer,
+employee→manager, HR→employee, admin→employee ou owner→employee.
 
 # PD-021 — Career / Seniority + Position Taxonomy
 

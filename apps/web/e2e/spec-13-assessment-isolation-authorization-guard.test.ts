@@ -35,12 +35,30 @@ test("all three assessment resource classes have direct foreign/nonexistent proo
 test("isolation includes tenant B list absence and direct-id denial", () => {
   assert.match(bodyOf("53. "), /enterTenantB\(page\)/)
   assert.match(bodyOf("53. "), /not\.toContainText/)
-  for (const title of ["54. ", "55. ", "56. "]) assert.match(bodyOf(title), /enterTenantB\(page\)/)
+  for (const title of ["54. ", "55. ", "56. "]) assert.match(bodyOf(title), /switchToTenantB\(page\)/)
+})
+
+test("a second actor is reached only after real sign-out", () => {
+  const switchStart = source.indexOf("async function switchToActor")
+  assert.notEqual(switchStart, -1, "spec 13 must name the actor-switch boundary")
+  const switchBody = source.slice(switchStart, source.indexOf("\n}", switchStart))
+
+  const signOutAt = switchBody.indexOf("signOutThroughUi(page)")
+  const loginAt = switchBody.indexOf("loginThroughUi(page, identity)")
+  const shellAt = switchBody.indexOf("expectAuthenticatedShell(page)")
+  assert.ok(signOutAt >= 0, "the existing actor must sign out through the UI")
+  assert.ok(loginAt > signOutAt, "the next actor must log in only after sign-out")
+  assert.ok(shellAt > loginAt, "the next actor's authenticated shell must be proven")
+
+  for (const title of ["54. ", "55. ", "56. "]) {
+    assert.match(bodyOf(title), /discoverRun(?:Resource|Response)Id[\s\S]*switchToTenantB\(page\)/)
+  }
+  assert.match(bodyOf("57. "), /discoverRunResourceId[\s\S]*switchToActor\(page, actor\("employee"\)\)/)
 })
 
 test("property 14 uses the real employee and proves capability denial", () => {
   const body = bodyOf("57. ")
-  assert.match(body, /enterAs\(page, actor\("employee"\)\)/)
+  assert.match(body, /switchToActor\(page, actor\("employee"\)\)/)
   assert.doesNotMatch(body, /enterAs\(page, actor\("admin"\)\)/)
   assert.match(body, /probeDirectResourceDenial\(page, "cycles", cycleId\)/)
   for (const control of ["Adicionar participantes", "Gerar avaliações", "Editar ciclo de avaliação"]) {

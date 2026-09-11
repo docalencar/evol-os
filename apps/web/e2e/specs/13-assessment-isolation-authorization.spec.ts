@@ -2,7 +2,7 @@
 
 import { expect, test, type Page } from "@playwright/test"
 
-import { expectAuthenticatedShell, loginThroughUi } from "../auth/login"
+import { expectAuthenticatedShell, loginThroughUi, signOutThroughUi } from "../auth/login"
 import {
   assessmentCycleName,
   assessmentResultCycleName,
@@ -43,6 +43,20 @@ async function enterAs(page: Page, identity: ReturnType<typeof actor>): Promise<
 async function enterTenantB(page: Page): Promise<void> {
   await loginThroughUi(page, tenantBOwner())
   await expectAuthenticatedShell(page)
+  await expect(page.getByText(manifest().onboardingCompany?.companyName ?? "__unset__").first()).toBeVisible()
+}
+
+async function switchToActor(
+  page: Page,
+  identity: ReturnType<typeof actor> | ReturnType<typeof tenantBOwner>
+): Promise<void> {
+  await signOutThroughUi(page)
+  await loginThroughUi(page, identity)
+  await expectAuthenticatedShell(page)
+}
+
+async function switchToTenantB(page: Page): Promise<void> {
+  await switchToActor(page, tenantBOwner())
   await expect(page.getByText(manifest().onboardingCompany?.companyName ?? "__unset__").first()).toBeVisible()
 }
 
@@ -130,7 +144,7 @@ test.describe("assessment isolation and authorization", () => {
       "templates",
       assessmentTemplateName(manifest().runId)
     )
-    await enterTenantB(page)
+    await switchToTenantB(page)
 
     const foreign = await probeDirectResourceDenial(page, "templates", foreignId)
     const nonexistent = await probeDirectResourceDenial(page, "templates", NONEXISTENT_ID)
@@ -146,7 +160,7 @@ test.describe("assessment isolation and authorization", () => {
       "cycles",
       assessmentResultCycleName(manifest().runId)
     )
-    await enterTenantB(page)
+    await switchToTenantB(page)
 
     const foreign = await probeDirectResourceDenial(page, "cycles", foreignId)
     const nonexistent = await probeDirectResourceDenial(page, "cycles", NONEXISTENT_ID)
@@ -160,7 +174,7 @@ test.describe("assessment isolation and authorization", () => {
 
   test("56. foreign response/result id is indistinguishable from nonexistent", async ({ page }) => {
     const foreignId = await discoverRunResponseId(page)
-    await enterTenantB(page)
+    await switchToTenantB(page)
 
     const foreign = await probeDirectResourceDenial(page, "responses", foreignId)
     const nonexistent = await probeDirectResourceDenial(page, "responses", NONEXISTENT_ID)
@@ -177,7 +191,7 @@ test.describe("assessment isolation and authorization", () => {
       "cycles",
       assessmentResultCycleName(manifest().runId)
     )
-    await enterAs(page, actor("employee"))
+    await switchToActor(page, actor("employee"))
     await openAssessmentsHome(page)
 
     await expect(page.getByRole("heading", { level: 2, name: ASSESSMENTS_HOME_SECTION })).toBeVisible()

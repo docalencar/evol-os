@@ -217,6 +217,24 @@ test("opening a dialog is not mistaken for a submit", () => {
   }
 })
 
+test("the seniority dialog uses keyboard activation and proves readiness", () => {
+  const start = spec08.indexOf('test("a Seniority is created')
+  assert.notEqual(start, -1, "spec 08 must retain the Seniority journey")
+  const next = spec08.indexOf('\n  test("', start + 1)
+  const body = spec08.slice(start, next === -1 ? spec08.length : next)
+
+  const activationAt = body.indexOf(
+    'getByRole("button", { name: "Nova senioridade", exact: true }).press("Enter")'
+  )
+  const readinessAt = body.indexOf(
+    'expect(page.getByRole("heading", { name: "Nova senioridade" })).toBeVisible()'
+  )
+
+  assert.ok(activationAt >= 0, "the Base UI trigger must use accessible keyboard activation")
+  assert.ok(readinessAt > activationAt, "the opened dialog must be proven after activation")
+  assert.doesNotMatch(body, /force:\s*true|waitForTimeout|test\.setTimeout/)
+})
+
 test("spec 08 proves the write was accepted before it trusts a reload", () => {
   // The failure in run 260907120642-8774b5 could not be attributed: the matrix
   // was empty after reload, and nothing in the spec distinguished "the write

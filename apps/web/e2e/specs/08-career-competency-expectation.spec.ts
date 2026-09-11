@@ -202,7 +202,13 @@ test.describe("career expectations configured through the real UI", () => {
     await page.getByRole("link", { name: /Gerenciar senioridades/i }).click()
     await page.waitForURL(/\/app\/company\/seniority(\/|\?|$)/, { timeout: 30_000 })
 
-    await page.getByRole("button", { name: "Nova senioridade", exact: true }).click()
+    // Base UI opens this modal during the pointer gesture. In hosted run
+    // 260911125904-a5f6ac the dialog was fully rendered, yet Playwright's click
+    // remained pending until its 15s action timeout. Keyboard activation is the
+    // same accessible product control without a pointer-up being intercepted by
+    // the newly mounted modal overlay; the dialog itself remains the readiness
+    // contract.
+    await page.getByRole("button", { name: "Nova senioridade", exact: true }).press("Enter")
     await expect(page.getByRole("heading", { name: "Nova senioridade" })).toBeVisible()
 
     await page.locator("#code").fill(code)

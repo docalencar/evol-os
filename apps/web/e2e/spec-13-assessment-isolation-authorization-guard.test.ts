@@ -19,6 +19,14 @@ function bodyOf(title: string): string {
   return source.slice(start, next === -1 ? source.length : next)
 }
 
+function functionBody(name: string): string {
+  const start = source.indexOf(`async function ${name}`)
+  assert.notEqual(start, -1, `missing helper ${name}`)
+  const next = source.indexOf("\n}\n", start)
+  assert.notEqual(next, -1, `unterminated helper ${name}`)
+  return source.slice(start, next)
+}
+
 test("all three assessment resource classes have direct foreign/nonexistent proofs", () => {
   for (const [title, kind] of [
     ["54. ", "templates"],
@@ -100,4 +108,15 @@ test("resource ids come from run-owned UI links rather than hardcoding", () => {
   assert.match(source, /getAttribute\("href"\)/)
   assert.match(source, /assessmentTemplateName\(manifest\(\)\.runId\)/)
   assert.match(source, /assessmentResultCycleName\(manifest\(\)\.runId\)/)
+})
+
+test("response discovery scopes the employee row to the assessments surface", () => {
+  const body = functionBody("discoverRunResponseId")
+  assert.match(body, /page\.locator\("section"\)\.filter\(\{/)
+  assert.match(body, /has:\s*page\.getByRole\("heading",\s*\{/)
+  assert.match(body, /name:\s*ASSESSMENT_RESPONSES_SECTION/)
+  assert.match(body, /const row = assessmentSurface\.getByRole\("row",\s*\{/)
+  assert.match(body, /row\.getByRole\("link",\s*\{ name: "Abrir" \}\)/)
+  assert.doesNotMatch(body, /page\.getByRole\("row"/)
+  assert.doesNotMatch(body, /\.first\(\)/)
 })

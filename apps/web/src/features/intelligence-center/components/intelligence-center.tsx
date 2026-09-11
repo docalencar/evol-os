@@ -1,5 +1,6 @@
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
+import { isAdministrativeRole } from "@/features/authorization"
 import { getDevelopmentExecutiveDashboard } from "@/features/development/services/get-development-executive-dashboard"
 import { getOrganizationSummary } from "@/features/organization/dashboard/queries/get-organization-summary"
 import { getPeopleSummary } from "@/features/people/dashboard/queries/get-people-summary"
@@ -65,11 +66,14 @@ const quickActions: QuickAction[] = [
 ]
 
 export async function IntelligenceCenter() {
-  const { companyId } = await getCurrentCompanyContext()
+  const { companyId, currentUser } = await getCurrentCompanyContext()
 
   const [people, development, organization] = await Promise.all([
     getPeopleSummary(companyId),
-    getDevelopmentExecutiveDashboard(companyId),
+    getDevelopmentExecutiveDashboard(
+      companyId,
+      isAdministrativeRole(currentUser.role),
+    ),
     getOrganizationSummary(companyId),
   ])
 

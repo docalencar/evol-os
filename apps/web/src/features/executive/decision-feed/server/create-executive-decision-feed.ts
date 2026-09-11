@@ -3,6 +3,7 @@ import "server-only"
 import {
   getAssessmentExecutiveDashboard,
 } from "@/features/assessments/services/get-assessment-executive-dashboard"
+import { isAdministrativeRole } from "@/features/authorization"
 import {
   getDevelopmentExecutiveDashboard,
 } from "@/features/development/services/get-development-executive-dashboard"
@@ -36,6 +37,7 @@ import {
 import {
   getJobOpenings,
 } from "@/features/recruitment/job-openings/queries/get-job-openings"
+import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 import type {
   ExecutiveContext,
@@ -75,6 +77,13 @@ export async function createExecutiveDecisionFeed(
     dashboard,
   } = input
 
+  // The competency half of the development feed comes from the administrative
+  // 0124 boundary. Resolved from the session here, exactly as /app and
+  // /app/development do, so this feed neither asks for what the actor may not
+  // have nor silently drops it for one who may.
+  const { currentUser } = await getCurrentCompanyContext()
+  const canReadCompetencyIntelligence = isAdministrativeRole(currentUser.role)
+
   const [
     jobOpenings,
     developmentDashboard,
@@ -90,6 +99,7 @@ export async function createExecutiveDecisionFeed(
 
     getDevelopmentExecutiveDashboard(
       context.companyId,
+      canReadCompetencyIntelligence,
     ),
 
     getAssessmentExecutiveDashboard(

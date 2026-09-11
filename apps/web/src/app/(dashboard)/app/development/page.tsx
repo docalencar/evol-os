@@ -9,17 +9,24 @@ import {
   getDevelopmentExecutiveDashboard,
 } from "@/features/development"
 
+import { isAdministrativeRole } from "@/features/authorization"
+
 import {
   getCurrentCompanyContext,
 } from "@/lib/supabase/supabase/current-company"
 
 export default async function DevelopmentPage() {
-  const { companyId } =
+  const { companyId, currentUser } =
     await getCurrentCompanyContext()
+
+  // Same administrative boundary, same decision-before-the-call as /app.
+  const canReadCompetencyIntelligence =
+    isAdministrativeRole(currentUser.role)
 
   const dashboard =
     await getDevelopmentExecutiveDashboard(
-      companyId
+      companyId,
+      canReadCompetencyIntelligence
     )
 
   return (

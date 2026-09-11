@@ -24,8 +24,14 @@ export class DevelopmentDecisionFeedProvider
   async load(): Promise<DecisionFeedDTO> {
     const dashboard = await this.source.load()
 
-    const priorityItems = dashboard.competencyDevelopment.priorities
-      .map(mapCanonicalCompetencyDeficiency)
+    // No competency intelligence means no competency-driven decisions to
+    // surface. It is an omission, not a claim that the gaps are zero — nothing
+    // downstream reads a count from here.
+    const priorityItems =
+      dashboard.competencyDevelopment.status === "ok"
+        ? dashboard.competencyDevelopment.development.priorities
+          .map(mapCanonicalCompetencyDeficiency)
+        : []
 
     const cancelledPlansItem =
       createCancelledPlansItem(

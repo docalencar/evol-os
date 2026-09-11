@@ -28,7 +28,7 @@ test("presents an empty tenant without fabricating dashboard data", async () => 
       organization: [],
       people: [],
       development: [],
-      competencyCoverages: [],
+      competencyIntelligence: { status: "ok" as const, coverages: [] },
       recruitment: [],
       activity: [],
     },
@@ -41,7 +41,13 @@ test("presents an empty tenant without fabricating dashboard data", async () => 
     criticalEmployees: 0,
   })
   assert.deepEqual(model.organization, { departments: 0, positions: 0, teams: 0 })
-  assert.deepEqual(model.competencyDevelopment.priorities, [])
+  assert.equal(model.competencyDevelopment.status, "ok")
+  assert.deepEqual(
+    model.competencyDevelopment.status === "ok"
+      ? model.competencyDevelopment.development.priorities
+      : null,
+    [],
+  )
   assert.deepEqual(model.jobOpenings, [])
   assert.deepEqual(model.companyTimeline.items, [])
 })
@@ -60,7 +66,7 @@ test("the /app graph uses only the authorized dashboard read repository", () => 
     "recruitment_job_openings", "activity_events", "company_members", "companies",
   ]
 
-  assert.match(page, /getAppDashboardReadModel\(companyId\)/)
+  assert.match(page, /getAppDashboardReadModel\(companyId, canReadCompetencyIntelligence\)/)
   assert.doesNotMatch(page, /getEmployees|getTeams|getDepartments|getPositions|getJobOpenings/)
   for (const table of criticalTables) {
     assert.doesNotMatch(repository, new RegExp(`\\.from\\(["']${table}["']\\)`))

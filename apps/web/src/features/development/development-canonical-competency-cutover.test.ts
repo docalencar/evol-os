@@ -62,6 +62,8 @@ test("People and Dashboard remain canonical while Talent compatibility stays iso
   assert.doesNotMatch(dashboardRepository, /get_tenant_competency_directory_v1/)
   assert.match(talentInsights, /calculateRisk|calculateTalentCard|getBiggestGap/)
   assert.doesNotMatch(developmentService, /createEmployeeInsights/)
-  assert.match(developmentDecisionFeed, /competencyDevelopment\.priorities/)
+  // Same canonical source, now behind the authorization discriminant: the feed
+  // reads the priorities only when the actor was entitled to load them.
+  assert.match(developmentDecisionFeed, /competencyDevelopment\.development\.priorities/)
   assert.doesNotMatch(developmentDecisionFeed, /DevelopmentPriority|risk|criticalGaps|attentionGaps/)
 })

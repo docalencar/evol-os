@@ -134,13 +134,35 @@ export type TenantDevelopmentDashboardRow = z.infer<typeof developmentRowSchema>
 export type TenantRecruitmentJobOpeningRow = z.infer<typeof recruitmentRowSchema>
 export type TenantActivityTimelineRow = z.infer<typeof activityRowSchema>
 
+/**
+ * Five of these projections are gated on `is_company_member` and serve any
+ * active member. The sixth, competency coverage, comes from an administrative
+ * boundary (0124: `owner`, `admin`, `hr`). The caller decides which of the two
+ * it is entitled to BEFORE the read, so a refusal is never used as flow control
+ * and never reaches the page as an exception.
+ */
+export type TenantCompetencyCoverageAccess =
+  | Readonly<{ status: "forbidden" }>
+  | Readonly<{ status: "ok"; coverages: readonly CanonicalPersonCompetencyCoverage[] }>
+
 export type TenantDashboardReadRows = Readonly<{
   organization: readonly TenantOrganizationDirectoryRow[]
   people: readonly TenantPeopleDirectoryRow[]
   development: readonly TenantDevelopmentDashboardRow[]
-  competencyCoverages: readonly CanonicalPersonCompetencyCoverage[]
+  competencyIntelligence: TenantCompetencyCoverageAccess
   recruitment: readonly TenantRecruitmentJobOpeningRow[]
   activity: readonly TenantActivityTimelineRow[]
+}>
+
+/**
+ * `competencyIntelligence` is REQUIRED, and an options object rather than a
+ * positional flag, so no caller can reach this read without having decided.
+ * Its value is derived server-side from the session's membership role; it is
+ * never accepted from a request, a header or a client component.
+ */
+export type TenantDashboardReadOptions = Readonly<{
+  competencyIntelligence: "authorized" | "forbidden"
+  activityLimit?: number
 }>
 
 export class TenantDashboardReadError extends Error {
@@ -224,12 +246,31 @@ export function createTenantDashboardReadRepository(supabase: SupabaseClient) {
     loadRecruitment,
     loadActivity,
 
-    async load(companyId: string, activityLimit = 20): Promise<TenantDashboardReadRows> {
+    async load(
+      companyId: string,
+      options: TenantDashboardReadOptions,
+    ): Promise<TenantDashboardReadRows> {
+      const activityLimit = options.activityLimit ?? 20
+
+      // Not authorized means NOT ASKED. The administrative RPC is never invoked
+      // for an actor the caller already knows it would refuse, so there is no
+      // 42501 to swallow — and correspondingly nothing here catches one. Every
+      // read below still fails loudly on a real error, including this one when
+      // the actor IS entitled to it.
+      const loadCompetencyIntelligence =
+        async (): Promise<TenantCompetencyCoverageAccess> =>
+          options.competencyIntelligence === "authorized"
+            ? Object.freeze({
+              status: "ok" as const,
+              coverages: await loadCompetencyCoverages(companyId),
+            })
+            : Object.freeze({ status: "forbidden" as const })
+
       const [
         organization,
         people,
         development,
-        competencyCoverages,
+        competencyAccess,
         recruitment,
         activity,
       ] =
@@ -237,7 +278,7 @@ export function createTenantDashboardReadRepository(supabase: SupabaseClient) {
           loadOrganization(companyId),
           loadPeople(companyId),
           loadDevelopment(companyId),
-          loadCompetencyCoverages(companyId),
+          loadCompetencyIntelligence(),
           loadRecruitment(companyId),
           loadActivity(companyId, activityLimit),
         ])
@@ -246,7 +287,7 @@ export function createTenantDashboardReadRepository(supabase: SupabaseClient) {
         organization,
         people,
         development,
-        competencyCoverages,
+        competencyIntelligence: competencyAccess,
         recruitment,
         activity,
       })

@@ -18,10 +18,17 @@ import {
   presentActivityIntelligence,
 } from "@/features/timeline"
 import { getAppDashboardReadModel } from "@/features/dashboard-read"
+import { isAdministrativeRole } from "@/features/authorization"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 export default async function AppPage() {
-  const { companyId } = await getCurrentCompanyContext()
+  const { companyId, currentUser } = await getCurrentCompanyContext()
+
+  // Company-wide competency intelligence is administrative (0124). Decided here,
+  // from the session's own membership role, so a manager or an employee never
+  // asks the boundary a question it is required to refuse — and never loses the
+  // whole authenticated shell to that refusal.
+  const canReadCompetencyIntelligence = isAdministrativeRole(currentUser.role)
 
   const {
     health,
@@ -31,7 +38,7 @@ export default async function AppPage() {
     jobOpenings,
     recruitmentOptions,
     companyTimeline,
-  } = await getAppDashboardReadModel(companyId)
+  } = await getAppDashboardReadModel(companyId, canReadCompetencyIntelligence)
 
   const [risks, insights] = await Promise.all([
     getOrganizationalRisks(health),

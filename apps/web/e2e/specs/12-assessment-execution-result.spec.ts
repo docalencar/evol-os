@@ -138,7 +138,31 @@ async function enterAs(page: Page, role: "admin" | "employee"): Promise<void> {
  * fails saying the cycle detail never rendered, instead of blaming a control
  * that was never on screen to be found.
  */
-const ASSESSMENTS_HOME_HEADING = "Avaliações de desempenho"
+/**
+ * The assessments home has TWO surfaces, and this helper serves both.
+ *
+ * `AssessmentHome` branches on `canManageAssessments`. An administrator gets
+ * `AssessmentHero`, whose title is "Avaliações de desempenho"; an evaluator who
+ * is not an administrator gets the priority card and their own results, and no
+ * hero at all — deliberately, since E4-P1: nothing administrative, no catalog,
+ * no cycle management. So the hero's title is an ADMIN-ONLY marker, and using it
+ * as the arrival proof made this helper role-blind.
+ *
+ * Hosted run 260911010345-e00abb paid for that. The employee logged in, the
+ * shell rendered, "Empresa atual" passed in 0.02s, the sidebar click navigated
+ * for real, `waitForURL` settled on `/app/assessments` in 1.73s — and then 30s
+ * expired waiting for a heading the product correctly never renders for them.
+ * The screenshot shows a perfectly healthy inbox: the run's cycle, "Abrir
+ * avaliação", "Meus resultados". Every request 200. Nothing was broken except
+ * the assertion.
+ *
+ * `Meus resultados` is the marker that is actually true of the page rather than
+ * of one of its audiences: `resultDirectorySection` is rendered by BOTH branches
+ * of `AssessmentHome`, it is the only place in the product that string appears,
+ * and its heading comes from `DashboardSection` — so it is there even when the
+ * directory is empty, which is exactly the employee's state on arrival.
+ */
+const ASSESSMENTS_HOME_SECTION = "Meus resultados"
 const ASSESSMENTS_HOME_PATH = "/app/assessments"
 
 function isOn(page: Page, path: string): boolean {
@@ -190,7 +214,7 @@ async function openAssessmentsHome(page: Page): Promise<void> {
   }
 
   await expect(
-    page.getByRole("heading", { level: 1, name: ASSESSMENTS_HOME_HEADING })
+    page.getByRole("heading", { level: 2, name: ASSESSMENTS_HOME_SECTION })
   ).toBeVisible({ timeout: 30_000 })
 }
 

@@ -285,6 +285,63 @@ test("the assessments home wait cannot be satisfied by a page under it", () => {
   )
 })
 
+/**
+ * STRUCTURAL: the assessments home is proven by something BOTH audiences see.
+ *
+ * `AssessmentHome` branches on `canManageAssessments`. The hero — title
+ * "Avaliações de desempenho" — belongs to the administrative branch only; the
+ * evaluator branch renders the priority card and the results directory, which
+ * is E4-P1's whole point. Hosted run 260911010345-e00abb spent 30s waiting for
+ * that hero on a page that had rendered the employee's inbox perfectly.
+ *
+ * This reads the product, not just the spec, so the marker cannot quietly stop
+ * being shared: it must live outside the hero AND inside the section the
+ * non-administrative branch returns.
+ */
+const assessmentHome = readFileSync(
+  new URL("../src/features/assessments/components/home/assessment-home.tsx", import.meta.url),
+  "utf8"
+)
+const assessmentHero = readFileSync(
+  new URL("../src/features/assessments/components/home/assessment-hero.tsx", import.meta.url),
+  "utf8"
+)
+
+test("the assessments home is proven by a marker every actor is shown", () => {
+  const marker = source.match(/const ASSESSMENTS_HOME_SECTION = "([^"]+)"/)?.[1]
+  assert.ok(marker, "spec 12 must name the marker it proves the home with")
+
+  // Rendered by the product, and not by the administrator-only hero.
+  assert.ok(
+    assessmentHome.includes(`"${marker}"`),
+    `AssessmentHome must render "${marker}"`
+  )
+  assert.equal(
+    assessmentHero.includes(marker),
+    false,
+    `"${marker}" must not be hero chrome — the hero is administrative only`
+  )
+
+  // And rendered by the branch the employee actually gets.
+  const branchAt = assessmentHome.indexOf("if (!canManageAssessments)")
+  assert.notEqual(branchAt, -1, "the non-administrative branch must still exist")
+  const branch = assessmentHome.slice(branchAt, assessmentHome.indexOf("\n  }", branchAt))
+  assert.match(
+    branch,
+    /resultDirectorySection/,
+    "the evaluator branch must render the section that carries the marker"
+  )
+
+  // The hero's own title must never come back as the arrival proof.
+  const heroTitle = assessmentHero.match(/title="([^"]+)"/)?.[1]
+  assert.ok(heroTitle, "the hero must still declare a title")
+  assert.equal(
+    source.includes(heroTitle),
+    false,
+    `"${heroTitle}" is rendered only for administrators and cannot prove arrival`
+  )
+})
+
 test("spec 12 stays inside its slice", () => {
   // Tenant isolation and non-administrative authorization are E4-S4.
   assert.doesNotMatch(source, /onboardingCompany|resolveAndJournalOnboardingTenant/)

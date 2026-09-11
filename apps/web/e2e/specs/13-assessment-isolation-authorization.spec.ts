@@ -14,6 +14,7 @@ test.describe.configure({ mode: "serial" })
 
 const NONEXISTENT_ID = "00000000-0000-4000-8000-000000000001"
 const ASSESSMENTS_HOME_SECTION = "Meus resultados"
+const ASSESSMENT_RESPONSES_SECTION = "Avaliações"
 
 let cached: RunManifest | null = null
 function manifest(): RunManifest {
@@ -92,7 +93,16 @@ async function discoverRunResponseId(page: Page): Promise<string> {
   await expect(
     page.getByRole("heading", { level: 1, name: assessmentResultCycleName(manifest().runId) })
   ).toBeVisible({ timeout: 30_000 })
-  const row = page.getByRole("row", { name: new RegExp(actor("employee").fullName) }).first()
+  const assessmentSurface = page.locator("section").filter({
+    has: page.getByRole("heading", {
+      level: 2,
+      name: ASSESSMENT_RESPONSES_SECTION,
+      exact: true,
+    }),
+  })
+  const row = assessmentSurface.getByRole("row", {
+    name: new RegExp(actor("employee").fullName),
+  })
   return idFromHref(await row.getByRole("link", { name: "Abrir" }).getAttribute("href"), "responses")
 }
 

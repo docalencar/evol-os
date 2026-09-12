@@ -86,6 +86,11 @@ RUNNER_PATH="scripts/review/promote-0128-trusted-feedback.sh"
 LOCAL_ACL_FINGERPRINT="9bcfae4fba42b692d1c0fd57bea2a9de"
 LOCAL_POLICY_FINGERPRINT="39c6e4ecc91b5c1e5998d27fc034d750"
 
+# Reconstructed at the immediately-pre-0128 commit and matched byte-for-byte
+# by Review. Unlike the ACL fingerprint, this is a schema-owned invariant: the
+# snapshot canonicalization below is the same one used during adjudication.
+EXPECTED_PRE_POLICY_FINGERPRINT="4c89ade7d3f60a123a1cc880afa8dd2d"
+
 MIGRATION_FILE="supabase/migrations/0128_create_trusted_feedback_mutation_boundary.sql"
 MIGRATION_BASENAME="0128_create_trusted_feedback_mutation_boundary.sql"
 PGTAP_FILE="supabase/tests/trusted_feedback_mutation_boundary.test.sql"
@@ -333,6 +338,34 @@ select 'AGGREGATE_WRITE_POLICIES=' || count(*)::text from pg_policies where sche
    and tablename in ('feedback_threads','feedback_messages','feedback_acknowledgements',
                      'feedback_attachments','feedback_mentions')
    and cmd in ('INSERT','UPDATE','DELETE','ALL');
+with expected(tablename, policyname, cmd, permissive, roles) as (
+  values
+    ('feedback_acknowledgements','administrators can delete feedback acknowledgements','DELETE','PERMISSIVE','{public}'),
+    ('feedback_acknowledgements','employees can acknowledge feedback threads','INSERT','PERMISSIVE','{public}'),
+    ('feedback_acknowledgements','employees can update their acknowledgements','UPDATE','PERMISSIVE','{public}'),
+    ('feedback_attachments','participants can create feedback attachments','INSERT','PERMISSIVE','{public}'),
+    ('feedback_attachments','uploaders and administrators can delete feedback attachments','DELETE','PERMISSIVE','{public}'),
+    ('feedback_mentions','message authors can create feedback mentions','INSERT','PERMISSIVE','{public}'),
+    ('feedback_mentions','message authors and administrators can delete feedback mentions','DELETE','PERMISSIVE','{public}'),
+    ('feedback_messages','participants can create feedback messages','INSERT','PERMISSIVE','{public}'),
+    ('feedback_messages','authors can update feedback messages','UPDATE','PERMISSIVE','{public}'),
+    ('feedback_messages','authors and administrators can delete feedback messages','DELETE','PERMISSIVE','{public}'),
+    ('feedback_threads','members can create feedback threads','INSERT','PERMISSIVE','{public}'),
+    ('feedback_threads','senders and administrators can update feedback threads','UPDATE','PERMISSIVE','{public}'),
+    ('feedback_threads','administrators can delete feedback threads','DELETE','PERMISSIVE','{public}')
+), actual as (
+  select tablename, policyname, cmd, permissive, roles::text as roles
+    from pg_policies
+   where schemaname='public'
+     and tablename in ('feedback_threads','feedback_messages','feedback_acknowledgements',
+                       'feedback_attachments','feedback_mentions')
+     and cmd in ('INSERT','UPDATE','DELETE','ALL')
+), differences as (
+  (select * from expected except select * from actual)
+  union all
+  (select * from actual except select * from expected)
+)
+select 'PRE_WRITE_POLICY_CONTRACT_MATCH=' || (not exists(select 1 from differences))::text;
 select 'AGGREGATE_READ_POLICIES=' || count(distinct tablename)::text from pg_policies where schemaname='public'
    and tablename in ('feedback_threads','feedback_messages','feedback_acknowledgements',
                      'feedback_attachments','feedback_mentions') and cmd='SELECT';
@@ -387,6 +420,7 @@ S_NAME=$(val RPC_NAMECOUNT);               S_EXACT=$(val RPC_EXACT_SIGNATURES)
 S_ALT=$(val RPC_ALTERNATE_SIGNATURES)
 S_SIMPLE=$(val LEGACY_SIMPLE_FKS);         S_COMP=$(val COMPOSITE_FKS_VALIDATED)
 S_WPOL=$(val AGGREGATE_WRITE_POLICIES);    S_WPRIV=$(val AGGREGATE_WRITE_PRIVILEGES)
+S_PRE_WPOL=$(val PRE_WRITE_POLICY_CONTRACT_MATCH)
 S_RLS=$(val AGGREGATE_RLS_ENABLED);        S_TLC=$(val TIMELINE_FILTERS_COMPANY)
 S_ACL=$(val ACL_FINGERPRINT);              S_POL=$(val POLICY_FINGERPRINT)
 S_RLSF=$(val RLS_FINGERPRINT)
@@ -404,19 +438,26 @@ if [ "$S_RLS" != "5" ]; then
   say "  BASELINE: RLS is enabled on $S_RLS of the 5 Feedback relations"; BASELINE_OK=no
 fi
 
-CURRENT_STATE=UNDETERMINED
-if [ "$S_M128" = "false" ] && [ "$S_NAME" = "0" ] && [ "$S_EXACT" = "0" ] && \
-   [ "$S_BRIDGE" = "false" ] && [ "$S_INDEX" = "<absent>" ] && \
-   [ "$S_SIMPLE" = "6" ] && [ "$S_WPOL" = "9" ] && [ "$BASELINE_OK" = yes ]; then
-  CURRENT_STATE=NOT_APPLIED
-elif [ "$S_M128" = "true" ] && [ "$S_M128N" = "1" ] && [ "$S_NAME" = "5" ] && \
-     [ "$S_EXACT" = "5" ] && [ "$S_ALT" = "(none)" ] && [ "$S_BRIDGE" = "true" ] && \
-     [ "$S_SIMPLE" = "0" ] && [ "$S_COMP" = "7" ] && [ "$S_WPOL" = "0" ] && \
-     [ "$S_WPRIV" = "0" ] && [ "$S_TLC" = "true" ] && [ "$BASELINE_OK" = yes ]; then
-  CURRENT_STATE=APPLIED_AND_CONTRACT_PRESENT
-elif [ "$S_M128" = "true" ] || [ "$S_NAME" != "0" ] || [ "$S_BRIDGE" != "false" ] || [ "$BASELINE_OK" = no ]; then
-  CURRENT_STATE=PARTIALLY_APPLIED
-fi
+classify_state() {
+  if [ "$S_M128" = "false" ] && [ "$S_NAME" = "0" ] && [ "$S_EXACT" = "0" ] && \
+     [ "$S_BRIDGE" = "false" ] && [ "$S_INDEX" = "<absent>" ] && \
+     [ "$S_SIMPLE" = "6" ] && [ "$S_WPOL" = "13" ] && \
+     [ "$S_PRE_WPOL" = "true" ] && [ "$S_POL" = "$EXPECTED_PRE_POLICY_FINGERPRINT" ] && \
+     [ "$BASELINE_OK" = yes ]; then
+    printf '%s\n' NOT_APPLIED
+  elif [ "$S_M128" = "true" ] && [ "$S_M128N" = "1" ] && [ "$S_NAME" = "5" ] && \
+       [ "$S_EXACT" = "5" ] && [ "$S_ALT" = "(none)" ] && [ "$S_BRIDGE" = "true" ] && \
+       [ "$S_SIMPLE" = "0" ] && [ "$S_COMP" = "7" ] && [ "$S_WPOL" = "0" ] && \
+       [ "$S_WPRIV" = "0" ] && [ "$S_TLC" = "true" ] && [ "$BASELINE_OK" = yes ]; then
+    printf '%s\n' APPLIED_AND_CONTRACT_PRESENT
+  elif [ "$S_M128" = "true" ] || [ "$S_NAME" != "0" ] || [ "$S_BRIDGE" != "false" ] || [ "$BASELINE_OK" = no ]; then
+    printf '%s\n' PARTIALLY_APPLIED
+  else
+    printf '%s\n' UNDETERMINED
+  fi
+}
+
+CURRENT_STATE=$(classify_state)
 say "[phaseA] REVIEW_0128_CURRENT_STATE=$CURRENT_STATE"
 say "[phaseA] PRE ACL=$S_ACL POLICY=$S_POL RLS=$S_RLSF"
 say "[phaseA] (local reference, not asserted here: ACL=$LOCAL_ACL_FINGERPRINT POLICY=$LOCAL_POLICY_FINGERPRINT)"
@@ -447,10 +488,11 @@ if [ "$CURRENT_STATE" = "NOT_APPLIED" ]; then
     "BRIDGE_PRESENT=false" \
     "ORIGIN_UNIQUE_PARTIAL_INDEX=<absent>" \
     "LEGACY_SIMPLE_FKS=6" \
-    "AGGREGATE_WRITE_POLICIES=9" \
+    "AGGREGATE_WRITE_POLICIES=13" \
+    "PRE_WRITE_POLICY_CONTRACT_MATCH=true" \
     "AGGREGATE_RLS_ENABLED=5" \
     "ACL_FINGERPRINT=$S_ACL" \
-    "POLICY_FINGERPRINT=$S_POL" \
+    "POLICY_FINGERPRINT=$EXPECTED_PRE_POLICY_FINGERPRINT" \
     "RLS_FINGERPRINT=$S_RLSF" \
     "FEEDBACKS_TABLE_COUNT=$S_FBC" \
     "FEEDBACKS_TABLE_FINGERPRINT=$S_FBF"

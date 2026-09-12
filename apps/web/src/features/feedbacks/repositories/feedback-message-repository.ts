@@ -1,10 +1,6 @@
 import { createServerDatabase } from "@/lib/database/server-database"
 
 import type {
-  ValidatedCreateFeedbackMessageInput,
-  ValidatedUpdateFeedbackMessageInput,
-} from "../schemas/feedback-schema"
-import type {
   FeedbackMessage,
   FeedbackMetadata,
 } from "../types/feedback"
@@ -100,87 +96,6 @@ export async function createFeedbackMessageRepository() {
           : null,
         error,
       }
-    },
-
-    async create(
-      input: ValidatedCreateFeedbackMessageInput
-    ) {
-      const { data, error } = await supabase
-        .from("feedback_messages")
-        .insert({
-          company_id: input.companyId,
-          thread_id: input.threadId,
-          author_employee_id:
-            input.authorEmployeeId ?? null,
-          created_by_user_id:
-            input.createdByUserId,
-          type: input.type,
-          content: input.content,
-          metadata: input.metadata,
-          updated_at:
-            new Date().toISOString(),
-        })
-        .select("*")
-        .single()
-
-      return {
-        data: data
-          ? mapFeedbackMessage(
-              data as FeedbackMessageRow
-            )
-          : null,
-        error,
-      }
-    },
-
-    async update(
-      input: ValidatedUpdateFeedbackMessageInput
-    ) {
-      const normalized: Record<
-        string,
-        unknown
-      > = {
-        content: input.content,
-        edited_at: new Date().toISOString(),
-        updated_at:
-          new Date().toISOString(),
-      }
-
-      if (input.metadata !== undefined) {
-        normalized.metadata =
-          input.metadata
-      }
-
-      const { data, error } = await supabase
-        .from("feedback_messages")
-        .update(normalized)
-        .eq("company_id", input.companyId)
-        .eq("thread_id", input.threadId)
-        .eq("id", input.messageId)
-        .select("*")
-        .single()
-
-      return {
-        data: data
-          ? mapFeedbackMessage(
-              data as FeedbackMessageRow
-            )
-          : null,
-        error,
-      }
-    },
-
-    async delete(
-      companyId: string,
-      threadId: string,
-      messageId: string
-    ) {
-      return supabase
-        .from("feedback_messages")
-        .delete()
-        .eq("company_id", companyId)
-        .eq("thread_id", threadId)
-        .eq("id", messageId)
     },
   }
 }

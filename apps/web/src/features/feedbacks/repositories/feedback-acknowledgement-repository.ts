@@ -1,9 +1,6 @@
 import { createServerDatabase } from "@/lib/database/server-database"
 
 import type {
-  ValidatedCreateFeedbackAcknowledgementInput,
-} from "../schemas/feedback-schema"
-import type {
   FeedbackAcknowledgement,
 } from "../types/feedback"
 
@@ -93,44 +90,6 @@ export async function createFeedbackAcknowledgementRepository() {
         ),
         error,
       }
-    },
-
-    async create(
-      input: ValidatedCreateFeedbackAcknowledgementInput
-    ) {
-      const { data, error } = await supabase
-        .from(
-          "feedback_acknowledgements"
-        )
-        .insert({
-          company_id: input.companyId,
-          thread_id: input.threadId,
-          employee_id: input.employeeId,
-        })
-        .select("*")
-        .single()
-
-      return {
-        data: data
-          ? mapFeedbackAcknowledgement(
-              data as FeedbackAcknowledgementRow
-            )
-          : null,
-        error,
-      }
-    },
-
-    async delete(
-      companyId: string,
-      acknowledgementId: string
-    ) {
-      return supabase
-        .from(
-          "feedback_acknowledgements"
-        )
-        .delete()
-        .eq("company_id", companyId)
-        .eq("id", acknowledgementId)
     },
   }
 }

@@ -1,9 +1,5 @@
 import { createServerDatabase } from "@/lib/database/server-database"
 
-import type {
-  ValidatedCreateFeedbackThreadInput,
-  ValidatedUpdateFeedbackThreadInput,
-} from "../schemas/feedback-schema"
 import type { FeedbackThread } from "../types/feedback"
 
 type FeedbackThreadRow = {
@@ -68,108 +64,6 @@ function mapRows(
       mapFeedbackThread(row)
     ) ?? null
   )
-}
-
-function normalizeCreateInput(
-  input: ValidatedCreateFeedbackThreadInput
-) {
-  return {
-    company_id: input.companyId,
-    sender_employee_id:
-      input.senderEmployeeId,
-    receiver_employee_id:
-      input.receiverEmployeeId,
-    created_by_user_id:
-      input.createdByUserId,
-    assessment_id:
-      input.assessmentId ?? null,
-    development_plan_id:
-      input.developmentPlanId ?? null,
-    competency_id:
-      input.competencyId ?? null,
-    type: input.type,
-    status: input.status,
-    priority: input.priority,
-    visibility: input.visibility,
-    title: input.title,
-    requires_follow_up:
-      input.requiresFollowUp,
-    follow_up_at:
-      input.followUpAt?.toISOString() ?? null,
-    updated_at: new Date().toISOString(),
-  }
-}
-
-function normalizeUpdateInput(
-  input: ValidatedUpdateFeedbackThreadInput
-) {
-  const normalized: Record<string, unknown> = {
-    updated_at: new Date().toISOString(),
-  }
-
-  if (input.type !== undefined) {
-    normalized.type = input.type
-  }
-
-  if (input.status !== undefined) {
-    normalized.status = input.status
-  }
-
-  if (input.priority !== undefined) {
-    normalized.priority = input.priority
-  }
-
-  if (input.visibility !== undefined) {
-    normalized.visibility = input.visibility
-  }
-
-  if (input.title !== undefined) {
-    normalized.title = input.title
-  }
-
-  if (input.assessmentId !== undefined) {
-    normalized.assessment_id =
-      input.assessmentId
-  }
-
-  if (
-    input.developmentPlanId !== undefined
-  ) {
-    normalized.development_plan_id =
-      input.developmentPlanId
-  }
-
-  if (input.competencyId !== undefined) {
-    normalized.competency_id =
-      input.competencyId
-  }
-
-  if (
-    input.requiresFollowUp !== undefined
-  ) {
-    normalized.requires_follow_up =
-      input.requiresFollowUp
-  }
-
-  if (input.followUpAt !== undefined) {
-    normalized.follow_up_at =
-      input.followUpAt?.toISOString() ?? null
-  }
-
-  if (
-    input.acknowledgedAt !== undefined
-  ) {
-    normalized.acknowledged_at =
-      input.acknowledgedAt?.toISOString() ??
-      null
-  }
-
-  if (input.closedAt !== undefined) {
-    normalized.closed_at =
-      input.closedAt?.toISOString() ?? null
-  }
-
-  return normalized
 }
 
 export async function createFeedbackThreadRepository() {
@@ -238,61 +132,6 @@ export async function createFeedbackThreadRepository() {
           : null,
         error,
       }
-    },
-
-    async create(
-      input: ValidatedCreateFeedbackThreadInput
-    ) {
-      const { data, error } = await supabase
-        .from("feedback_threads")
-        .insert(
-          normalizeCreateInput(input)
-        )
-        .select("*")
-        .single()
-
-      return {
-        data: data
-          ? mapFeedbackThread(
-              data as FeedbackThreadRow
-            )
-          : null,
-        error,
-      }
-    },
-
-    async update(
-      input: ValidatedUpdateFeedbackThreadInput
-    ) {
-      const { data, error } = await supabase
-        .from("feedback_threads")
-        .update(
-          normalizeUpdateInput(input)
-        )
-        .eq("company_id", input.companyId)
-        .eq("id", input.threadId)
-        .select("*")
-        .single()
-
-      return {
-        data: data
-          ? mapFeedbackThread(
-              data as FeedbackThreadRow
-            )
-          : null,
-        error,
-      }
-    },
-
-    async delete(
-      companyId: string,
-      threadId: string
-    ) {
-      return supabase
-        .from("feedback_threads")
-        .delete()
-        .eq("company_id", companyId)
-        .eq("id", threadId)
     },
   }
 }

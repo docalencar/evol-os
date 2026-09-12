@@ -1,32 +1,22 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { z } from "zod"
 
-import { recordActivity } from "@/features/activity"
-import {
-  getCurrentCompanyContext,
-} from "@/lib/supabase/supabase/current-company"
+import { createTrustedFeedbackMutationRepository } from "../repositories/trusted-feedback-mutation-repository"
+import { feedbackMutationErrorMessage } from "./feedback-mutation-error-message"
 
-import {
-  openFeedbackConversation,
-} from "../services/open-feedback-conversation"
-import type {
-  OpenFeedbackConversationInput,
-} from "../services/open-feedback-conversation"
-
-type CreateFeedbackConversationActionInput =
-  Omit<
-    OpenFeedbackConversationInput,
-    | "companyId"
-    | "senderEmployeeId"
-    | "createdByUserId"
-    | "initialMessage"
-  > & {
-    initialMessage: Omit<
-      OpenFeedbackConversationInput["initialMessage"],
-      "authorEmployeeId"
-    >
-  }
+/**
+ * Only the origin selector and the mandatory first message. Company, sender,
+ * receiver, type, visibility, status and title are derived by the boundary and
+ * cannot be supplied here — there is no field for them by construction.
+ *
+ * This Action has no navigable caller yet. E5-P1 adds the authorship surface.
+ */
+const createAssessmentFeedbackSchema = z.object({
+  assessmentResponseId: z.string().uuid(),
+  initialMessage: z.string().trim().min(1).max(10000),
+})
 
 type CreateFeedbackConversationActionState = {
   success: boolean
@@ -35,101 +25,39 @@ type CreateFeedbackConversationActionState = {
 }
 
 export async function createFeedbackConversationAction(
-  input: CreateFeedbackConversationActionInput
+  input: z.input<typeof createAssessmentFeedbackSchema>
 ): Promise<CreateFeedbackConversationActionState> {
+  const parsedInput = createAssessmentFeedbackSchema.safeParse(input)
+
+  if (!parsedInput.success) {
+    return { success: false, message: "Dados inválidos para criar o feedback." }
+  }
+
   try {
-    const {
-      companyId,
-      personId,
-      user,
-    } = await getCurrentCompanyContext()
-
-    if (!personId) {
-      return {
-        success: false,
-        message:
-          "Não foi possível identificar a pessoa vinculada ao usuário.",
-      }
-    }
-
-    const result =
-      await openFeedbackConversation({
-        ...input,
-        companyId,
-        senderEmployeeId: personId,
-        createdByUserId: user.id,
-        initialMessage: {
-          ...input.initialMessage,
-          authorEmployeeId: personId,
-        },
-      })
-
-    try {
-      await recordActivity({
-        companyId,
-        activityType: "feedback.created",
-        module: "feedback",
-        title: "Conversa de feedback criada",
-        description:
-          `A conversa de feedback "${result.thread.title}" foi criada.`,
-        actorType: "user",
-        entityType: "feedback_thread",
-        entityId: result.thread.id,
-        subjectType: "employee",
-        subjectId:
-          result.thread.receiverEmployeeId,
-        visibility: "company",
-        metadata: {
-          threadId: result.thread.id,
-          senderEmployeeId:
-            result.thread.senderEmployeeId,
-          receiverEmployeeId:
-            result.thread.receiverEmployeeId,
-          feedbackType:
-            result.thread.type,
-          status:
-            result.thread.status,
-          priority:
-            result.thread.priority,
-          feedbackVisibility:
-            result.thread.visibility,
-          assessmentId:
-            result.thread.assessmentId,
-          developmentPlanId:
-            result.thread.developmentPlanId,
-          competencyId:
-            result.thread.competencyId,
-          requiresFollowUp:
-            result.thread.requiresFollowUp,
-        },
-      })
-    } catch (activityError) {
-      console.error(
-        "Erro ao registrar atividade de criação da conversa de feedback:",
-        activityError
-      )
-    }
-
-    revalidatePath("/app/feedbacks")
-    revalidatePath(
-      `/app/feedbacks/${result.thread.id}`
+    const repository = createTrustedFeedbackMutationRepository()
+    const result = await repository.create(
+      parsedInput.data.assessmentResponseId,
+      parsedInput.data.initialMessage
     )
+    revalidatePath("/app/feedbacks")
+    revalidatePath(`/app/feedbacks/${result.feedbackThreadId}`)
 
     return {
       success: true,
       message:
-        "Conversa de feedback criada com sucesso.",
-      threadId: result.thread.id,
+        result.status === "already_exists"
+          ? "O feedback desta avaliação já foi criado."
+          : "Conversa de feedback criada com sucesso.",
+      threadId: result.feedbackThreadId,
     }
   } catch (error) {
-    console.error(
-      "Erro ao criar conversa de feedback:",
-      error
-    )
-
+    console.error("Erro ao criar conversa de feedback:", error)
     return {
       success: false,
-      message: "Não foi possível criar a conversa de feedback.",
+      message: feedbackMutationErrorMessage(
+        error,
+        "Não foi possível criar a conversa de feedback."
+      ),
     }
   }
 }

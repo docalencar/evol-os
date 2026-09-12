@@ -1,94 +1,36 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { z } from "zod"
 
-import { recordActivity } from "@/features/activity"
-import {
-  getCurrentCompanyContext,
-} from "@/lib/supabase/supabase/current-company"
+import { createTrustedFeedbackMutationRepository } from "../repositories/trusted-feedback-mutation-repository"
+import { feedbackMutationErrorMessage } from "./feedback-mutation-error-message"
 
-import {
-  archiveFeedbackThread,
-} from "../services/archive-feedback-thread"
+export async function archiveFeedbackThreadAction(threadId: string) {
+  if (!z.string().uuid().safeParse(threadId).success) {
+    return { success: false, message: "Conversa de feedback inválida." }
+  }
 
-type ArchiveFeedbackThreadActionState = {
-  success: boolean
-  message: string
-}
-
-export async function archiveFeedbackThreadAction(
-  threadId: string
-): Promise<ArchiveFeedbackThreadActionState> {
   try {
-    const {
-      companyId,
-    } = await getCurrentCompanyContext()
-
-    const thread =
-      await archiveFeedbackThread({
-        companyId,
-        threadId,
-      })
-
-    try {
-      await recordActivity({
-        companyId,
-        activityType:
-          "feedback.archived",
-        module: "feedback",
-        title:
-          "Conversa de feedback arquivada",
-        description:
-          `A conversa de feedback "${thread.title}" foi arquivada.`,
-        actorType: "user",
-        entityType: "feedback_thread",
-        entityId: thread.id,
-        subjectType: "employee",
-        subjectId:
-          thread.receiverEmployeeId,
-        visibility: "company",
-        metadata: {
-          threadId: thread.id,
-          senderEmployeeId:
-            thread.senderEmployeeId,
-          receiverEmployeeId:
-            thread.receiverEmployeeId,
-          feedbackType: thread.type,
-          status: thread.status,
-          priority: thread.priority,
-          feedbackVisibility:
-            thread.visibility,
-          closedAt:
-            thread.closedAt?.toISOString() ??
-            null,
-        },
-      })
-    } catch (activityError) {
-      console.error(
-        "Erro ao registrar atividade de arquivamento do feedback:",
-        activityError
-      )
-    }
-
+    const result = await createTrustedFeedbackMutationRepository().archive(threadId)
     revalidatePath("/app/feedbacks")
-    revalidatePath(
-      `/app/feedbacks/${thread.id}`
-    )
+    revalidatePath(`/app/feedbacks/${result.feedbackThreadId}`)
 
     return {
       success: true,
       message:
-        "Conversa de feedback arquivada com sucesso.",
+        result.status === "already_archived"
+          ? "Esta conversa de feedback já estava arquivada."
+          : "Conversa de feedback arquivada com sucesso.",
     }
   } catch (error) {
-    console.error(
-      "Erro ao arquivar conversa de feedback:",
-      error
-    )
-
+    console.error("Erro ao arquivar conversa de feedback:", error)
     return {
       success: false,
-      message: "Não foi possível arquivar a conversa de feedback.",
+      message: feedbackMutationErrorMessage(
+        error,
+        "Não foi possível arquivar a conversa de feedback."
+      ),
     }
   }
 }

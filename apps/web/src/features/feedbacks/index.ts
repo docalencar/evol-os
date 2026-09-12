@@ -125,15 +125,6 @@ export type {
   GetFeedbackThreadsInput,
 } from "./queries/get-feedback-threads"
 
-export {
-  openFeedbackConversation,
-} from "./services/open-feedback-conversation"
-
-export type {
-  OpenFeedbackConversationInput,
-  OpenFeedbackConversationResult,
-} from "./services/open-feedback-conversation"
-
 export * from "./actions"
 
 export {

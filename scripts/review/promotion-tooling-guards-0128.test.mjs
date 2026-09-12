@@ -28,6 +28,7 @@
 
 import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
+import { spawnSync } from "node:child_process"
 import { dirname, resolve } from "node:path"
 import test from "node:test"
 import { fileURLToPath } from "node:url"
@@ -40,6 +41,104 @@ const VERIFIERS = [VERIFY_PRE, VERIFY_POST]
 const ALL = [PROMOTE, ...VERIFIERS]
 
 const read = (name) => readFileSync(resolve(HERE, name), "utf8")
+
+const classifierSource = (source = read(PROMOTE)) => {
+  const match = source.match(/classify_state\(\) \{[\s\S]*?\n\}/)
+  assert.ok(match, "the classifier must be independently testable")
+  return match[0]
+}
+
+const classify = (overrides = {}, source = read(PROMOTE)) => {
+  const expectedFingerprint = source.match(/EXPECTED_PRE_POLICY_FINGERPRINT="([a-f0-9]{32})"/)?.[1]
+  assert.ok(expectedFingerprint, "the canonical PRE policy fingerprint must be pinned")
+  const fixture = {
+    S_M128: "false",
+    S_M128N: "0",
+    S_NAME: "0",
+    S_EXACT: "0",
+    S_ALT: "(none)",
+    S_BRIDGE: "false",
+    S_INDEX: "<absent>",
+    S_SIMPLE: "6",
+    S_COMP: "0",
+    S_WPOL: "13",
+    S_WPRIV: "30",
+    S_PRE_WPOL: "true",
+    S_POL: "4c89ade7d3f60a123a1cc880afa8dd2d",
+    S_TLC: "false",
+    BASELINE_OK: "yes",
+    EXPECTED_PRE_POLICY_FINGERPRINT: expectedFingerprint,
+    ...overrides,
+  }
+  const assignments = Object.entries(fixture)
+    .map(([key, value]) => `${key}=${JSON.stringify(value)}`)
+    .join("\n")
+  const result = spawnSync("bash", ["-c", `${assignments}\n${classifierSource(source)}\nclassify_state`], {
+    encoding: "utf8",
+  })
+  assert.equal(result.status, 0, result.stderr)
+  return result.stdout.trim()
+}
+
+test("the classifier accepts only the exact canonical PRE-0128 policy contract", () => {
+  assert.equal(classify(), "NOT_APPLIED")
+  assert.equal(classify({ S_WPOL: "12" }), "UNDETERMINED")
+  assert.equal(classify({ S_WPOL: "14" }), "UNDETERMINED")
+  assert.equal(classify({ S_POL: "4c89ade7d3f60a123a1cc880afa8dd2e" }), "UNDETERMINED")
+})
+
+test("every central write-policy identity mutation blocks promotion", () => {
+  for (const mutation of ["policy name", "command", "role", "permissiveness", "USING", "WITH CHECK"]) {
+    assert.equal(
+      classify({ S_PRE_WPOL: "false" }),
+      "UNDETERMINED",
+      `${mutation} drift must not reach the mutating path`,
+    )
+  }
+})
+
+test("partial and exact POST fixtures retain fail-closed classification", () => {
+  assert.equal(classify({ S_BRIDGE: "true" }), "PARTIALLY_APPLIED")
+  assert.equal(
+    classify({
+      S_M128: "true",
+      S_M128N: "1",
+      S_NAME: "5",
+      S_EXACT: "5",
+      S_BRIDGE: "true",
+      S_SIMPLE: "0",
+      S_COMP: "7",
+      S_WPOL: "0",
+      S_WPRIV: "0",
+      S_TLC: "true",
+    }),
+    "APPLIED_AND_CONTRACT_PRESENT",
+  )
+  assert.notEqual(
+    classify({ S_M128: "true", S_M128N: "1", S_NAME: "5", S_EXACT: "4", S_BRIDGE: "true" }),
+    "APPLIED_AND_CONTRACT_PRESENT",
+  )
+})
+
+test("regression mutations to the PRE policy count or fingerprint go RED", () => {
+  const source = read(PROMOTE)
+  const countMutation = source.replace('[ "$S_WPOL" = "13" ]', '[ "$S_WPOL" = "9" ]')
+  assert.notEqual(classify({}, countMutation), "NOT_APPLIED")
+
+  const fingerprintMutation = source.replace(
+    'EXPECTED_PRE_POLICY_FINGERPRINT="4c89ade7d3f60a123a1cc880afa8dd2d"',
+    'EXPECTED_PRE_POLICY_FINGERPRINT="4c89ade7d3f60a123a1cc880afa8dd2e"',
+  )
+  assert.notEqual(classify({}, fingerprintMutation), "NOT_APPLIED")
+})
+
+test("the PRE write-policy identity is a bidirectional exact-set comparison", () => {
+  const source = read(PROMOTE)
+  assert.equal((source.match(/'PERMISSIVE','\{public\}'/g) ?? []).length, 13)
+  assert.match(source, /select \* from expected except select \* from actual/)
+  assert.match(source, /select \* from actual except select \* from expected/)
+  assert.match(source, /PRE_WRITE_POLICY_CONTRACT_MATCH=/)
+})
 
 /** Executable lines only: these files necessarily discuss what they avoid. */
 const executable = (name) =>

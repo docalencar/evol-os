@@ -300,12 +300,19 @@ select 'RPC_SEARCH_PATH_HARDENED=' || (select count(*)::text from pg_proc p
     coalesce(to_regprocedure('public.acknowledge_feedback_v1(uuid)'), 0),
     coalesce(to_regprocedure('public.close_feedback_v1(uuid)'), 0),
     coalesce(to_regprocedure('public.archive_feedback_v1(uuid)'), 0)));
-select 'RPC_EXECUTE_AUTHENTICATED=' || (
-  coalesce((select has_function_privilege('authenticated','public.create_assessment_feedback_v1(uuid,text)','execute')::int) filter (where to_regprocedure('public.create_assessment_feedback_v1(uuid,text)') is not null), 0) +
-  coalesce((select has_function_privilege('authenticated','public.reply_feedback_v1(uuid,text)','execute')::int) filter (where to_regprocedure('public.reply_feedback_v1(uuid,text)') is not null), 0) +
-  coalesce((select has_function_privilege('authenticated','public.acknowledge_feedback_v1(uuid)','execute')::int) filter (where to_regprocedure('public.acknowledge_feedback_v1(uuid)') is not null), 0) +
-  coalesce((select has_function_privilege('authenticated','public.close_feedback_v1(uuid)','execute')::int) filter (where to_regprocedure('public.close_feedback_v1(uuid)') is not null), 0) +
-  coalesce((select has_function_privilege('authenticated','public.archive_feedback_v1(uuid)','execute')::int) filter (where to_regprocedure('public.archive_feedback_v1(uuid)') is not null), 0))::text;
+select 'RPC_EXECUTE_AUTHENTICATED=' || coalesce(sum(
+  case when to_regprocedure(signature) is not null
+    then has_function_privilege('authenticated', signature, 'execute')::int
+    else 0
+  end
+), 0)::text
+from unnest(array[
+  'public.create_assessment_feedback_v1(uuid,text)',
+  'public.reply_feedback_v1(uuid,text)',
+  'public.acknowledge_feedback_v1(uuid)',
+  'public.close_feedback_v1(uuid)',
+  'public.archive_feedback_v1(uuid)'
+]) signature;
 select 'RPC_EXECUTE_OTHER_ROLES=' || (
   select coalesce(sum(has_function_privilege(r, p, 'execute')::int), 0)::text
   from unnest(array['anon','service_role','public']) r,

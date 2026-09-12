@@ -158,6 +158,42 @@ test("provolatile is cast explicitly wherever it is concatenated", () => {
   }
 })
 
+test("FILTER is never attached to a scalar privilege expression", () => {
+  // FILTER belongs to an aggregate expression. The published v1 runner put it
+  // after a scalar subquery/cast, which bash -n and the structural POST checks
+  // could not parse and PostgreSQL rejected before any promotion mutation.
+  for (const name of ALL) {
+    const source = executable(name)
+    assert.equal(
+      /has_(?:function|schema|table)_privilege\s*\([\s\S]{0,300}?\)\s*::\s*int\s*\)?\s*filter\s*\(/i.test(
+        source,
+      ),
+      false,
+      `${name}: FILTER cannot qualify a scalar privilege expression`,
+    )
+  }
+
+  const source = executable(PROMOTE)
+  const at = source.indexOf("RPC_EXECUTE_AUTHENTICATED=")
+  assert.notEqual(at, -1, "the authenticated EXECUTE metric must exist")
+  const statement = source.slice(at, source.indexOf(";", at))
+  assert.match(statement, /coalesce\(sum\(/, "the five exact checks must be aggregated")
+  assert.match(
+    statement,
+    /case when to_regprocedure\(signature\) is not null/,
+    "absent signatures must contribute zero without evaluating their privileges",
+  )
+  for (const signature of [
+    "create_assessment_feedback_v1(uuid,text)",
+    "reply_feedback_v1(uuid,text)",
+    "acknowledge_feedback_v1(uuid)",
+    "close_feedback_v1(uuid)",
+    "archive_feedback_v1(uuid)",
+  ]) {
+    assert.match(statement, new RegExp(`public\\.${signature.replace(/[()]/g, "\\$&")}`))
+  }
+})
+
 test("a query that did not run is never treated as a pass", () => {
   const source = executable(PROMOTE)
   const guards = source.match(/if ! runsql "\$[A-Z0-9]+" "\$SNAP"; then/g) ?? []

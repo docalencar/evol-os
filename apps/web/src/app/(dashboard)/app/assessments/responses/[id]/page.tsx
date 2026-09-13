@@ -13,6 +13,11 @@ import {
   getAssessmentEvaluateeScoredResultReadModel,
   getAssessmentScoredResultReadModel,
 } from "@/features/assessment-feedback-read"
+import {
+  AssessmentResponseFeedbackStarter,
+  canInitiateAssessmentFeedback,
+  getAssessmentResponseFeedbackLink,
+} from "@/features/feedbacks"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 import { resolveAssessmentResultBackLink } from "./assessment-result-return-context"
@@ -51,7 +56,13 @@ export default async function AssessmentResponsePage({
       (workspace.response.status === "submitted" ||
         workspace.response.status === "completed")
     ) {
-      const scoredResult = await getAssessmentScoredResultReadModel(companyId, id)
+      const [scoredResult, feedbackLink] = await Promise.all([
+        getAssessmentScoredResultReadModel(companyId, id),
+        getAssessmentResponseFeedbackLink({
+          companyId,
+          assessmentResponseId: workspace.response.id,
+        }),
+      ])
       const result = presentAssessmentResult({
         result: scoredResult,
         mode: workspace.mode === "administrative" ? "administrative" : "evaluator",
@@ -59,10 +70,22 @@ export default async function AssessmentResponsePage({
           workspace.response.submitted_at ?? workspace.response.completed_at,
       })
 
+      const canInitiateFeedback = canInitiateAssessmentFeedback({
+        personId,
+        evaluatorId: workspace.response.evaluator_id,
+        employeeId: workspace.response.employee_id,
+        status: workspace.response.status,
+      })
+
       return (
         <div className="space-y-8">
           <EntityBackLink href={backLink.href} label={backLink.label} />
           <AssessmentFeedbackCard result={result} />
+          <AssessmentResponseFeedbackStarter
+            assessmentResponseId={workspace.response.id}
+            link={feedbackLink}
+            canInitiate={canInitiateFeedback}
+          />
         </div>
       )
     }

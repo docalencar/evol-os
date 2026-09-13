@@ -110,6 +110,22 @@ export type {
 } from "./queries/get-feedback-messages"
 
 export {
+  canInitiateAssessmentFeedback,
+} from "./authorship/can-initiate-assessment-feedback"
+
+export {
+  getAssessmentResponseFeedbackLink,
+} from "./queries/get-assessment-response-feedback-link"
+
+export type {
+  GetAssessmentResponseFeedbackLinkInput,
+} from "./queries/get-assessment-response-feedback-link"
+
+export type {
+  AssessmentResponseFeedbackLink,
+} from "./types/assessment-response-feedback-link"
+
+export {
   getFeedbackThreadById,
 } from "./queries/get-feedback-thread-by-id"
 
@@ -128,6 +144,7 @@ export type {
 export * from "./actions"
 
 export {
+  AssessmentResponseFeedbackStarter,
   FeedbackDashboardKpiCards,
   FeedbackMessageList,
   FeedbackPriorityBadge,

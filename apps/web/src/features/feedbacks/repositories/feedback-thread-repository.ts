@@ -113,6 +113,42 @@ export async function createFeedbackThreadRepository() {
       }
     },
 
+    /**
+     * Resolves the canonical 0..1 formal thread for an assessment response.
+     *
+     * The lookup key is the `assessment_response_id` bridge that migration 0128
+     * added, never the legacy `assessment_id`, never the title, and never an
+     * inference from sender + receiver. Only the identifier is selected: the
+     * caller needs to know whether a thread exists and where it lives, and
+     * nothing about its contents.
+     *
+     * Row visibility is RLS's decision, not this function's. The SELECT policy
+     * on feedback_threads admits the sender, the receiver and company
+     * administrators, so a caller who may not see the thread gets `null` here
+     * for the same reason they would get nothing from any other read.
+     */
+    async findByAssessmentResponse(
+      companyId: string,
+      assessmentResponseId: string
+    ) {
+      const { data, error } = await supabase
+        .from("feedback_threads")
+        .select("id")
+        .eq("company_id", companyId)
+        .eq(
+          "assessment_response_id",
+          assessmentResponseId
+        )
+        .maybeSingle()
+
+      return {
+        data: data
+          ? { id: (data as { id: string }).id }
+          : null,
+        error,
+      }
+    },
+
     async findById(
       companyId: string,
       threadId: string

@@ -22,6 +22,19 @@ test("dedicated evaluatee is linked to manager without changing E2E-4 self fixtu
   assert.doesNotMatch(selfSpec, /actor\("evaluatee"\)/)
 })
 
+test("Autoavaliação uses its accessible checkbox name and is explicitly disabled", () => {
+  assert.doesNotMatch(
+    spec,
+    /getByText\("Autoavaliação"[\s\S]{0,80}locator\("\.\."\)[\s\S]{0,80}getByRole\("checkbox"\)/,
+  )
+  assert.match(spec, /getByRole\("checkbox", \{ name: "Autoavaliação" \}\)/)
+  assert.match(spec, /expect\(selfAssessmentCheckbox\)\.toBeVisible\(\)/)
+  assert.match(spec, /selfAssessmentCheckbox\.isChecked\(\)/)
+  assert.match(spec, /selfAssessmentCheckbox\.uncheck\(\)/)
+  assert.match(spec, /perspective: "manager"/)
+  assert.doesNotMatch(selfSpec, /selfAssessmentCheckbox/)
+})
+
 test("manager response and every journey id are discovered, never hardcoded", () => {
   assert.match(spec, /perspective: "manager"/)
   assert.match(spec, /evaluator_id: actor\("manager"\)\.personId/)

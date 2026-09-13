@@ -84,8 +84,9 @@ test.describe("assessment feedback lifecycle and authorization", () => {
     await page.locator("#assessment-end-date").fill(end.toISOString().slice(0, 10))
     await page.getByRole("button", { name: "Continuar" }).click()
 
-    const selfCard = page.getByText("Autoavaliação", { exact: true }).locator("..")
-    await selfCard.getByRole("checkbox").uncheck()
+    const selfAssessmentCheckbox = page.getByRole("checkbox", { name: "Autoavaliação" })
+    await expect(selfAssessmentCheckbox).toBeVisible()
+    if (await selfAssessmentCheckbox.isChecked()) await selfAssessmentCheckbox.uncheck()
     await expect(page.getByText("Avaliação pelo gestor", { exact: true }).locator("..").getByRole("checkbox"))
       .toBeChecked()
     await page.getByRole("button", { name: "Continuar" }).click()

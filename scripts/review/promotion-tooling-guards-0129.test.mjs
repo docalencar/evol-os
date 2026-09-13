@@ -1,7 +1,8 @@
 import assert from "node:assert/strict"
 import { spawnSync } from "node:child_process"
-import { readFileSync } from "node:fs"
-import { dirname, resolve } from "node:path"
+import { readFileSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { dirname, join, resolve } from "node:path"
 import test from "node:test"
 import { fileURLToPath } from "node:url"
 
@@ -12,6 +13,7 @@ const prePath = resolve(here, "verify-0129-activity-events-hardening-pre.sh")
 const postPath = resolve(here, "verify-0129-activity-events-hardening-post.sh")
 const migration = () => readFileSync(migrationPath, "utf8")
 const runner = () => readFileSync(runnerPath, "utf8")
+const gate = () => readFileSync(resolve(here, "run-0129-local-db-gate.sh"), "utf8")
 
 const classify = (overrides = {}) => {
   const source = runner()
@@ -285,18 +287,211 @@ test("the CLI transport is discovered, and argv exposure is the last resort", ()
 })
 
 test("the local gate executes the real PRE SQL against a real server", () => {
-  const gate = readFileSync(resolve(here, "run-0129-local-db-gate.sh"), "utf8")
-  assert.match(gate, /@127\.0\.0\.1:\*\|\*@localhost:\*/, "loopback only")
-  assert.match(gate, /verify-0129-activity-events-hardening-pre\.sh/, "it runs the real PRE verifier")
-  assert.match(gate, /supabase db reset/)
-  assert.match(gate, /supabase test db/)
-  // The fixture is constructed and then restored, and the restoration is proven
-  // by measurement rather than asserted.
-  assert.match(gate, /grant select, insert, update, delete, truncate, references, trigger, maintain on table public\.activity_events to anon, authenticated/)
-  assert.match(gate, /revoke select, insert, update, delete, truncate, references, trigger, maintain on table public\.activity_events from public, anon, authenticated/)
-  assert.match(gate, /ACL fingerprint did not change when the privileges did/)
+  const source = gate()
+  assert.match(source, /@127\.0\.0\.1:\*\|\*@localhost:\*/, "loopback only")
+  assert.match(source, /verify-0129-activity-events-hardening-pre\.sh/, "it runs the real PRE verifier")
+  assert.match(source, /supabase db reset/)
+  assert.match(source, /supabase test db/)
+  assert.match(source, /ACL fingerprint did not change when the privileges did/)
   // It must never be pointed at a remote.
-  assert.doesNotMatch(gate, /pooler\.supabase\.com|supabase\.co|E5_REVIEW_DB_URL/)
+  assert.doesNotMatch(source, /pooler\.supabase\.com|supabase\.co|E5_REVIEW_DB_URL/)
+})
+
+// --------------------------------------------------------------------------
+// E5-R1F2 — the gate's two ACL states.
+//
+// The first real run of the gate failed, correctly: it asserted
+// ACTIVITY_SERVICE_PRIVILEGES=8 in both phases, assuming the local baseline and
+// Review's were the same shape. They are not. Review inherited broad ACLs from
+// migration 0039; locally service_role holds Dxtm (4) and never held arwd on
+// this table. 0129 revokes from public, anon and authenticated only, so it is
+// neither the cause of that difference nor a fix for it.
+//
+// These tests execute the gate's own comparison function against synthetic
+// snapshots, so the RED cases are proven without a database.
+// --------------------------------------------------------------------------
+
+const CANONICAL_PRE_RELACL =
+  "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+const CANONICAL_PRE_FINGERPRINT = "46875263bd6598c4534e2df7d1847a5e"
+const LOCAL_HARDENED_RELACL = "{postgres=arwdDxtm/postgres,service_role=Dxtm/postgres}"
+const LOCAL_HARDENED_FINGERPRINT = "0000000000000000000000000000beef"
+
+const gateFunction = (name) => {
+  const fn = gate().match(new RegExp(`^${name}\\(\\) \\{[\\s\\S]*?\\n\\}`, "m"))?.[0]
+  assert.ok(fn, `${name} must be an extractable function`)
+  return fn
+}
+const broadExpectations = () => {
+  const block = gate().match(/^BROAD_EXPECTATIONS="([\s\S]*?)"$/m)?.[1]
+  assert.ok(block, "the broad expectations must be a readable block")
+  return block
+}
+
+/**
+ * The gate's expectation block references its pinned constants by name, so the
+ * block is re-expanded by bash against the gate's own assignments rather than
+ * being string-substituted here. A test that substituted its own values would
+ * still pass if the gate stopped pinning the canonical fingerprint.
+ */
+const gateConstants = () => {
+  const source = gate()
+  return ["CANONICAL_REVIEW_PRE_RELACL", "CANONICAL_REVIEW_PRE_FINGERPRINT"]
+    .map((name) => {
+      const line = source.match(new RegExp(`^${name}='[^']*'$`, "m"))?.[0]
+      assert.ok(line, `${name} must be pinned in the gate`)
+      return line
+    })
+    .join("\n")
+}
+
+/** Runs the gate's real check_expectations against a synthetic snapshot. */
+const runCheck = (snapshot, expectations) => {
+  const file = join(tmpdir(), `e5r1f2-${Math.random().toString(36).slice(2)}.txt`)
+  writeFileSync(file, Object.entries(snapshot).map(([k, v]) => `${k}=${v}`).join("\n") + "\n")
+  const script = [
+    `say() { printf '%s\\n' "$*"; }`,
+    gateConstants(),
+    gateFunction("label"),
+    gateFunction("check_expectations"),
+    `EXPECTATIONS="$2"`,
+    `check_expectations "$1" test "$(eval "printf '%s' \\"$EXPECTATIONS\\"")"`,
+  ].join("\n")
+  const r = spawnSync("bash", ["-c", script, "_", file, expectations], { encoding: "utf8" })
+  rmSync(file, { force: true })
+  return { green: r.status === 0, out: r.stdout }
+}
+
+/** A snapshot of the synthetic canonical Review PRE state. */
+const broadSnapshot = (over = {}) => ({
+  ACTIVITY_CLIENT_PRIVILEGES: "16", ACTIVITY_SERVICE_PRIVILEGES: "8",
+  ACTIVITY_SELECT_ANON: "true", ACTIVITY_SELECT_AUTHENTICATED: "true",
+  ACTIVITY_SELECT_PUBLIC: "false",
+  ACTIVITY_ACL_FINGERPRINT: CANONICAL_PRE_FINGERPRINT,
+  ACTIVITY_RELACL: CANONICAL_PRE_RELACL,
+  ACTIVITY_POLICY_COUNT: "2", ACTIVITY_RLS_ENABLED: "true",
+  TIMELINE_FILTERS_COMPANY: "true", TIMELINE_SECURITY_DEFINER: "true",
+  TIMELINE_EXECUTE_AUTHENTICATED: "true", ENTITY_TIMELINE_STILL_PRESENT: "true",
+  BRIDGE_PRESENT: "true", COMPOSITE_FKS_VALIDATED: "7", RPC_EXACT_SIGNATURES: "5",
+  FEEDBACK_WRITE_PRIVILEGES: "0", FEEDBACK_WRITE_POLICIES: "0",
+  ...over,
+})
+
+/** The expectations the gate builds at run time from its capture. */
+const restoreExpectations = (over = {}) => {
+  const o = { relacl: LOCAL_HARDENED_RELACL, fp: LOCAL_HARDENED_FINGERPRINT,
+    service: "4", client: "0", pub: "false", ...over }
+  return [
+    `ACTIVITY_RELACL=${o.relacl}`, `ACTIVITY_ACL_FINGERPRINT=${o.fp}`,
+    `ACTIVITY_SERVICE_PRIVILEGES=${o.service}`, `ACTIVITY_CLIENT_PRIVILEGES=${o.client}`,
+    `ACTIVITY_SELECT_PUBLIC=${o.pub}`, "ACTIVITY_SELECT_ANON=false",
+    "ACTIVITY_SELECT_AUTHENTICATED=false",
+  ].join("\n")
+}
+const restoredSnapshot = (over = {}) => ({
+  ACTIVITY_RELACL: LOCAL_HARDENED_RELACL, ACTIVITY_ACL_FINGERPRINT: LOCAL_HARDENED_FINGERPRINT,
+  ACTIVITY_SERVICE_PRIVILEGES: "4", ACTIVITY_CLIENT_PRIVILEGES: "0",
+  ACTIVITY_SELECT_PUBLIC: "false", ACTIVITY_SELECT_ANON: "false",
+  ACTIVITY_SELECT_AUTHENTICATED: "false", ...over,
+})
+
+test("the broad fixture is canonical Review PRE: client 16 and service_role 8", () => {
+  const expectations = broadExpectations()
+  assert.match(expectations, /ACTIVITY_SERVICE_PRIVILEGES=8/, "Review's service_role holds all eight")
+  assert.match(expectations, /ACTIVITY_CLIENT_PRIVILEGES=16/)
+  assert.equal(runCheck(broadSnapshot(), expectations).green, true)
+})
+
+test("the canonical PRE fingerprint and relacl are asserted exactly", () => {
+  const source = gate()
+  assert.match(source, new RegExp(`CANONICAL_REVIEW_PRE_FINGERPRINT='${CANONICAL_PRE_FINGERPRINT}'`))
+  assert.ok(source.includes(CANONICAL_PRE_RELACL), "the exact ACL text must be pinned")
+  assert.match(broadExpectations(), /ACTIVITY_ACL_FINGERPRINT=\$CANONICAL_REVIEW_PRE_FINGERPRINT/)
+  // Order is part of the text an md5 hashes, so the fixture clears first and
+  // grants anon, authenticated, service_role in that order.
+  const clear = source.indexOf("revoke all privileges on table public.activity_events from $CLIENT_FACING_GRANTEES")
+  const anon = source.indexOf("public.activity_events to anon")
+  const auth = source.indexOf("public.activity_events to authenticated")
+  const svc = source.indexOf("public.activity_events to service_role")
+  assert.ok(clear !== -1 && clear < anon && anon < auth && auth < svc, "clear, then grant in canonical order")
+})
+
+test("a broad fixture missing one service_role privilege goes RED", () => {
+  const e = broadExpectations()
+  assert.equal(runCheck(broadSnapshot({ ACTIVITY_SERVICE_PRIVILEGES: "7" }), e).green, false)
+  assert.equal(runCheck(broadSnapshot({ ACTIVITY_SERVICE_PRIVILEGES: "4" }), e).green, false,
+    "the local shape must not be mistaken for Review's")
+  assert.equal(runCheck(broadSnapshot({ ACTIVITY_CLIENT_PRIVILEGES: "15" }), e).green, false)
+})
+
+test("an accidental PUBLIC SELECT in the broad fixture goes RED", () => {
+  const result = runCheck(broadSnapshot({ ACTIVITY_SELECT_PUBLIC: "true" }), broadExpectations())
+  assert.equal(result.green, false)
+  assert.match(result.out, /FAIL \[test\] ACTIVITY_SELECT_PUBLIC/)
+})
+
+test("a wrong fingerprint goes RED even when every count is right", () => {
+  // The counts and the fingerprint are independent: an ACL built in the wrong
+  // order has the right privileges and the wrong text.
+  const wrongOrder = "{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres}"
+  const result = runCheck(
+    broadSnapshot({ ACTIVITY_ACL_FINGERPRINT: "ffffffffffffffffffffffffffffffff", ACTIVITY_RELACL: wrongOrder }),
+    broadExpectations(),
+  )
+  assert.equal(result.green, false)
+  assert.match(result.out, /FAIL \[test\] ACTIVITY_ACL_FINGERPRINT/)
+  assert.match(result.out, /FAIL \[test\] ACTIVITY_RELACL/)
+})
+
+test("the restored local state is service_role 4, and is compared to the capture", () => {
+  const source = gate()
+  // Restoration is driven by what was captured, never by a constant.
+  assert.match(source, /ORIG_SERVICE=\$\(label ACTIVITY_SERVICE_PRIVILEGES "\$SNAP_ORIGINAL"\)/)
+  assert.match(source, /ACTIVITY_SERVICE_PRIVILEGES=\$ORIG_SERVICE/)
+  assert.match(source, /ACTIVITY_RELACL=\$ORIG_RELACL/)
+  assert.match(source, /ACTIVITY_ACL_FINGERPRINT=\$ORIG_FINGERPRINT/)
+  assert.doesNotMatch(source, /ACTIVITY_SERVICE_PRIVILEGES=4/, "4 must never be hard-coded either")
+  assert.equal(runCheck(restoredSnapshot(), restoreExpectations()).green, true)
+  assert.equal(runCheck(restoredSnapshot({ ACTIVITY_SERVICE_PRIVILEGES: "8" }), restoreExpectations()).green, false,
+    "Review's shape left behind locally is a failed restoration")
+})
+
+test("a client privilege surviving restoration goes RED", () => {
+  const leftBehind = runCheck(
+    restoredSnapshot({ ACTIVITY_CLIENT_PRIVILEGES: "1", ACTIVITY_SELECT_ANON: "true" }),
+    restoreExpectations(),
+  )
+  assert.equal(leftBehind.green, false)
+  assert.match(leftBehind.out, /FAIL \[test\] ACTIVITY_CLIENT_PRIVILEGES/)
+  assert.match(leftBehind.out, /FAIL \[test\] ACTIVITY_SELECT_ANON/)
+})
+
+test("a wrong restored fingerprint goes RED", () => {
+  const drifted = runCheck(
+    restoredSnapshot({ ACTIVITY_ACL_FINGERPRINT: "deadbeefdeadbeefdeadbeefdeadbeef" }),
+    restoreExpectations(),
+  )
+  assert.equal(drifted.green, false)
+  assert.match(drifted.out, /FAIL \[test\] ACTIVITY_ACL_FINGERPRINT/)
+  // And the relacl text is checked alongside it, so a fingerprint collision
+  // alone could not carry a wrong ACL through.
+  assert.equal(
+    runCheck(restoredSnapshot({ ACTIVITY_RELACL: CANONICAL_PRE_RELACL }), restoreExpectations()).green,
+    false,
+  )
+})
+
+test("the restore script is generated from the capture, not hand-written", () => {
+  const source = gate()
+  assert.match(source, /psql_local -o "\$RESTORE_SQL"/, "the restore statements are produced by a query")
+  assert.match(source, /aclexplode/, "from the ACL that was actually there")
+  assert.match(source, /with ordinality/, "replayed in relacl order, because order is part of the text")
+  assert.match(source, /order by ord;/, "ordering is an explicit sort key, not a UNION ALL accident")
+  assert.match(source, /Refusing to mutate a state I cannot restore/,
+    "an uncapturable original must abort before the fixture is built")
+  const capture = source.indexOf('snapshot "$SNAP_ORIGINAL"')
+  const build = source.indexOf("grant $ALL_TABLE_PRIVILEGES")
+  assert.ok(capture !== -1 && capture < build, "capture strictly precedes the first mutation")
 })
 
 test("PRE and POST semantics are unchanged by the connection work", () => {

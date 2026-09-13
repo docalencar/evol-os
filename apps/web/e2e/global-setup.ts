@@ -23,7 +23,7 @@ import { createSyntheticUser } from "./fixtures/synthetic-identity"
 import { createTenantFixture, destroyRunFixtures } from "./fixtures/tenant-fixture"
 
 /** Identities that become members of the run's fixture tenant (tenant A). */
-const TENANT_ROLES: SyntheticRole[] = ["admin", "manager", "employee"]
+const TENANT_ROLES: SyntheticRole[] = ["admin", "manager", "employee", "evaluatee"]
 
 /**
  * Identities created with NO membership.

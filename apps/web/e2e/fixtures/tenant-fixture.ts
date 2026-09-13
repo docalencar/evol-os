@@ -196,6 +196,24 @@ export async function createTenantFixture(
     resolved.push(withPerson)
   }
 
+  // E2E-5 needs a genuine manager-perspective response without changing the
+  // self-response fixture exercised by E2E-4. Only the dedicated evaluatee is
+  // placed under the synthetic manager; `employee` stays unrelated and is the
+  // same-tenant nonparticipant used by the authorization probes.
+  const manager = resolved.find((user) => user.role === "manager")
+  const evaluatee = resolved.find((user) => user.role === "evaluatee")
+  if (!manager?.personId || !evaluatee?.personId) {
+    throw new Error("E2E_FIXTURE_MANAGER_RELATION_MISSING")
+  }
+  const { error: reportingLineError } = await adminClient()
+    .from("people")
+    .update({ manager_id: manager.personId })
+    .eq("company_id", company.companyId)
+    .eq("id", evaluatee.personId)
+  if (reportingLineError) {
+    throw new Error(`E2E_FIXTURE_MANAGER_RELATION_FAILED: ${reportingLineError.message}`)
+  }
+
   return Object.freeze({
     companyId: company.companyId,
     companyName: company.name,

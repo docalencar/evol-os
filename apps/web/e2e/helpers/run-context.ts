@@ -24,7 +24,7 @@ import { journalFile, runDir, storageStateFile } from "./run-paths"
  * journey, and the company it creates through the UI becomes tenant B — the
  * foreign tenant the isolation proof needs. No second fixture company exists.
  */
-export type SyntheticRole = "admin" | "manager" | "employee" | "onboarding"
+export type SyntheticRole = "admin" | "manager" | "employee" | "evaluatee" | "onboarding"
 
 export type SyntheticUser = Readonly<{
   role: SyntheticRole

@@ -84,11 +84,20 @@ test.describe("assessment feedback lifecycle and authorization", () => {
     await page.locator("#assessment-end-date").fill(end.toISOString().slice(0, 10))
     await page.getByRole("button", { name: "Continuar" }).click()
 
+    // Both perspective controls are located by accessible name. ParticipantCard
+    // renders <label><input><span><span>title</span><span>description</span></span></label>,
+    // so the input is a SIBLING of the span that groups title and description:
+    // walking up from the title text reaches that group, which contains no
+    // checkbox. Playwright matches `name` as a case-insensitive substring, and
+    // the label wraps both spans, so the accessible name is
+    // "Avaliação pelo gestor A liderança direta avalia a pessoa." — the title
+    // alone selects it, uniquely among the four perspectives.
     const selfAssessmentCheckbox = page.getByRole("checkbox", { name: "Autoavaliação" })
     await expect(selfAssessmentCheckbox).toBeVisible()
     if (await selfAssessmentCheckbox.isChecked()) await selfAssessmentCheckbox.uncheck()
-    await expect(page.getByText("Avaliação pelo gestor", { exact: true }).locator("..").getByRole("checkbox"))
-      .toBeChecked()
+    const managerAssessmentCheckbox = page.getByRole("checkbox", { name: "Avaliação pelo gestor" })
+    await expect(managerAssessmentCheckbox).toBeVisible()
+    await expect(managerAssessmentCheckbox).toBeChecked()
     await page.getByRole("button", { name: "Continuar" }).click()
     await page.locator("#assessment-visibility").selectOption({ label: "Resultado completo" })
     await page.getByRole("button", { name: "Continuar" }).click()

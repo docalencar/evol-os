@@ -23,6 +23,7 @@ const FULL_NAMES: Record<SyntheticRole, string> = {
   admin: "E2E Admin",
   manager: "E2E Manager",
   employee: "E2E Employee",
+  evaluatee: "E2E Evaluatee",
   onboarding: "E2E Onboarding",
 }
 
@@ -38,6 +39,7 @@ const MEMBERSHIP_ROLE: Record<SyntheticRole, SyntheticUser["membershipRole"]> = 
   admin: "owner",
   manager: "manager",
   employee: "employee",
+  evaluatee: "employee",
   // The onboarding identity holds NO membership when it is created. `owner` is
   // the role `create_company_with_owner` will give it once the journey runs; the
   // fixture never writes it, and `createTenantFixture` never sees this identity.

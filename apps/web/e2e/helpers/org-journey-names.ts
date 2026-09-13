@@ -85,3 +85,8 @@ export function assessmentCycleName(runId: string): string {
 export function assessmentResultCycleName(runId: string): string {
   return `E2E Result Cycle ${runId}`
 }
+
+/** Dedicated manager-perspective cycle used only by E2E-5. */
+export function assessmentFeedbackCycleName(runId: string): string {
+  return `E2E Feedback Cycle ${runId}`
+}

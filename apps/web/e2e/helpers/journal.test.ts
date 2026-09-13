@@ -46,7 +46,12 @@ function user(role: SyntheticUser["role"], id: string): SyntheticUser {
   return {
     role,
     // `admin` and `onboarding` both end up owning a tenant; the rest map through.
-    membershipRole: role === "admin" || role === "onboarding" ? "owner" : role,
+    membershipRole:
+      role === "admin" || role === "onboarding"
+        ? "owner"
+        : role === "evaluatee"
+          ? "employee"
+          : role,
     email: `e2e+${id}@evol-e2e.invalid`,
     userId: id,
     personId: null,

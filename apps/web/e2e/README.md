@@ -167,6 +167,7 @@ inserted first.
 | `admin` | `owner` | created by `create_company_with_owner` |
 | `manager` | `manager` | bootstrap insert |
 | `employee` | `employee` | bootstrap insert |
+| `evaluatee` | `employee` | bootstrap insert; reports to `manager` for E2E-5 |
 
 Role strings are the real check-constraint values from migration 0001
 (`owner | admin | hr | manager | employee`).

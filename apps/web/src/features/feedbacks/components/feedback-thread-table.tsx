@@ -4,7 +4,7 @@ import {
   DataTable,
 } from "@/components/shared/data-table"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
 
 import {
   FEEDBACK_THREAD_TYPE_LABELS,
@@ -139,18 +139,12 @@ export function FeedbackThreadTable({
           key: "actions",
           header: "Ações",
           render: (thread) => (
-            <Button
-              variant="outline"
-              size="sm"
-              nativeButton={false}
-              render={
-                <Link
-                  href={`/app/feedbacks/${thread.id}`}
-                />
-              }
+            <Link
+              href={`/app/feedbacks/${thread.id}`}
+              className={buttonVariants({ variant: "outline", size: "sm" })}
             >
               Abrir conversa
-            </Button>
+            </Link>
           ),
         },
       ]}

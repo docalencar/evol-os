@@ -7,7 +7,7 @@ import { MessageSquarePlus } from "lucide-react"
 import { toast } from "sonner"
 
 import { EntityDialog } from "@/components/shared/entity-dialog"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 
@@ -56,12 +56,12 @@ export function AssessmentResponseFeedbackStarter({
           </p>
         </div>
 
-        <Button
-          nativeButton={false}
-          render={<Link href={`/app/feedbacks/${link.threadId}`} />}
+        <Link
+          href={`/app/feedbacks/${link.threadId}`}
+          className={buttonVariants()}
         >
           Abrir conversa de feedback
-        </Button>
+        </Link>
       </Card>
     )
   }

@@ -21,6 +21,8 @@ import {
 
 const FULL_NAMES: Record<SyntheticRole, string> = {
   admin: "E2E Admin",
+  company_admin: "E2E Company Admin",
+  hr: "E2E HR",
   manager: "E2E Manager",
   employee: "E2E Employee",
   evaluatee: "E2E Evaluatee",
@@ -37,6 +39,8 @@ const FULL_NAMES: Record<SyntheticRole, string> = {
  */
 const MEMBERSHIP_ROLE: Record<SyntheticRole, SyntheticUser["membershipRole"]> = {
   admin: "owner",
+  company_admin: "admin",
+  hr: "hr",
   manager: "manager",
   employee: "employee",
   evaluatee: "employee",

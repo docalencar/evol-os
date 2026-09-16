@@ -257,12 +257,28 @@ test.describe("assessment feedback lifecycle and authorization", () => {
       .eq("assessment_response_id", responseId)
     expect(count.count).toBe(1)
 
-    await switchTo(page, "employee")
-    await page.goto(`/app/feedbacks/${threadId}`)
-    const sameTenantBody = await page.locator("body").innerText()
-    await page.goto(`/app/feedbacks/${NONEXISTENT_ID}`)
-    expect(await page.locator("body").innerText()).toBe(sameTenantBody)
-    expect(sameTenantBody).not.toContain(INITIAL_MESSAGE)
+    // These four run-owned identities belong to tenant A, but none is sender
+    // or receiver. The synthetic "admin" is the real owner; company_admin
+    // and hr have their distinct, real membership roles.
+    expect(actor("admin").membershipRole).toBe("owner")
+    expect(actor("company_admin").membershipRole).toBe("admin")
+    expect(actor("hr").membershipRole).toBe("hr")
+    for (const role of ["employee", "admin", "company_admin", "hr"] as const) {
+      const nonparticipant = actor(role)
+      expect(nonparticipant.personId).toBeTruthy()
+      expect(nonparticipant.personId).not.toBe(actor("manager").personId)
+      expect(nonparticipant.personId).not.toBe(actor("evaluatee").personId)
+
+      await switchTo(page, role)
+      await page.goto(`/app/feedbacks/${threadId}`)
+      const deniedBody = await page.locator("body").innerText()
+      await page.goto(`/app/feedbacks/${NONEXISTENT_ID}`)
+      expect(await page.locator("body").innerText()).toBe(deniedBody)
+      expect(deniedBody).not.toContain(INITIAL_MESSAGE)
+      expect(deniedBody).not.toContain("Feedback da avaliação")
+      await expect(page.getByRole("heading", { name: "Conversa de feedback" })).toHaveCount(0)
+      await expect(page.getByRole("button", { name: /Confirmar recebimento|Enviar resposta|Encerrar conversa|Arquivar conversa/ })).toHaveCount(0)
+    }
 
     await switchTo(page, "onboarding")
     await page.goto(`/app/feedbacks/${threadId}`)

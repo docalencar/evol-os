@@ -116,10 +116,20 @@ test.describe("organization structure built through the real UI", () => {
     // Step 4: seniorities — optional, and the catalog may legitimately be empty.
     await page.getByRole("button", { name: /^Continuar$/ }).click()
 
-    // Step 5: review, then the real mutation.
+    // Step 5: review, then the real mutation. The review step itself displays
+    // `position`, so finding that text before the dialog closes proves nothing.
     await page.getByRole("button", { name: "Criar cargo" }).click()
 
-    await expect(page.getByText(position, { exact: true }).first()).toBeVisible({
+    // A failed Action leaves the wizard open and emits an error toast; only the
+    // successful Action emits this product signal and closes the dialog.
+    await expect(page.getByText("Cargo criado com sucesso.", { exact: true })).toBeVisible()
+    await expect(page.getByRole("dialog", { name: "Novo cargo" })).toBeHidden()
+
+    // Reload the Server Component list. This link is rendered by PositionTable,
+    // not by the wizard's client-side review/summary DOM.
+    await page.reload()
+    await expect(page.getByRole("heading", { level: 1, name: "Cargos" })).toBeVisible()
+    await expect(page.getByRole("table").getByRole("link", { name: position, exact: true })).toBeVisible({
       timeout: 30_000,
     })
   })

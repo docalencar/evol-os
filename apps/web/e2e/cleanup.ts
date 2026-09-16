@@ -41,7 +41,7 @@ import {
   type RunTerminalState,
 } from "./lifecycle/terminal-state"
 
-const ROLES: SyntheticRole[] = ["admin", "manager", "employee", "evaluatee", "onboarding"]
+const ROLES: SyntheticRole[] = ["admin", "manager", "employee", "evaluatee", "onboarding", "company_admin", "hr"]
 
 export type CleanupOutcome = Readonly<{
   ok: boolean

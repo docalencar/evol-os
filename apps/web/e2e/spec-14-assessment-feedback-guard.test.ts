@@ -170,10 +170,10 @@ test("happy path uses UI while only duplicate capability uses the trusted RPC", 
 })
 
 test("negative probes compare unauthorized and nonexistent outcomes", () => {
-  assert.match(spec, /sameTenantBody/)
+  assert.match(spec, /deniedBody/)
   assert.match(spec, /foreignBody/)
   assert.match(spec, /NONEXISTENT_ID/)
-  assert.match(spec, /toBe\(sameTenantBody\)/)
+  assert.match(spec, /toBe\(deniedBody\)/)
   assert.match(spec, /toBe\(foreignBody\)/)
   assert.match(spec, /not\.toContain\(INITIAL_MESSAGE\)/)
 })

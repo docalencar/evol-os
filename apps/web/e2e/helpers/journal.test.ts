@@ -51,7 +51,9 @@ function user(role: SyntheticUser["role"], id: string): SyntheticUser {
         ? "owner"
         : role === "evaluatee"
           ? "employee"
-          : role,
+          : role === "company_admin"
+            ? "admin"
+            : role,
     email: `e2e+${id}@evol-e2e.invalid`,
     userId: id,
     personId: null,

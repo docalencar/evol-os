@@ -44,15 +44,15 @@ O PROJECT_STATE.md é uma fotografia oficial do estado do programa. Ele não cri
 
 ## 4. Estado atual
 
-> **Reconciliação de jornadas hosted — 2026-09-16.** Autoridade técnica:
-> `main`/`acc480db605fa385143fe2812599f7f27350c939`. E2E-0, E2E-1, E2E-2,
+> **Reconciliação de jornadas hosted e D-P0 — 2026-09-17.** Baseline técnica do
+> contrato: `main`/`60e7931443bea1553714ba06928b7f1a1283fb7b`. E2E-0, E2E-1, E2E-2,
 > E2E-3, E2E-4 e E2E-5 estão `CLOSED / PASS`. E2E-5 foi fechado pelo run
 > `260916024159-e593c0`, 62/62 PASS, contrato 24/24 provado, teardown
 > `RETIRED / HEALTHY`. O registro auditável está em
 > [E2E-5 Assessment Feedback Lifecycle Closure](./Execution/E2E-5-ASSESSMENT-FEEDBACK-LIFECYCLE-CLOSURE.md).
-> O próximo domínio dependency-consistent é a Jornada 4 — Desenvolvimento, mas
-> nenhum `E2E-6` foi definido: primeiro deve ocorrer discovery/readiness sobre
-> privacy, writes trusted, PDI alcançável, conclusão de ações e revisões.
+> O próximo domínio dependency-consistent é a Jornada 4 — Desenvolvimento. O
+> contrato D-P0 de privacy, atores e lifecycle está aceito; nenhum `E2E-6` foi
+> definido. O próximo slice é D-DB1, trusted read/mutation boundary.
 
 ### Product Decisions
 
@@ -129,13 +129,14 @@ O status normativo e o conteúdo completo permanecem no
 
 ## 6. Próxima etapa
 
-> **Direção corrente (2026-09-16).** A próxima entrega é uma discovery de
-> readiness da **Jornada 4 — Desenvolvimento**, conforme `NEXT_STEPS.md`. Não é
-> implementação, não é desenho de harness e não autoriza hosted run. Deve
-> adjudicar os blockers já registrados: privacy sign-off de Development, writes
-> P1 ainda legados, template publicável/aplicável pela UI, caminho gap/Feedback
-> → PDI, conclusão de ação e revisões periódicas. A numeração de um próximo E2E
-> só pode ser definida após o contrato da jornada ser congelado.
+> **Direção corrente (2026-09-17).** O
+> [D-P0 — Development Privacy, Actors and Lifecycle Contract](./Execution/D-P0-DEVELOPMENT-PRIVACY-ACTORS-LIFECYCLE-CONTRACT.md)
+> está aceito e removeu os blockers decisórios. Development está
+> `READY_FOR_TRUSTED_BOUNDARY_IMPLEMENTATION`. A próxima entrega é **D-DB1 —
+> Development Trusted Read/Mutation Boundary**: reads privadas por relação,
+> mutations operacionais trusted, enforcement das transições, review persistence,
+> audit privado e testes de segurança. D-DB1 não inclui UI, harness ou hosted
+> run. O contrato hosted e sua numeração permanecem não congelados.
 
 ### Histórico preservado
 

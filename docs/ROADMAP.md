@@ -1,15 +1,16 @@
 # Evol OS — Roadmap
 
-> **Estado atual (2026-09-16; autoridade = `main`/HEAD
-> `acc480db605fa385143fe2812599f7f27350c939`).** Os gates hosted E2E-0 a
+> **Estado atual (2026-09-17; baseline do contrato = `main`/HEAD
+> `60e7931443bea1553714ba06928b7f1a1283fb7b`).** Os gates hosted E2E-0 a
 > E2E-5 estão **CLOSED / PASS**. E2E-5 — Assessment Feedback lifecycle — foi
 > fechado pelo run `260916024159-e593c0`: 62/62 PASS, contrato 24/24 provado e
 > teardown `RETIRED / HEALTHY`. A próxima capacidade na sequência normativa é a
-> **Jornada 4 — Desenvolvimento**, mas ela ainda não possui contrato hosted nem
-> numeração E2E aprovada. A próxima prioridade é uma **readiness discovery** para
-> reconciliar privacy, trusted authoring, criação/aplicação alcançável de PDI,
-> conclusão de ações e revisões periódicas. Não iniciar harness ou implementação
-> antes dessa adjudicação. Production: `UNKNOWN / REVERIFY BEFORE USE`. Legacy:
+> **Jornada 4 — Desenvolvimento**. O contrato D-P0 de privacy, atores e lifecycle
+> está aceito; ela ainda não possui contrato hosted nem numeração E2E aprovada. A
+> próxima prioridade é **D-DB1 — Development Trusted Read/Mutation Boundary**,
+> conforme `NEXT_STEPS.md`. Não iniciar UI, harness ou hosted proof antes das
+> boundaries e validações locais exigidas pelo D-P0. Production:
+> `UNKNOWN / REVERIFY BEFORE USE`. Legacy:
 > `NOT A PROMOTION TARGET`. O corpo histórico abaixo preserva programas e
 > prioridades anteriores; a entrega operacional corrente vive em
 > `NEXT_STEPS.md`.

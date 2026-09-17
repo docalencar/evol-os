@@ -1,9 +1,9 @@
 # Evol OS — Próxima entrega
 
 ```
-MAIN=acc480db605fa385143fe2812599f7f27350c939
+MAIN=60e7931443bea1553714ba06928b7f1a1283fb7b
 E2E-5=CLOSED/PASS   run 260916024159-e593c0   62/62   24/24   RETIRED
-PRÓXIMO=Jornada 4 — Desenvolvimento / readiness discovery
+PRÓXIMO=D-DB1 — Development Trusted Read/Mutation Boundary
 E2E_NUMBER=NOT_ASSIGNED
 HOSTED_RUN=NOT_AUTHORIZED
 ```
@@ -43,24 +43,42 @@ Essa é a próxima candidata dependency-consistent pelo valor de usuário e pelo
 Gate do MVP. Ela ainda **não** recebe automaticamente o nome `E2E-6`: não existe
 contrato hosted congelado nem readiness suficiente para isso.
 
-## 3. Próximo slice recomendado — Development readiness discovery
+## 3. D-P0 encerrado — contrato de Development congelado
 
-O próximo slice é exclusivamente discovery/adjudicação. Deve:
+O [D-P0 — Development Privacy, Actors and Lifecycle Contract](./Execution/D-P0-DEVELOPMENT-PRIVACY-ACTORS-LIFECYCLE-CONTRACT.md)
+está `CLOSED / PASS`. Ele congela:
 
-1. reconstruir o caminho real navegável de gap canônico até PDI;
-2. decidir se o MVP exige criação manual, aplicação de template ou integração
-   explícita com Feedback como entrada do plano;
-3. verificar quais writes de plans/goals/actions ainda usam caminhos legados e
-   recortar as trusted boundaries necessárias;
-4. concluir o privacy sign-off de Development antes de qualquer hosted proof;
-5. provar se template publicável e aplicação são alcançáveis pela UI;
-6. adjudicar a ausência de conclusão de ação e revisões periódicas;
-7. só então propor propriedades, teardown coverage e eventual nome/numeração do
-   próximo E2E.
+- PDI como relação privada entre subject e responsável operacional, com
+  governança administrativa de `owner/admin/hr`;
+- leitura do employee sobre o próprio PDI, do manager sobre direct reports ou
+  planos sob sua responsabilidade e de atores administrativos no tenant;
+- negação explícita ao nonparticipant same-tenant e ao foreign tenant;
+- employee como executor de ações, sem autoridade para concluir/cancelar PDI;
+- plans `completed`/`cancelled` terminais, sem reopen no primeiro MVP;
+- progresso determinístico e review Development append-only `periodic|final`;
+- templates `draft → published → obsolete`, publicados por `owner/admin/hr`;
+- integração automática Gap/Assessment/Feedback/AI → PDI deferida.
 
-Este slice não implementa produto, banco ou harness.
+O contrato hosted e a numeração E2E continuam não congelados.
 
-## 4. Readiness atual de Development
+## 4. Próximo slice — D-DB1
+
+**D-DB1 — Development Trusted Read/Mutation Boundary** deve implementar, em um
+recorte DB-first coerente:
+
+1. reads privacy-aware para subject, relação operacional e administração;
+2. trusted mutations para plano, ações, reviews e versões de template;
+3. autorização de manager por direct report e/ou `owner_id` ativo;
+4. enforcement transacional das state machines do D-P0;
+5. review persistence e private operational audit;
+6. testes de subject, manager, administração, nonparticipant same-tenant e
+   foreign tenant;
+7. classificação de retention para qualquer entidade nova.
+
+D-DB1 não inclui UI, harness, hosted run nem integração automática de Gap ou
+Feedback. A aplicação determinística ADR-0014 deve ser reutilizada.
+
+## 5. Readiness atual de Development
 
 | Dependência | Classificação | Evidência observada |
 | --- | --- | --- |
@@ -69,51 +87,44 @@ Este slice não implementa produto, banco ou harness.
 | Read boundaries de Development | `ALREADY_RESOLVED` | integradas às rotas MVP |
 | Integridade e aplicação determinística de templates | `ALREADY_RESOLVED` | fundação implementada pela ADR-0014 / PR 3C |
 | Cobertura de teardown das tabelas Development | `ALREADY_RESOLVED` | plans, goals, actions e grafo de template application constam do retention registry |
-| Privacy de planos, metas e ações | `OPEN_CONFIRMED` | sign-off pendente; leitura histórica permite ampla visibilidade no tenant |
+| Privacy de planos, metas, ações e reviews | `CONTRACT_FROZEN` | D-P0 define subject, relação operacional, administração e negação a nonparticipants |
 | Authoring trusted de Development | `OPEN_CONFIRMED` | pendente no programa P1; repositories de authoring ainda fazem DML de tabela |
-| Template novo publicável e aplicável pela UI | `OPEN_CONFIRMED` | há CRUD de template e consumo de versão `published`, mas não há operação UI de publicação |
+| Template lifecycle | `CONTRACT_FROZEN / IMPLEMENTATION_OPEN` | `draft → published → obsolete`; publicação ainda não alcançável |
 | Gap ou Feedback gerando PDI | `DEFERRED` | não demonstrado e explicitamente fora do fechamento E2E-5 |
-| Conclusão de development action | `OPEN_CONFIRMED` | o produto lê status/progresso, mas não expõe mutation de conclusão da ação |
-| Revisões periódicas | `OPEN_CONFIRMED` | fluxo, persistência e superfície de review não foram encontrados no domínio Development |
-| Atores e ownership do PDI | `UNCLEAR` | a matriz de quem cria, acompanha, altera e lê precisa ser congelada junto ao privacy sign-off |
-| Contrato hosted completo | `UNCLEAR` | não definido; nenhum nome E2E foi atribuído |
+| Conclusão de development action | `CONTRACT_FROZEN / IMPLEMENTATION_OPEN` | subject inicia/conclui; owner/manager/admin pode skip com razão auditada |
+| Revisões periódicas | `CONTRACT_FROZEN / IMPLEMENTATION_OPEN` | aggregate append-only `periodic|final` pertence ao D-DB1 |
+| Atores e ownership do PDI | `CONTRACT_FROZEN` | `employee_id` subject, `owner_id` responsável, `created_by` autoria |
+| Contrato hosted completo | `NOT_FROZEN` | product shape congelado; propriedades e número E2E ainda não definidos |
 
-Esses gaps impedem começar pelo harness. A discovery deve separar falta de
-wiring, falta de produto, decisão de privacidade e dívida de segurança antes de
-propor implementação.
+As decisões de produto não bloqueiam mais o desenho técnico. Os gaps de
+implementação continuam impedindo UI/harness e devem ser resolvidos a partir do
+D-DB1.
 
-### Resultado de produto que a discovery deve adjudicar
-
-A intenção normativa é permitir que um gap real se transforme em um PDI com
-metas e ações executáveis e revisões periódicas. A discovery deve definir os
-atores — colaborador, gestor e RH/admin — e o ownership de cada capacidade, sem
-presumir que todos os membros do tenant podem ler todos os planos.
-
-As transições duráveis candidatas, ainda não congeladas como contrato, são:
+### Forma de produto congelada
 
 ```
-gap/contexto autorizado
-  -> PDI criado por caminho canônico
-    -> metas e ações persistidas
-      -> plano ativado
-        -> ação executada/concluída com readback
-          -> revisão periódica persistida
-            -> progresso derivado
-              -> plano concluído com histórico preservado
+template publicado
+  -> aplicação/atribuição explícita por ator autorizado
+    -> PDI, metas e ações persistidos atomicamente
+      -> employee executa ações
+        -> responsável acompanha progresso derivado
+          -> reviews periódicos append-only
+            -> review final
+              -> PDI terminal concluído e histórico preservado
 ```
 
-Antes de congelar qualquer E2E, devem existir trusted writes para todas as
-mutações escolhidas, matriz de acesso aprovada, superfícies navegáveis para cada
-ator, sinais explícitos de sucesso, readback durável e teardown observável.
+Antes de congelar qualquer E2E, D-DB1 e os slices de aplicação devem entregar as
+trusted boundaries, superfícies navegáveis, sinais explícitos, readback durável,
+testes de segurança e teardown observável definidos pelo D-P0.
 
-## 5. Escopo que permanece deferido
+## 6. Escopo que permanece deferido
 
 O fechamento de E2E-5 não promove attachments, mentions, AI, auto-send,
 reopen/unarchive, HR moderation, management semantics, peer Feedback nem outros
 tipos de Feedback. Também não promove, por si só, Development/PDI integration,
 action completion ou reviews: esses itens pertencem à adjudicação da Jornada 4.
 
-## 6. Invariantes e regra de parada
+## 7. Invariantes e regra de parada
 
 - Production `gzrrwyiqfbnyprkdeqvm`: não acessar sem gate próprio.
 - Legacy `oudngmrdtgengilpqqnz`: não é target de promoção.

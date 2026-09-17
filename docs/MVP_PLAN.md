@@ -122,11 +122,13 @@ decisões humanas.
   acesso protegido; acompanhamento periódico; recomendações apenas sobre dados
   autorizados.
 - **Documentação:** ADR-0002, ADR-0003, PD-018 e
-  `docs/Product/RH_BEST_PRACTICES.md`.
+  `docs/Product/RH_BEST_PRACTICES.md`; contrato D-P0 em
+  `docs/Execution/D-P0-DEVELOPMENT-PRIVACY-ACTORS-LIFECYCLE-CONTRACT.md`.
 - **PRs relacionadas:** #65 e entregas históricas do módulo Development.
-- **Readiness de jornada:** próxima candidata na sequência do MVP, ainda sem
-  contrato ou numeração E2E. Privacy, trusted authoring, criação/aplicação
-  alcançável de PDI, conclusão de ações e revisões periódicas exigem discovery.
+- **Readiness de jornada:** contrato de produto, privacy, atores e lifecycle
+  congelado pelo D-P0. Próximo gate: D-DB1, com reads privacy-aware, trusted
+  operational mutations, review persistence, audit e security tests. O contrato
+  hosted e a numeração E2E ainda não estão congelados.
 
 ### Planejamento Organizacional
 

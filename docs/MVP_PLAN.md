@@ -94,6 +94,9 @@ decisões humanas.
   `docs/experiences/assessments.md` e `docs/domain/PERFORMANCE_DOMAIN.md`.
 - **PRs relacionadas:** fundação histórica, integrações executivas #66 e
   hardening de autorização pela migration 0062.
+- **Evidência hosted:** E2E-4 `CLOSED / PASS`; ciclo completo de avaliação
+  provado em Review. E2E-5 reutilizou uma resposta manager-perspective finalizada
+  e comprovou novamente essa precondição no run final.
 
 ### Feedback
 
@@ -105,6 +108,10 @@ decisões humanas.
 - **Documentação:** `docs/Product/USER_JOURNEYS.md`,
   `docs/Product/RH_BEST_PRACTICES.md` e `docs/EPICS.md`.
 - **PRs relacionadas:** #12, #67 e entregas anteriores de Feedback.
+- **Evidência hosted:** E2E-5 `CLOSED / PASS`, run
+  `260916024159-e593c0`, 62/62 PASS e contrato 24/24 provado. Esse gate fecha o
+  recorte formal de Feedback originado em avaliação; capacidades deferidas não
+  transformam a capacidade inteira em `Concluída`.
 
 ### Desenvolvimento
 
@@ -117,6 +124,9 @@ decisões humanas.
 - **Documentação:** ADR-0002, ADR-0003, PD-018 e
   `docs/Product/RH_BEST_PRACTICES.md`.
 - **PRs relacionadas:** #65 e entregas históricas do módulo Development.
+- **Readiness de jornada:** próxima candidata na sequência do MVP, ainda sem
+  contrato ou numeração E2E. Privacy, trusted authoring, criação/aplicação
+  alcançável de PDI, conclusão de ações e revisões periódicas exigem discovery.
 
 ### Planejamento Organizacional
 
@@ -200,3 +210,17 @@ O MVP só pode ser declarado pronto quando nenhuma capacidade necessária estive
 Bloqueada, os critérios de Fundação forem comprovados e as jornadas de
 implantação, avaliação, feedback, desenvolvimento, liderança e decisão executiva
 puderem ser executadas com autorização e persistência confiáveis.
+
+### Evidência atual de jornadas completas
+
+| Gate | Jornada comprovada | Estado |
+| --- | --- | --- |
+| E2E-0/1 | Harness de Review e lifecycle de falha | CLOSED / PASS |
+| E2E-2 | Implantação estrutural: Organização e Pessoas | CLOSED / PASS |
+| E2E-3 | Career, Seniority, Competencies e gap canônico | CLOSED / PASS |
+| E2E-4 | Primeiro ciclo completo de Avaliação | CLOSED / PASS |
+| E2E-5 | Feedback formal de avaliação | CLOSED / PASS — 24/24 PROVEN |
+
+O próximo domínio normativo é Desenvolvimento, mas o gate continua aberto e sem
+nome E2E até a conclusão de sua readiness discovery. Liderança e decisão
+executiva também permanecem não comprovadas como jornadas hosted completas.

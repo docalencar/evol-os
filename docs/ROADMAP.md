@@ -1,19 +1,18 @@
 # Evol OS — Roadmap
 
-> **Estado atual (2026-08-26; autoridade = `main`/HEAD `338efd58`).** A trilha
-> **Assessment Results (migrations 0115–0118)** está concluída e alinhada em
-> `0118` (Local e Canonical Review), com **B2-B2-B — People “Últimas avaliações”
-> = CLOSED / PASS** (ver `CHANGELOG.md`, `NEXT_STEPS.md` e
-> `execution/ENVIRONMENT-MIGRATION-STATUS.md`). **Próxima prioridade normativa:
-> Slice 0115-B2-C — Direct-Report Anonymity / Aggregation Discovery (DISCOVERY
-> ONLY).** A trilha Career / Seniority (PD-021/ADR-0017) está **em execução —
-> Slices 1A–4A concluídas e em `main`** (catálogo, profiles, lotação de People, e a
-> **Slice 4A — Competency Matrix Relocation** via `0120`/`0121`, **CLOSED / PASS**,
-> promovida e validada no Canonical Review em 2026-08-28); próximo gate real =
-> **Slice 4B — Competency Matrix + Scale Semantics (UI)** (não iniciada). Production:
-> `UNKNOWN / REVERIFY BEFORE USE`. Legacy: `NOT A
-> PROMOTION TARGET`. As seções abaixo são **contexto histórico** de programas
-> anteriores e não a prioridade atual.
+> **Estado atual (2026-09-16; autoridade = `main`/HEAD
+> `acc480db605fa385143fe2812599f7f27350c939`).** Os gates hosted E2E-0 a
+> E2E-5 estão **CLOSED / PASS**. E2E-5 — Assessment Feedback lifecycle — foi
+> fechado pelo run `260916024159-e593c0`: 62/62 PASS, contrato 24/24 provado e
+> teardown `RETIRED / HEALTHY`. A próxima capacidade na sequência normativa é a
+> **Jornada 4 — Desenvolvimento**, mas ela ainda não possui contrato hosted nem
+> numeração E2E aprovada. A próxima prioridade é uma **readiness discovery** para
+> reconciliar privacy, trusted authoring, criação/aplicação alcançável de PDI,
+> conclusão de ações e revisões periódicas. Não iniciar harness ou implementação
+> antes dessa adjudicação. Production: `UNKNOWN / REVERIFY BEFORE USE`. Legacy:
+> `NOT A PROMOTION TARGET`. O corpo histórico abaixo preserva programas e
+> prioridades anteriores; a entrega operacional corrente vive em
+> `NEXT_STEPS.md`.
 
 ## O que vem agora?
 

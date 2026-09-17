@@ -44,6 +44,16 @@ O PROJECT_STATE.md é uma fotografia oficial do estado do programa. Ele não cri
 
 ## 4. Estado atual
 
+> **Reconciliação de jornadas hosted — 2026-09-16.** Autoridade técnica:
+> `main`/`acc480db605fa385143fe2812599f7f27350c939`. E2E-0, E2E-1, E2E-2,
+> E2E-3, E2E-4 e E2E-5 estão `CLOSED / PASS`. E2E-5 foi fechado pelo run
+> `260916024159-e593c0`, 62/62 PASS, contrato 24/24 provado, teardown
+> `RETIRED / HEALTHY`. O registro auditável está em
+> [E2E-5 Assessment Feedback Lifecycle Closure](./Execution/E2E-5-ASSESSMENT-FEEDBACK-LIFECYCLE-CLOSURE.md).
+> O próximo domínio dependency-consistent é a Jornada 4 — Desenvolvimento, mas
+> nenhum `E2E-6` foi definido: primeiro deve ocorrer discovery/readiness sobre
+> privacy, writes trusted, PDI alcançável, conclusão de ações e revisões.
+
 ### Product Decisions
 
 | Decisões | Status oficial |
@@ -118,6 +128,16 @@ O status normativo e o conteúdo completo permanecem no
 | Slice 3C | Deterministic Template Application and Snapshots | ✅ Concluído | `5c2675b` |
 
 ## 6. Próxima etapa
+
+> **Direção corrente (2026-09-16).** A próxima entrega é uma discovery de
+> readiness da **Jornada 4 — Desenvolvimento**, conforme `NEXT_STEPS.md`. Não é
+> implementação, não é desenho de harness e não autoriza hosted run. Deve
+> adjudicar os blockers já registrados: privacy sign-off de Development, writes
+> P1 ainda legados, template publicável/aplicável pela UI, caminho gap/Feedback
+> → PDI, conclusão de ação e revisões periódicas. A numeração de um próximo E2E
+> só pode ser definida após o contrato da jornada ser congelado.
+
+### Histórico preservado
 
 > **Reconciliação 2026-08-27 (autoridade = `main`/HEAD `ff2ba6db`).** A **Slice
 > 0115-B2-C** está **CLOSED / PASS em todas as fases**: DB boundary `0119` validada

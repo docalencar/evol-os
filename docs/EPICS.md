@@ -54,13 +54,20 @@ self access do evaluator, leitura administrativa auditável, imutabilidade após
 envio e os recortes de `Assessment Visibility` para o avaliado. A capacidade
 continua subordinada ao gate de Fundação e às jornadas restantes do MVP Plan.
 
+Evidência hosted corrente: E2E-4 `CLOSED / PASS` comprova o ciclo completo de
+Avaliação; E2E-5 reexecuta a precondição manager-perspective necessária ao
+Feedback formal.
+
 ## Feedback e Liderança — parcial
 
 Entrega registro, histórico, conversas, análise estruturada e integração com
 decisões executivas.
 
-Restante: autorização explícita de conteúdo sensível e jornadas próprias de
-one-on-one, check-ins, reconhecimentos e planos de ação.
+O recorte formal originado em avaliação está `CLOSED / PASS` pelo E2E-5, com
+contrato 24/24 incluindo participante-only privacy para employee, owner, admin e
+HR, isolamento de tenant e timeline restrita. Permanecem separados: jornadas de
+one-on-one, check-ins, reconhecimentos e planos de ação, além das capacidades de
+Feedback explicitamente deferidas no fechamento.
 
 ## Desenvolvimento — parcial
 
@@ -76,6 +83,10 @@ competências da própria empresa; IA pode sugerir mappings, mas nunca confirmá
 Restante: comprovar autorização e fechar a jornada periódica com Feedback e
 Liderança, além de implementar o hardening relacional de Development conforme
 ADR-0012 e PD-018.
+
+Próximo gate recomendado: readiness discovery da Jornada 4 — Desenvolvimento.
+Antes de qualquer harness hosted, devem ser adjudicados privacy, trusted
+authoring, PDI alcançável, conclusão de ações e revisões periódicas.
 
 ## Recrutamento e Aprovações — parcial
 

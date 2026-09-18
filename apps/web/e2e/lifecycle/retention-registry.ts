@@ -188,6 +188,36 @@ export const COMPANY_RETENTION_TABLES: readonly RetentionTable[] = Object.freeze
     evidence: "0068:787 immutable; 0069:89 service_role SELECT revoked",
   },
 
+  // D-DB1 private Development evidence. Both are append-only (0130:292,295) and
+  // both carry RESTRICT edges into `people` — reviews through `reviewer_id`,
+  // audit through `actor_person_id` and `actor_user_id` — so they block the
+  // PERSON deletion that retirement performs first, not the company row, whose
+  // own edge cascades. That is the `intra-tenant-restrict-fk` shape.
+  //
+  // Unlike the four application-ledger tables above, `service_role` keeps SELECT
+  // here (0130:127), so a plain head-count answers and no counts-only boundary
+  // is required. They appear in `get_company_retention_pressure_v1` (0131:125)
+  // as well, which is a superset: that function answers "what Development
+  // evidence does this tenant still hold?", and four of its six relations
+  // additionally need it because service_role cannot read them at all.
+  //
+  // Neither is an orphan. A retired run is EXPECTED to leave these rows behind:
+  // D-P0 requires the private audit trail to be durable, and a review is
+  // participant history that the append-only trigger refuses to rewrite. A
+  // teardown that found them empty would mean the journey never happened.
+  {
+    table: "development_reviews",
+    mechanism: "intra-tenant-restrict-fk",
+    access: "DIRECT_READ",
+    evidence: "0130:292 append-only; 0130 reviewer_id -> people ON DELETE RESTRICT",
+  },
+  {
+    table: "development_private_audit",
+    mechanism: "intra-tenant-restrict-fk",
+    access: "DIRECT_READ",
+    evidence: "0130:295 append-only; 0130 actor_person_id/actor_user_id ON DELETE RESTRICT",
+  },
+
   // Assessment execution, readable half. Both cascade from `companies` on their
   // own edge and both carry RESTRICT foreign keys into the 0114 execution
   // snapshot — the `intra-tenant-restrict-fk` shape documented above.
@@ -298,6 +328,8 @@ export const COMPANY_SCOPED_TABLES: readonly string[] = Object.freeze([
   "development_actions",
   "development_goals",
   "development_plans",
+  "development_private_audit",
+  "development_reviews",
   "development_template_application_attempts",
   "development_template_application_lineage",
   "development_template_application_snapshots",

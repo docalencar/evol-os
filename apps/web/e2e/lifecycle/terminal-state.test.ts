@@ -574,17 +574,24 @@ test("every table the E2E-4 discovery found is now known to the inspector", () =
   }
 })
 
-test("every assessment blocker carries the intra-tenant RESTRICT shape", () => {
+test("every intra-tenant RESTRICT blocker is registered and countable", () => {
   const intraTenant = COMPANY_RETENTION_TABLES.filter(
     (entry) => entry.mechanism === "intra-tenant-restrict-fk",
   )
 
+  // Two domains now share this shape. The assessment five block on their own
+  // snapshot edges; the two D-DB1 Development relations block on `people`,
+  // which retirement terminates before it touches the company row. Listing them
+  // together is the point: the classifier must be able to count EVERY table
+  // that can block retirement, whichever domain introduced it.
   assert.deepEqual([...intraTenant.map((entry) => entry.table)].sort(), [
     "assessment_answers",
     "assessment_execution_snapshot_questions",
     "assessment_execution_snapshot_sections",
     "assessment_execution_snapshots",
     "assessment_responses",
+    "development_private_audit",
+    "development_reviews",
   ])
 
   for (const entry of intraTenant) {

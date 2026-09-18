@@ -701,4 +701,123 @@ end;
 $$;
 
 revoke all on function public.can_apply_development_template_v1(uuid,uuid,uuid,uuid) from public,anon,authenticated,service_role;
+
+-- ---------------------------------------------------------------------------
+-- Purpose-bound template-version content read, for deterministic resolution.
+--
+-- 0131 revoked every direct privilege on the six template tables from
+-- `authenticated`. That is deliberate and stays: a client must not read
+-- template content by selecting a table. But the deterministic resolver runs
+-- under the ACTOR's session, not service_role, and it needs the exact version,
+-- goal and action rows in order to materialize a plan. Restoring SELECT would
+-- reopen the surface D-DB1 just closed, and moving the resolver to service_role
+-- would replace an authorization question with an unrestricted one. So the
+-- content arrives through a boundary that answers the authorization question
+-- first.
+--
+-- These functions live in 0132 rather than 0131 for two reasons: they exist FOR
+-- the application engine, which is this migration's subject, and the manager
+-- branch needs the direct-report relationship that 0132 introduces. A function
+-- in 0131 could not call forward into it.
+--
+-- Three functions rather than one composite row type: each returns `setof` its
+-- own table, so the resolver receives byte-identical columns to the direct
+-- selects it replaces. That is what keeps the deterministic output unchanged —
+-- a hand-written projection would be a new opportunity to drop or rename a
+-- field the engine hashes.
+-- ---------------------------------------------------------------------------
+
+create function public.can_read_development_template_version_v1(
+  p_version_id uuid, p_employee_id uuid
+) returns boolean language sql security definer set search_path = public, pg_temp stable as $$
+  select exists (
+    select 1
+    from public.development_template_versions v
+    where v.id = p_version_id
+      and (
+        -- Administrative actors author and inspect: draft, published and
+        -- obsolete alike, and without an employee in hand. A company-scoped
+        -- version is the only kind they administer.
+        (v.company_id is not null and public.development_actor_is_admin_v1(v.company_id))
+
+        -- A manager reads content only to apply it, so the target employee is
+        -- part of the authorization rather than a later check: without a
+        -- current direct report there is nothing to read this content FOR.
+        -- Draft content is never visible here — managers do not author.
+        or (
+          v.status = 'published'
+          and p_employee_id is not null
+          and exists (
+            select 1
+            from public.people employee
+            join public.people actor
+              on actor.company_id = employee.company_id
+             and actor.user_id = auth.uid()
+             and actor.status <> 'terminated'
+            join public.company_members m
+              on m.company_id = employee.company_id
+             and m.user_id = auth.uid()
+             and m.status = 'active'
+             and m.role = 'manager'
+            where employee.id = p_employee_id
+              and employee.status <> 'terminated'
+              and employee.manager_id = actor.id
+              -- Consumable in the employee's tenant: the tenant's own version,
+              -- or a global one. A different tenant's version is invisible.
+              and (v.scope = 'global' or v.company_id = employee.company_id)
+          )
+        )
+      )
+  )
+$$;
+
+create function public.get_development_template_version_v1(
+  p_version_id uuid, p_employee_id uuid default null
+) returns setof public.development_template_versions
+language sql security definer set search_path = public, pg_temp stable as $$
+  select v.* from public.development_template_versions v
+  where v.id = p_version_id
+    and public.can_read_development_template_version_v1(p_version_id, p_employee_id)
+$$;
+
+create function public.get_development_template_version_goals_v1(
+  p_version_id uuid, p_employee_id uuid default null
+) returns setof public.development_template_version_goals
+language sql security definer set search_path = public, pg_temp stable as $$
+  select g.* from public.development_template_version_goals g
+  where g.template_version_id = p_version_id
+    and public.can_read_development_template_version_v1(p_version_id, p_employee_id)
+  order by g.order_index, g.created_at, g.id
+$$;
+
+create function public.get_development_template_version_actions_v1(
+  p_version_id uuid, p_employee_id uuid default null
+) returns setof public.development_template_version_actions
+language sql security definer set search_path = public, pg_temp stable as $$
+  select a.*
+  from public.development_template_version_actions a
+  join public.development_template_version_goals g on g.id = a.template_version_goal_id
+  where g.template_version_id = p_version_id
+    and public.can_read_development_template_version_v1(p_version_id, p_employee_id)
+  order by a.order_index, a.created_at, a.id
+$$;
+
+-- An unauthorized or nonexistent selector returns zero rows rather than an
+-- error: the reader cannot tell "this version is not yours" from "there is no
+-- such version", which is the same opacity every other D-DB1 read offers.
+revoke all on function
+  public.can_read_development_template_version_v1(uuid,uuid),
+  public.get_development_template_version_v1(uuid,uuid),
+  public.get_development_template_version_goals_v1(uuid,uuid),
+  public.get_development_template_version_actions_v1(uuid,uuid)
+from public, anon, authenticated, service_role;
+
+-- The predicate stays internal; only the three readers are callable, and only
+-- by an authenticated session whose identity the predicate re-derives.
+grant execute on function
+  public.get_development_template_version_v1(uuid,uuid),
+  public.get_development_template_version_goals_v1(uuid,uuid),
+  public.get_development_template_version_actions_v1(uuid,uuid)
+to authenticated;
+
 notify pgrst, 'reload schema';

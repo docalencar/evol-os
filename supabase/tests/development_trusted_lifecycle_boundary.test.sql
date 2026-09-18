@@ -123,5 +123,82 @@ select ok(not public.can_apply_development_template_v1('dd010000-0000-4000-8000-
 select ok(public.can_apply_development_template_v1('dd010000-0000-4000-8000-000000000101','dd010000-0000-4000-8000-000000000001','dd010000-0000-4000-8000-000000000203','dd010000-0000-4000-8000-000000000202'),'administrative template application preserved');
 select is((select count(*) from public.get_company_retention_pressure_v1('dd010000-0000-4000-8000-000000000101') where relation_name in ('development_reviews','development_private_audit')),2::bigint,'new retained evidence is registered');
 
+-- Purpose-bound template-version content read (0132).
+--
+-- The three readers replace the direct selects 0131 revoked, so what matters is
+-- that the revoke still holds AND the replacement is not wider than the thing
+-- it replaced. Both halves are asserted here: an unauthorized reader gets zero
+-- rows rather than an error, which keeps "not yours" and "does not exist"
+-- indistinguishable.
+select has_function('public','get_development_template_version_v1',array['uuid','uuid']);
+select has_function('public','get_development_template_version_goals_v1',array['uuid','uuid']);
+select has_function('public','get_development_template_version_actions_v1',array['uuid','uuid']);
+select ok((select bool_and(p.prosecdef and p.proconfig=array['search_path=public, pg_temp']) from pg_proc p where p.oid in (
+  'public.get_development_template_version_v1(uuid,uuid)'::regprocedure,
+  'public.get_development_template_version_goals_v1(uuid,uuid)'::regprocedure,
+  'public.get_development_template_version_actions_v1(uuid,uuid)'::regprocedure,
+  'public.can_read_development_template_version_v1(uuid,uuid)'::regprocedure
+)),'content readers are SECURITY DEFINER with fixed search_path');
+
+-- Execute grants are exact: the three readers are callable by authenticated,
+-- the predicate by nobody, and none of them by anon or service_role.
+select ok((select bool_and(has_function_privilege('authenticated',oid,'execute')) from unnest(array[
+  'public.get_development_template_version_v1(uuid,uuid)'::regprocedure,
+  'public.get_development_template_version_goals_v1(uuid,uuid)'::regprocedure,
+  'public.get_development_template_version_actions_v1(uuid,uuid)'::regprocedure]) oid),'authenticated may execute the three content readers');
+select ok(not has_function_privilege('authenticated','public.can_read_development_template_version_v1(uuid,uuid)','execute'),'the authorization predicate stays internal');
+select ok((select bool_and(not has_function_privilege(role,oid,'execute')) from unnest(array['anon','service_role']) role, unnest(array[
+  'public.get_development_template_version_v1(uuid,uuid)'::regprocedure,
+  'public.get_development_template_version_goals_v1(uuid,uuid)'::regprocedure,
+  'public.get_development_template_version_actions_v1(uuid,uuid)'::regprocedure]) oid),'anon and service_role may not execute the content readers');
+
+-- The revoke 0131 installed must still be in force: the readers exist BECAUSE
+-- the tables are closed, so a restored grant would silently make them optional.
+select ok((select bool_and(not has_table_privilege(role,tbl,'select')) from unnest(array['anon','authenticated']) role, unnest(array[
+  'public.development_template_versions','public.development_template_version_goals',
+  'public.development_template_version_actions','public.development_templates',
+  'public.development_template_goals','public.development_template_actions']) tbl),'direct client SELECT on template tables remains closed');
+
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"dd010000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select is((select count(*) from public.get_development_template_version_v1(current_setting('ddb.version')::uuid,null)),1::bigint,'administrative actor reads version content without an employee');
+select ok((select count(*) from public.get_development_template_version_goals_v1(current_setting('ddb.version')::uuid,null))>0,'administrative actor reads version goals');
+select ok((select count(*) from public.get_development_template_version_actions_v1(current_setting('ddb.version')::uuid,null))>0,'administrative actor reads version actions');
+
+-- Manager: published content for a current direct report only.
+select set_config('request.jwt.claims','{"sub":"dd010000-0000-4000-8000-000000000002","role":"authenticated"}',true);
+select is((select count(*) from public.get_development_template_version_v1(current_setting('ddb.version')::uuid,'dd010000-0000-4000-8000-000000000203')),1::bigint,'manager reads published content for a direct report');
+select is((select count(*) from public.get_development_template_version_v1(current_setting('ddb.version')::uuid,'dd010000-0000-4000-8000-000000000204')),0::bigint,'manager cannot read content for an unrelated employee');
+select is((select count(*) from public.get_development_template_version_v1(current_setting('ddb.version')::uuid,null)),0::bigint,'manager has no employee-free content read');
+select is((select count(*) from public.get_development_template_version_goals_v1(current_setting('ddb.version')::uuid,'dd010000-0000-4000-8000-000000000204')),0::bigint,'unrelated employee yields no goals');
+
+-- Subject employee and same-company nonparticipant gain nothing.
+select set_config('request.jwt.claims','{"sub":"dd010000-0000-4000-8000-000000000003","role":"authenticated"}',true);
+select is((select count(*) from public.get_development_template_version_v1(current_setting('ddb.version')::uuid,'dd010000-0000-4000-8000-000000000203')),0::bigint,'subject employee cannot read template content');
+select is((select count(*) from public.get_development_template_version_actions_v1(current_setting('ddb.version')::uuid,'dd010000-0000-4000-8000-000000000203')),0::bigint,'subject employee cannot read template actions');
+
+-- Foreign tenant and an unknown selector are indistinguishable from each other.
+select set_config('request.jwt.claims','{"sub":"dd010000-0000-4000-8000-000000000004","role":"authenticated"}',true);
+select is((select count(*) from public.get_development_template_version_v1(current_setting('ddb.version')::uuid,'dd010000-0000-4000-8000-000000000203')),0::bigint,'foreign tenant reads nothing');
+select set_config('request.jwt.claims','{"sub":"dd010000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select is((select count(*) from public.get_development_template_version_v1('dd010000-0000-4000-8000-0000000009ff',null)),0::bigint,'a nonexistent version is empty, not an error');
+reset role;
+select set_config('request.jwt.claims','{}',true);
+set local role anon;
+select is((select count(*) from public.get_development_template_version_v1(current_setting('ddb.version')::uuid,null)),0::bigint,'anon reads nothing') ;
+reset role;
+
+-- Final review ordering: the business rule is "demonstrably later", so equality
+-- denies. Proving the equal case explicitly is the point — it is the boundary
+-- between the two behaviours and the one a future `>=` would silently flip.
+select is((select count(*) from public.development_reviews r
+  where r.development_plan_id=current_setting('ddb.plan')::uuid and r.type='final'
+    and r.reviewed_at > (select coalesce(max(a.updated_at),'-infinity'::timestamptz)
+      from public.development_actions a join public.development_goals g on g.id=a.goal_id and g.company_id=a.company_id
+      where g.plan_id=current_setting('ddb.plan')::uuid)),1::bigint,'the recorded final review is strictly later than the last action transition');
+select ok((select not exists(select 1 from pg_proc p, unnest(coalesce(p.proargnames,array[]::text[])) argument
+  where p.oid='public.record_development_review_v1(uuid,text,text,text,uuid)'::regprocedure
+    and argument ilike '%reviewed%')),'no caller-supplied review timestamp: ordering authority stays in the database');
+
 select * from finish();
 rollback;

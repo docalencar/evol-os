@@ -32,36 +32,36 @@ export function createSupabaseDevelopmentTemplateApplicationResolutionRepository
   return {
     async load(applicationIntent: DevelopmentTemplateApplicationIntent) {
       const { companyId } = applicationIntent.identity
-      const templateVersion = (await selectOrThrow(
-        database
-          .from("development_template_versions")
-          .select("*")
-          .eq("id", applicationIntent.templateVersionId)
-          .maybeSingle(),
-      )) as Row | null
+      // 0131 revoked direct access to the template tables from `authenticated`.
+      // These three boundary reads replace the selects that used to be here and
+      // return `setof` the same relations, so the columns the deterministic
+      // engine consumes are unchanged. The target employee travels with the
+      // request because it is part of the authorization: a manager may read
+      // published content only for a current direct report.
+      const employeeId = applicationIntent.intent.employeeId
+      const contentParameters = {
+        p_version_id: applicationIntent.templateVersionId,
+        p_employee_id: employeeId,
+      }
 
+      const templateVersion =
+        (rows(
+          await selectOrThrow(
+            database.rpc("get_development_template_version_v1", contentParameters),
+          ),
+        )[0] as Row | undefined) ?? null
+
+      // Ordering is the boundary's, not the caller's: both readers order by
+      // (order_index, created_at, id) exactly as the previous selects did.
       const goalRows = rows(
         await selectOrThrow(
-          database
-            .from("development_template_version_goals")
-            .select("*")
-            .eq("template_version_id", applicationIntent.templateVersionId)
-            .order("order_index")
-            .order("created_at")
-            .order("id"),
+          database.rpc("get_development_template_version_goals_v1", contentParameters),
         ),
       )
-      const goalIds = goalRows.map((goal) => goal.id as string)
-      const actionRows = goalIds.length
+      const actionRows = goalRows.length
         ? rows(
             await selectOrThrow(
-              database
-                .from("development_template_version_actions")
-                .select("*")
-                .in("template_version_goal_id", goalIds)
-                .order("order_index")
-                .order("created_at")
-                .order("id"),
+              database.rpc("get_development_template_version_actions_v1", contentParameters),
             ),
           )
         : []

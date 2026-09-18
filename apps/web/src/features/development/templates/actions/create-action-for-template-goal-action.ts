@@ -7,11 +7,12 @@ import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-compan
 
 import { developmentTemplateActionTypeSchema } from "../schemas/development-template-action-schema"
 import { createActionForTemplateGoal } from "../services/create-action-for-template-goal"
+import { developmentTemplateAuthoringMessage } from "./development-template-authoring-message"
 
 const createActionForTemplateGoalSchema = z.object({
   templateId: z.string().uuid(),
 
-  templateGoalId: z.string().uuid(),
+  templateVersionGoalId: z.string().uuid(),
 
   title: z
     .string()
@@ -59,8 +60,8 @@ export async function createActionForTemplateGoalAction(
     await createActionForTemplateGoal({
       companyId,
       templateId: parsed.data.templateId,
-      templateGoalId:
-        parsed.data.templateGoalId,
+      templateVersionGoalId:
+        parsed.data.templateVersionGoalId,
       title: parsed.data.title,
       description: parsed.data.description,
       type: parsed.data.type,
@@ -70,10 +71,10 @@ export async function createActionForTemplateGoalAction(
   } catch (error) {
     return {
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Não foi possível adicionar a ação.",
+      message: developmentTemplateAuthoringMessage(
+        error,
+        "Não foi possível adicionar a ação."
+      ),
     }
   }
 

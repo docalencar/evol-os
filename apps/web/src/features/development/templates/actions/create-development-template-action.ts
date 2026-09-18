@@ -22,14 +22,18 @@ export async function createDevelopmentTemplateAction(
     }
   }
 
-  const { companyId, user } =
-    await getCurrentCompanyContext()
+  const { companyId } = await getCurrentCompanyContext()
 
+  let created: { templateId: string; templateVersionId: string }
   try {
-    await createDevelopmentTemplate({
+    // The idempotency key is minted here, once per submission, so a retried
+    // request resolves to the same draft instead of a second one. The actor is
+    // NOT passed: the boundary derives it from the session, and a browser-
+    // supplied author would be an authority claim.
+    created = await createDevelopmentTemplate({
       companyId,
-      createdBy: user.id,
       input: parsed.data,
+      idempotencyKey: crypto.randomUUID(),
     })
   } catch {
     return {
@@ -41,10 +45,13 @@ export async function createDevelopmentTemplateAction(
 
   revalidatePath("/app/development")
   revalidatePath("/app/development/templates")
+  revalidatePath(`/app/development/templates/${created.templateId}`)
 
   return {
     success: true,
     message:
-      "Template de desenvolvimento criado com sucesso.",
+      "Rascunho de template criado com sucesso.",
+    templateId: created.templateId,
+    templateVersionId: created.templateVersionId,
   }
 }

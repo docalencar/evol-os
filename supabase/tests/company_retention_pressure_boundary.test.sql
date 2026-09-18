@@ -117,7 +117,7 @@ select is(
   (select count(*) from public.get_company_retention_pressure_v1(
      'aaaaaaaa-0000-4000-8000-000000000001')),
   4::bigint,
-  'exactly four relations are reported');
+  'exactly four template-ledger relations are reported');
 
 select is(
   (select coalesce(sum(row_count),0)::bigint from public.get_company_retention_pressure_v1(

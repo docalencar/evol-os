@@ -6,6 +6,7 @@ import { z } from "zod"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 import { createDevelopmentTemplateGoal } from "../services/create-development-template-goal"
+import { developmentTemplateAuthoringMessage } from "./development-template-authoring-message"
 
 const addTemplateCompetencySchema = z.object({
   templateId: z.string().uuid(),
@@ -44,6 +45,8 @@ export async function createDevelopmentTemplateGoalAction(
     await getCurrentCompanyContext()
 
   try {
+    // `templateId` is the container the route names — a selector. Which VERSION
+    // receives the goal is resolved server-side; the browser never names it.
     await createDevelopmentTemplateGoal({
       companyId,
       templateId: parsed.data.templateId,
@@ -54,10 +57,10 @@ export async function createDevelopmentTemplateGoalAction(
   } catch (error) {
     return {
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Não foi possível adicionar a competência.",
+      message: developmentTemplateAuthoringMessage(
+        error,
+        "Não foi possível adicionar a competência."
+      ),
     }
   }
 

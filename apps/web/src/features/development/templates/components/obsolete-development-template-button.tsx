@@ -4,25 +4,25 @@ import { toast } from "sonner"
 
 import { CrudArchiveButton } from "@/components/shared/crud/crud-archive-button"
 
-import { deactivateDevelopmentTemplateAction } from "../actions/deactivate-development-template-action"
+import { obsoleteDevelopmentTemplateAction } from "../actions/obsolete-development-template-action"
 
-type DeactivateDevelopmentTemplateButtonProps = {
+type ObsoleteDevelopmentTemplateButtonProps = {
   templateId: string
 }
 
-export function DeactivateDevelopmentTemplateButton({
+export function ObsoleteDevelopmentTemplateButton({
   templateId,
-}: DeactivateDevelopmentTemplateButtonProps) {
+}: ObsoleteDevelopmentTemplateButtonProps) {
   return (
     <CrudArchiveButton
-      title="Desativar template?"
+      title="Tornar template obsoleto?"
       description="O template deixará de aparecer nas listagens padrão e não poderá ser utilizado na criação de novos planos."
-      idleLabel="Desativar"
+      idleLabel="Tornar obsoleto"
       pendingLabel="Desativando..."
-      confirmLabel="Desativar"
+      confirmLabel="Tornar obsoleto"
       onArchive={async () => {
         const result =
-          await deactivateDevelopmentTemplateAction(
+          await obsoleteDevelopmentTemplateAction(
             templateId
           )
 

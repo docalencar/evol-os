@@ -23,6 +23,11 @@ insert into public.development_templates(id,company_id,name,scope,active) values
 ('84010000-0000-4000-8000-000000000201','84010000-0000-4000-8000-000000000101','Zulu Template','company',true),
 ('84010000-0000-4000-8000-000000000202','84010000-0000-4000-8000-000000000101','Alpha Template','company',true),
 ('84010000-0000-4000-8000-000000000203','84010000-0000-4000-8000-000000000101','Hidden Template','company',false);
+insert into public.development_template_versions(
+  id,template_id,company_id,scope,version_number,status,name,created_by,published_by,published_at
+) values
+('84010000-0000-4000-8000-000000000211','84010000-0000-4000-8000-000000000201','84010000-0000-4000-8000-000000000101','company',1,'published','Zulu Template','84010000-0000-4000-8000-000000000001','84010000-0000-4000-8000-000000000001',now()),
+('84010000-0000-4000-8000-000000000212','84010000-0000-4000-8000-000000000202','84010000-0000-4000-8000-000000000101','company',1,'published','Alpha Template','84010000-0000-4000-8000-000000000001','84010000-0000-4000-8000-000000000001',now());
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"84010000-0000-4000-8000-000000000001","role":"authenticated"}',true); select lives_ok($$select * from public.get_tenant_development_dashboard_v1('84010000-0000-4000-8000-000000000101')$$,'owner allowed');
 select set_config('request.jwt.claims','{"sub":"84010000-0000-4000-8000-000000000002","role":"authenticated"}',true); select lives_ok($$select * from public.get_tenant_development_dashboard_v1('84010000-0000-4000-8000-000000000101')$$,'admin allowed');

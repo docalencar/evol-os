@@ -33,4 +33,6 @@ export type DevelopmentPlan = {
   createdAt: string
 
   updatedAt: string
+
+  version?: number
 }

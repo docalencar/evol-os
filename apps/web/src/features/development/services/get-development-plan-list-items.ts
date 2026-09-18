@@ -1,10 +1,10 @@
+import { getManagementDevelopmentTemplates } from "@/features/dashboard-read"
 import {
   getEmployees,
   type Employee,
 } from "@/features/people"
 
 import {
-  getDevelopmentTemplates,
   type DevelopmentTemplate,
 } from "@/features/development/templates"
 
@@ -61,7 +61,7 @@ export async function getDevelopmentPlanListItems(
   ] = await Promise.all([
     getDevelopmentPlans(companyId),
     getEmployees(companyId),
-    getDevelopmentTemplates(companyId),
+    getManagementDevelopmentTemplates(companyId),
   ])
 
   const employees =

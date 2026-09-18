@@ -24,8 +24,15 @@ test("in-scope routes use tenant management read boundaries", () => {
   assert.match(planPage, /getManagementDevelopmentActions\(companyId, id\)/)
   assert.match(templatesPage, /getManagementDevelopmentTemplates\(companyId\)/)
   assert.match(templatePage, /getManagementDevelopmentTemplates\(companyId, id\)/)
-  assert.match(templatePage, /getManagementDevelopmentTemplateGoals\(companyId, id\)/)
-  assert.match(templatePage, /getManagementDevelopmentTemplateActions\(companyId, id\)/)
+  // D-DB1 moved the authoring page's CONTENT reads onto the versioned trusted
+  // boundary: 0131 revoked direct access to the template tables, and the goals
+  // and actions the page renders are the ones the trusted mutations write.
+  // The container-scoped management read stays for the template header, so the
+  // property this test protects — routes read through tenant boundaries, never
+  // tables — is unchanged; only which boundary serves the content moved.
+  assert.match(templatePage, /resolveDevelopmentTemplateAuthoringVersion\(companyId, id\)/)
+  assert.match(templatePage, /getDevelopmentTemplateVersionContent\(/)
+  assert.doesNotMatch(templatePage, /\.from\(/)
 })
 
 test("adapter is server-only, tenant-parametrized and has no direct-table fallback", () => {

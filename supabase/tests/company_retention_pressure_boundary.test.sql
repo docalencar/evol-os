@@ -116,8 +116,8 @@ insert into public.companies (id, name, slug, status) values
 select is(
   (select count(*) from public.get_company_retention_pressure_v1(
      'aaaaaaaa-0000-4000-8000-000000000001')),
-  4::bigint,
-  'exactly four relations are reported');
+  6::bigint,
+  'exactly six retained-evidence relations are reported');
 
 select is(
   (select coalesce(sum(row_count),0)::bigint from public.get_company_retention_pressure_v1(
@@ -125,18 +125,20 @@ select is(
   0::bigint,
   'an untouched company has zero retention pressure');
 
--- 12. the four relation names are exact ------------------------------------
+-- 12. the six relation names are exact -------------------------------------
 select is(
   (select array_agg(relation_name order by relation_name)
      from public.get_company_retention_pressure_v1(
        'aaaaaaaa-0000-4000-8000-000000000001')),
   array[
+    'development_private_audit',
+    'development_reviews',
     'development_template_application_attempts',
     'development_template_application_lineage',
     'development_template_application_snapshots',
     'development_template_applications'
   ]::text[],
-  'reports exactly the four relations whose SELECT 0069 revoked from service_role');
+  'reports the template ledger plus private Development retained evidence');
 
 -- 9 & 10. a real ledger row is counted, and only for its own tenant --------
 --
@@ -212,9 +214,10 @@ select is(
 select is(
   (select count(*) from public.get_company_retention_pressure_v1(
      'aaaaaaaa-0000-4000-8000-000000000001')
-   where relation_name not like 'development_template_application%'),
+   where relation_name not like 'development_template_application%'
+     and relation_name not in ('development_reviews','development_private_audit')),
   0::bigint,
-  'no relation outside the reviewed closed list is ever reported');
+  'no relation outside the reviewed retention registry is ever reported');
 
 select * from finish();
 rollback;

@@ -94,7 +94,7 @@ PRE_OUT=$(mktemp -t dr2gatepre.XXXXXX)
 APPLY_LOG=$(mktemp -t dr2gateapply.XXXXXX)
 POST_OUT=$(mktemp -t dr2gatepost.XXXXXX)
 
-DB_RESET=FAIL; PRE_SNAPSHOT=FAIL; PRE_CONTRACT=FAIL
+DB_RESET=FAIL; PRE_SNAPSHOT=FAIL; PRE_CONTRACT=FAIL; READ_ONLY_PROOF=FAIL
 MIGRATION_APPLIES=FAIL; POST_SNAPSHOT=FAIL
 
 # ---------------------------------------------------------------------------
@@ -161,15 +161,75 @@ done
 if [ "$PRE_FAIL" -eq 0 ]; then PRE_CONTRACT=PASS; say "[gate-d-r2]     PRE_CONTRACT=PASS"
 else say "[gate-d-r2]     PRE_CONTRACT=FAIL"; fi
 
-# PRE must be genuinely read-only: a write attempted through it would be refused
-# by the server, and this proves the transaction really opened read-only.
-if psql_local -c "set default_transaction_read_only = on; create table public.d_r2_gate_probe(id int);" >/dev/null 2>&1; then
-  say "[gate-d-r2]     FAIL: read-only transaction accepted a write"
-  psql_local -c "drop table if exists public.d_r2_gate_probe;" >/dev/null 2>&1
-  PRE_CONTRACT=FAIL
+# ---------------------------------------------------------------------------
+# 3b. READ-ONLY PROOF — the PRE verifier itself must be unable to mutate.
+#
+# The property is about the VERIFIER'S OWN execution context, and an earlier
+# version of this probe measured something else entirely. It ran
+#
+#     psql -c "set default_transaction_read_only = on; create table ..."
+#
+# which was wrong twice over, either reason sufficient on its own:
+#
+#   1. a NEW psql process opens a NEW server connection. A session GUC set in
+#      the verifier's connection — a process that had already exited — has no
+#      bearing on it. Whatever that probe observed was a fact about itself.
+#
+#   2. psql sends a multi-statement -c string as ONE simple query, which the
+#      server runs in ONE implicit transaction. `default_transaction_read_only`
+#      supplies the default for transactions started AFTER it takes effect; the
+#      current transaction's read-only flag was already fixed at transaction
+#      start, from `off`. So the CREATE TABLE ran read-write and the probe was
+#      guaranteed to report failure on every database, forever.
+#
+# The verifier does not have that problem, and the difference is exactly why it
+# has to be tested in its own context: it feeds psql from STDIN, where psql
+# sends statements one at a time under autocommit. Its `set` commits in its own
+# transaction, and every later statement starts a NEW transaction that inherits
+# read-only. That is the context this probe must run in.
+#
+# So the proof below takes the verifier's OWN SQL document, byte for byte, feeds
+# it to psql exactly as the verifier does, and appends two statements: one that
+# measures the effective transaction state, and one that attempts a mutation and
+# must be refused with SQLSTATE 25006. Deleting the `set` line from the verifier
+# makes this proof fail, which is the point.
+say "[gate-d-r2] 3b/5 proving the PRE verifier cannot mutate ..."
+PROBE_SQL=$(mktemp -t dr2gateprobe.XXXXXX)
+PROBE_OUT=$(mktemp -t dr2gateprobeout.XXXXXX)
+READ_ONLY_PROOF=FAIL
+
+awk "/<<'SQL'/{f=1;next} /^SQL\$/{f=0} f" "$PRE_VERIFIER" >"$PROBE_SQL"
+if [ ! -s "$PROBE_SQL" ]; then
+  say "[gate-d-r2]     could not extract the PRE SQL document — the proof cannot run"
+elif ! grep -q '^set default_transaction_read_only = on;' "$PROBE_SQL"; then
+  say "[gate-d-r2]     the PRE document does not open read-only"
 else
-  say "[gate-d-r2]     read-only enforcement confirmed by the server"
+  cat >>"$PROBE_SQL" <<'PROBE'
+select 'PROBE_TRANSACTION_READ_ONLY=' || current_setting('transaction_read_only');
+create table public.d_r2_gate_probe(id int);
+PROBE
+  # VERBOSITY=verbose makes psql print the SQLSTATE, so the refusal is identified
+  # by code rather than by an error string that could change wording.
+  psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" \
+    -v ON_ERROR_STOP=1 -v VERBOSITY=verbose --no-psqlrc -At \
+    <"$PROBE_SQL" >"$PROBE_OUT" 2>&1
+  EFFECTIVE=$(grep -m1 '^PROBE_TRANSACTION_READ_ONLY=' "$PROBE_OUT" | cut -d= -f2-)
+  if [ "$EFFECTIVE" != "on" ]; then
+    say "[gate-d-r2]     the verifier's own transaction is not read-only (transaction_read_only=${EFFECTIVE:-<unreported>})"
+  elif grep -q '25006' "$PROBE_OUT"; then
+    READ_ONLY_PROOF=PASS
+    say "[gate-d-r2]     READ_ONLY_PROOF=PASS (transaction_read_only=on; mutation refused, SQLSTATE 25006)"
+  elif grep -qi 'read-only transaction' "$PROBE_OUT"; then
+    READ_ONLY_PROOF=PASS
+    say "[gate-d-r2]     READ_ONLY_PROOF=PASS (transaction_read_only=on; mutation refused as read-only)"
+  else
+    say "[gate-d-r2]     the mutation was NOT refused in the verifier's own context:"
+    tail -5 "$PROBE_OUT" | sed 's/^/                /'
+  fi
 fi
+
+# Defensive: if the mutation somehow succeeded, do not leave the object behind.
+psql_local -c "drop table if exists public.d_r2_gate_probe;" >/dev/null 2>&1
 
 # ---------------------------------------------------------------------------
 # 4. apply the canonical migration file verbatim — the payload the promotion
@@ -210,7 +270,7 @@ grep -E "^(ANON_ORIGIN_RPC|AUTHENTICATED_ORIGIN_RPC|ORIGIN_RESULT|ORIGIN_ARGUMEN
 # summary
 # ---------------------------------------------------------------------------
 OVERALL=PASS
-for v in "$DB_RESET" "$PRE_SNAPSHOT" "$PRE_CONTRACT" "$MIGRATION_APPLIES" "$POST_SNAPSHOT"; do
+for v in "$DB_RESET" "$PRE_SNAPSHOT" "$PRE_CONTRACT" "$READ_ONLY_PROOF" "$MIGRATION_APPLIES" "$POST_SNAPSHOT"; do
   [ "$v" = PASS ] || OVERALL=FAIL
 done
 
@@ -219,13 +279,14 @@ say "D_R2_LOCAL_GATE=$OVERALL"
 say "DB_RESET=$DB_RESET"
 say "PRE_SNAPSHOT=$PRE_SNAPSHOT"
 say "PRE_CONTRACT=$PRE_CONTRACT"
+say "READ_ONLY_PROOF=$READ_ONLY_PROOF"
 say "MIGRATION_APPLIES=$MIGRATION_APPLIES"
 say "POST_SNAPSHOT=$POST_SNAPSHOT"
 say "MIGRATION_0133_SHA256=$ACTUAL_S133"
 say "REVIEW_ACCESSED=NO"
 say "REVIEW_DB_0133=NOT_APPLIED"
 say ""
-say "Logs: reset=$RESET_LOG pre=$PRE_OUT apply=$APPLY_LOG post=$POST_OUT"
+say "Logs: reset=$RESET_LOG pre=$PRE_OUT probe=$PROBE_OUT apply=$APPLY_LOG post=$POST_OUT"
 say "NOTE: the LOCAL database is left with 0133 applied, which is its canonical state."
 
 [ "$OVERALL" = PASS ] || exit 1

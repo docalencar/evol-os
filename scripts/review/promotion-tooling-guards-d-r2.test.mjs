@@ -307,6 +307,46 @@ test("the local gate is loopback-only and never reads a Review credential", () =
   assert.match(code, /REVIEW_DB_0133=NOT_APPLIED/)
 })
 
+test("the read-only proof runs in the verifier's own context, not a fresh session", () => {
+  // The first version of this proof opened a NEW psql process and ran
+  //   -c "set default_transaction_read_only = on; create table ..."
+  // which was wrong twice: a new connection does not inherit another
+  // connection's session GUC, and psql runs a multi-statement -c string in ONE
+  // implicit transaction, whose read-only flag was already fixed at transaction
+  // start — so the write was always accepted and the probe always failed.
+  //
+  // The replacement must therefore derive its SQL from the verifier itself.
+  assert.match(gate, /awk "\/<<'SQL'\/\{f=1;next\}/,
+    "the proof must extract the PRE verifier's own SQL document")
+  assert.match(gate, /\$PRE_VERIFIER" >"\$PROBE_SQL"/)
+  assert.match(gate, /grep -q '\^set default_transaction_read_only = on;' "\$PROBE_SQL"/,
+    "removing the read-only line from the verifier must break this proof")
+
+  // Both halves: the effective state is measured, and a mutation is refused.
+  assert.match(gate, /PROBE_TRANSACTION_READ_ONLY=' \|\| current_setting\('transaction_read_only'\)/)
+  assert.match(gate, /\[ "\$EFFECTIVE" != "on" \]/)
+  assert.match(gate, /25006/, "the refusal must be identified by SQLSTATE")
+  assert.match(gate, /create table public\.d_r2_gate_probe/)
+  assert.match(gate, /drop table if exists public\.d_r2_gate_probe/,
+    "the probe object must be cleaned up even if it was unexpectedly created")
+
+  // The SQL reaches psql on STDIN, which is what gives each statement its own
+  // transaction; a -c string would collapse them into one and void the proof.
+  assert.match(gate, /<"\$PROBE_SQL"/)
+  // Executable lines only: the gate's header deliberately quotes the broken form
+  // in order to explain it, and that explanation must not trip its own guard.
+  assert.equal(
+    /-c "set default_transaction_read_only[^"]*;[^"]*(create|insert|update|delete|drop|alter)/i
+      .test(executable(gate)),
+    false,
+    "the invalid single-string form must never come back",
+  )
+
+  // And the proof is part of the verdict, not merely printed.
+  assert.match(gate, /for v in .*"\$READ_ONLY_PROOF"/)
+  assert.match(gate, /say "READ_ONLY_PROOF=\$READ_ONLY_PROOF"/)
+})
+
 test("the local gate actually executes both snapshots against a server", () => {
   // The whole point: pattern matching cannot find a planner error. If this gate
   // stopped running the real verifiers, that protection would be gone.

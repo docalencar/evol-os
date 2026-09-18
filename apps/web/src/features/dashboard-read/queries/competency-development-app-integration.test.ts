@@ -13,15 +13,15 @@ const templatePage = read("../../../app/(dashboard)/app/development/templates/[i
 const competencyError = read("../../../app/(dashboard)/app/competencies/error.tsx")
 const developmentError = read("../../../app/(dashboard)/app/development/error.tsx")
 
-test("in-scope routes use tenant management read boundaries", () => {
+test("in-scope routes use their current trusted read boundaries", () => {
   assert.match(competenciesPage, /getManagementCompetencies\(companyId\)/)
   assert.match(developmentPage, /getDevelopmentExecutiveDashboard/)
-  for (const name of ["Plans", "Goals", "Actions", "Templates"]) {
-    assert.match(dashboard, new RegExp(`getManagementDevelopment${name}\\(companyId\\)`))
-  }
-  assert.match(planPage, /getManagementDevelopmentPlans\(companyId, id\)/)
-  assert.match(planPage, /getManagementDevelopmentGoals\(companyId, id\)/)
-  assert.match(planPage, /getManagementDevelopmentActions\(companyId, id\)/)
+  assert.match(dashboard, /getDevelopmentPlanListItems\(companyId\)/)
+  assert.doesNotMatch(dashboard, /getManagementDevelopment(?:Plans|Goals|Actions)/)
+  assert.match(planPage, /getDevelopmentPlanById\(companyId, id\)/)
+  assert.match(planPage, /getDevelopmentGoalsByPlan\(companyId, id\)/)
+  assert.match(planPage, /getDevelopmentActionsByPlan\(companyId, id\)/)
+  assert.doesNotMatch(planPage, /getManagementDevelopment(?:Plans|Goals|Actions)/)
   assert.match(templatesPage, /getManagementDevelopmentTemplates\(companyId\)/)
   assert.match(templatePage, /getManagementDevelopmentTemplates\(companyId, id\)/)
   // D-DB1 moved the authoring page's CONTENT reads onto the versioned trusted

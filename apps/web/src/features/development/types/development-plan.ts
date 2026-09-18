@@ -35,4 +35,12 @@ export type DevelopmentPlan = {
   updatedAt: string
 
   version?: number
+
+  totalActions: number
+
+  completedActions: number
+
+  skippedActions: number
+
+  progressPercent: number
 }

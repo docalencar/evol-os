@@ -93,6 +93,8 @@ test("createEmployeeIntelligence summarizes an active plan without competency ga
       description: null, status: "active", priority: "high",
       createdBy: "manager-1", startDate: null, dueDate: "2026-08-01",
       completedAt: null, createdAt: "2026-01-01", updatedAt: "2026-01-01",
+      totalActions: 4, completedActions: 1, skippedActions: 2,
+      progressPercent: 75,
     }],
     employeeCompetencies: [],
     competencies: [],

@@ -5,7 +5,8 @@ type DevelopmentPlanRow = {
   plan_id: string; employee_id: string; owner_id: string | null; template_id: string | null
   title: string; description: string | null; status: DevelopmentPlan["status"]
   priority: DevelopmentPlan["priority"]; start_date: string | null; due_date: string | null
-  completed_at: string | null; version: number; created_at: string; updated_at: string
+  completed_at: string | null; version: number; total_actions: number; completed_actions: number
+  skipped_actions: number; progress_percent: number; created_at: string; updated_at: string
 }
 type CreateDevelopmentPlanInput = {
   companyId: string; employeeId: string; ownerId?: string; templateId?: string; title: string
@@ -17,13 +18,15 @@ type UpdateDevelopmentPlanInput = {
 }
 type UpdateDevelopmentPlanStatusInput = { status: DevelopmentPlan["status"]; completedAt: string | null }
 
-function mapDevelopmentPlan(row: DevelopmentPlanRow, companyId: string): DevelopmentPlan {
+export function mapDevelopmentPlan(row: DevelopmentPlanRow, companyId: string): DevelopmentPlan {
   return {
     id: row.plan_id, companyId, employeeId: row.employee_id, ownerId: row.owner_id,
     templateId: row.template_id, title: row.title, description: row.description,
     status: row.status, priority: row.priority, startDate: row.start_date,
     dueDate: row.due_date, completedAt: row.completed_at, createdAt: row.created_at,
     updatedAt: row.updated_at, version: row.version,
+    totalActions: row.total_actions, completedActions: row.completed_actions,
+    skippedActions: row.skipped_actions, progressPercent: row.progress_percent,
   }
 }
 

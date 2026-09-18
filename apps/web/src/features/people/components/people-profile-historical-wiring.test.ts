@@ -16,7 +16,7 @@ test("profile route reads through tenant-safe management boundaries", () => {
   // approved read boundaries.
   assert.match(page, /getManagementCompetencies\(companyId\)/)
   assert.match(page, /getCanonicalPersonCompetencyCoverage\(companyId, id\)/)
-  assert.match(page, /getManagementDevelopmentPlans\(companyId\)/)
+  assert.match(page, /getDevelopmentPlansByEmployee\(companyId, id\)/)
 })
 
 test("profile route drops the legacy terminated-excluding and direct-read loaders", () => {
@@ -24,7 +24,7 @@ test("profile route drops the legacy terminated-excluding and direct-read loader
   assert.doesNotMatch(page, /getEmployeeCompetenciesByEmployee/)
   assert.doesNotMatch(page, /getEmployeeCompetencyGaps/)
   assert.doesNotMatch(page, /\bgetCompetencies\(/)
-  assert.doesNotMatch(page, /getDevelopmentPlansByEmployee/)
+  assert.doesNotMatch(page, /getManagementDevelopmentPlans/)
 })
 
 test("profile route performs no direct read on protected tables", () => {
@@ -45,6 +45,6 @@ test("competency coverage comes from the canonical person boundary", () => {
 })
 
 test("development plans are scoped to the subject employee", () => {
-  assert.match(page, /allDevelopmentPlans\.filter\(/)
-  assert.match(page, /plan\.employeeId === id/)
+  assert.match(page, /getDevelopmentPlansByEmployee\(companyId, id\)/)
+  assert.doesNotMatch(page, /allDevelopmentPlans\.filter\(/)
 })

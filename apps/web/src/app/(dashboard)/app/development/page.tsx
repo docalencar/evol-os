@@ -33,7 +33,7 @@ export default async function DevelopmentPage() {
     <div className="space-y-6">
       <PageHeader
         title="Planos de Desenvolvimento Individual"
-        description="Acompanhe todos os PDIs da empresa."
+        description="Acompanhe os PDIs que você pode acessar."
       />
 
       <DevelopmentDashboardKpiCards

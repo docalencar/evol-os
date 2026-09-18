@@ -73,6 +73,11 @@ export async function createDevelopmentActionRepository() {
   }
 
   return {
+    async findByPlan(companyId: string, planId: string) {
+      const { data, error } = await read(companyId, planId)
+      return { data: data?.map(mapDevelopmentAction) ?? null, error }
+    },
+
     /**
      * The boundary is keyed on the plan, which is where authority lives; goals
      * are a selector within an already-authorized set. Filtering locally

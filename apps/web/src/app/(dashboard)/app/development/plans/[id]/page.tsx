@@ -20,8 +20,11 @@ import {
   DEVELOPMENT_PLAN_STATUS_LABELS,
   type DevelopmentAction,
   type DevelopmentGoal,
+  getDevelopmentActionsByPlan,
+  getDevelopmentGoalsByPlan,
+  getDevelopmentPlanById,
 } from "@/features/development"
-import { getManagementDevelopmentActions, getManagementDevelopmentGoals, getManagementDevelopmentPlans, getManagementPeople } from "@/features/dashboard-read"
+import { getManagementPeople } from "@/features/dashboard-read"
 
 import { type Employee } from "@/features/people"
 
@@ -61,7 +64,7 @@ export default async function DevelopmentPlanPage({
   const { companyId } =
     await getCurrentCompanyContext()
 
-  const plan = (await getManagementDevelopmentPlans(companyId, id))[0] ?? null
+  const plan = await getDevelopmentPlanById(companyId, id)
 
   if (!plan) {
     notFound()
@@ -69,8 +72,8 @@ export default async function DevelopmentPlanPage({
 
   const [goals, actions, people] =
     await Promise.all([
-      getManagementDevelopmentGoals(companyId, id),
-      getManagementDevelopmentActions(companyId, id),
+      getDevelopmentGoalsByPlan(companyId, id),
+      getDevelopmentActionsByPlan(companyId, id),
       getManagementPeople(companyId),
     ])
 
@@ -102,23 +105,6 @@ export default async function DevelopmentPlanPage({
       actions:
         actionsByGoal.get(goal.id) ?? [],
     }))
-
-  const totalActions = actions.length
-
-  const completedActions =
-    actions.filter(
-      (action) =>
-        action.status === "completed"
-    ).length
-
-  const progress =
-    totalActions === 0
-      ? 0
-      : Math.round(
-          (completedActions /
-            totalActions) *
-            100
-        )
 
   return (
     <div className="space-y-6">
@@ -226,12 +212,15 @@ export default async function DevelopmentPlanPage({
               </p>
 
               <p className="mt-1 text-xl font-semibold text-slate-900">
-                {progress}%
+                {plan.progressPercent}%
               </p>
 
               <p className="text-sm text-slate-500">
-                {completedActions} de{" "}
-                {totalActions} ações
+                {plan.completedActions} concluídas
+                {" · "}
+                {plan.skippedActions} ignoradas
+                {" · "}
+                {plan.totalActions} no total
               </p>
             </div>
           </div>

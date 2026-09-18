@@ -60,6 +60,10 @@ export {
 } from "./queries/get-development-actions-by-goal-ids"
 
 export {
+  getDevelopmentActionsByPlan,
+} from "./queries/get-development-actions-by-plan"
+
+export {
   DevelopmentPlanList,
 } from "./components/development-plan-list"
 export {

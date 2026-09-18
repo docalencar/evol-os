@@ -14,7 +14,6 @@ import {
 import {
   getManagementCompetencies,
   getManagementDepartments,
-  getManagementDevelopmentPlans,
   getManagementEmployeeCompetencies,
   getManagementEntityTimeline,
   getManagementPeople,
@@ -34,6 +33,7 @@ import {
 import {
   DevelopmentPlanAiSuggestionDialog,
   getDevelopmentPlanAiContext,
+  getDevelopmentPlansByEmployee,
 } from "@/features/development"
 
 import {
@@ -159,7 +159,7 @@ export default async function EmployeeProfilePage({
     employees,
     employeeTimeline,
     assessmentSummary,
-    allDevelopmentPlans,
+    developmentPlans,
     departments,
     personAssessmentResults,
     directReportAggregate,
@@ -182,7 +182,7 @@ export default async function EmployeeProfilePage({
 
     getEmployeeAssessmentSummary(companyId, id),
 
-    getManagementDevelopmentPlans(companyId),
+    getDevelopmentPlansByEmployee(companyId, id),
 
     getManagementDepartments(companyId),
 
@@ -198,13 +198,6 @@ export default async function EmployeeProfilePage({
     // avaliações" e de Self × Manager.
     getPersonDirectReportAggregateReadModel(companyId, id),
   ])
-
-  // Development plans remain scoped to this person. Competency expectations and
-  // current evidence come exclusively from the trusted 0123 person boundary;
-  // the canonical 5B service already resolved the factual gap semantics.
-  const developmentPlans = allDevelopmentPlans.filter(
-    (plan) => plan.employeeId === id
-  )
 
   const competencyPresentation = presentPersonCompetencyCoverage(
     canonicalCompetencyCoverage

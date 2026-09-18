@@ -22,8 +22,17 @@ test("in-scope routes use their current trusted read boundaries", () => {
   assert.match(planPage, /getDevelopmentGoalsByPlan\(companyId, id\)/)
   assert.match(planPage, /getDevelopmentActionsByPlan\(companyId, id\)/)
   assert.doesNotMatch(planPage, /getManagementDevelopment(?:Plans|Goals|Actions)/)
-  assert.match(templatesPage, /getManagementDevelopmentTemplates\(companyId\)/)
-  assert.match(templatePage, /getManagementDevelopmentTemplates\(companyId, id\)/)
+  // D-P3 moved template administration onto the versioned authoring boundary.
+  // The list and the detail header now read the lifecycle the database has —
+  // draft, published, obsolete — instead of the legacy container row, whose
+  // `active` flag cannot distinguish a draft from a retired template. The
+  // property protected here is unchanged: routes read through a boundary, never
+  // a table, and never a tenant-wide reader they then filter.
+  assert.match(templatesPage, /getDevelopmentTemplateAuthoringVersions\(companyId\)/)
+  assert.match(templatePage, /resolveDevelopmentTemplateAuthoringVersion\(companyId, id\)/)
+  for (const page of [templatesPage, templatePage]) {
+    assert.doesNotMatch(page, /getManagementDevelopmentTemplates/)
+  }
   // D-DB1 moved the authoring page's CONTENT reads onto the versioned trusted
   // boundary: 0131 revoked direct access to the template tables, and the goals
   // and actions the page renders are the ones the trusted mutations write.
@@ -63,7 +72,10 @@ test("malformed and failed RPC responses fail closed with safe errors", () => {
 
 test("empty and foreign selectors preserve safe page behavior", () => {
   assert.match(planPage, /if \(!plan\)\s*{\s*notFound\(\)/)
-  assert.match(templatePage, /if \(!template\)\s*{\s*notFound\(\)/)
+  // Same opacity, new subject: the authoring read returns nothing both for a
+  // template that does not exist and for an actor who may not administer one,
+  // so a single notFound keeps the two indistinguishable.
+  assert.match(templatePage, /if \(!authoringVersion\)\s*{[\s\S]{0,400}?notFound\(\)/)
   assert.match(adapter, /z\.array\(planSchema\)/)
   assert.match(adapter, /z\.array\(templateSchema\)/)
 })

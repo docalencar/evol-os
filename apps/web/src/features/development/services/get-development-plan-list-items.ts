@@ -1,11 +1,6 @@
-import {
-  getManagementDevelopmentTemplates,
-  getManagementPeople,
-} from "@/features/dashboard-read"
+import { getManagementPeople } from "@/features/dashboard-read"
 
-import {
-  type DevelopmentTemplate,
-} from "@/features/development/templates"
+import { getPublishedDevelopmentTemplateCatalog } from "@/features/development/templates"
 
 import {
   getDevelopmentPlans,
@@ -25,13 +20,18 @@ export async function getDevelopmentPlanListItems(
   ] = await Promise.all([
     getDevelopmentPlans(companyId),
     getManagementPeople(companyId),
-    getManagementDevelopmentTemplates(companyId),
+    // Decoration only: plans carry a template CONTAINER id and the table shows
+    // its name. The published catalog is the narrowest trusted boundary that
+    // every active member may read, so a participant-scoped plan list no longer
+    // drags a tenant-wide authoring read behind it. A template with no published
+    // version simply has no name to show — authoring visibility is not something
+    // this surface may grant.
+    getPublishedDevelopmentTemplateCatalog(companyId),
   ])
 
   const employees = employeesData ?? []
 
-  const templates =
-    (templatesData ?? []) as DevelopmentTemplate[]
+  const templates = templatesData ?? []
 
   const owners = employees
     .filter(
@@ -60,7 +60,7 @@ export async function getDevelopmentPlanListItems(
 
   const templateNameById = new Map(
     templates.map((template) => [
-      template.id,
+      template.templateId,
       template.name,
     ])
   )
@@ -86,7 +86,7 @@ export async function getDevelopmentPlanListItems(
         templateName: plan.templateId
           ? templateNameById.get(
               plan.templateId
-            ) ?? "Template não encontrado"
+            ) ?? "Template não disponível"
           : null,
 
         progress: plan.progressPercent,

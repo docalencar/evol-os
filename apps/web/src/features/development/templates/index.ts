@@ -48,44 +48,39 @@ export {
 } from "./services/create-development-template"
 
 export {
-  updateDevelopmentTemplate,
-} from "./services/update-development-template"
+  getDevelopmentTemplateVersionContent,
+} from "./queries/get-development-template-version-content"
+
+export type {
+  DevelopmentTemplateVersionAction,
+  DevelopmentTemplateVersionGoal,
+} from "./queries/get-development-template-version-content"
 
 export {
-  deactivateDevelopmentTemplate,
+  getDevelopmentTemplateAuthoringVersions,
+  resolveDevelopmentTemplateAuthoringVersion,
+  resolvePublishedDevelopmentTemplateVersion,
+} from "./queries/resolve-development-template-authoring-version"
+
+export type {
+  DevelopmentTemplateAuthoringVersion,
+} from "./queries/resolve-development-template-authoring-version"
+
+export type {
+  DevelopmentTemplateAuthoringErrorCode,
+} from "./types/development-template-authoring"
+
+export {
+  obsoleteDevelopmentTemplate,
 } from "./services/deactivate-development-template"
-
-export {
-  getDevelopmentTemplateActionsByGoalIds,
-} from "./services/get-development-template-actions-by-goal-ids"
-
-export {
-  getDevelopmentTemplates,
-} from "./queries/get-development-templates"
-
-export {
-  getDevelopmentTemplateById,
-} from "./queries/get-development-template-by-id"
-
-export {
-  getDevelopmentTemplateGoals,
-} from "./queries/get-development-template-goals"
-
-export {
-  getDevelopmentTemplateActions,
-} from "./queries/get-development-template-actions"
 
 export {
   createDevelopmentTemplateAction,
 } from "./actions/create-development-template-action"
 
 export {
-  updateDevelopmentTemplateAction,
-} from "./actions/update-development-template-action"
-
-export {
-  deactivateDevelopmentTemplateAction,
-} from "./actions/deactivate-development-template-action"
+  obsoleteDevelopmentTemplateAction,
+} from "./actions/obsolete-development-template-action"
 
 export {
   DevelopmentTemplateTable,
@@ -96,12 +91,8 @@ export {
 } from "./components/create-development-template-dialog"
 
 export {
-  DevelopmentTemplateEditDialog,
-} from "./components/development-template-edit-dialog"
-
-export {
-  DeactivateDevelopmentTemplateButton,
-} from "./components/deactivate-development-template-button"
+  ObsoleteDevelopmentTemplateButton,
+} from "./components/obsolete-development-template-button"
 
 export {
   AddTemplateCompetencyDialog,

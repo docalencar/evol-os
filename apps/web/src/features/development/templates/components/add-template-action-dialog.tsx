@@ -19,12 +19,13 @@ import { createActionForTemplateGoalAction } from "../actions/create-action-for-
 
 type AddTemplateActionDialogProps = {
   templateId: string
-  templateGoalId: string
+  /** A goal of the template VERSION — not a legacy template goal id. */
+  templateVersionGoalId: string
 }
 
 export function AddTemplateActionDialog({
   templateId,
-  templateGoalId,
+  templateVersionGoalId,
 }: AddTemplateActionDialogProps) {
   const [isPending, startTransition] = useTransition()
 
@@ -42,7 +43,7 @@ export function AddTemplateActionDialog({
 
     const input = {
       templateId,
-      templateGoalId,
+      templateVersionGoalId,
       title: String(formData.get("title") ?? ""),
       description: String(
         formData.get("description") ?? ""
@@ -93,12 +94,12 @@ export function AddTemplateActionDialog({
           className="space-y-4"
         >
           <div>
-            <Label htmlFor={`title-${templateGoalId}`}>
+            <Label htmlFor={`title-${templateVersionGoalId}`}>
               Título
             </Label>
 
             <Input
-              id={`title-${templateGoalId}`}
+              id={`title-${templateVersionGoalId}`}
               name="title"
               placeholder="Ex.: Realizar curso de comunicação"
               required
@@ -108,13 +109,13 @@ export function AddTemplateActionDialog({
 
           <div>
             <Label
-              htmlFor={`description-${templateGoalId}`}
+              htmlFor={`description-${templateVersionGoalId}`}
             >
               Descrição
             </Label>
 
             <Textarea
-              id={`description-${templateGoalId}`}
+              id={`description-${templateVersionGoalId}`}
               name="description"
               placeholder="Descreva como esta ação deverá ser realizada."
               disabled={isPending}
@@ -122,12 +123,12 @@ export function AddTemplateActionDialog({
           </div>
 
           <div>
-            <Label htmlFor={`type-${templateGoalId}`}>
+            <Label htmlFor={`type-${templateVersionGoalId}`}>
               Tipo da ação
             </Label>
 
             <select
-              id={`type-${templateGoalId}`}
+              id={`type-${templateVersionGoalId}`}
               name="type"
               defaultValue="course"
               className="flex h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-evol-blue focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
@@ -152,13 +153,13 @@ export function AddTemplateActionDialog({
 
           <div>
             <Label
-              htmlFor={`suggestedDueDays-${templateGoalId}`}
+              htmlFor={`suggestedDueDays-${templateVersionGoalId}`}
             >
               Prazo sugerido (dias)
             </Label>
 
             <Input
-              id={`suggestedDueDays-${templateGoalId}`}
+              id={`suggestedDueDays-${templateVersionGoalId}`}
               name="suggestedDueDays"
               type="number"
               min={1}

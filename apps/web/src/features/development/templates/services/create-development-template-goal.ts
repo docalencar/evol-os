@@ -1,7 +1,8 @@
-import { getCompetencyById } from "@/features/competencies"
+import "server-only"
 
-import { createDevelopmentTemplateGoalRepository } from "../repositories/development-template-goal-repository"
-import { getDevelopmentTemplateById } from "./get-development-template-by-id"
+import { createDevelopmentTemplateAuthoringRepository } from "../repositories/development-template-authoring-repository"
+import { getDevelopmentTemplateVersionContent } from "../queries/get-development-template-version-content"
+import { resolveDevelopmentTemplateAuthoringVersion } from "../queries/resolve-development-template-authoring-version"
 
 type CreateDevelopmentTemplateGoalParams = {
   companyId: string
@@ -10,93 +11,33 @@ type CreateDevelopmentTemplateGoalParams = {
   suggestedTargetLevel: number
 }
 
-type DevelopmentTemplateGoalRow = {
-  competency_id: string
-  order_index: number
-}
-
+/**
+ * Adds a competency to the container's current DRAFT version.
+ *
+ * The version is resolved server-side from the container the route names — the
+ * browser never chooses which version it writes into. A container whose newest
+ * version is published or obsolete is refused here rather than at the database,
+ * so the caller gets the lifecycle reason instead of a constraint code.
+ */
 export async function createDevelopmentTemplateGoal({
   companyId,
   templateId,
   competencyId,
   suggestedTargetLevel,
-}: CreateDevelopmentTemplateGoalParams) {
-  const template = await getDevelopmentTemplateById(
-    companyId,
-    templateId
-  )
+}: CreateDevelopmentTemplateGoalParams): Promise<{ templateVersionGoalId: string }> {
+  const version = await resolveDevelopmentTemplateAuthoringVersion(companyId, templateId)
+  if (!version) throw new Error("DEVELOPMENT_TEMPLATE_NOT_AVAILABLE")
+  if (version.status !== "draft") throw new Error("DEVELOPMENT_TEMPLATE_VERSION_NOT_EDITABLE")
 
-  if (!template) {
-    throw new Error("Template não encontrado.")
-  }
+  // Append: order is the count of what is already there, so the boundary's
+  // (order_index, created_at, id) ordering stays stable and deterministic.
+  const { goals } = await getDevelopmentTemplateVersionContent(version.templateVersionId)
 
-  if (
-    template.scope !== "company" ||
-    template.companyId !== companyId
-  ) {
-    throw new Error(
-      "Este template não pode ser alterado."
-    )
-  }
-
-  const competency = await getCompetencyById(
-    companyId,
-    competencyId
-  )
-
-  if (!competency || !competency.active) {
-    throw new Error(
-      "A competência selecionada não está disponível."
-    )
-  }
-
-  const repository =
-    await createDevelopmentTemplateGoalRepository()
-
-  const {
-    data: existingGoals,
-    error: findError,
-  } = await repository.findByTemplate(templateId)
-
-  if (findError) {
-    throw new Error(
-      "Não foi possível verificar as competências do template."
-    )
-  }
-
-  const goals =
-    (existingGoals ?? []) as DevelopmentTemplateGoalRow[]
-
-  const alreadyExists = goals.some(
-    (goal) => goal.competency_id === competencyId
-  )
-
-  if (alreadyExists) {
-    throw new Error(
-      "Esta competência já foi adicionada ao template."
-    )
-  }
-
-  const nextOrderIndex =
-    goals.length === 0
-      ? 0
-      : Math.max(
-          ...goals.map((goal) => goal.order_index)
-        ) + 1
-
-  const { data, error } = await repository.create(companyId, {
-    templateId,
+  const repository = await createDevelopmentTemplateAuthoringRepository()
+  return repository.addGoal({
+    templateVersionId: version.templateVersionId,
     competencyId,
-    description: "",
     suggestedTargetLevel,
-    orderIndex: nextOrderIndex,
+    orderIndex: goals.length,
   })
-
-  if (error) {
-    throw new Error(
-      "Não foi possível adicionar a competência ao template."
-    )
-  }
-
-  return data
 }

@@ -4,8 +4,7 @@ import { DataTable } from "@/components/shared/data-table"
 import { Badge } from "@/components/ui/badge"
 
 import type { DevelopmentTemplate } from "../types/development-template"
-import { DeactivateDevelopmentTemplateButton } from "./deactivate-development-template-button"
-import { DevelopmentTemplateEditDialog } from "./development-template-edit-dialog"
+import { ObsoleteDevelopmentTemplateButton } from "./obsolete-development-template-button"
 
 type DevelopmentTemplateTableProps = {
   templates: DevelopmentTemplate[]
@@ -84,13 +83,13 @@ export function DevelopmentTemplateTable({
           key: "actions",
           header: "Ações",
           render: (template) => (
+            // No edit control: a published version is immutable under D-P0 and
+            // there is no trusted operation behind "edit template". `active` is
+            // the compatibility mirror the boundary maintains, so it still says
+            // whether a published version exists to make obsolete.
             <div className="flex flex-wrap gap-2">
-              <DevelopmentTemplateEditDialog
-                template={template}
-              />
-
               {template.active ? (
-                <DeactivateDevelopmentTemplateButton
+                <ObsoleteDevelopmentTemplateButton
                   templateId={template.id}
                 />
               ) : null}

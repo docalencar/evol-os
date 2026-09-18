@@ -8,21 +8,22 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
 import { createDevelopmentTemplateAction } from "../actions/create-development-template-action"
-import { updateDevelopmentTemplateAction } from "../actions/update-development-template-action"
-import type { DevelopmentTemplate } from "../types/development-template"
 
 type DevelopmentTemplateFormProps = {
-  template?: DevelopmentTemplate
   onSuccess?: () => void
 }
 
+/**
+ * Creates a template DRAFT. There is no edit branch: D-P0 scopes editing to a
+ * draft's additive construction and makes a published version immutable, so
+ * updating a template's metadata after the fact has no trusted operation behind
+ * it. The branch that used to be here called a server action that no longer
+ * exists — leaving it would have meant a button that fails only at runtime.
+ */
 export function DevelopmentTemplateForm({
-  template,
   onSuccess,
 }: DevelopmentTemplateFormProps) {
   const [isPending, startTransition] = useTransition()
-
-  const isEditing = Boolean(template)
 
   function handleSubmit(formData: FormData) {
     const suggestedDurationDaysValue = String(
@@ -38,16 +39,10 @@ export function DevelopmentTemplateForm({
         suggestedDurationDaysValue === ""
           ? undefined
           : Number(suggestedDurationDaysValue),
-      active: template?.active ?? true,
     }
 
     startTransition(async () => {
-      const result = template
-        ? await updateDevelopmentTemplateAction(
-            template.id,
-            input
-          )
-        : await createDevelopmentTemplateAction(input)
+      const result = await createDevelopmentTemplateAction(input)
 
       if (!result.success) {
         toast.error(result.message)
@@ -67,7 +62,7 @@ export function DevelopmentTemplateForm({
         <Input
           id="name"
           name="name"
-          defaultValue={template?.name ?? ""}
+          defaultValue=""
           placeholder="Ex.: Liderança para supervisores"
           required
         />
@@ -81,7 +76,7 @@ export function DevelopmentTemplateForm({
         <Input
           id="description"
           name="description"
-          defaultValue={template?.description ?? ""}
+          defaultValue=""
           placeholder="Descrição do template"
         />
       </div>
@@ -96,9 +91,7 @@ export function DevelopmentTemplateForm({
           name="suggestedDurationDays"
           type="number"
           min={1}
-          defaultValue={
-            template?.suggestedDurationDays ?? ""
-          }
+          defaultValue=""
           placeholder="Ex.: 30"
         />
       </div>
@@ -110,9 +103,7 @@ export function DevelopmentTemplateForm({
         >
           {isPending
             ? "Salvando..."
-            : isEditing
-              ? "Salvar alterações"
-              : "Criar template"}
+            : "Criar template"}
         </Button>
       </div>
     </form>

@@ -9,7 +9,11 @@ import { PageHeader } from "@/components/shared/page-header"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 
-import { getManagementCompetencies, getManagementDevelopmentTemplateActions, getManagementDevelopmentTemplateGoals, getManagementDevelopmentTemplates, getManagementPeople } from "@/features/dashboard-read"
+import { getManagementCompetencies, getManagementDevelopmentTemplates, getManagementPeople } from "@/features/dashboard-read"
+import {
+  getDevelopmentTemplateVersionContent,
+  resolveDevelopmentTemplateAuthoringVersion,
+} from "@/features/development/templates"
 import {
   DEVELOPMENT_ACTION_TYPE_LABELS,
 } from "@/features/development/constants/development-action"
@@ -86,49 +90,56 @@ export default async function DevelopmentTemplatePage({
     notFound()
   }
 
-  const [
-    goals,
-    competencies,
-    employeesData,
-  ] = await Promise.all([
-    getManagementDevelopmentTemplateGoals(companyId, id),
+  // The route stays keyed on the CONTAINER, which keeps existing links valid.
+  // Which version that container is currently about is resolved server-side —
+  // the browser never names a version, and after 0131 it could not discover one
+  // anyway. Content then comes from the version model, which is where the
+  // trusted authoring mutations write.
+  const [authoringVersion, competencies, employeesData] = await Promise.all([
+    resolveDevelopmentTemplateAuthoringVersion(companyId, id),
     getManagementCompetencies(companyId),
     getManagementPeople(companyId),
   ])
 
-  const employees =
-    (employeesData ?? []) as Employee[]
+  const employees = (employeesData ?? []) as Employee[]
 
-  const templateGoals =
-    goals as DevelopmentTemplateGoalView[]
+  const versionContent = authoringVersion
+    ? await getDevelopmentTemplateVersionContent(authoringVersion.templateVersionId)
+    : { goals: [], actions: [] }
 
-  const allActions = await getManagementDevelopmentTemplateActions(companyId, id)
+  const competencyNameById = new Map(
+    competencies.map((competency) => [competency.id, competency.name])
+  )
 
-  const actionsByGoal = new Map<
-    string,
-    DevelopmentTemplateAction[]
-  >()
-
-  for (const action of allActions) {
-    const current =
-      actionsByGoal.get(
-        action.templateGoalId
-      ) ?? []
-
-    current.push(action)
-
-    actionsByGoal.set(
-      action.templateGoalId,
-      current
-    )
+  const actionsByGoal = new Map<string, DevelopmentTemplateAction[]>()
+  for (const action of versionContent.actions) {
+    const current = actionsByGoal.get(action.templateVersionGoalId) ?? []
+    current.push({
+      id: action.templateVersionActionId,
+      templateGoalId: action.templateVersionGoalId,
+      title: action.title,
+      description: action.description,
+      type: action.type as DevelopmentTemplateAction["type"],
+      suggestedDueDays: action.suggestedDueDays,
+      orderIndex: action.orderIndex,
+    } as DevelopmentTemplateAction)
+    actionsByGoal.set(action.templateVersionGoalId, current)
   }
 
-  const goalsWithActions: GoalWithActions[] =
-    templateGoals.map((goal) => ({
-      ...goal,
-      actions:
-        actionsByGoal.get(goal.id) ?? [],
-    }))
+  // A draft accepts new competencies and actions; a published or obsolete
+  // version does not, and showing controls that the boundary would refuse is
+  // what makes an immutable lifecycle look editable.
+  const isDraft = authoringVersion?.status === "draft"
+
+  const goalsWithActions: GoalWithActions[] = versionContent.goals.map((goal) => ({
+    id: goal.templateVersionGoalId,
+    competency_id: goal.competencyId,
+    description: goal.description,
+    suggested_target_level: goal.suggestedTargetLevel,
+    order_index: goal.orderIndex,
+    competencies: { name: competencyNameById.get(goal.competencyId) ?? "Competência não encontrada" },
+    actions: actionsByGoal.get(goal.templateVersionGoalId) ?? [],
+  }))
 
   const totalActions =
     goalsWithActions.reduce(
@@ -322,12 +333,14 @@ export default async function DevelopmentTemplatePage({
                     </div>
                   )}
 
-                  <div className="mt-4 flex justify-end">
-                    <AddTemplateActionDialog
-                      templateId={id}
-                      templateGoalId={goal.id}
-                    />
-                  </div>
+                  {isDraft ? (
+                    <div className="mt-4 flex justify-end">
+                      <AddTemplateActionDialog
+                        templateId={id}
+                        templateVersionGoalId={goal.id}
+                      />
+                    </div>
+                  ) : null}
                 </div>
               </details>
             ))}

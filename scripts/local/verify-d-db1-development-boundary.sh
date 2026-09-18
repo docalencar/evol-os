@@ -108,8 +108,16 @@ else
   FULL_DB_SUITE=FAIL
 fi
 
-FULL_DB_FILES=$(grep -cE "^# .*\.sql|\.sql *\.\.+|Running tests" "$TEST_LOG" 2>/dev/null || echo 0)
-FULL_DB_ASSERTIONS=$(grep -cE "^ok [0-9]+|^not ok [0-9]+" "$TEST_LOG" 2>/dev/null || echo 0)
+FULL_DB_SUMMARY=$(sed -nE 's/^Files=([0-9]+), Tests=([0-9]+),.*/\1 \2/p' "$TEST_LOG" | tail -1)
+if [ -n "$FULL_DB_SUMMARY" ]; then
+  FULL_DB_FILES=${FULL_DB_SUMMARY%% *}
+  FULL_DB_ASSERTIONS=${FULL_DB_SUMMARY#* }
+else
+  # pg_prove may omit its aggregate summary after an early psql bailout. A
+  # parser uncertainty is not a factual zero and must not affect the verdict.
+  FULL_DB_FILES=UNKNOWN
+  FULL_DB_ASSERTIONS=UNKNOWN
+fi
 
 # Per-suite verdicts, read from the single run above.
 if grep -q "development_trusted_lifecycle_boundary" "$TEST_LOG"; then
@@ -123,7 +131,7 @@ else
   DEVELOPMENT_PGTAP=FAIL
   say "[d-db1]     WARNING: the Development suite was not named in the test output."
 fi
-DEVELOPMENT_ASSERTIONS=$(grep -cE "^select (ok|is|isnt|throws_ok|lives_ok|has_function|has_table|has_column|results_eq|set_eq|matches)\(" "$DEVELOPMENT_SUITE" 2>/dev/null || echo 0)
+DEVELOPMENT_ASSERTIONS=$(grep -cE "^select (ok|is|isnt|throws_ok|lives_ok|has_function|has_table|has_column|results_eq|set_eq|matches)\(" "$DEVELOPMENT_SUITE" 2>/dev/null || true)
 
 if grep -q "company_retention_pressure_boundary" "$TEST_LOG"; then
   if grep -E "company_retention_pressure_boundary" "$TEST_LOG" | grep -qiE "fail|not ok"; then

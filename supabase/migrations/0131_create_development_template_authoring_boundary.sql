@@ -115,16 +115,4 @@ grant execute on function public.get_published_development_template_catalog_v1(u
 
 revoke all on table public.development_templates,public.development_template_goals,public.development_template_actions,public.development_template_versions,public.development_template_version_goals,public.development_template_version_actions from public,anon,authenticated;
 
-create or replace function public.get_company_retention_pressure_v1(p_company_id uuid)
-returns table(relation_name text,row_count bigint)
-language sql stable security definer set search_path='' as $$
-  select 'development_template_applications',count(*) from public.development_template_applications where company_id=p_company_id
-  union all select 'development_template_application_attempts',count(*) from public.development_template_application_attempts where company_id=p_company_id
-  union all select 'development_template_application_snapshots',count(*) from public.development_template_application_snapshots where company_id=p_company_id
-  union all select 'development_template_application_lineage',count(*) from public.development_template_application_lineage where company_id=p_company_id
-  union all select 'development_reviews',count(*) from public.development_reviews where company_id=p_company_id
-  union all select 'development_private_audit',count(*) from public.development_private_audit where company_id=p_company_id
-$$;
-revoke all on function public.get_company_retention_pressure_v1(uuid) from public,anon,authenticated;
-grant execute on function public.get_company_retention_pressure_v1(uuid) to service_role;
 notify pgrst, 'reload schema';

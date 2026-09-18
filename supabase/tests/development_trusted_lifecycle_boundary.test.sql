@@ -121,7 +121,9 @@ reset role;
 select ok(public.can_apply_development_template_v1('dd010000-0000-4000-8000-000000000101','dd010000-0000-4000-8000-000000000002','dd010000-0000-4000-8000-000000000203','dd010000-0000-4000-8000-000000000202'),'manager may apply to direct report as owner');
 select ok(not public.can_apply_development_template_v1('dd010000-0000-4000-8000-000000000101','dd010000-0000-4000-8000-000000000002','dd010000-0000-4000-8000-000000000204','dd010000-0000-4000-8000-000000000202'),'manager cannot apply to unrelated employee');
 select ok(public.can_apply_development_template_v1('dd010000-0000-4000-8000-000000000101','dd010000-0000-4000-8000-000000000001','dd010000-0000-4000-8000-000000000203','dd010000-0000-4000-8000-000000000202'),'administrative template application preserved');
-select is((select count(*) from public.get_company_retention_pressure_v1('dd010000-0000-4000-8000-000000000101') where relation_name in ('development_reviews','development_private_audit')),2::bigint,'new retained evidence is registered');
+select ok(has_table_privilege('service_role','public.development_reviews','select')
+  and has_table_privilege('service_role','public.development_private_audit','select'),
+  'new retained evidence is directly countable by the retention registry');
 
 -- Purpose-bound template-version content read (0132).
 --
@@ -185,7 +187,10 @@ select is((select count(*) from public.get_development_template_version_v1('dd01
 reset role;
 select set_config('request.jwt.claims','{}',true);
 set local role anon;
-select is((select count(*) from public.get_development_template_version_v1(current_setting('ddb.version')::uuid,null)),0::bigint,'anon reads nothing') ;
+select throws_ok(
+  $$select * from public.get_development_template_version_v1(current_setting('ddb.version')::uuid,null)$$,
+  '42501','permission denied for function get_development_template_version_v1',
+  'anon cannot execute the trusted content reader');
 reset role;
 
 -- Final review ordering: the business rule is "demonstrably later", so equality

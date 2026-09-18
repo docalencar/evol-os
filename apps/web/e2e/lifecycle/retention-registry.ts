@@ -196,10 +196,8 @@ export const COMPANY_RETENTION_TABLES: readonly RetentionTable[] = Object.freeze
   //
   // Unlike the four application-ledger tables above, `service_role` keeps SELECT
   // here (0130:127), so a plain head-count answers and no counts-only boundary
-  // is required. They appear in `get_company_retention_pressure_v1` (0131:125)
-  // as well, which is a superset: that function answers "what Development
-  // evidence does this tenant still hold?", and four of its six relations
-  // additionally need it because service_role cannot read them at all.
+  // is required. The historical 0126 RPC remains deliberately ledger-specific;
+  // these two entries are covered directly by this registry instead.
   //
   // Neither is an orphan. A retired run is EXPECTED to leave these rows behind:
   // D-P0 requires the private audit trail to be durable, and a review is

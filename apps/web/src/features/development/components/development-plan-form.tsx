@@ -123,7 +123,7 @@ export function DevelopmentPlanForm({
             id="templateName"
             value={
               templateName ??
-              "Plano criado sem Template"
+              "Sem template de origem"
             }
             disabled
             readOnly

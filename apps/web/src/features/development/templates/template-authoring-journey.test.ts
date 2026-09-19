@@ -156,12 +156,19 @@ test("14-15. no direct table access and no legacy write path was restored", () =
   assert.doesNotMatch(code(everyServerFile), /service_role|SUPABASE_SERVICE_ROLE_KEY/)
 })
 
-test("16. the plan list decorates through the catalog, not the authoring read", () => {
-  // Template NAMES on a participant-scoped plan list must not require
-  // administrative visibility, and must not reintroduce a tenant-wide reader.
-  assert.match(planList, /getPublishedDevelopmentTemplateCatalog\(companyId\)/)
+test("16. the plan list decorates through the HISTORICAL origin boundary", () => {
+  // Superseded contract, kept as a guard rather than deleted: this assertion
+  // used to require the published catalog. That was the best available answer
+  // before 0133 existed, and it was wrong for a field labelled "Template de
+  // origem" — obsoleting a template erased the recorded origin of every plan
+  // built from it. The catalog is now the wrong source, not merely a weaker one.
+  assert.match(planList, /getDevelopmentPlanOrigins\(companyId\)/)
+  assert.doesNotMatch(planList, /getPublishedDevelopmentTemplateCatalog/)
+  // And the two reads it must still never reach for.
   assert.doesNotMatch(planList, /getManagementDevelopmentTemplates/)
   assert.doesNotMatch(planList, /getDevelopmentTemplateAuthoringVersions/)
+  // The catalog boundary itself is unchanged and still correct for what it is —
+  // what may be browsed now — it simply no longer answers a historical question.
   assert.match(catalogRead, /get_published_development_template_catalog_v1/)
 })
 

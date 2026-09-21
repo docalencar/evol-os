@@ -15,15 +15,15 @@
 | Campo | Valor |
 | --- | --- |
 | `CURRENT_DOMAIN` | Development (Jornada 4) |
-| `CURRENT_SLICE` | AI Context Protocol v1 — AI-CTX-2 (documentação) |
-| `LAST_CANONICAL_MAIN` | merge da PR #128 (D-P3). Autoridade = `git rev-parse origin/main` |
-| `LATEST_COMMITTED_MIGRATION` | `0133` — historical plan origin read boundary |
-| `LATEST_REVIEW_DB_VERSION` | `0133` — `APPLIED / VERIFIED` (promoção governada D-R2) |
+| `CURRENT_SLICE` | D-R3 — promoção governada de `0134` para Review — `CLOSED / PASS` |
+| `LAST_CANONICAL_MAIN` | D-R3 fechado; autoridade factual = `git rev-parse origin/main` |
+| `LATEST_COMMITTED_MIGRATION` | `0134` — Development ledger direct-read closure |
+| `LATEST_REVIEW_DB_VERSION` | `0134` — `APPLIED / VERIFIED` (promoção governada D-R3) |
 | `HOSTED_E2E_STATE` | E2E-0…E2E-5 `CLOSED / PASS`. `E2E-6` não definido; contrato hosted de Development **não congelado**; próxima run hosted **não autorizada** |
-| `NEXT_GATE` | Publicação do AI Context Protocol, depois **D-SEC1** |
+| `NEXT_GATE` | Definição do próximo slice pelo Product Architect; nenhuma promoção adicional autorizada |
 
-Trabalho de documentação em andamento vive em `docs/ai-context-protocol-v1` e
-**não é main canônico** até ser publicado.
+AI Context Protocol v1 e D-SEC1 estão publicados em `main`; `0134` está promovida
+e verificada em Review.
 
 ## Precedência
 
@@ -48,7 +48,9 @@ Para **estado factual do repositório**, o Git vence; ver `OPERATING-METHOD.md` 
 | D-R2 | Tooling governado de promoção + promoção de `0133` para Review | CLOSED / PASS |
 | D-P3 | Jornada de template authoring + integração da origem histórica | CLOSED / PASS |
 | D-SEC0 | Discovery e contrato do hardening do ledger de Development | CLOSED / PASS |
-| AI-CTX-1 | Método permanente de execução governada | CLOSED / PASS (não publicado) |
+| D-SEC1 | Fechamento do SELECT direto no ledger de Development (`0134`) | CLOSED / PASS |
+| D-R3 | Tooling governado + promoção/verificação de `0134` em Review | CLOSED / PASS |
+| AI-CTX-1 | Método permanente de execução governada | CLOSED / PASS |
 
 O contrato de cada um está no respectivo documento de `Execution/`; os commits e
 os runs de CI estão no Git. **Não reexecutar slices fechados** sem evidência nova
@@ -68,7 +70,7 @@ individual para não criar uma segunda verdade.
 
 | Finding | Estado |
 | --- | --- |
-| **Development ledger privacy** — membros autenticados do tenant têm `SELECT` direto nas quatro relações do ledger de aplicação de template; o snapshot carrega identidade do employee e níveis de competência avaliados | `OPEN / FOLLOW_UP_REQUIRED` — endereçado por **D-SEC1** |
+| **Development ledger privacy** — membros autenticados do tenant tinham `SELECT` direto nas quatro relações do ledger de aplicação de template | `CLOSED / PASS` — D-SEC1 publicada e `0134` aplicada/verificada em Review por D-R3 |
 | **Plan detail sem origem histórica** — a página de detalhe do PDI não exibe "Template de origem" | `DEFERRED_PRODUCT_ENHANCEMENT` — não é regressão |
 | **`getPublishedDevelopmentTemplateCatalog`** — sem consumidor ativo após o cutover da origem histórica | `RETAINED_CAPABILITY` — semântica distinta (catálogo atual ≠ origem histórica); preservado para a jornada de aplicação |
 | **App smoke remoto autenticado (Slice 0115-B2-C)** | `NOT DEMONSTRATED (gated)` — dívida aceita; registro em [CHANGELOG](./CHANGELOG.md) |
@@ -80,8 +82,8 @@ individual para não criar uma segunda verdade.
 | --- | --- |
 | Momento de congelar o contrato hosted de Development e atribuir `E2E-6` | Depende de readiness, não de calendário |
 
-O escopo do D-SEC1 **não** é uma decisão aberta: está congelado no slice ativo
-([`NEXT_STEPS.md`](./NEXT_STEPS.md)).
+O escopo do D-SEC1 permanece congelado e fechado; qualquer evolução futura exige
+novo slice.
 
 ## Arquitetura consolidada
 

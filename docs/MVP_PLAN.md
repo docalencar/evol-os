@@ -126,9 +126,10 @@ decisões humanas.
   `docs/Execution/D-P0-DEVELOPMENT-PRIVACY-ACTORS-LIFECYCLE-CONTRACT.md`.
 - **PRs relacionadas:** #65 e entregas históricas do módulo Development.
 - **Readiness de jornada:** contrato de produto, privacy, atores e lifecycle
-  congelado pelo D-P0. Próximo gate: D-DB1, com reads privacy-aware, trusted
-  operational mutations, review persistence, audit e security tests. O contrato
-  hosted e a numeração E2E ainda não estão congelados.
+  congelado pelo D-P0; fronteiras de DB e cutover de produto entregues por
+  D-DB1/D-DB2, D-SEC1, D-P3 e D-P4A/D-P4B. O contrato hosted está congelado em
+  D-E2E0 e a jornada foi **provada em Review como `E2E-6`** — ver
+  `Execution/E2E-6-DEVELOPMENT-JOURNEY-CLOSURE.md`.
 
 ### Planejamento Organizacional
 
@@ -222,7 +223,8 @@ puderem ser executadas com autorização e persistência confiáveis.
 | E2E-3 | Career, Seniority, Competencies e gap canônico | CLOSED / PASS |
 | E2E-4 | Primeiro ciclo completo de Avaliação | CLOSED / PASS |
 | E2E-5 | Feedback formal de avaliação | CLOSED / PASS — 24/24 PROVEN |
+| E2E-6 | Jornada de Desenvolvimento ponta a ponta | CLOSED / PASS — 29/29 PROVEN |
 
-O próximo domínio normativo é Desenvolvimento, mas o gate continua aberto e sem
-nome E2E até a conclusão de sua readiness discovery. Liderança e decisão
-executiva também permanecem não comprovadas como jornadas hosted completas.
+Desenvolvimento está comprovado como jornada hosted completa. **Liderança e
+decisão executiva permanecem não comprovadas** — são o próximo domínio normativo
+do Gate do MVP.

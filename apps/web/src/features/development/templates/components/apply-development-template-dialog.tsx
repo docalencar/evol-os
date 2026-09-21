@@ -28,9 +28,14 @@ import type {
   Employee,
 } from "@/features/people/types/employee"
 
+import type { PublishedDevelopmentTemplate } from "../queries/get-published-development-template-catalog"
+
 type ApplyDevelopmentTemplateDialogProps = {
-  templateId: string
+  templateId?: string
+  templates?: PublishedDevelopmentTemplate[]
   employees: Employee[]
+  owners?: Employee[]
+  fixedOwnerId?: string | null
 }
 
 function getTodayDateInputValue() {
@@ -51,15 +56,21 @@ function getTodayDateInputValue() {
 
 export function ApplyDevelopmentTemplateDialog({
   templateId,
+  templates = [],
   employees,
+  owners,
+  fixedOwnerId = null,
 }: ApplyDevelopmentTemplateDialogProps) {
   const router = useRouter()
 
   const [employeeId, setEmployeeId] =
     useState("")
 
+  const [selectedTemplateId, setSelectedTemplateId] =
+    useState(templateId ?? "")
+
   const [ownerId, setOwnerId] =
-    useState("")
+    useState(fixedOwnerId ?? "")
 
   const [priority, setPriority] =
     useState<DevelopmentPlanPriority>(
@@ -93,13 +104,20 @@ export function ApplyDevelopmentTemplateDialog({
   const hasEmployees =
     activeEmployees.length > 0
 
+  const activeOwners = (owners ?? employees).filter(
+    (employee) => employee.status === "active"
+  )
+
+  const hasTemplates = Boolean(templateId) || templates.length > 0
+
   function invalidateConfirmation() {
     setConfirmation(null)
   }
 
   function resetForm() {
     setEmployeeId("")
-    setOwnerId("")
+    setSelectedTemplateId(templateId ?? "")
+    setOwnerId(fixedOwnerId ?? "")
     setPriority("medium")
     setStartDate(
       getTodayDateInputValue()
@@ -111,8 +129,8 @@ export function ApplyDevelopmentTemplateDialog({
   return (
     <CrudCreateDialog
       trigger={
-        <Button disabled={!hasEmployees}>
-          Aplicar ao colaborador
+        <Button disabled={!hasEmployees || !hasTemplates}>
+          Aplicar template
         </Button>
       }
       title="Plano de Desenvolvimento Individual"
@@ -136,7 +154,7 @@ export function ApplyDevelopmentTemplateDialog({
                   idempotencyKey: identity.idempotencyKey,
                   correlationId: identity.correlationId,
                   effectiveAt: identity.effectiveAt,
-                  templateId,
+                  templateId: selectedTemplateId,
                   employeeId,
                   ownerId: ownerId || undefined,
                   priority,
@@ -191,6 +209,31 @@ export function ApplyDevelopmentTemplateDialog({
             })
           }}
         >
+          {!templateId ? (
+            <div>
+              <Label htmlFor="templateId">Template publicado</Label>
+              <select
+                id="templateId"
+                name="templateId"
+                value={selectedTemplateId}
+                onChange={(event) => {
+                  setSelectedTemplateId(event.target.value)
+                  invalidateConfirmation()
+                }}
+                className="mt-1 flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
+                required
+                disabled={isPending}
+              >
+                <option value="">Selecione um template</option>
+                {templates.map((template) => (
+                  <option key={template.templateVersionId} value={template.templateId}>
+                    {template.name} · v{template.versionNumber}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
+
           <div>
             <Label htmlFor="employeeId">
               Colaborador
@@ -237,13 +280,12 @@ export function ApplyDevelopmentTemplateDialog({
                 { setOwnerId(event.target.value); invalidateConfirmation() }
               }
               className="mt-1 flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
-              disabled={isPending}
+              disabled={isPending || Boolean(fixedOwnerId)}
+              required
             >
-              <option value="">
-                Sem responsável definido
-              </option>
+              <option value="">Selecione um responsável</option>
 
-              {activeEmployees.map(
+              {activeOwners.map(
                 (employee) => (
                   <option
                     key={employee.id}
@@ -335,6 +377,12 @@ export function ApplyDevelopmentTemplateDialog({
             </p>
           ) : null}
 
+          <p className={`rounded-lg p-3 text-sm ${confirmation?.ready ? "bg-emerald-50 text-emerald-700" : "bg-slate-50 text-slate-600"}`}>
+            {confirmation?.ready
+              ? "Pré-condições confirmadas no servidor. Revise os dados e confirme a aplicação."
+              : "A primeira etapa verifica publicação, conteúdo, mapeamentos e elegibilidade antes de criar o PDI."}
+          </p>
+
           <div className="flex justify-end gap-2">
             <Button
               type="button"
@@ -352,7 +400,9 @@ export function ApplyDevelopmentTemplateDialog({
               type="submit"
               disabled={
                 isPending ||
+                !selectedTemplateId ||
                 !employeeId ||
+                !ownerId ||
                 !startDate
               }
             >

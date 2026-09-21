@@ -125,3 +125,6 @@ export {
 export {
   ApplyDevelopmentTemplateDialog,
 } from "./components/apply-development-template-dialog"
+
+export { getTemplateApplicationPresentation } from "./services/get-template-application-presentation"
+export type { TemplateApplicationPresentation } from "./services/get-template-application-presentation"

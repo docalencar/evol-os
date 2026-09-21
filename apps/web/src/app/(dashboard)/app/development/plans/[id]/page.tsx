@@ -20,6 +20,13 @@ import {
   DEVELOPMENT_PLAN_STATUS_LABELS,
   type DevelopmentAction,
   type DevelopmentGoal,
+  DevelopmentActionControls,
+  DevelopmentPlanEditDialog,
+  DevelopmentReviewAndCompletion,
+  getDevelopmentReviewsByPlan,
+  getDevelopmentPlanOrigins,
+  getPlanCompletionPrerequisites,
+  resolveDevelopmentPlanCapabilities,
   getDevelopmentActionsByPlan,
   getDevelopmentGoalsByPlan,
   getDevelopmentPlanById,
@@ -61,7 +68,7 @@ export default async function DevelopmentPlanPage({
 }: PageProps) {
   const { id } = await params
 
-  const { companyId } =
+  const { companyId, currentUser, personId } =
     await getCurrentCompanyContext()
 
   const plan = await getDevelopmentPlanById(companyId, id)
@@ -70,15 +77,29 @@ export default async function DevelopmentPlanPage({
     notFound()
   }
 
-  const [goals, actions, people] =
+  const [goals, actions, people, reviews, origins] =
     await Promise.all([
       getDevelopmentGoalsByPlan(companyId, id),
       getDevelopmentActionsByPlan(companyId, id),
       getManagementPeople(companyId),
+      getDevelopmentReviewsByPlan(companyId, id),
+      getDevelopmentPlanOrigins(companyId),
     ])
 
   const employee = people.find((person) => person.id === plan.employeeId) ?? null
   const owner = plan.ownerId ? people.find((person) => person.id === plan.ownerId) ?? null : null
+  const origin = origins.find((item) => item.planId === plan.id) ?? null
+  const capabilities = resolveDevelopmentPlanCapabilities({
+    plan,
+    subject: employee,
+    owner,
+    actorPersonId: personId,
+    actorRole: currentUser.role,
+  })
+  const completionPrerequisites = getPlanCompletionPrerequisites(plan, reviews)
+  const ownerOptions = people
+    .filter((person) => person.status === "active" || person.status === "on_leave")
+    .map((person) => ({ id: person.id, name: person.full_name }))
 
   const actionsByGoal = new Map<
     string,
@@ -141,6 +162,15 @@ export default async function DevelopmentPlanPage({
                 ]
               }
             </Badge>
+
+            {capabilities.canManage && (plan.status === "draft" || plan.status === "active") ? (
+              <DevelopmentPlanEditDialog
+                plan={plan}
+                employeeName={getEmployeeName(employee)}
+                templateName={origin?.templateName ?? null}
+                owners={ownerOptions}
+              />
+            ) : null}
           </div>
         }
       />
@@ -356,6 +386,11 @@ export default async function DevelopmentPlanPage({
                                 )}
                               </p>
                             </div>
+                            <DevelopmentActionControls
+                              planId={plan.id}
+                              action={action}
+                              capabilities={capabilities}
+                            />
                           </div>
                         )
                       )}
@@ -367,6 +402,14 @@ export default async function DevelopmentPlanPage({
           </div>
         )}
       </Card>
+
+      <DevelopmentReviewAndCompletion
+        planId={plan.id}
+        status={plan.status}
+        reviews={reviews}
+        capabilities={capabilities}
+        prerequisites={completionPrerequisites}
+      />
     </div>
   )
 }

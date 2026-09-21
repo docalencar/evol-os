@@ -16,7 +16,6 @@ type UpdateDevelopmentPlanInput = {
   title: string; description?: string; ownerId?: string; priority: DevelopmentPlan["priority"]
   startDate?: string; dueDate?: string
 }
-type UpdateDevelopmentPlanStatusInput = { status: DevelopmentPlan["status"]; completedAt: string | null }
 
 export function mapDevelopmentPlan(row: DevelopmentPlanRow, companyId: string): DevelopmentPlan {
   return {
@@ -97,19 +96,20 @@ export async function createDevelopmentPlanRepository() {
       if (error) return { data: null, error }
       return findById(companyId, planId)
     },
-    async updateStatus(companyId: string, planId: string, input: UpdateDevelopmentPlanStatusInput) {
+    async activate(companyId: string, planId: string) {
       const current = await findById(companyId, planId)
       if (current.error || !current.data) return current
       const parameters = { p_plan_id: planId, p_expected_version: current.data.version ?? 1 }
-      if (input.status === "active") {
-        const { error } = await supabase.rpc("activate_development_plan_v1", parameters)
-        if (error) return { data: null, error }
-      } else if (input.status === "completed") {
-        const { error } = await supabase.rpc("complete_development_plan_v1", parameters)
-        if (error) return { data: null, error }
-      } else {
-        return { data: null, error: new Error("Use the dedicated reason-bearing cancellation boundary.") }
-      }
+      const { error } = await supabase.rpc("activate_development_plan_v1", parameters)
+      if (error) return { data: null, error }
+      return findById(companyId, planId)
+    },
+    async complete(companyId: string, planId: string) {
+      const current = await findById(companyId, planId)
+      if (current.error || !current.data) return current
+      const parameters = { p_plan_id: planId, p_expected_version: current.data.version ?? 1 }
+      const { error } = await supabase.rpc("complete_development_plan_v1", parameters)
+      if (error) return { data: null, error }
       return findById(companyId, planId)
     },
   }

@@ -15,15 +15,28 @@
 | Campo | Valor |
 | --- | --- |
 | `CURRENT_DOMAIN` | Development (Jornada 4) |
-| `CURRENT_SLICE` | D-R3 — promoção governada de `0134` para Review — `CLOSED / PASS` |
-| `LAST_CANONICAL_MAIN` | D-R3 fechado; autoridade factual = `git rev-parse origin/main` |
+| `CURRENT_SLICE` | STATE-R1 — reconciliação do estado canônico do repositório |
+| `LAST_CANONICAL_MAIN` | merge do D-E2E0; autoridade factual = `git rev-parse origin/main` |
 | `LATEST_COMMITTED_MIGRATION` | `0134` — Development ledger direct-read closure |
 | `LATEST_REVIEW_DB_VERSION` | `0134` — `APPLIED / VERIFIED` (promoção governada D-R3) |
-| `HOSTED_E2E_STATE` | E2E-0…E2E-5 `CLOSED / PASS`. `E2E-6` não definido; contrato hosted de Development **não congelado**; próxima run hosted **não autorizada** |
-| `NEXT_GATE` | Definição do próximo slice pelo Product Architect; nenhuma promoção adicional autorizada |
+| `HOSTED_E2E_STATE` | E2E-0…E2E-5 `CLOSED / PASS`. Contrato hosted de Development **congelado e canônico** em `Execution/D-E2E0-HOSTED-DEVELOPMENT-E2E-CONTRACT.md`. **Nenhuma run hosted de Development foi executada**; nenhum spec existe; numeração de gate permanece decisão aberta |
+| `NEXT_GATE` | Implementação/preflight do runner hosted de Development contra o contrato congelado — execução exige autorização separada |
 
-AI Context Protocol v1 e D-SEC1 estão publicados em `main`; `0134` está promovida
-e verificada em Review.
+Congelar o contrato **não equivale** a um PASS hosted: o D-E2E0 fixa o que precisa
+ser provado, não prova nada.
+
+### Prontidão da jornada Development
+
+Verificada diretamente do repositório, não de um resumo: das dezoito capacidades
+da jornada D-P0 sondadas no código da aplicação, **dezessete estão presentes** —
+autoria de template, publicação, obsolescência, aplicação pelo manager com
+readiness e confirmação, start/complete/skip de ações, registro e leitura de
+reviews, ativação e conclusão de plano, origem histórica e o serviço de
+capabilities derivado no servidor.
+
+`cancel_development_plan_v1` **não possui chamador na aplicação**; cancelamento
+permanece fora da jornada hosted congelada. Ausência registrada para que um slice
+futuro não a confunda com regressão.
 
 ## Precedência
 
@@ -50,7 +63,10 @@ Para **estado factual do repositório**, o Git vence; ver `OPERATING-METHOD.md` 
 | D-SEC0 | Discovery e contrato do hardening do ledger de Development | CLOSED / PASS |
 | D-SEC1 | Fechamento do SELECT direto no ledger de Development (`0134`) | CLOSED / PASS |
 | D-R3 | Tooling governado + promoção/verificação de `0134` em Review | CLOSED / PASS |
-| AI-CTX-1 | Método permanente de execução governada | CLOSED / PASS |
+| D-P4A | Cutover de execução e reviews; remoção do setter genérico de status | CLOSED / PASS |
+| D-P4B | Consumo/aplicação de template publicado pelo manager | CLOSED / PASS |
+| D-E2E0 | Contrato do hosted Development E2E — congelado e canônico | CLOSED / PASS |
+| AI-CTX-1/2/3 | Método permanente, estado condensado e reconciliação de contexto | CLOSED / PASS |
 
 O contrato de cada um está no respectivo documento de `Execution/`; os commits e
 os runs de CI estão no Git. **Não reexecutar slices fechados** sem evidência nova
@@ -71,8 +87,8 @@ individual para não criar uma segunda verdade.
 | Finding | Estado |
 | --- | --- |
 | **Development ledger privacy** — membros autenticados do tenant tinham `SELECT` direto nas quatro relações do ledger de aplicação de template | `CLOSED / PASS` — D-SEC1 publicada e `0134` aplicada/verificada em Review por D-R3 |
-| **Plan detail sem origem histórica** — a página de detalhe do PDI não exibe "Template de origem" | `DEFERRED_PRODUCT_ENHANCEMENT` — não é regressão |
-| **`getPublishedDevelopmentTemplateCatalog`** — sem consumidor ativo após o cutover da origem histórica | `RETAINED_CAPABILITY` — semântica distinta (catálogo atual ≠ origem histórica); preservado para a jornada de aplicação |
+| **Plan detail sem origem histórica** | `CLOSED` — D-P4A passou a resolver a origem no detalhe do PDI |
+| **`getPublishedDevelopmentTemplateCatalog` sem consumidor ativo** | `CLOSED` — D-P4B lhe deu consumidor ativo na superfície de aplicação pelo manager, exatamente a jornada para a qual a capacidade havia sido preservada |
 | **App smoke remoto autenticado (Slice 0115-B2-C)** | `NOT DEMONSTRATED (gated)` — dívida aceita; registro em [CHANGELOG](./CHANGELOG.md) |
 | Itens abertos anteriores ao D-P0 (hardening `0084`, writes MVP-PR1, matriz de transições de Feedback, gates de privacidade People) | **Não readjudicados.** Narrativa recuperável por `git log -p docs/PROJECT_STATE.md` e pelo CHANGELOG |
 

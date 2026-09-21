@@ -118,6 +118,47 @@ let planTitle = ""
 /** A heading the PDI detail surface always renders, whatever the plan contains. */
 const PLAN_SURFACE_SECTION = "Competências e ações"
 
+/**
+ * A syntactically valid plan id that cannot exist, so a denial for the REAL plan
+ * can be compared against one for a plan that simply is not there.
+ *
+ * §6 closes with "unauthorized and nonexistent must be indistinguishable". That
+ * is a relation between two observations, so asserting only that the real id
+ * yields 404 states one side of it and assumes the other. Spec 13 already reads
+ * the contract this way; the trailing digit differs so the two specs never probe
+ * the same id.
+ */
+const NONEXISTENT_PLAN_ID = "00000000-0000-4000-8000-000000000002"
+
+type DenialOutcome = Readonly<{ status: number | null; route: string; body: string }>
+
+/** Observed entirely through the browser: no privileged read proves a negative. */
+async function probePlanDenial(page: Page, id: string): Promise<DenialOutcome> {
+  const response = await page.goto(`/app/development/plans/${id}`)
+  await page.waitForLoadState("networkidle")
+  return Object.freeze({
+    status: response?.status() ?? null,
+    // The id is masked so the comparison cannot fail merely because two
+    // different ids were requested.
+    route: new URL(page.url()).pathname.replace(id, ":plan-id"),
+    body: await page.locator("body").innerText(),
+  })
+}
+
+function expectIndistinguishableDenial(
+  denied: DenialOutcome,
+  nonexistent: DenialOutcome,
+  secrets: readonly string[],
+): void {
+  // The 404 is kept as its own assertion: the contract names `notFound`, so
+  // "both are equal" must not be satisfiable by both being something else.
+  expect(denied.status).toBe(404)
+  expect(nonexistent.status).toBe(404)
+  expect(denied.route).toBe(nonexistent.route)
+  expect(denied.body).toBe(nonexistent.body)
+  for (const secret of secrets) expect(denied.body).not.toContain(secret)
+}
+
 let cached: RunManifest | null = null
 function manifest(): RunManifest {
   if (!cached) cached = readManifest()
@@ -568,12 +609,16 @@ test.describe("development journey: authoring, application, execution, reviews, 
     // identically to a plan that does not exist — absence is not an oracle.
     for (const role of [UNRELATED, FOREIGN] as const) {
       await switchTo(page, role)
-      const response = await page.goto(`/app/development/plans/${planId}`)
-      expect(response?.status()).toBe(404)
-      // The refusal is proved by the status; this proves nothing of the plan
-      // leaked into the refusal body. Anchored on the run-scoped title, because
-      // the previous anchor was the page's fallback description — a string this
-      // journey never renders, so the assertion could not fail.
+      const denied = await probePlanDenial(page, planId)
+      const nonexistent = await probePlanDenial(page, NONEXISTENT_PLAN_ID)
+      expectIndistinguishableDenial(denied, nonexistent, [
+        planTitle,
+        ACTION_ONE,
+        ACTION_TWO,
+        developmentCompetencyName(manifest().runId),
+      ])
+
+      // Structural absence as well as textual, anchored on the run-scoped title.
       await expect(page.getByRole("heading", { level: 1, name: planTitle })).toHaveCount(0)
       await expect(page.getByRole("heading", { name: PLAN_SURFACE_SECTION })).toHaveCount(0)
     }
@@ -722,11 +767,22 @@ test.describe("development journey: authoring, application, execution, reviews, 
       await expect(page.getByRole("button", { name: label })).toHaveCount(0)
     }
 
-    // 29. and the refusals still hold after completion.
+    // 29. and the refusals still hold after completion — still indistinguishable
+    // from a plan that never existed, now that the plan carries review history
+    // and a private skip reason that a terminal state must not start leaking.
     for (const role of [UNRELATED, FOREIGN] as const) {
       await switchTo(page, role)
-      const response = await page.goto(`/app/development/plans/${planId}`)
-      expect(response?.status()).toBe(404)
+      const denied = await probePlanDenial(page, planId)
+      const nonexistent = await probePlanDenial(page, NONEXISTENT_PLAN_ID)
+      expectIndistinguishableDenial(denied, nonexistent, [
+        planTitle,
+        ACTION_ONE,
+        ACTION_TWO,
+        FIRST_REVIEW,
+        SECOND_REVIEW,
+        FINAL_REVIEW,
+        SKIP_REASON,
+      ])
     }
 
     // The retained evidence the journey necessarily wrote is still there. This is

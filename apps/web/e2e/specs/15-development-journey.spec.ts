@@ -27,6 +27,7 @@ import {
   developmentCompetencyName,
   developmentTemplateName,
   DEVELOPMENT_CURRENT_LEVEL,
+  DEVELOPMENT_EXPECTED_LEVEL,
 } from "../fixtures/development-fixture"
 import { readManifest, type RunManifest, type SyntheticRole } from "../helpers/run-context"
 
@@ -131,6 +132,46 @@ async function openPlan(page: Page): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// Surface addressing.
+//
+// Every authoring form in this product lives inside a `CrudCreateDialog`, which
+// is a Radix dialog: the form is NOT in the DOM until its trigger is clicked.
+// Run 260921160805-5d598c failed on exactly that — `#name` was waited for on the
+// templates index, where it cannot exist. `openDialog` makes the precondition
+// explicit, and scoping every field to the returned dialog also disambiguates
+// the labels a trigger and its submit button share ("Adicionar ação" is both).
+// ---------------------------------------------------------------------------
+
+async function openDialog(page: Page, trigger: string | RegExp) {
+  await page.getByRole("button", { name: trigger, exact: true }).first().click()
+  const dialog = page.getByRole("dialog")
+  await expect(dialog).toBeVisible({ timeout: 30_000 })
+  return dialog
+}
+
+/**
+ * The plan page renders actions as nested `div` cards — there is no table and no
+ * `row` role anywhere on it, so row-based scoping silently matches nothing and
+ * every per-action click degrades into a 15s timeout.
+ *
+ * `.last()` is load-bearing: `filter` also matches any ancestor card that
+ * contains the title, and in document order the innermost match comes last.
+ */
+function actionCard(page: Page, title: string) {
+  return page
+    .locator("div.rounded-lg.border.border-slate-200.bg-white")
+    .filter({ hasText: title })
+    .last()
+}
+
+/** Canonical identity, never a rendered label. */
+function personIdOf(role: SyntheticRole): string {
+  const id = actor(role).personId
+  if (!id) throw new Error(`E2E_FIXTURE_PERSON_MISSING: ${role}`)
+  return id
+}
+
+// ---------------------------------------------------------------------------
 // Durable readback. Only relations a client role may still reach after `0134`:
 // plans, goals, actions, reviews, private audit. Never the application ledger.
 // ---------------------------------------------------------------------------
@@ -192,11 +233,9 @@ async function retentionCounts(): Promise<Record<string, number>> {
 test.describe("development journey: authoring, application, execution, reviews, completion", () => {
   // ------------------------------------------------------------------ A
   test("A. 1-4 an administrative actor authors and publishes a template", async ({ page }) => {
-    const subject = actor(SUBJECT)
-    if (!subject.personId) throw new Error("E2E_FIXTURE_SUBJECT_PERSON_MISSING")
-    await createDevelopmentFixture({
+    const fixture = await createDevelopmentFixture({
       companyId: tenantACompanyId(),
-      subjectPersonId: subject.personId,
+      subjectPersonId: personIdOf(SUBJECT),
       runId: manifest().runId,
     })
 
@@ -204,9 +243,12 @@ test.describe("development journey: authoring, application, execution, reviews, 
     await templatesHome(page)
 
     const name = developmentTemplateName(manifest().runId)
-    await page.locator("#name").fill(name)
-    await page.locator("#description").fill("Trilha de desenvolvimento do run E2E.")
-    await page.getByRole("button", { name: "Criar template" }).click()
+    const createDialog = await openDialog(page, "Novo Template")
+    await createDialog.getByLabel("Nome", { exact: true }).fill(name)
+    await createDialog
+      .getByLabel("Descrição", { exact: true })
+      .fill("Trilha de desenvolvimento do run E2E.")
+    await createDialog.getByRole("button", { name: "Criar template" }).click()
 
     // 3. the container id comes from the canonical readback, never predicted.
     await page.waitForURL(/\/app\/development\/templates\/[0-9a-f-]{36}/, { timeout: 30_000 })
@@ -218,19 +260,26 @@ test.describe("development journey: authoring, application, execution, reviews, 
     await expect(page.getByRole("row", { name: new RegExp(name) })).toContainText("Rascunho")
 
     await page.goto(`/app/development/templates/${templateId}`)
-    await page.getByRole("button", { name: "Adicionar competência" }).click()
-    await page.getByRole("combobox").first().selectOption({
-      label: developmentCompetencyName(manifest().runId),
-    })
-    await page.getByRole("button", { name: "Adicionar", exact: true }).click()
+
+    // Selected by canonical id, not by rendered text: the competency option's
+    // value IS the catalog id the fixture just created, and the target level is
+    // pinned to the fixture's expectation rather than inheriting the form's
+    // default of 3, so the resolver's re-verification has nothing to drift on.
+    const competencyDialog = await openDialog(page, "Adicionar Competência")
+    await competencyDialog.locator("#competencyId").selectOption(fixture.competencyId)
+    await competencyDialog.locator("#targetLevel").selectOption(String(DEVELOPMENT_EXPECTED_LEVEL))
+    await competencyDialog.getByRole("button", { name: "Adicionar", exact: true }).click()
     await expect(page.getByText(developmentCompetencyName(manifest().runId))).toBeVisible({
       timeout: 30_000,
     })
 
     for (const title of [ACTION_ONE, ACTION_TWO]) {
-      await page.getByRole("button", { name: "Adicionar ação", exact: true }).first().click()
-      await page.locator("#title").fill(title)
-      await page.getByRole("button", { name: "Adicionar ação de desenvolvimento" }).click()
+      // The trigger and the submit button carry the SAME accessible name, so the
+      // submit is addressed through the dialog. The title input's id is
+      // `title-<goalId>`, never `#title`.
+      const actionDialog = await openDialog(page, "Adicionar ação")
+      await actionDialog.getByLabel("Título", { exact: true }).fill(title)
+      await actionDialog.getByRole("button", { name: "Adicionar ação", exact: true }).click()
       await expect(page.getByText(title, { exact: true })).toBeVisible({ timeout: 30_000 })
     }
 
@@ -256,22 +305,29 @@ test.describe("development journey: authoring, application, execution, reviews, 
     await developmentHome(page)
 
     // 6-7. discover the published template; select the eligible direct report.
-    await page.getByRole("button", { name: "Plano de Desenvolvimento Individual" }).first().click()
-    await page.getByLabel("Template publicado").selectOption({
-      label: new RegExp(developmentTemplateName(manifest().runId)).source,
-    })
-    await page.getByLabel("Selecione um responsável").selectOption({
-      label: new RegExp(actor(SUBJECT).fullName).source,
-    })
+    //
+    // "Plano de Desenvolvimento Individual" is the dialog's TITLE; its trigger is
+    // "Aplicar template". And "Selecione um responsável" is the owner select's
+    // placeholder OPTION, not a label — targeting it put the subject in the
+    // Responsável field. The subject is the Colaborador; the manager is the
+    // Responsável, which is `required` and has no default.
+    //
+    // All three are selected by value, because the rendered option text is not
+    // the bare name (templates render "<name> · v<n>").
+    const applyDialog = await openDialog(page, "Aplicar template")
+    await applyDialog.locator("#templateId").selectOption(templateId)
+    await applyDialog.locator("#employeeId").selectOption(personIdOf(SUBJECT))
+    await applyDialog.locator("#ownerId").selectOption(personIdOf(MANAGER))
 
-    // 8. readiness must succeed before confirmation is offered.
-    await page.getByRole("button", { name: "Verificar aplicação" }).click()
-    await expect(page.getByRole("button", { name: "Confirmar aplicação" })).toBeEnabled({
+    // 8. readiness must succeed before confirmation is offered. One button whose
+    // label toggles once the readiness check returns ready.
+    await applyDialog.getByRole("button", { name: "Verificar aplicação" }).click()
+    await expect(applyDialog.getByRole("button", { name: "Confirmar aplicação" })).toBeEnabled({
       timeout: 30_000,
     })
 
     // 9. the single authorized application.
-    await page.getByRole("button", { name: "Confirmar aplicação" }).click()
+    await applyDialog.getByRole("button", { name: "Confirmar aplicação" }).click()
     await page.waitForURL(/\/app\/development\/plans\/[0-9a-f-]{36}/, { timeout: 60_000 })
     planId = page.url().split("/").pop() ?? ""
     expect(planId).toMatch(/^[0-9a-f-]{36}$/)
@@ -330,8 +386,7 @@ test.describe("development journey: authoring, application, execution, reviews, 
     await openPlan(page)
 
     // 15. start, then re-read durable state rather than trusting the button.
-    const firstRow = page.getByRole("row", { name: new RegExp(ACTION_ONE) })
-    await firstRow.getByRole("button", { name: "Iniciar ação" }).click()
+    await actionCard(page, ACTION_ONE).getByRole("button", { name: "Iniciar ação" }).click()
     await confirm(page, ACTION_SAVED)
     await page.reload()
     await expect.poll(async () => {
@@ -341,8 +396,7 @@ test.describe("development journey: authoring, application, execution, reviews, 
 
     // 16. complete. Canonical progress moves to 50% of two actions, derived by
     // the server; the browser never computes it.
-    await page.getByRole("row", { name: new RegExp(ACTION_ONE) })
-      .getByRole("button", { name: "Concluir ação" }).click()
+    await actionCard(page, ACTION_ONE).getByRole("button", { name: "Concluir ação" }).click()
     await confirm(page, ACTION_SAVED)
     await page.reload()
     await expect.poll(async () => {
@@ -353,15 +407,14 @@ test.describe("development journey: authoring, application, execution, reviews, 
 
     // 17. the subject may not skip — skip is a management transition.
     await expect(
-      page.getByRole("row", { name: new RegExp(ACTION_TWO) })
-        .getByRole("button", { name: "Ignorar ação" }),
+      actionCard(page, ACTION_TWO).getByRole("button", { name: "Ignorar ação" }),
     ).toHaveCount(0)
 
     await switchTo(page, MANAGER)
     await openPlan(page)
-    const secondRow = page.getByRole("row", { name: new RegExp(ACTION_TWO) })
-    await secondRow.getByLabel("Motivo privado para ignorar").fill(SKIP_REASON)
-    await secondRow.getByRole("button", { name: "Ignorar ação" }).click()
+    const secondCard = actionCard(page, ACTION_TWO)
+    await secondCard.getByLabel("Motivo privado para ignorar").fill(SKIP_REASON)
+    await secondCard.getByRole("button", { name: "Ignorar ação" }).click()
     await confirm(page, ACTION_SAVED)
     await page.reload()
     await expect.poll(async () => {
@@ -405,7 +458,12 @@ test.describe("development journey: authoring, application, execution, reviews, 
 
     // 22. the final review, recorded after the last action transition.
     await page.locator("#review-summary").fill(FINAL_REVIEW)
-    await page.getByLabel("Final").check()
+    // The review type is chosen with a button, not a checkbox. It stays disabled
+    // until every action is terminal and at least one was completed — which block
+    // D has just made true — so this also asserts that server-derived gate.
+    const finalType = page.getByRole("button", { name: "Final", exact: true })
+    await expect(finalType).toBeEnabled({ timeout: 30_000 })
+    await finalType.click()
     await page.getByRole("button", { name: "Registrar revisão" }).click()
     await confirm(page, REVIEW_SAVED)
     await page.reload()

@@ -179,6 +179,32 @@ test("a goal's disclosure is expanded before its contents are addressed", () => 
   // whether or not a re-render leaves the disclosure open. Without this the
   // proof would silently depend on undefined reconciliation behaviour.
   assert.match(loop, /ações de desenvolvimento/)
+
+  // The PLAN page nests actions in the same disclosure, and every server render
+  // and every reload closes it again. Run 260921184137-70e10c resolved the
+  // action's <p> 33 times and reported it hidden. Same class, second surface —
+  // so this guard is extended rather than duplicated.
+  assert.match(spec, /async function openPlanGoal/)
+  assert.match(spec, /return expandGoal\(page, developmentCompetencyName/)
+
+  // Every action addressed on the plan page must have the disclosure opened
+  // since the last render: walking back from each `actionCard`, the nearest
+  // landmark must be the expansion, not a reload or a fresh plan load.
+  const body = code(spec)
+  for (const match of [...body.matchAll(/actionCard\(page,/g)]) {
+    const before = body.slice(0, match.index)
+    const landmark = Math.max(
+      before.lastIndexOf("openPlanGoal(page)"),
+      before.lastIndexOf("page.reload()"),
+      before.lastIndexOf("openPlan(page)"),
+    )
+    assert.ok(landmark >= 0, "an action is addressed before the plan is even open")
+    assert.equal(
+      before.slice(landmark).startsWith("openPlanGoal(page)"),
+      true,
+      "an action is addressed on the plan page without reopening its disclosure",
+    )
+  }
 })
 
 test("a state change is asserted on the surface that actually renders it", () => {

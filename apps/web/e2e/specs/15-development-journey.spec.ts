@@ -244,6 +244,21 @@ function actionCard(page: Page, title: string) {
     .last()
 }
 
+/**
+ * The PLAN page nests a goal's actions in the same native `<details>` disclosure
+ * the template page uses, and likewise never renders it `open`. So every action
+ * on a plan — reading its title, starting it, completing it, skipping it — has
+ * the same precondition, and every server render and every `reload()` closes it
+ * again.
+ *
+ * Run 260921184137-70e10c resolved `<p>Concluir curso de comunicação</p>` 33
+ * times and reported it `hidden`: the manager was correctly authorized and the
+ * action was correctly rendered, inside a collapsed panel.
+ */
+async function openPlanGoal(page: Page): Promise<Locator> {
+  return expandGoal(page, developmentCompetencyName(manifest().runId))
+}
+
 /** Canonical identity, never a rendered label. */
 function personIdOf(role: SyntheticRole): string {
   const id = actor(role).personId
@@ -503,7 +518,8 @@ test.describe("development journey: authoring, application, execution, reviews, 
     // 12. the responsible manager reads it.
     await switchTo(page, MANAGER)
     await openPlan(page)
-    await expect(page.getByText(ACTION_ONE, { exact: true })).toBeVisible()
+    const managerGoal = await openPlanGoal(page)
+    await expect(managerGoal.getByText(ACTION_ONE, { exact: true })).toBeVisible()
 
     // 13-14. nonparticipant and foreign actor are refused, and refused
     // identically to a plan that does not exist — absence is not an oracle.
@@ -528,6 +544,9 @@ test.describe("development journey: authoring, application, execution, reviews, 
     await openPlan(page)
 
     // 15. start, then re-read durable state rather than trusting the button.
+    // The goal disclosure is reopened before every action interaction: each
+    // server render and each reload closes it again.
+    await openPlanGoal(page)
     await actionCard(page, ACTION_ONE).getByRole("button", { name: "Iniciar ação" }).click()
     await confirm(page, ACTION_SAVED)
     await page.reload()
@@ -538,6 +557,7 @@ test.describe("development journey: authoring, application, execution, reviews, 
 
     // 16. complete. Canonical progress moves to 50% of two actions, derived by
     // the server; the browser never computes it.
+    await openPlanGoal(page)
     await actionCard(page, ACTION_ONE).getByRole("button", { name: "Concluir ação" }).click()
     await confirm(page, ACTION_SAVED)
     await page.reload()
@@ -547,13 +567,17 @@ test.describe("development journey: authoring, application, execution, reviews, 
     }, { timeout: 30_000 }).toBe("completed")
     await expect(page.getByText("50%")).toBeVisible({ timeout: 30_000 })
 
-    // 17. the subject may not skip — skip is a management transition.
+    // 17. the subject may not skip — skip is a management transition. Asserted
+    // on the OPEN disclosure, so it proves the control is absent from a rendered
+    // surface rather than merely absent from a collapsed one.
+    await openPlanGoal(page)
     await expect(
       actionCard(page, ACTION_TWO).getByRole("button", { name: "Ignorar ação" }),
     ).toHaveCount(0)
 
     await switchTo(page, MANAGER)
     await openPlan(page)
+    await openPlanGoal(page)
     const secondCard = actionCard(page, ACTION_TWO)
     await secondCard.getByLabel("Motivo privado para ignorar").fill(SKIP_REASON)
     await secondCard.getByRole("button", { name: "Ignorar ação" }).click()

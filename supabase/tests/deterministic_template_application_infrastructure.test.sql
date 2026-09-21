@@ -311,20 +311,32 @@ select set_config(
   '{"sub":"68000000-0000-4000-8000-000000000001","role":"authenticated"}',
   true
 );
-select is(
-  (select count(*) from public.development_template_applications where company_id = '68000000-0000-4000-8000-000000000101'),
-  3::bigint,
-  'member reads own tenant applications'
+-- Superseded by D-SEC1 (`0134`), and kept as a guard rather than deleted.
+--
+-- These three assertions used to prove that a tenant member could read the
+-- application ledger directly, scoped by RLS to their own company. That was the
+-- contract 0068 shipped, and D-SEC0 showed it was wider than D-P0 allows: the
+-- snapshot payload carries a named employee's assessed competency levels, so
+-- "own tenant" meant every colleague's development record.
+--
+-- The tenant scoping was never the problem — the direct read was. `0134` removes
+-- the grant, so the correct expectation is now refusal for everyone, and the
+-- product capability is served by purpose-bound boundaries instead. The
+-- cross-tenant assertion survives in spirit: it is now impossible by privilege,
+-- not merely by policy.
+select throws_ok(
+  $$ select count(*) from public.development_template_applications $$,
+  '42501', null,
+  'a tenant member cannot read the application ledger directly'
 );
-select is(
-  (select count(*) from public.development_template_applications where company_id = '68000000-0000-4000-8000-000000000102'),
-  0::bigint,
-  'member cannot read other tenant applications'
+select throws_ok(
+  $$ select count(*) from public.development_template_application_snapshots $$,
+  '42501', null,
+  'a tenant member cannot read application snapshots directly'
 );
-select is(
-  (select count(*) from public.development_template_application_snapshots),
-  1::bigint,
-  'member reads own tenant snapshots'
+select ok(
+  not has_table_privilege('authenticated','public.development_template_application_lineage','select'),
+  'nor lineage — the ledger is internal evidence, reached only through trusted functions'
 );
 select throws_ok(
   $$ insert into public.development_template_applications (company_id, template_version_id, actor_user_id, technical_principal, idempotency_key, intent_fingerprint, correlation_id) values ('68000000-0000-4000-8000-000000000101', '68000000-0000-4000-8000-000000000501', '68000000-0000-4000-8000-000000000001', 'client', 'client-write', 'fingerprint', '68000000-0000-4000-8000-000000000916') $$,

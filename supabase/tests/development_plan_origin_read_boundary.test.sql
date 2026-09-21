@@ -60,15 +60,15 @@ select is(
   'TABLE(plan_id uuid, template_id uuid, template_version_id uuid, template_name text, template_version_number integer)',
   'the boundary returns origin identity and label only — no status, active, scope, revision or author');
 
--- The ledger ACL posture this reader INHERITS, pinned so that 0133 is visibly
--- not the thing that set it.
+-- The ledger ACL posture this reader lives beside, pinned so that 0133 is
+-- visibly not the thing that sets it.
 --
--- 0068 revokes all on these tables from PUBLIC, anon and authenticated, then
--- immediately grants SELECT back to authenticated and scopes it with an RLS
--- policy on is_company_member(company_id); 0069 revokes them from service_role.
--- That grants-plus-RLS model is deliberate and is the canonical baseline. 0133
--- executes no GRANT, REVOKE, ALTER TABLE, policy or ownership statement on any
--- table at all, so it neither relies on nor moves any of this.
+-- 0068 granted authenticated a tenant-scoped SELECT here; D-SEC1 (`0134`) revoked
+-- it, leaving the ledger as internal evidence reached only through SECURITY
+-- DEFINER boundaries. 0133 executes no GRANT, REVOKE, ALTER TABLE, policy or
+-- ownership statement on any table at all, so it neither relied on the old grant
+-- nor caused its removal — the closure assertions live in
+-- supabase/tests/development_ledger_direct_read_closure.test.sql.
 --
 -- service_role's exclusion is already frozen by
 -- supabase/tests/company_retention_pressure_boundary.test.sql and is not
@@ -81,7 +81,7 @@ select ok(not has_table_privilege('anon',
   'anon still cannot select application snapshots');
 select ok((select relrowsecurity from pg_class
   where oid='public.development_template_application_lineage'::regclass),
-  'lineage RLS is still enabled — the grant to authenticated is scoped, not open');
+  'lineage RLS is still enabled — retained as defence in depth after the revoke');
 select ok((select relrowsecurity from pg_class
   where oid='public.development_template_application_snapshots'::regclass),
   'application snapshot RLS is still enabled');
@@ -310,14 +310,19 @@ select is(
 -- transaction, returns nothing, because it asks can_read_development_plan_v1()
 -- instead. 0133 therefore adds no reach: everything it answers, it answers to
 -- fewer people than the table already does.
-select is(
-  (select count(*)::int from public.development_template_application_lineage
-   where plan_id='dd020000-0000-4000-8000-000000000501'),
-  1,'baseline: tenant-wide ledger RLS already lets this member see the lineage row directly');
+-- Re-anchored by D-SEC1 (`0134`). This assertion used to read the lineage row
+-- directly to show the inherited tenant-wide grant was WIDER than this boundary.
+-- That grant is now revoked, so the comparison is no longer "narrower than the
+-- table" but "the table is closed and this is the only way in" — a stronger
+-- statement, and the one that now has to hold.
+select throws_ok(
+  $$select count(*) from public.development_template_application_lineage
+    where plan_id='dd020000-0000-4000-8000-000000000501'$$,
+  '42501',null,'the direct ledger read is closed to this member');
 select is(
   (select count(*)::int from public.get_authorized_development_plan_origins_v1(
      'dd020000-0000-4000-8000-000000000101','dd020000-0000-4000-8000-000000000501')),
-  0,'...yet the origin boundary still refuses them: the new reader is strictly narrower');
+  0,'...and the origin boundary refuses them on its own terms, not merely by privilege');
 
 -- ---------------------------------------------------------------------------
 -- 14, 21. Foreign tenant.

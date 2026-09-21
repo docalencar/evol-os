@@ -94,9 +94,15 @@ select ok(
   and not has_table_privilege('public','public.development_template_applications','select'),
   'anon and PUBLIC remain revoked (0068)');
 
+-- D-SEC1 (`0134`) deliberately supersedes 0068's authenticated direct-read
+-- model. Retention remains available only through the purpose-bound function;
+-- none of its exact four-relation scope depends on a client table grant.
 select ok(
-  has_table_privilege('authenticated','public.development_template_applications','select'),
-  'the authenticated SELECT grant from 0068 is neither removed nor widened');
+  not has_table_privilege('authenticated','public.development_template_applications','select')
+  and not has_table_privilege('authenticated','public.development_template_application_attempts','select')
+  and not has_table_privilege('authenticated','public.development_template_application_snapshots','select')
+  and not has_table_privilege('authenticated','public.development_template_application_lineage','select'),
+  'authenticated direct SELECT is closed on all four retained ledger relations');
 
 select ok(
   (select relrowsecurity from pg_class

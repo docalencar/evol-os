@@ -5,7 +5,7 @@ set local search_path = extensions, public, pg_temp;
 
 select no_plan();
 
--- Static boundary: RLS, effective table ACLs, and the three invoker RPCs.
+-- Static boundary: RLS, effective table ACLs, and retired invoker RPCs.
 select ok((select relrowsecurity from pg_class where oid='public.organization_planning_workspaces'::regclass),'workspaces RLS enabled');
 select ok((select relrowsecurity from pg_class where oid='public.organization_planning_scenarios'::regclass),'scenarios RLS enabled');
 select ok((select relrowsecurity from pg_class where oid='public.organization_planning_snapshots'::regclass),'snapshots RLS enabled');
@@ -28,16 +28,16 @@ select ok((select bool_and(not p.prosecdef and p.proconfig=array['search_path=pu
   'public.bootstrap_planning_workspace(uuid,uuid,uuid,timestamp with time zone,jsonb)'::regprocedure,
   'public.publish_planning_scenario(uuid,uuid,integer,uuid,timestamp with time zone,jsonb,jsonb)'::regprocedure,
   'public.delete_planning_scenario(uuid,uuid,integer)'::regprocedure
-)),'all three Planning RPCs are SECURITY INVOKER with search_path=public');
+)),'the three legacy Planning RPCs remain SECURITY INVOKER internals');
 select ok(not has_function_privilege('public','public.bootstrap_planning_workspace(uuid,uuid,uuid,timestamp with time zone,jsonb)','execute'),'PUBLIC cannot execute bootstrap');
 select ok(not has_function_privilege('anon','public.bootstrap_planning_workspace(uuid,uuid,uuid,timestamp with time zone,jsonb)','execute'),'anon cannot execute bootstrap');
-select ok(has_function_privilege('authenticated','public.bootstrap_planning_workspace(uuid,uuid,uuid,timestamp with time zone,jsonb)','execute'),'authenticated can execute bootstrap');
+select ok(not has_function_privilege('authenticated','public.bootstrap_planning_workspace(uuid,uuid,uuid,timestamp with time zone,jsonb)','execute'),'authenticated cannot execute legacy bootstrap');
 select ok(not has_function_privilege('public','public.publish_planning_scenario(uuid,uuid,integer,uuid,timestamp with time zone,jsonb,jsonb)','execute'),'PUBLIC cannot execute publish');
 select ok(not has_function_privilege('anon','public.publish_planning_scenario(uuid,uuid,integer,uuid,timestamp with time zone,jsonb,jsonb)','execute'),'anon cannot execute publish');
-select ok(has_function_privilege('authenticated','public.publish_planning_scenario(uuid,uuid,integer,uuid,timestamp with time zone,jsonb,jsonb)','execute'),'authenticated can execute publish');
-select ok(has_function_privilege('public','public.delete_planning_scenario(uuid,uuid,integer)','execute'),'PUBLIC can execute delete under the current ACL');
-select ok(has_function_privilege('anon','public.delete_planning_scenario(uuid,uuid,integer)','execute'),'anon can execute delete under the current ACL');
-select ok(has_function_privilege('authenticated','public.delete_planning_scenario(uuid,uuid,integer)','execute'),'authenticated can execute delete');
+select ok(not has_function_privilege('authenticated','public.publish_planning_scenario(uuid,uuid,integer,uuid,timestamp with time zone,jsonb,jsonb)','execute'),'authenticated cannot execute legacy publish');
+select ok(not has_function_privilege('public','public.delete_planning_scenario(uuid,uuid,integer)','execute'),'PUBLIC cannot execute legacy delete');
+select ok(not has_function_privilege('anon','public.delete_planning_scenario(uuid,uuid,integer)','execute'),'anon cannot execute legacy delete');
+select ok(not has_function_privilege('authenticated','public.delete_planning_scenario(uuid,uuid,integer)','execute'),'authenticated cannot execute legacy delete');
 
 insert into auth.users (id,email) values
  ('91000000-0000-4000-8000-000000000001','planning-owner@test.local'),
@@ -106,10 +106,10 @@ select ok(public.has_company_role('92000000-0000-4000-8000-000000000001',array['
 select throws_ok($$insert into public.organization_planning_change_sets(id,company_id,scenario_id,change_type,payload,version) values('96000000-0000-4000-8000-000000000004','92000000-0000-4000-8000-000000000001','95000000-0000-4000-8000-000000000001','rename','{"name":"HR"}',1)$$,'42501',null,'hr direct mutation is closed by table ACL');
 reset role;
 
--- delete RPC exposure is distinct from RLS authorization.
+-- Legacy delete exposure is closed before table authorization is considered.
 set local role anon;
 select set_config('request.jwt.claims','{"role":"anon"}',true);
-select throws_ok($$select public.delete_planning_scenario('92000000-0000-4000-8000-000000000001','95000000-0000-4000-8000-000000000001',1)$$,'42501',null,'anon may EXECUTE delete but table ACL prevents an effect');
+select throws_ok($$select public.delete_planning_scenario('92000000-0000-4000-8000-000000000001','95000000-0000-4000-8000-000000000001',1)$$,'42501',null,'anon cannot EXECUTE legacy delete');
 reset role;
 select is((select count(*) from public.organization_planning_scenarios where id='95000000-0000-4000-8000-000000000001'),1::bigint,'anon delete attempt leaves the scenario intact');
 
@@ -119,12 +119,11 @@ select throws_ok($$insert into public.organization_planning_scenarios(id,company
 select throws_ok($$insert into public.organization_planning_change_sets(id,company_id,scenario_id,change_type,payload,version) values('96000000-0000-4000-8000-000000000090','92000000-0000-4000-8000-000000000001','95000000-0000-4000-8000-000000000005','rename','{}',1)$$,'23503',null,'change set rejects a foreign-tenant scenario');
 select throws_ok($$insert into public.organization_planning_snapshots(id,company_id,workspace_id,source_scenario_id,version,published_at,organization,kind) values('94000000-0000-4000-8000-000000000090','92000000-0000-4000-8000-000000000001','93000000-0000-4000-8000-000000000001','95000000-0000-4000-8000-000000000005',2,'2026-01-03Z','{}','projection')$$,'23503',null,'snapshot rejects a foreign-tenant source scenario');
 
--- The RPC EXECUTE grant and its invoker table access are distinct. The client
--- reaches the function but canonical table ACL prevents the invoker body; the
--- validation/atomicity contract is then exercised independently as postgres.
+-- The invoker publication RPC is internal; its validation/atomicity contract
+-- remains independently exercised as postgres.
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"91000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
-select throws_ok($$select * from public.publish_planning_scenario('92000000-0000-4000-8000-000000000001','95000000-0000-4000-8000-000000000001',1,'97000000-0000-4000-8000-000000000000','2026-02-01Z','{"state":"acl"}','[]')$$,'42501',null,'authenticated may EXECUTE publish but invoker table ACL prevents an effect');
+select throws_ok($$select * from public.publish_planning_scenario('92000000-0000-4000-8000-000000000001','95000000-0000-4000-8000-000000000001',1,'97000000-0000-4000-8000-000000000000','2026-02-01Z','{"state":"acl"}','[]')$$,'42501',null,'authenticated cannot EXECUTE legacy publish');
 reset role;
 select throws_ok($$select * from public.publish_planning_scenario('92000000-0000-4000-8000-000000000001','95000000-0000-4000-8000-000000000001',1,'97000000-0000-4000-8000-000000000001','2026-02-01Z','{"state":"bad-status"}','[]')$$,'P0001','PLANNING_SCENARIO_MUST_BE_APPROVED','publish rejects a non-approved scenario');
 select throws_ok($$select * from public.publish_planning_scenario('92000000-0000-4000-8000-000000000001','95000000-0000-4000-8000-000000000002',1,'97000000-0000-4000-8000-000000000002','2026-02-01Z','{"state":"stale"}','[]')$$,'P0001','PLANNING_VERSION_CONFLICT','publish rejects stale expected_version');

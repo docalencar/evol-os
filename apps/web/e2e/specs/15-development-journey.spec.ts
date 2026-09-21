@@ -235,7 +235,7 @@ function personIdOf(role: SyntheticRole): string {
 async function readPlan() {
   const { data, error } = await adminClient()
     .from("development_plans")
-    .select("id, status, employee_id, template_id, title")
+    .select("id, status, employee_id, owner_id, template_id, title")
     .eq("id", planId)
     .single()
   if (error) throw new Error(`E2E_READBACK_PLAN_FAILED: ${error.message}`)
@@ -411,7 +411,19 @@ test.describe("development journey: authoring, application, execution, reviews, 
     const applyDialog = await openDialog(page, "Aplicar template")
     await applyDialog.locator("#templateId").selectOption(templateId)
     await applyDialog.locator("#employeeId").selectOption(personIdOf(SUBJECT))
-    await applyDialog.locator("#ownerId").selectOption(personIdOf(MANAGER))
+
+    // The owner is DERIVED, not chosen. For a manager the application
+    // presentation returns `owners: [actor]` and `fixedOwnerId: actor.id`, and
+    // the control is rendered disabled with that value already selected — a
+    // manager may only own the plans they apply. Driving it would be asserting
+    // a capability the product deliberately withholds, so the spec proves the
+    // resolved owner instead of setting it.
+    const ownerSelect = applyDialog.locator("#ownerId")
+    await expect(ownerSelect).toBeDisabled()
+    await expect(ownerSelect).toHaveValue(personIdOf(MANAGER))
+    await expect(
+      applyDialog.getByRole("option", { name: actor(MANAGER).fullName, selected: true }),
+    ).toHaveCount(1)
 
     // 8. readiness must succeed before confirmation is offered. One button whose
     // label toggles once the readiness check returns ready.
@@ -430,6 +442,9 @@ test.describe("development journey: authoring, application, execution, reviews, 
     // its historical origin. The ledger itself is never read.
     const plan = await readPlan()
     expect(plan.employee_id).toBe(actor(SUBJECT).personId)
+    // Ownership independently, from canonical state: the disabled control is a
+    // presentation claim, the persisted row is the fact.
+    expect(plan.owner_id).toBe(personIdOf(MANAGER))
     expect(plan.status).toBe("active")
     await expect(page.getByText(developmentTemplateName(manifest().runId))).toBeVisible()
     await expect(page.getByText(NO_ORIGIN_LABEL)).toBeHidden()

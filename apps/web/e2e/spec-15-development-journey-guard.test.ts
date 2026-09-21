@@ -140,6 +140,52 @@ test("privacy negatives are non-oracular and re-asserted after completion", () =
   assert.doesNotMatch(negatives.slice(0, 900), /adminClient\(\)/)
 })
 
+test("a periodic review supplies every field the product requires", () => {
+  // The product enforces this twice: the submit button's disabled condition, and
+  // the server action's refusal "Próximo passo obrigatório para revisão
+  // periódica.". Run 260921193504-12231c filled only the summary for the second
+  // review and waited 15s on a correctly disabled button.
+  //
+  // Read out of the product, so if the rule is ever relaxed this guard fails and
+  // the spec is revisited deliberately.
+  const execution = readFileSync(
+    resolve(root, "../src/features/development/components/development-plan-execution.tsx"),
+    "utf8",
+  )
+  const actions = readFileSync(
+    resolve(root, "../src/features/development/actions/development-execution-actions.ts"),
+    "utf8",
+  )
+  assert.match(execution, /type === "periodic" && nextStep\.trim\(\)\.length === 0/)
+  assert.match(actions, /Próximo passo obrigatório para revisão periódica/)
+
+  // Every review goes through one helper that fills the whole form, so a future
+  // review cannot reintroduce a partial one by copying a neighbour.
+  assert.match(spec, /async function recordReview/)
+  const helper = spec.slice(spec.indexOf("async function recordReview"))
+  const body = helper.slice(0, helper.indexOf("\n}"))
+  assert.match(body, /#review-summary"\)\.fill/)
+  assert.match(body, /#review-next-step"\)\.fill/)
+  // The type is chosen before the form is judged, since it decides what is
+  // required; and the precondition is asserted rather than waited out.
+  assert.ok(body.indexOf("review.final") < body.indexOf("#review-summary"))
+  assert.match(body, /await expect\(submit\)\.toBeEnabled\(\)/)
+  assert.match(body, /confirm\(page, REVIEW_SAVED\)/)
+
+  // No review is recorded by hand-rolling the form alongside the helper.
+  const journey = code(spec.slice(spec.indexOf("E. 18-22")))
+  assert.doesNotMatch(journey, /#review-summary"\)\.fill/)
+  assert.ok((spec.match(/recordReview\(page, \{/g) ?? []).length >= 3)
+
+  // Exactly one of the three is final; the other two are periodic and therefore
+  // must carry a next step.
+  const calls = [...spec.matchAll(/recordReview\(page, \{[\s\S]*?\}\)/g)].map((m) => m[0])
+  assert.equal(calls.filter((call) => /final: true/.test(call)).length, 1)
+  for (const call of calls.filter((call) => !/final: true/.test(call))) {
+    assert.match(call, /nextStep: "/, "a periodic review must supply a next step")
+  }
+})
+
 test("capability negatives are asserted as absence of the control, per actor", () => {
   // The subject may not skip, record a review or complete; a terminal plan offers
   // no mutation control at all.

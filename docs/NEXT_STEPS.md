@@ -5,57 +5,51 @@
 > Estado canônico em [`PROJECT_STATE.md`](./PROJECT_STATE.md).
 
 ```
-SLICE = STATE-R1 — Reconciliação do estado canônico do repositório
-PATH  = FAST
-STATE = RECONCILED / NOT PUBLISHED
+SLICE = (a definir) — readiness discovery da próxima jornada do Gate do MVP
+PATH  = GOVERNED
+STATE = AGUARDANDO SELEÇÃO DO DOMÍNIO
 ```
-
-## GOAL
-
-Alinhar os documentos de hot path com a história real do repositório depois de
-D-SEC1, D-R3, D-P4A, D-P4B e D-E2E0.
 
 ## KNOWN_STATE
 
-- `0134` é canônica em `main` e está aplicada e verificada em Review por D-R3;
-  Production permanece `UNKNOWN / REVERIFY BEFORE USE`; Legacy fora dos alvos;
-- a jornada Development está implementada em `main`: autoria, publicação,
-  aplicação pelo manager, execução de ações, reviews e conclusão;
-- autoria e consumo permanecem capacidades distintas — o manager aplica templates
-  publicados sem obter superfície de autoria;
-- não existe caminho de reabertura de plano terminal: o setter genérico de status
-  foi removido e a ativação é restrita a `draft`;
-- o contrato hosted do Development está congelado e canônico em
-  [`Execution/D-E2E0-HOSTED-DEVELOPMENT-E2E-CONTRACT.md`](./Execution/D-E2E0-HOSTED-DEVELOPMENT-E2E-CONTRACT.md);
-- **nenhuma run hosted de Development foi executada** e nenhum spec existe.
-
-### Sobre o D-P4C
-
-O recheck de fechamento do D-P4C foi **read-only por desenho** e não produziu
-commit. O estado do repositório não afirma a existência de um artefato durável de
-D-P4C. A prontidão equivalente está registrada em `PROJECT_STATE.md` como fato
-verificado diretamente no código de `main`.
-
-## GATES
-
-- toda afirmação nos documentos de estado resolve para commit, arquivo ou PR real;
-- nenhum artefato sintético de D-P4C foi introduzido;
-- `PROJECT_STATE` e `NEXT_STEPS` não contradizem `main`;
-- diff exclusivamente documental; casing canônico `docs/Execution/` preservado.
-
-## STOP_CONDITIONS
-
-Esta reconciliação não autoriza execução hosted, promoção remota, mudança de
-produto nem resolução das decisões abertas do D-E2E0.
+- a jornada hosted de **Development está provada**: run `260921200250-49c266`
+  contra Review canônica, `main` `44b61e613c7e0ae4386670103bbea8fce627e425`,
+  **13/13 PASS**, contrato **29/29 PROVEN**, terminal **RETIRED**. Fechamento em
+  [`Execution/E2E-6-DEVELOPMENT-JOURNEY-CLOSURE.md`](./Execution/E2E-6-DEVELOPMENT-JOURNEY-CLOSURE.md);
+- o gate hosted de Development está numerado `E2E-6`; as decisões abertas do
+  D-E2E0 — numeração do gate, nome do spec, profundidade da prova de tenant
+  estrangeiro e contagem de reviews — estão todas resolvidas pelo contrato
+  congelado e pela run;
+- `0134` é canônica em `main` e está aplicada e verificada em Review;
+  **Production permanece `UNKNOWN / REVERIFY BEFORE USE`**; Legacy fora dos alvos;
+- pelo Gate do MVP, **liderança e decisão executiva permanecem não comprovadas**
+  como jornadas hosted completas. Esse é o próximo domínio normativo — não outro
+  slice de Development.
 
 ## EXPECTED_NEXT
 
-Gate de publicação do STATE-R1. Em seguida, o slice separado de
-**implementação/preflight do runner hosted de Development** contra o contrato
-congelado — a execução propriamente dita exige autorização explícita.
+Selecionar o domínio e abrir sua **readiness discovery**, na mesma ordem que
+Development seguiu: contrato de produto e privacy → fronteira de DB → contrato
+hosted congelado → spec → execução autorizada.
 
-### Decisões abertas registradas no contrato D-E2E0
+Nenhum slice de Development está aberto. `cancel_development_plan_v1` continua
+sem chamador na aplicação, deliberadamente fora da jornada congelada; reabrir
+isso exige decisão de produto, não um slice técnico.
 
-- numeração do gate e nome do spec;
-- profundidade da prova de tenant estrangeiro;
-- contagem de reviews exigida antes da conclusão.
+## Follow-ups registrados e não fechados
+
+Nenhum deles bloqueia o Gate do MVP; nenhum foi misturado às correções do
+D-E2E2.
+
+| Finding | Origem | Natureza |
+| --- | --- | --- |
+| O journal arquivado `*.run.json.retired` mantém senhas sintéticas **não redigidas**, enquanto o irmão `*.retired.json` as redige | D-E2E2B | Higiene de credenciais. O diretório não é versionado e as identidades já foram banidas, mas a assimetria parece não intencional |
+| O `<summary>` de um goal não expõe semântica de disclosure na árvore de acessibilidade | D-E2E2B | Acessibilidade de produto. Alcançável funcionalmente |
+| O arquivo de run não persiste as contagens de retenção, apenas identidade, propriedade e estado terminal | D-E2E2B | Evidência: contagens não são re-verificáveis após o fato |
+| O guard de publicação do D-E2E1 não está versionado sob `scripts/local/publish/guards/` | D-E2E1 | Governança de ferramenta |
+| `PROMOTION_EVIDENCE_PERSISTENCE` — o tooling de promoção não persiste evidência PRE/POST durável no repositório | D-R2 | Governança de promoção |
+
+## STOP_CONDITIONS
+
+Este documento registra estado. Não autoriza execução hosted, promoção remota,
+mudança de produto, nem reabertura de slice fechado.

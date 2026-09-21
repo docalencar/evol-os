@@ -9,6 +9,10 @@
 > - `ARCHITECTURE.md` — visão da arquitetura e fluxo das features.
 > - `docs/engineering/EVOL_ENGINEERING_PRINCIPLES.md` — princípios de engenharia.
 > - `docs/engineering/ENGINEERING_GUIDE.md` — guia oficial de engenharia.
+> - `docs/engineering/OPERATING-METHOD.md` — método permanente de execução
+>   governada: classificação de falhas, FAST/GOVERNED PATH, disciplina de Git e
+>   estado protegido, PRE/POST/TOCTOU, ambientes, segredos, publicação e
+>   relatórios em delta.
 > - `docs/engineering/backend-standards.md` · `frontend-standards.md` ·
 >   `development-workflow.md` — padrões por área.
 > - `docs/adr/` — decisões de arquitetura (em especial `0001-feature-architecture`,

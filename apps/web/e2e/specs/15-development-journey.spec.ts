@@ -102,6 +102,18 @@ async function confirm(page: Page, message: string): Promise<void> {
 let planId = ""
 let templateId = ""
 
+/**
+ * The plan's durable title, captured from canonical state in block B and used as
+ * the run-scoped marker that the PDI detail surface loaded THIS run's plan.
+ *
+ * Never predicted from the template name: the product decides what a plan is
+ * titled, so the title is read back rather than assumed.
+ */
+let planTitle = ""
+
+/** A heading the PDI detail surface always renders, whatever the plan contains. */
+const PLAN_SURFACE_SECTION = "Competências e ações"
+
 let cached: RunManifest | null = null
 function manifest(): RunManifest {
   if (!cached) cached = readManifest()
@@ -156,11 +168,23 @@ async function templatesHome(page: Page): Promise<void> {
   })
 }
 
+/**
+ * Open the PDI and prove BOTH that the detail surface rendered and that it is
+ * this run's plan — a URL alone proves neither.
+ *
+ * Run 260921182529-0ba165 anchored this on "Plano de desenvolvimento individual.",
+ * which is the page's FALLBACK description: it renders only when the plan has
+ * none (`plan.description ?? "..."`). Every plan in this journey inherits the
+ * template's description, so that string was structurally unreachable here —
+ * and the plan had in fact loaded, correctly, for its authorized subject.
+ */
 async function openPlan(page: Page): Promise<void> {
   await page.goto(`/app/development/plans/${planId}`)
-  await expect(page.getByText("Plano de desenvolvimento individual.")).toBeVisible({
-    timeout: 30_000,
-  })
+  await expect(
+    page.getByRole("heading", { name: PLAN_SURFACE_SECTION, level: 2 }),
+  ).toBeVisible({ timeout: 30_000 })
+  if (!planTitle) throw new Error("E2E_PLAN_TITLE_NOT_CAPTURED")
+  await expect(page.getByRole("heading", { level: 1, name: planTitle })).toBeVisible()
 }
 
 // ---------------------------------------------------------------------------
@@ -441,6 +465,10 @@ test.describe("development journey: authoring, application, execution, reviews, 
     // 10. durable readback: the plan exists, belongs to the subject, and carries
     // its historical origin. The ledger itself is never read.
     const plan = await readPlan()
+    // Captured from canonical state, never predicted, and used from here on as
+    // the run-scoped proof that a PDI surface is showing THIS plan.
+    planTitle = String(plan.title ?? "")
+    expect(planTitle.length).toBeGreaterThan(0)
     expect(plan.employee_id).toBe(actor(SUBJECT).personId)
     // Ownership independently, from canonical state: the disabled control is a
     // presentation claim, the persisted row is the fact.
@@ -483,7 +511,12 @@ test.describe("development journey: authoring, application, execution, reviews, 
       await switchTo(page, role)
       const response = await page.goto(`/app/development/plans/${planId}`)
       expect(response?.status()).toBe(404)
-      await expect(page.getByText("Plano de desenvolvimento individual.")).toBeHidden()
+      // The refusal is proved by the status; this proves nothing of the plan
+      // leaked into the refusal body. Anchored on the run-scoped title, because
+      // the previous anchor was the page's fallback description — a string this
+      // journey never renders, so the assertion could not fail.
+      await expect(page.getByRole("heading", { level: 1, name: planTitle })).toHaveCount(0)
+      await expect(page.getByRole("heading", { name: PLAN_SURFACE_SECTION })).toHaveCount(0)
     }
   })
 

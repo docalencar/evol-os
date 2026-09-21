@@ -18,7 +18,7 @@
  * A direct ledger read here would be a contract violation, not a shortcut.
  */
 
-import { expect, test, type Page } from "@playwright/test"
+import { expect, test, type Locator, type Page } from "@playwright/test"
 
 import { expectAuthenticatedShell, loginThroughUi, signOutThroughUi } from "../auth/login"
 import { adminClient } from "../helpers/admin-client"
@@ -142,11 +142,35 @@ async function openPlan(page: Page): Promise<void> {
 // the labels a trigger and its submit button share ("Adicionar ação" is both).
 // ---------------------------------------------------------------------------
 
-async function openDialog(page: Page, trigger: string | RegExp) {
-  await page.getByRole("button", { name: trigger, exact: true }).first().click()
+async function openDialog(scope: Page | Locator, trigger: string | RegExp) {
+  await scope.getByRole("button", { name: trigger, exact: true }).first().click()
+  // The dialog is a portal: it is a child of <body>, never of the scope that
+  // owns the trigger, so it is always looked up from the page.
+  const page = "page" in scope ? scope.page() : scope
   const dialog = page.getByRole("dialog")
   await expect(dialog).toBeVisible({ timeout: 30_000 })
   return dialog
+}
+
+/**
+ * Template goals are native `<details>` disclosures and the page never renders
+ * one with `open`, so every server render collapses them. `<details>` keeps its
+ * children in the DOM while closed, so they are present but not visible — which
+ * is why run 260921164722-a2b764 timed out waiting for a button that genuinely
+ * existed, on a page whose goal had been created successfully.
+ *
+ * Expansion is therefore a real precondition of the product, not a workaround.
+ * Idempotent on purpose: whether a re-render preserves the open state is a
+ * detail of React reconciliation this spec should not depend on either way.
+ */
+async function expandGoal(page: Page, competencyName: string): Promise<Locator> {
+  const goal = page.locator("details").filter({ hasText: competencyName })
+  await expect(goal).toBeVisible({ timeout: 30_000 })
+  if (!(await goal.evaluate((element: HTMLDetailsElement) => element.open))) {
+    await goal.locator("summary").click()
+  }
+  await expect(goal).toHaveJSProperty("open", true)
+  return goal
 }
 
 /**
@@ -273,14 +297,35 @@ test.describe("development journey: authoring, application, execution, reviews, 
       timeout: 30_000,
     })
 
+    const competencyName = developmentCompetencyName(manifest().runId)
+    let added = 0
     for (const title of [ACTION_ONE, ACTION_TWO]) {
+      // The action trigger lives INSIDE the goal's disclosure panel, so the goal
+      // is expanded first and the trigger is resolved within that goal — which
+      // also keeps the click unambiguous once the template has several goals.
+      //
       // The trigger and the submit button carry the SAME accessible name, so the
       // submit is addressed through the dialog. The title input's id is
       // `title-<goalId>`, never `#title`.
-      const actionDialog = await openDialog(page, "Adicionar ação")
+      const goal = await expandGoal(page, competencyName)
+      const actionDialog = await openDialog(goal, "Adicionar ação")
       await actionDialog.getByLabel("Título", { exact: true }).fill(title)
       await actionDialog.getByRole("button", { name: "Adicionar ação", exact: true }).click()
-      await expect(page.getByText(title, { exact: true })).toBeVisible({ timeout: 30_000 })
+
+      // Browser-visible success, asserted on the goal's SUMMARY: the count is
+      // rendered outside the collapsible panel, so this holds whether or not the
+      // re-render leaves the disclosure open.
+      added += 1
+      await expect(page.locator("details").filter({ hasText: competencyName })).toContainText(
+        added === 1 ? "1 ação de desenvolvimento" : `${added} ações de desenvolvimento`,
+        { timeout: 30_000 },
+      )
+    }
+
+    // Both actions are listed under the goal that owns them.
+    const goal = await expandGoal(page, competencyName)
+    for (const title of [ACTION_ONE, ACTION_TWO]) {
+      await expect(goal.getByText(title, { exact: true })).toBeVisible({ timeout: 30_000 })
     }
 
     // 4. publish. The version becomes immutable and the container reads published.

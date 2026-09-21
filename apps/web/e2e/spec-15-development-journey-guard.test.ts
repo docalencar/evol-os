@@ -157,6 +157,30 @@ test("cleanup stays retention-aware: this journey must retire, not clean", () =>
   assert.match(spec, /toBeGreaterThan\(0\)/)
 })
 
+test("a goal's disclosure is expanded before its contents are addressed", () => {
+  // Template goals are native `<details>` and the page never renders one `open`,
+  // so their children are in the DOM but not visible. Run 260921164722-a2b764
+  // spent 15s waiting for an "Adicionar ação" button that genuinely existed, on
+  // a page whose goal had been created successfully — the timeout said "missing"
+  // when the truth was "collapsed".
+  //
+  // A static selector audit cannot see this: the trigger's own component is
+  // correct, and the gate is an ancestor in a different file.
+  assert.match(spec, /async function expandGoal/)
+  assert.match(spec, /toHaveJSProperty\("open", true\)/)
+
+  // The trigger must be resolved WITHIN the expanded goal, never from the page.
+  const loop = spec.slice(spec.indexOf("for (const title of [ACTION_ONE, ACTION_TWO]"))
+  assert.match(loop, /const goal = await expandGoal\(/)
+  assert.match(loop, /openDialog\(goal, "Adicionar ação"\)/)
+  assert.doesNotMatch(loop, /openDialog\(page, "Adicionar ação"\)/)
+
+  // Browser-visible success is asserted on the summary, which stays visible
+  // whether or not a re-render leaves the disclosure open. Without this the
+  // proof would silently depend on undefined reconciliation behaviour.
+  assert.match(loop, /ações de desenvolvimento/)
+})
+
 test("the spec targets Review only, through the harness identity gate", () => {
   const active = code(spec + fixture)
   // No hard-coded environment. The gate lives in global setup and fails closed.

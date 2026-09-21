@@ -22,6 +22,39 @@ import { createServerDatabase } from "@/lib/database/server-database"
  * the legacy container id the route is keyed on.
  */
 
+/**
+ * Boundary failures arrive as PostgREST error objects, not as `Error`, and they
+ * carry the database's own text. Translating here — once, on the way out — is
+ * what keeps every caller working in the closed product vocabulary instead of
+ * pattern-matching SQL messages, and what stops a SQLSTATE or a function name
+ * reaching the browser.
+ *
+ * 0131 raises named messages of its own; anything unrecognised becomes the
+ * generic failure rather than being forwarded.
+ */
+const BOUNDARY_FAILURES = new Set<string>([
+  "DEVELOPMENT_TEMPLATE_FORBIDDEN",
+  "DEVELOPMENT_TEMPLATE_INVALID",
+  "DEVELOPMENT_TEMPLATE_NOT_FOUND",
+  "DEVELOPMENT_TEMPLATE_GOAL_NOT_FOUND",
+  "DEVELOPMENT_TEMPLATE_IMMUTABLE",
+  "DEVELOPMENT_TEMPLATE_TRANSITION_INVALID",
+  "DEVELOPMENT_TEMPLATE_CONTENT_INCOMPLETE",
+  "DEVELOPMENT_TEMPLATE_GOAL_INVALID",
+  "DEVELOPMENT_TEMPLATE_ACTION_INVALID",
+  "DEVELOPMENT_TEMPLATE_IDEMPOTENCY_CONFLICT",
+])
+
+function boundaryError(error: unknown): Error {
+  const message =
+    typeof error === "object" && error !== null && "message" in error
+      ? String((error as { message: unknown }).message)
+      : ""
+  return new Error(
+    BOUNDARY_FAILURES.has(message) ? message : "DEVELOPMENT_TEMPLATE_OPERATION_FAILED"
+  )
+}
+
 export type CreateDevelopmentTemplateDraftInput = {
   companyId: string
   name: string
@@ -62,7 +95,7 @@ export async function createDevelopmentTemplateAuthoringRepository() {
         p_duration: input.suggestedDurationDays ?? null,
         p_idempotency_key: input.idempotencyKey,
       })
-      if (error) throw error
+      if (error) throw boundaryError(error)
       const templateVersionId = data as string | null
       if (!templateVersionId) throw new Error("DEVELOPMENT_TEMPLATE_DRAFT_NOT_CREATED")
       return { templateVersionId }
@@ -78,7 +111,7 @@ export async function createDevelopmentTemplateAuthoringRepository() {
         p_target: input.suggestedTargetLevel,
         p_order: input.orderIndex,
       })
-      if (error) throw error
+      if (error) throw boundaryError(error)
       const templateVersionGoalId = data as string | null
       if (!templateVersionGoalId) throw new Error("DEVELOPMENT_TEMPLATE_GOAL_NOT_CREATED")
       return { templateVersionGoalId }
@@ -95,7 +128,7 @@ export async function createDevelopmentTemplateAuthoringRepository() {
         p_due_days: input.suggestedDueDays ?? null,
         p_order: input.orderIndex,
       })
-      if (error) throw error
+      if (error) throw boundaryError(error)
       const templateVersionActionId = data as string | null
       if (!templateVersionActionId) throw new Error("DEVELOPMENT_TEMPLATE_ACTION_NOT_CREATED")
       return { templateVersionActionId }
@@ -112,14 +145,14 @@ export async function createDevelopmentTemplateAuthoringRepository() {
         p_version_id: templateVersionId,
         p_expected_revision: expectedRevision,
       })
-      if (error) throw error
+      if (error) throw boundaryError(error)
     },
 
     async obsolete(templateVersionId: string): Promise<void> {
       const { error } = await database.rpc("obsolete_development_template_version_v1", {
         p_version_id: templateVersionId,
       })
-      if (error) throw error
+      if (error) throw boundaryError(error)
     },
   }
 }

@@ -51,6 +51,14 @@ export {
   getDevelopmentTemplateVersionContent,
 } from "./queries/get-development-template-version-content"
 
+export {
+  getPublishedDevelopmentTemplateCatalog,
+} from "./queries/get-published-development-template-catalog"
+
+export type {
+  PublishedDevelopmentTemplate,
+} from "./queries/get-published-development-template-catalog"
+
 export type {
   DevelopmentTemplateVersionAction,
   DevelopmentTemplateVersionGoal,
@@ -93,6 +101,18 @@ export {
 export {
   ObsoleteDevelopmentTemplateButton,
 } from "./components/obsolete-development-template-button"
+
+export {
+  PublishDevelopmentTemplateButton,
+} from "./components/publish-development-template-button"
+
+export {
+  publishDevelopmentTemplateAction,
+} from "./actions/publish-development-template-action"
+
+export {
+  publishDevelopmentTemplateVersion,
+} from "./services/publish-development-template-version"
 
 export {
   AddTemplateCompetencyDialog,

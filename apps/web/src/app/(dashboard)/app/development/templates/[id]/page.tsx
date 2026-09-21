@@ -9,7 +9,7 @@ import { PageHeader } from "@/components/shared/page-header"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 
-import { getManagementCompetencies, getManagementDevelopmentTemplates, getManagementPeople } from "@/features/dashboard-read"
+import { getManagementCompetencies, getManagementPeople } from "@/features/dashboard-read"
 import {
   getDevelopmentTemplateVersionContent,
   resolveDevelopmentTemplateAuthoringVersion,
@@ -24,6 +24,8 @@ import {
   AddTemplateActionDialog,
   AddTemplateCompetencyDialog,
   ApplyDevelopmentTemplateDialog,
+  ObsoleteDevelopmentTemplateButton,
+  PublishDevelopmentTemplateButton,
 } from "@/features/development/templates"
 import {
   type Employee,
@@ -84,11 +86,6 @@ export default async function DevelopmentTemplatePage({
     companyName,
   } = await getCurrentCompanyContext()
 
-  const template = (await getManagementDevelopmentTemplates(companyId, id))[0] ?? null
-
-  if (!template) {
-    notFound()
-  }
 
   // The route stays keyed on the CONTAINER, which keeps existing links valid.
   // Which version that container is currently about is resolved server-side —
@@ -103,9 +100,16 @@ export default async function DevelopmentTemplatePage({
 
   const employees = (employeesData ?? []) as Employee[]
 
-  const versionContent = authoringVersion
-    ? await getDevelopmentTemplateVersionContent(authoringVersion.templateVersionId)
-    : { goals: [], actions: [] }
+  if (!authoringVersion) {
+    // Not authorized and does not exist are deliberately the same answer: the
+    // authoring boundary returns nothing in both cases, and the page must not
+    // let a viewer tell them apart.
+    notFound()
+  }
+
+  const versionContent = await getDevelopmentTemplateVersionContent(
+    authoringVersion.templateVersionId
+  )
 
   const competencyNameById = new Map(
     competencies.map((competency) => [competency.id, competency.name])
@@ -129,7 +133,8 @@ export default async function DevelopmentTemplatePage({
   // A draft accepts new competencies and actions; a published or obsolete
   // version does not, and showing controls that the boundary would refuse is
   // what makes an immutable lifecycle look editable.
-  const isDraft = authoringVersion?.status === "draft"
+  const isDraft = authoringVersion.status === "draft"
+  const isPublished = authoringVersion.status === "published"
 
   const goalsWithActions: GoalWithActions[] = versionContent.goals.map((goal) => ({
     id: goal.templateVersionGoalId,
@@ -160,16 +165,26 @@ export default async function DevelopmentTemplatePage({
       </Link>
 
       <PageHeader
-        title={template.name}
+        title={authoringVersion.name}
         description={
-          template.description ??
+          authoringVersion.description ??
           "Template de desenvolvimento."
         }
         actions={
-          <ApplyDevelopmentTemplateDialog
-            templateId={id}
-            employees={employees}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            {isDraft ? (
+              <PublishDevelopmentTemplateButton templateId={id} />
+            ) : null}
+
+            {isPublished ? (
+              <ObsoleteDevelopmentTemplateButton templateId={id} />
+            ) : null}
+
+            <ApplyDevelopmentTemplateDialog
+              templateId={id}
+              employees={employees}
+            />
+          </div>
         }
       />
 
@@ -180,9 +195,7 @@ export default async function DevelopmentTemplatePage({
           </p>
 
           <Badge className="mt-2 bg-slate-100 text-slate-700">
-            {template.scope === "global"
-              ? "Todas as empresas"
-              : companyName}
+            {companyName}
           </Badge>
         </div>
 
@@ -192,7 +205,7 @@ export default async function DevelopmentTemplatePage({
           </p>
 
           <p className="mt-2 text-xl font-semibold">
-            {template.suggestedDurationDays ??
+            {authoringVersion.suggestedDurationDays ??
               "-"}{" "}
             dias
           </p>
@@ -232,10 +245,16 @@ export default async function DevelopmentTemplatePage({
             </p>
           </div>
 
-          <AddTemplateCompetencyDialog
-            templateId={id}
-            competencies={competencies}
-          />
+          {isDraft ? (
+            <AddTemplateCompetencyDialog
+              templateId={id}
+              competencies={competencies}
+            />
+          ) : (
+            <p className="text-sm text-slate-500">
+              Esta versão já foi publicada e não aceita alterações.
+            </p>
+          )}
         </div>
 
         {goalsWithActions.length === 0 ? (

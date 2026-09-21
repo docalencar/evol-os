@@ -1,6 +1,7 @@
 "use client"
 
 import { useTransition } from "react"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -23,6 +24,7 @@ type DevelopmentTemplateFormProps = {
 export function DevelopmentTemplateForm({
   onSuccess,
 }: DevelopmentTemplateFormProps) {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
   function handleSubmit(formData: FormData) {
@@ -51,6 +53,15 @@ export function DevelopmentTemplateForm({
 
       toast.success(result.message)
       onSuccess?.()
+
+      // Discoverability, not convenience: the draft the boundary just created
+      // is reachable by navigating to the CONTAINER id it reported. That id is
+      // read back from the authoring boundary by the Server Action — never
+      // predicted from the submitted values — so this navigation lands on the
+      // canonical record or does not happen at all.
+      if (result.templateId) {
+        router.push(`/app/development/templates/${result.templateId}`)
+      }
     })
   }
 

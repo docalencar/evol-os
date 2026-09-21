@@ -304,6 +304,41 @@ test("a control the product derives is asserted, never driven", () => {
   assert.match(spec, /expect\(plan\.owner_id\)\.toBe\(personIdOf\(MANAGER\)\)/)
 })
 
+test("surface markers are unconditional, and negatives can actually fail", () => {
+  // The plan page renders `plan.description ?? "Plano de desenvolvimento
+  // individual."`. That string is a FALLBACK: it appears only when a plan has no
+  // description, and every plan in this journey inherits the template's. Run
+  // 260921182529-0ba165 waited 30s for it on a plan that had loaded correctly.
+  //
+  // The class is "anchoring on a conditional fallback", so the guard reads the
+  // fallback out of the product and forbids depending on it — either way round.
+  // The same anchor was also used as a NEGATIVE, where being unreachable made it
+  // vacuously true: a proof that cannot fail is worse than no proof.
+  const planPage = readFileSync(
+    resolve(root, "../src/app/(dashboard)/app/development/plans/[id]/page.tsx"),
+    "utf8",
+  )
+  const fallback = planPage.match(/plan\.description \?\?\s*\n?\s*"([^"]+)"/)
+  assert.ok(fallback, "the plan page must still describe its fallback description")
+  assert.doesNotMatch(
+    code(spec),
+    new RegExp(fallback[1].replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
+    "the spec must not anchor on the plan page's fallback description",
+  )
+
+  // What it anchors on instead: an unconditional section heading, plus the
+  // run-scoped plan title read back from canonical state rather than predicted.
+  assert.match(planPage, /Competências e ações/)
+  assert.match(spec, /const PLAN_SURFACE_SECTION = "Competências e ações"/)
+  assert.match(spec, /planTitle = String\(plan\.title \?\? ""\)/)
+  assert.match(spec, /getByRole\("heading", \{ level: 1, name: planTitle \}\)\)\.toBeVisible\(\)/)
+
+  // And the negative is anchored on that same run-scoped title, so it fails if a
+  // refused response ever leaks the plan.
+  assert.match(spec, /getByRole\("heading", \{ level: 1, name: planTitle \}\)\)\.toHaveCount\(0\)/)
+  assert.ok((spec.match(/expect\(response\?\.status\(\)\)\.toBe\(404\)/g) ?? []).length >= 2)
+})
+
 test("the spec targets Review only, through the harness identity gate", () => {
   const active = code(spec + fixture)
   // No hard-coded environment. The gate lives in global setup and fails closed.

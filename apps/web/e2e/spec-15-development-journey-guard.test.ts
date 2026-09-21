@@ -100,13 +100,44 @@ test("authoring and application stay on different actors", () => {
 })
 
 test("privacy negatives are non-oracular and re-asserted after completion", () => {
-  // Unauthorized and nonexistent must be indistinguishable: a 404, not a
-  // distinguishable error. Asserted for both the nonparticipant and the foreign
-  // actor, before AND after the plan reaches its terminal state.
-  assert.ok((spec.match(/expect\(response\?\.status\(\)\)\.toBe\(404\)/g) ?? []).length >= 2)
-  assert.match(spec, /\[UNRELATED, FOREIGN\] as const/)
+  // "Unauthorized and nonexistent must be indistinguishable" is a relation
+  // between TWO observations. Asserting only that the real id yields 404 states
+  // one side and assumes the other: if a nonexistent id ever answered
+  // differently, the property would be broken and the test would still pass.
+  //
+  // So both ids are probed and compared, for both denied actors, before AND
+  // after the plan reaches its terminal state. Spec 13 reads §6 the same way.
+  assert.match(spec, /const NONEXISTENT_PLAN_ID = "[0-9a-f-]{36}"/)
+  assert.match(spec, /async function probePlanDenial/)
+
+  // The comparison must cover status, route and body — a status-only comparison
+  // would pass while the body leaked the plan.
+  const compare = spec.slice(spec.indexOf("function expectIndistinguishableDenial"))
+  const body = compare.slice(0, compare.indexOf("\n}"))
+  assert.match(body, /expect\(denied\.status\)\.toBe\(404\)/)
+  assert.match(body, /expect\(nonexistent\.status\)\.toBe\(404\)/)
+  assert.match(body, /expect\(denied\.route\)\.toBe\(nonexistent\.route\)/)
+  assert.match(body, /expect\(denied\.body\)\.toBe\(nonexistent\.body\)/)
+  assert.match(body, /not\.toContain\(secret\)/)
+
+  // Both denied actors, in both places, each probing the real id AND the
+  // nonexistent one.
+  assert.ok((spec.match(/\[UNRELATED, FOREIGN\] as const/g) ?? []).length >= 2)
+  assert.ok((spec.match(/probePlanDenial\(page, planId\)/g) ?? []).length >= 2)
+  assert.ok((spec.match(/probePlanDenial\(page, NONEXISTENT_PLAN_ID\)/g) ?? []).length >= 2)
+
   const completion = spec.indexOf("F/G. 23-29")
   assert.match(spec.slice(completion), /\[UNRELATED, FOREIGN\] as const/)
+  assert.match(spec.slice(completion), /probePlanDenial\(page, NONEXISTENT_PLAN_ID\)/)
+  // The terminal probe must cover what only exists by then: review history and
+  // the private skip reason.
+  for (const secret of ["FINAL_REVIEW", "SKIP_REASON"]) {
+    assert.match(spec.slice(completion), new RegExp(secret))
+  }
+
+  // The negative is never proved by a privileged read.
+  const negatives = spec.slice(spec.indexOf("13-14. nonparticipant"))
+  assert.doesNotMatch(negatives.slice(0, 900), /adminClient\(\)/)
 })
 
 test("capability negatives are asserted as absence of the control, per actor", () => {
@@ -362,7 +393,7 @@ test("surface markers are unconditional, and negatives can actually fail", () =>
   // And the negative is anchored on that same run-scoped title, so it fails if a
   // refused response ever leaks the plan.
   assert.match(spec, /getByRole\("heading", \{ level: 1, name: planTitle \}\)\)\.toHaveCount\(0\)/)
-  assert.ok((spec.match(/expect\(response\?\.status\(\)\)\.toBe\(404\)/g) ?? []).length >= 2)
+  assert.ok((spec.match(/probePlanDenial\(page, planId\)/g) ?? []).length >= 2)
 })
 
 test("an actor defined by its tenant is resolved from that tenant", () => {
@@ -392,8 +423,9 @@ test("an actor defined by its tenant is resolved from that tenant", () => {
 
   // The negatives must still reach the contract's route and status: absence of a
   // shell is never allowed to stand in for an authorization outcome.
-  assert.ok((spec.match(/expect\(response\?\.status\(\)\)\.toBe\(404\)/g) ?? []).length >= 2)
-  assert.ok((spec.match(/goto\(`\/app\/development\/plans\/\$\{planId\}`\)/g) ?? []).length >= 2)
+  assert.match(spec, /expect\(denied\.status\)\.toBe\(404\)/)
+  assert.ok((spec.match(/probePlanDenial\(page, planId\)/g) ?? []).length >= 2)
+  assert.match(spec, /goto\(`\/app\/development\/plans\/\$\{id\}`\)/)
 })
 
 test("the spec targets Review only, through the harness identity gate", () => {

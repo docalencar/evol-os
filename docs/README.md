@@ -5,6 +5,7 @@
 | Assunto | Fonte oficial |
 | --- | --- |
 | Como trabalhar | [`../CLAUDE.md`](../CLAUDE.md) |
+| Método de execução governada | [`engineering/OPERATING-METHOD.md`](./engineering/OPERATING-METHOD.md) |
 | Visão do produto e limites do MVP | [`Product/PRODUCT_VISION.md`](./Product/PRODUCT_VISION.md) |
 | Próxima prioridade | [`ROADMAP.md`](./ROADMAP.md) |
 | Jornada completa até o MVP | [`MVP_PLAN.md`](./MVP_PLAN.md) |

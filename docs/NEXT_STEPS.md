@@ -1,133 +1,106 @@
-# Evol OS — Próxima entrega
+# Evol OS — Active Slice
+
+> Este documento descreve **um slice por vez**. Não contém história, não repete
+> contrato de domínio e não narra slices fechados — esses vivem em `Execution/`,
+> nas ADRs e no Git. Estado geral: [`PROJECT_STATE.md`](./PROJECT_STATE.md).
+> Método: [`engineering/OPERATING-METHOD.md`](./engineering/OPERATING-METHOD.md).
 
 ```
-MAIN=60e7931443bea1553714ba06928b7f1a1283fb7b
-E2E-5=CLOSED/PASS   run 260916024159-e593c0   62/62   24/24   RETIRED
-PRÓXIMO=D-DB1 — Development Trusted Read/Mutation Boundary
-E2E_NUMBER=NOT_ASSIGNED
-HOSTED_RUN=NOT_AUTHORIZED
+SLICE = D-SEC1 — Development Ledger Privacy Hardening (implementação)
+PATH  = GOVERNED
 ```
 
-## 1. Estado canônico
+## GOAL
 
-As jornadas hosted já comprovadas são:
+Fechar o `SELECT` direto de `authenticated` sobre **as quatro relações** do ledger
+de aplicação de template de Development — `applications`, `attempts`, `snapshots`
+e `lineage` — preservando integralmente o acesso purpose-bound já existente.
 
-| Gate | Jornada | Estado |
-| --- | --- | --- |
-| E2E-0 | Harness autenticado de Review | CLOSED / PASS |
-| E2E-1 | Quarentena e recuperação de run falha | CLOSED / PASS |
-| E2E-2 | Organização e Pessoas | CLOSED / PASS |
-| E2E-3 | Career, Seniority e Competencies | CLOSED / PASS |
-| E2E-4 | Ciclo completo de Avaliação | CLOSED / PASS |
-| E2E-5 | Assessment Feedback lifecycle | **CLOSED / PASS — 24/24 PROVEN** |
+### Intenção congelada
 
-E2E-5 foi fechado pelo run canônico `260916024159-e593c0` em Review, no SHA
-`acc480db605fa385143fe2812599f7f27350c939`: 62/62 PASS, zero retries, um
-worker e teardown `RETIRED / HEALTHY`. O contrato e a progressão histórica estão
-em
-[`Execution/E2E-5-ASSESSMENT-FEEDBACK-LIFECYCLE-CLOSURE.md`](./Execution/E2E-5-ASSESSMENT-FEEDBACK-LIFECYCLE-CLOSURE.md).
+Estas decisões estão **fechadas**; não reabrir durante a implementação:
 
-**Não rerodar E2E-5.** A sexta autorização hosted foi consumida; a próxima run
-hosted não está autorizada.
+- o revoke cobre **as quatro relações**, não apenas `lineage`/`snapshots`;
+- as policies de `SELECT` existentes **permanecem**, como defesa em profundidade,
+  mesmo ficando inalcançáveis após o revoke;
+- RLS permanece habilitada;
+- o acesso trusted purpose-bound permanece;
+- o comportamento de `0133` permanece;
+- o contrato de retenção de quatro relações permanece;
+- nenhuma mudança de UI ou de produto.
 
-## 2. Próximo domínio na sequência do MVP
+## WHY
 
-`Product/USER_JOURNEYS.md` nomeia, depois de Avaliação e Feedback, a
-**Jornada 4 — Desenvolvimento**:
+D-SEC0 provou que o ledger é **evidência interna**, não API de produto, e que a
+exposição atual é pré-existente e mais ampla que o contrato D-P0 de PDI: qualquer
+membro ativo do tenant lê hoje, por `SELECT` direto, o snapshot que carrega a
+identidade do employee e os níveis de competência avaliados dele.
 
-```
-competências -> gaps -> PDI -> metas -> ações -> revisões periódicas
-```
+D-SEC0 também provou que fechar essa leitura **não custa capacidade nenhuma**:
+toda função que toca essas relações é `SECURITY DEFINER`, o caminho vivo de
+aplicação usa apenas RPC, a retenção passa por boundary privilegiada, e `0133` já
+entrega a origem histórica sem exigir privilégio de tabela do chamador.
 
-Essa é a próxima candidata dependency-consistent pelo valor de usuário e pelo
-Gate do MVP. Ela ainda **não** recebe automaticamente o nome `E2E-6`: não existe
-contrato hosted congelado nem readiness suficiente para isso.
+## IN_SCOPE
 
-## 3. D-P0 encerrado — contrato de Development congelado
+- migration nova revogando `SELECT` de `authenticated` nas quatro relações do
+  ledger, sem tocar em policies nem em RLS;
+- suíte pgTAP dedicada provando fechamento e continuidade;
+- re-ancoragem das duas asserções `STALE_TEST` que hoje codificam a exposição;
+- gate local em PostgreSQL real;
+- runner versionado de PRE/POST para a futura promoção.
 
-O [D-P0 — Development Privacy, Actors and Lifecycle Contract](./Execution/D-P0-DEVELOPMENT-PRIVACY-ACTORS-LIFECYCLE-CONTRACT.md)
-está `CLOSED / PASS`. Ele congela:
+## OUT_OF_SCOPE
 
-- PDI como relação privada entre subject e responsável operacional, com
-  governança administrativa de `owner/admin/hr`;
-- leitura do employee sobre o próprio PDI, do manager sobre direct reports ou
-  planos sob sua responsabilidade e de atores administrativos no tenant;
-- negação explícita ao nonparticipant same-tenant e ao foreign tenant;
-- employee como executor de ações, sem autoridade para concluir/cancelar PDI;
-- plans `completed`/`cancelled` terminais, sem reopen no primeiro MVP;
-- progresso determinístico e review Development append-only `periodic|final`;
-- templates `draft → published → obsolete`, publicados por `owner/admin/hr`;
-- integração automática Gap/Assessment/Feedback/AI → PDI deferida.
+- qualquer mudança de UI, produto ou comportamento de aplicação;
+- alteração de `0133`, do tooling D-R2 ou do contrato de retenção;
+- remoção ou alteração das policies de `SELECT` e do estado de RLS;
+- promoção para Review (gate separado, autorização separada);
+- remoção do `getPublishedDevelopmentTemplateCatalog`;
+- origem histórica no detalhe do PDI;
+- readjudicação de D-SEC0.
 
-O contrato hosted e a numeração E2E continuam não congelados.
+## KNOWN_STATE
 
-## 4. Próximo slice — D-DB1
+- classificação do ledger: **INTERNAL_EVIDENCE**;
+- postura atual: `revoke all` seguido de `grant select to authenticated` mais
+  policy de `is_company_member(company_id)`; `service_role` já revogado;
+- RLS habilitada e **não** forçada — o owner ignora policy, que é o que mantém as
+  funções `SECURITY DEFINER` funcionando após o revoke;
+- consumidores diretos ativos na aplicação: **zero** (o único arquivo que os
+  referencia é adaptador morto, sem referência externa);
+- contrato de retenção: **quatro** relações, imutável neste slice;
+- duas asserções pgTAP hoje afirmam a exposição como comportamento esperado.
 
-**D-DB1 — Development Trusted Read/Mutation Boundary** deve implementar, em um
-recorte DB-first coerente:
+Números de migration, SHAs, ACLs e contagens de teste são **descobertos**, não
+transcritos aqui.
 
-1. reads privacy-aware para subject, relação operacional e administração;
-2. trusted mutations para plano, ações, reviews e versões de template;
-3. autorização de manager por direct report e/ou `owner_id` ativo;
-4. enforcement transacional das state machines do D-P0;
-5. review persistence e private operational audit;
-6. testes de subject, manager, administração, nonparticipant same-tenant e
-   foreign tenant;
-7. classificação de retention para qualquer entidade nova.
+## GATES
 
-D-DB1 não inclui UI, harness, hosted run nem integração automática de Gap ou
-Feedback. A aplicação determinística ADR-0014 deve ser reutilizada.
+- diff contém apenas migration, testes e tooling — nenhuma mudança de produto;
+- gate em PostgreSQL real: `db reset`, suíte dedicada, suíte completa, retenção;
+- PRE prova a exposição antes de removê-la; POST prova o fechamento;
+- fingerprints de ACL/RLS/policy/retenção: **somente** o ACL do ledger pode mudar;
+- `0133` continua íntegra — assinatura, grants e provas comportamentais;
+- caminho de aplicação de template continua funcional;
+- staging explícito; `git diff --check` PASS; estado protegido intacto.
 
-## 5. Readiness atual de Development
+## STOP_CONDITIONS
 
-| Dependência | Classificação | Evidência observada |
-| --- | --- | --- |
-| Competências e gap canônico | `ALREADY_RESOLVED` | disponível e provado por E2E-3 |
-| Feedback formal | `ALREADY_RESOLVED` | disponível e provado por E2E-5 |
-| Read boundaries de Development | `ALREADY_RESOLVED` | integradas às rotas MVP |
-| Integridade e aplicação determinística de templates | `ALREADY_RESOLVED` | fundação implementada pela ADR-0014 / PR 3C |
-| Cobertura de teardown das tabelas Development | `ALREADY_RESOLVED` | plans, goals, actions e grafo de template application constam do retention registry |
-| Privacy de planos, metas, ações e reviews | `CONTRACT_FROZEN` | D-P0 define subject, relação operacional, administração e negação a nonparticipants |
-| Authoring trusted de Development | `OPEN_CONFIRMED` | pendente no programa P1; repositories de authoring ainda fazem DML de tabela |
-| Template lifecycle | `CONTRACT_FROZEN / IMPLEMENTATION_OPEN` | `draft → published → obsolete`; publicação ainda não alcançável |
-| Gap ou Feedback gerando PDI | `DEFERRED` | não demonstrado e explicitamente fora do fechamento E2E-5 |
-| Conclusão de development action | `CONTRACT_FROZEN / IMPLEMENTATION_OPEN` | subject inicia/conclui; owner/manager/admin pode skip com razão auditada |
-| Revisões periódicas | `CONTRACT_FROZEN / IMPLEMENTATION_OPEN` | aggregate append-only `periodic|final` pertence ao D-DB1 |
-| Atores e ownership do PDI | `CONTRACT_FROZEN` | `employee_id` subject, `owner_id` responsável, `created_by` autoria |
-| Contrato hosted completo | `NOT_FROZEN` | product shape congelado; propriedades e número E2E ainda não definidos |
+- qualquer consumidor legítimo exigir `SELECT` direto → `PRODUCT_DECISION_REQUIRED`;
+- fechamento quebrar capacidade sem substituto purpose-bound → `DB_CONTRACT_DEFICIENCY`;
+- fingerprint mudar além do ACL do ledger → parar e classificar;
+- contradição com D-P0, D-DB1 ou D-DB2 → `CONTRACT_CONFLICT`;
+- necessidade de tocar produto, `0133` ou retenção → parar e reportar.
 
-As decisões de produto não bloqueiam mais o desenho técnico. Os gaps de
-implementação continuam impedindo UI/harness e devem ser resolvidos a partir do
-D-DB1.
+## EXPECTED_NEXT
 
-### Forma de produto congelada
+Gate de publicação do D-SEC1 e, em seguida, promoção governada para Review em
+slice próprio — publicar código de migration não autoriza aplicá-la remotamente.
 
-```
-template publicado
-  -> aplicação/atribuição explícita por ator autorizado
-    -> PDI, metas e ações persistidos atomicamente
-      -> employee executa ações
-        -> responsável acompanha progresso derivado
-          -> reviews periódicos append-only
-            -> review final
-              -> PDI terminal concluído e histórico preservado
-```
+---
 
-Antes de congelar qualquer E2E, D-DB1 e os slices de aplicação devem entregar as
-trusted boundaries, superfícies navegáveis, sinais explícitos, readback durável,
-testes de segurança e teardown observável definidos pelo D-P0.
+### Antes disto
 
-## 6. Escopo que permanece deferido
-
-O fechamento de E2E-5 não promove attachments, mentions, AI, auto-send,
-reopen/unarchive, HR moderation, management semantics, peer Feedback nem outros
-tipos de Feedback. Também não promove, por si só, Development/PDI integration,
-action completion ou reviews: esses itens pertencem à adjudicação da Jornada 4.
-
-## 7. Invariantes e regra de parada
-
-- Production `gzrrwyiqfbnyprkdeqvm`: não acessar sem gate próprio.
-- Legacy `oudngmrdtgengilpqqnz`: não é target de promoção.
-- Review: nenhuma nova execução hosted sem autorização explícita.
-- Não inventar `E2E-6` antes de congelar o contrato de Desenvolvimento.
-- Não iniciar implementação da Jornada 4 sob este fechamento documental.
+O AI Context Protocol (AI-CTX-1, AI-CTX-2) precisa ser publicado. Enquanto isso
+não ocorrer, o slice ativo funcional continua sendo D-SEC1, ainda não iniciado.

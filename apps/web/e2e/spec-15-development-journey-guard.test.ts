@@ -365,6 +365,37 @@ test("surface markers are unconditional, and negatives can actually fail", () =>
   assert.ok((spec.match(/expect\(response\?\.status\(\)\)\.toBe\(404\)/g) ?? []).length >= 2)
 })
 
+test("an actor defined by its tenant is resolved from that tenant", () => {
+  // The contract's `foreign_owner` is the owner of a SEPARATE tenant. The
+  // `onboarding` identity only becomes that after spec 02's real wizard creates
+  // tenant B and records it in the journal; before that it is unattached — no
+  // membership, no person, no company — and the product correctly sends it to
+  // first-access onboarding.
+  //
+  // Run 260921185836-f8c2dd resolved the actor by role name, skipping that
+  // dependency, then failed on a tenant-shell marker an unattached identity
+  // cannot satisfy. The class is "an actor precondition asserted but never
+  // established", so the guard requires the dependency to be declared and
+  // unbypassable — the same shape specs 04 and 13 already use.
+  assert.match(spec, /manifest\(\)\.onboardingCompany/)
+  assert.match(spec, /E2E_TENANT_B_MISSING/)
+  assert.match(spec, /Spec 02 must complete first/)
+
+  // Resolution must go through the tenant, not the role name, or the dependency
+  // can be silently bypassed again.
+  const resolver = spec.slice(spec.indexOf("function actor("))
+  assert.match(resolver.slice(0, resolver.indexOf("\n}")), /role === FOREIGN/)
+  assert.match(spec, /candidate\.userId === foreignTenant\(\)\.ownerUserId/)
+
+  // And foreignness is proved at login, not assumed.
+  assert.match(spec, /getByText\(foreignTenant\(\)\.companyName\)/)
+
+  // The negatives must still reach the contract's route and status: absence of a
+  // shell is never allowed to stand in for an authorization outcome.
+  assert.ok((spec.match(/expect\(response\?\.status\(\)\)\.toBe\(404\)/g) ?? []).length >= 2)
+  assert.ok((spec.match(/goto\(`\/app\/development\/plans\/\$\{planId\}`\)/g) ?? []).length >= 2)
+})
+
 test("the spec targets Review only, through the harness identity gate", () => {
   const active = code(spec + fixture)
   // No hard-coded environment. The gate lives in global setup and fails closed.

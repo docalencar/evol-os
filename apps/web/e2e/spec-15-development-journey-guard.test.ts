@@ -181,6 +181,45 @@ test("a goal's disclosure is expanded before its contents are addressed", () => 
   assert.match(loop, /ações de desenvolvimento/)
 })
 
+test("a state change is asserted on the surface that actually renders it", () => {
+  // The failure class: borrowing one surface's vocabulary for another. Published
+  // templates read "Publicado" in the INDEX table's status badge; the DETAIL page
+  // never renders that word, expressing publication by withdrawing the authoring
+  // controls. Run 260921170444-21443c asserted the index's label against the
+  // detail page and reported a 30s timeout for a publication that had succeeded.
+  //
+  // Guarded as a property, not as a string: every status label the table defines
+  // must be asserted through a row, which only the index has.
+  const table = readFileSync(
+    resolve(root, "../src/features/development/templates/components/development-template-table.tsx"),
+    "utf8",
+  )
+  for (const label of ["Rascunho", "Publicado"]) {
+    assert.match(table, new RegExp(`label: "${label}"`), `${label} must come from the table`)
+    assert.doesNotMatch(
+      code(spec),
+      new RegExp(`getByText\\("${label}"`),
+      `"${label}" is an index status label and must never be asserted as page text`,
+    )
+  }
+  // Both are asserted through a row, which only the index has.
+  assert.match(spec, /getByRole\("row", \{ name: new RegExp\(name\) \}\)\)\.toContainText\("Rascunho"\)/)
+  assert.match(
+    spec,
+    /getByRole\("row", \{ name: new RegExp\(name\) \}\)\)\.toContainText\(PUBLISHED_STATUS\)/,
+  )
+
+  // Publication success is proved by the product's own signals: the toast, the
+  // immutability notice, and the withdrawal of the publish control.
+  assert.match(spec, /VERSION_PUBLISHED = "Versão publicada com sucesso\."/)
+  assert.match(spec, /confirm\(page, VERSION_PUBLISHED\)/)
+  assert.match(spec, /"Publicar versão" \}\)\)\.toHaveCount\(0\)/)
+
+  // ...and still by an independent durable readback afterwards.
+  assert.match(spec, /from\("development_template_versions"\)/)
+  assert.match(spec, /toBe\("published"\)/)
+})
+
 test("the spec targets Review only, through the harness identity gate", () => {
   const active = code(spec + fixture)
   // No hard-coded environment. The gate lives in global setup and fails closed.

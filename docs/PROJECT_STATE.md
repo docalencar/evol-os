@@ -1,451 +1,103 @@
 # Evol OS — Project State
 
-## 1. Objetivo
+> **Fotografia do estado atual.** Não cria prioridade, produto nem arquitetura, e
+> não substitui as fontes normativas. Não narra história: o histórico detalhado
+> vive no Git (`git log -p docs/PROJECT_STATE.md` recupera as narrativas de
+> reconciliação anteriores), no [CHANGELOG](./CHANGELOG.md), nos closure docs de
+> `Execution/` e nas ADRs.
+>
+> Método de trabalho: [`../CLAUDE.md`](../CLAUDE.md) e
+> [`engineering/OPERATING-METHOD.md`](./engineering/OPERATING-METHOD.md).
+> Slice ativo: [`NEXT_STEPS.md`](./NEXT_STEPS.md).
 
-O Evol OS é um copiloto de gestão de pessoas e desenvolvimento organizacional.
-Sua missão é tornar práticas modernas de RH simples, inteligentes e acessíveis,
-preservando a decisão humana. A definição completa está na
-[Product Vision](./Product/PRODUCT_VISION.md).
+## Snapshot
 
-Este documento é apenas a fotografia do estado atual do programa. Ele não cria
-prioridade, produto ou arquitetura e não substitui as fontes normativas.
+| Campo | Valor |
+| --- | --- |
+| `CURRENT_DOMAIN` | Development (Jornada 4) |
+| `CURRENT_SLICE` | AI Context Protocol v1 — AI-CTX-2 (documentação) |
+| `LAST_CANONICAL_MAIN` | merge da PR #128 (D-P3). Autoridade = `git rev-parse origin/main` |
+| `LATEST_COMMITTED_MIGRATION` | `0133` — historical plan origin read boundary |
+| `LATEST_REVIEW_DB_VERSION` | `0133` — `APPLIED / VERIFIED` (promoção governada D-R2) |
+| `HOSTED_E2E_STATE` | E2E-0…E2E-5 `CLOSED / PASS`. `E2E-6` não definido; contrato hosted de Development **não congelado**; próxima run hosted **não autorizada** |
+| `NEXT_GATE` | Publicação do AI Context Protocol, depois **D-SEC1** |
 
-## 2. Como trabalhar neste projeto
+Trabalho de documentação em andamento vive em `docs/ai-context-protocol-v1` e
+**não é main canônico** até ser publicado.
 
-Toda entrega segue o fluxo oficial:
-
-```text
-Discovery
-  → Product Decision
-  → ADR
-  → Reconciliação
-  → Implementation Plan
-  → Implementação
-  → Validação
-  → Commit
-```
-
-As regras, gates e condições de parada estão no
-[MASTER_PROMPT](./Prompts/MASTER_PROMPT.md). Cada etapa só ocorre quando as
-dependências anteriores estiverem documentadas e aprovadas.
-
-## 3. Fonte de verdade
-
-Conversas não são normativas. Para intenção e decisões, a precedência é:
+## Precedência
 
 1. Product Decisions;
 2. ADRs;
 3. Implementation Plans versionados;
-4. PROJECT_STATE.md;
+4. este documento;
 5. código incorporado ao repositório;
-6. conversas, apenas como contexto não normativo.
+6. conversas — contexto não normativo.
 
-O PROJECT_STATE.md é uma fotografia oficial do estado do programa. Ele não cria decisões nem substitui Product Decisions, ADRs ou Implementation Plans; sua função é consolidar o estado atual do projeto e orientar a navegação pela documentação.
+Quando documentação e código divergirem, a implementação para até a reconciliação.
+Para **estado factual do repositório**, o Git vence; ver `OPERATING-METHOD.md` §1.
 
-## 4. Estado atual
+## Slices majores fechados
 
-> **Reconciliação de jornadas hosted e D-P0 — 2026-09-17.** Baseline técnica do
-> contrato: `main`/`60e7931443bea1553714ba06928b7f1a1283fb7b`. E2E-0, E2E-1, E2E-2,
-> E2E-3, E2E-4 e E2E-5 estão `CLOSED / PASS`. E2E-5 foi fechado pelo run
-> `260916024159-e593c0`, 62/62 PASS, contrato 24/24 provado, teardown
-> `RETIRED / HEALTHY`. O registro auditável está em
-> [E2E-5 Assessment Feedback Lifecycle Closure](./Execution/E2E-5-ASSESSMENT-FEEDBACK-LIFECYCLE-CLOSURE.md).
-> O próximo domínio dependency-consistent é a Jornada 4 — Desenvolvimento. O
-> contrato D-P0 de privacy, atores e lifecycle está aceito; nenhum `E2E-6` foi
-> definido. O próximo slice é D-DB1, trusted read/mutation boundary.
+| Slice | Escopo | Estado |
+| --- | --- | --- |
+| D-P0 | Development privacy, atores e lifecycle — contrato congelado | CLOSED / PASS |
+| D-DB1 | Development trusted read/mutation boundary | CLOSED / PASS |
+| D-P1/D-P2 | Development reads autorizadas e progresso canônico | CLOSED / PASS |
+| D-DB2 | Historical plan origin read boundary (`0133`) | CLOSED / PASS |
+| D-R2 | Tooling governado de promoção + promoção de `0133` para Review | CLOSED / PASS |
+| D-P3 | Jornada de template authoring + integração da origem histórica | CLOSED / PASS |
+| D-SEC0 | Discovery e contrato do hardening do ledger de Development | CLOSED / PASS |
+| AI-CTX-1 | Método permanente de execução governada | CLOSED / PASS (não publicado) |
 
-### Product Decisions
+O contrato de cada um está no respectivo documento de `Execution/`; os commits e
+os runs de CI estão no Git. **Não reexecutar slices fechados** sem evidência nova
+que os invalide.
 
-| Decisões | Status oficial |
+## Product Decisions e ADRs
+
+| Catálogo | Estado |
 | --- | --- |
-| PD-001 a PD-015 | Vigentes no catálogo permanente; sem campo de status individual |
-| PD-016 — Assessment Authorization Policy | ✅ Approved |
-| PD-017 — Notification Domain Policy | ✅ Approved |
-| PD-018 — Global Competency Concepts and Tenant Mapping | ✅ Approved |
-| PD-019 — Tenant Multiuser Activation Policy | ✅ Approved |
-| PD-020 — Feedback Conversation Privacy and Administrative Access | ✅ Approved |
-| PD-021 — Career / Seniority + Position Taxonomy | ✅ Approved |
-| PD-022 — Direct-Report Anonymity & Aggregation Policy | ✅ Approved |
+| PD-001 … PD-022 | Vigentes. Conteúdo normativo em [`Product/PRODUCT_DECISIONS.md`](./Product/PRODUCT_DECISIONS.md) |
+| ADR-0001 … ADR-0018 | Vigentes. Estado individual e conteúdo no [índice de ADRs](./adr/README.md) |
 
-### ADRs
+Os dois catálogos são a autoridade; este documento não replica o status
+individual para não criar uma segunda verdade.
 
-| ADRs | Estado |
+## Open findings
+
+| Finding | Estado |
 | --- | --- |
-| ADR-0001 a ADR-0006 | Arquitetura-base vigente |
-| ADR-0007 a ADR-0009 | Planejamento, snapshots, projeções e IA vigentes |
-| ADR-0010 — Assessment Authorization | Implementada |
-| ADR-0011 — Notification Domain Architecture | Implementada |
-| ADR-0012 — Tenant-Owned Referential Integrity Strategy | Programa em andamento |
-| ADR-0013 — Platform Global Authority and Trusted Execution | ✅ Accepted e implementada na PR 3B |
-| ADR-0014 — Deterministic Development Template Application and Snapshots | ✅ Accepted e implementada; PR 3C encerrada em `5c2675b` |
-| ADR-0015 — Tenant Multiuser Activation Architecture | ✅ Accepted; MVP-PR1 em andamento |
-| ADR-0016 — Invitation Delivery Architecture | ✅ Accepted e implementada nas Phases 5/6 |
-| ADR-0017 — Position-Seniority Profile as Career Assignment Boundary | ✅ Accepted; **Slices 1A–3B implementadas e em `main`** (migrations `0100–0106` + features); pendentes 4A/4B/5 + gate de unicidade de Cargo |
-| ADR-0018 — Direct-Report Anonymity & Aggregation Architecture | ✅ Accepted; Slice 0115-B2-C **CLOSED/PASS** em todas as fases (DB `0119` validada no Review + app integration Phases 2–5); dívida residual: app smoke remoto NOT DEMONSTRATED (gated) |
+| **Development ledger privacy** — membros autenticados do tenant têm `SELECT` direto nas quatro relações do ledger de aplicação de template; o snapshot carrega identidade do employee e níveis de competência avaliados | `OPEN / FOLLOW_UP_REQUIRED` — endereçado por **D-SEC1** |
+| **Plan detail sem origem histórica** — a página de detalhe do PDI não exibe "Template de origem" | `DEFERRED_PRODUCT_ENHANCEMENT` — não é regressão |
+| **`getPublishedDevelopmentTemplateCatalog`** — sem consumidor ativo após o cutover da origem histórica | `RETAINED_CAPABILITY` — semântica distinta (catálogo atual ≠ origem histórica); preservado para a jornada de aplicação |
+| **App smoke remoto autenticado (Slice 0115-B2-C)** | `NOT DEMONSTRATED (gated)` — dívida aceita; registro em [CHANGELOG](./CHANGELOG.md) |
+| Itens abertos anteriores ao D-P0 (hardening `0084`, writes MVP-PR1, matriz de transições de Feedback, gates de privacidade People) | **Não readjudicados.** Narrativa recuperável por `git log -p docs/PROJECT_STATE.md` e pelo CHANGELOG |
 
-O status normativo e o conteúdo completo permanecem no
-[índice de ADRs](./adr/README.md).
+## Open decisions
 
-### Roadmap e execução
+| Decisão | Dono |
+| --- | --- |
+| Abrangência do D-SEC1: fechar `SELECT` nas quatro relações do ledger ou apenas em lineage/snapshots | Produto/Engenharia — decidir antes de implementar |
+| Manter ou remover as policies de `SELECT` que ficam inalcançáveis após o revoke | Recomendação: manter como defesa em profundidade |
+| Momento de congelar o contrato hosted de Development e atribuir `E2E-6` | Depende de readiness, não de calendário |
 
-- **Trilha vigente = Assessment Results (0115–0119).** Autoridade = estado real
-  do `main`/HEAD `ff2ba6db`. A trilha está concluída e alinhada em `0119` (Local e
-  Canonical Review); ver [CHANGELOG](./CHANGELOG.md) e
-  [ENVIRONMENT-MIGRATION-STATUS](./execution/ENVIRONMENT-MIGRATION-STATUS.md).
-  **B2-B2-B — People “Últimas avaliações” = CLOSED / PASS**; **Slice 0115-B2-C
-  (Direct-Report Anonymous Aggregate) = CLOSED / PASS em todas as fases** — DB
-  boundary `0119` (`REVIEW 0119: ACTIVE / VALIDATED / PASS`) + app integration
-  Phases 2–5 (read boundary `853dfb44`, presenter/ViewModel `de166e0`, People UX
-  `ff2ba6db`; validação final por auditoria estática + 73 testes determinísticos +
-  `tsc`/`lint`/build PASS). Dívida residual explícita aceita: **app smoke remoto
-  autenticado NOT DEMONSTRATED (gated)** — invariantes já provados ao vivo no Review
-  pela matriz da Phase 1.
-- [NEXT_STEPS](./NEXT_STEPS.md): não há próxima fase da B2-C. A trilha **Career /
-  Seniority** teve suas **Slices 1A–4A implementadas e em `main`** (catálogo de
-  senioridade, profiles Cargo×Senioridade, lotação de People, e a **Slice 4A —
-  Competency Matrix Relocation** via `0120` matriz+backfill zero-loss e `0121`
-  closed-table hardening — **CLOSED / PASS**, promovidas e validadas no Canonical
-  Review em 2026-08-28); **NÃO reimplementar 1A–4A**. O próximo gate real é **Slice
-  4B — Competency Matrix + Scale Semantics (UI)** (ainda não iniciada; Human Review
-  obrigatório; exige autorização explícita).
-- [ROADMAP](./ROADMAP.md): a trilha Career / Seniority (PD-021 Approved, ADR-0017
-  Accepted) está **em execução — Slices 1A–3B concluídas em `main`**; a
-  reimplementação de 1A–3B **não** deve ocorrer. O corpo histórico do
-  ROADMAP/§6 abaixo é contexto e não a prioridade atual.
-- [MVP Plan](./MVP_PLAN.md): jornada completa até o MVP.
-- [EPICS](./EPICS.md): estado funcional das capacidades.
-- [Implementation Plan do MVP-PR1](./Execution/MVP-PR1-TENANT-MULTIUSER-ACTIVATION-IMPLEMENTATION-PLAN.md):
-  Phases 1–8 e PRs 9A–9F concluídas; PRs 10A–10F1 incorporadas e PR 10F2 implementada DB-first.
+## Arquitetura consolidada
 
-## 5. Programa ADR-0012
+Clean Architecture por camadas; DDD; Composition Roots e Server Factories; Server
+Actions como fronteiras finas; Trusted Persistence; Secure Administrative Read;
+autorização capability-based; autoridade humana separada do executor técnico;
+Global Competency Concepts com versionamento imutável; Tenant Mapping; snapshots e
+lineage; Development Templates híbridos; integridade tenant-owned por FKs
+compostas; RLS e defesa em profundidade.
 
-| Slice | Escopo | Status | Commit |
-| --- | --- | --- | --- |
-| Slice 1 | Organization, People e Competencies | ✅ Concluído | `7271f49117a2ac376614b95d765f8cc3d4874479` |
-| Slice 2 | Recruitment | ✅ Concluído | `9c6695819850ddb69237e9bec7688d0a8864b908` |
-| Slice 3A | Operational Development Integrity | ✅ Concluído | `fe3d8914ce4da54e85f94794b367582971403ffa` |
-| Slice 3B | Global Concepts and Tenant Mappings | ✅ Concluído e versionado | `f4a1a5d94afa0ef76132f18ac6b1ade5636ffda1` |
-| Slice 3C | Deterministic Template Application and Snapshots | ✅ Concluído | `5c2675b` |
+Detalhe em [`../ARCHITECTURE.md`](../ARCHITECTURE.md) e [`adr/`](./adr/).
 
-## 6. Próxima etapa
+## Princípios arquiteturais invioláveis
 
-> **Direção corrente (2026-09-17).** O
-> [D-P0 — Development Privacy, Actors and Lifecycle Contract](./Execution/D-P0-DEVELOPMENT-PRIVACY-ACTORS-LIFECYCLE-CONTRACT.md)
-> está aceito e removeu os blockers decisórios. Development está
-> `READY_FOR_TRUSTED_BOUNDARY_IMPLEMENTATION`. A próxima entrega é **D-DB1 —
-> Development Trusted Read/Mutation Boundary**: reads privadas por relação,
-> mutations operacionais trusted, enforcement das transições, review persistence,
-> audit privado e testes de segurança. D-DB1 não inclui UI, harness ou hosted
-> run. O contrato hosted e sua numeração permanecem não congelados.
-
-### Histórico preservado
-
-> **Reconciliação 2026-08-27 (autoridade = `main`/HEAD `ff2ba6db`).** A **Slice
-> 0115-B2-C** está **CLOSED / PASS em todas as fases**: DB boundary `0119` validada
-> no Canonical Review (`ACTIVE / VALIDATED / PASS`) + app integration Phases 2–5
-> (read boundary → presenter/ViewModel → People UX), com dívida residual explícita
-> (app smoke remoto NOT DEMONSTRATED, gated — ver `NEXT_STEPS.md`). **Não há próxima
-> fase da B2-C.** A trilha **Assessment Results 0115–0119** está concluída e a
-> **B2-B2-B = CLOSED / PASS**. O texto abaixo (Phase 9 — Multiuser UI/UX e trilha
-> Seniority) é **contexto histórico** de programas anteriores/adiados e não a
-> prioridade atual.
-
-A execução vigente é a Phase 9 — Multiuser UI/UX. As Phases 1–8 estão
-concluídas: a fundação persistente, Trusted Persistence, delivery/aceite,
-preferência de tenant e o cutover de autorização já estão incorporados. A Phase
-8 foi encerrada pela caracterização 8A e pelas migrations 0077/0078.
-
-A PR 9A foi concluída no merge `b4aae86`, a PR 9B no merge `3070855` e a PR 9C
-no merge `4d7b037`. A PR 9D foi dividida em dois recortes. A PR 9D1 foi concluída
-no merge `02168b9`: migration 0079 e RPC `get_people_access_state_v1`, uma projeção
-`SECURITY DEFINER` mínima para owner/admin ativo. A tabela de invitations segue
-sem SELECT autenticado, sem policy de leitura e sem `service_role` no caminho
-humano. A PR 9D2 foi concluída no merge `3f13bbc`: a People UI apresenta o estado
-de acesso e usa as Actions existentes para resend/revoke. A discovery da PR 9E
-confirmou que suas mutações exigem `membership_id`, que a projeção v1 não expõe.
-O recorte 9E1 foi concluído no merge `1e4ccbb`: migration 0080 e RPC v2 aditiva,
-sem ampliar acesso às tabelas protegidas. O recorte ativo é a PR 9E, implementada
-e posteriormente concluído no merge `f10d116`: role change, membership
-deactivation e ownership transfer na People UI por Server Actions e RPCs trusted.
-
-O recorte ativo é a PR 10E — Current Company + Invitation Read Integration. O smoke
-autenticado comprovou que onboarding e resolução de tenant dependiam de SELECT
-direto em `company_members`, indisponível por desenho para `authenticated`. A
-migration 0081 introduz `get_current_user_active_tenants_v1()`, uma projeção
-`SECURITY DEFINER` sem parâmetros que retorna apenas os tenants ativos de
-`auth.uid()`; a PR 10A foi incorporada no merge `9d2a7ec`. A PR 10B foi mergeada
-em `fb4ae6f1c6c71337c5d28be77c88e01bae561fe8`. A PR 10C migra
-`/app/people/new` para contexto e queries server-side, reutiliza o fluxo canônico
-de Employee e remove o `companies.service.ts` sem consumers. Não há mudança de
-DB, RLS ou grants. Após seu merge `419c89a`, o smoke encontrou SELECTs diretos
-bloqueados em Company/Person. A Company já é projetada pela 0081 e o Person ID
-por `current_person_id(company_id)`, mas a emissão inicial não possuía uma
-boundary para o e-mail persistido. A migration 0082 adiciona
-`get_tenant_person_invitation_contact_v1(company_id, person_id)`, restrita a
-owner/admin ativo, sem grant ou policy de tabela. A integração fica para a PR
-10E consome Company pela projeção 0081, Person ID por `current_person_id` e o
-contato da emissão pela 0082; resend reutiliza o `destinationEmail` retornado
-pela operação trusted existente. A PR 10D foi incorporada no merge `06622e2` e
-não resta SELECT direto crítico de Company/People nesses consumers. O progresso
-funcional permanece em 98% até o smoke autenticado completo passar, retomando
-com refresh de `/app` após a criação da primeira Company.
-
-O smoke chegou ao Organization summary e comprovou novo gap sistêmico: as
-policies tenant-aware permanecem, mas `authenticated` não possui SELECT direto
-em Organization/People. A PR 10F1 adiciona pela migration 0083 somente
-`get_tenant_organization_directory_v1(company_id)` e
-`get_tenant_people_directory_v1(company_id)`. Ambas derivam o ator de
-`auth.uid()`, exigem membership ativa e não alteram grants de tabela, RLS ou
-policies. Development, Recruitment, Competencies e Activity permanecem para a
-PR 10F2; o MVP continua em 98%.
-
-A PR 10F1 foi incorporada no merge `003e0b8`. A PR 10F2 adiciona pela migration
-0084 quatro boundaries estreitas para Development, inputs de Competencies,
-Recruitment e Activity. A cadeia 0001–0084 foi reexecutada integralmente no banco
-local e passa em 28 arquivos/732 testes. Nenhum grant de tabela, RLS ou policy foi
-aberto. A PR 10F2 foi incorporada no merge `bebfa2f`. A PR 10G integra as seis
-projections 0083/0084 no grafo de `/app` por um read model server-only, sem SELECT
-direto inevitável nas tabelas protegidas, sem grant/RLS/policy adicional e com
-validação fail-closed dos outputs. O próximo gate é retomar o smoke autenticado em
-`/app`; o MVP permanece em 98%.
-
-Na baseline `9b5bf9c`, a PR B adiciona pela migration 0085 oito read boundaries
-especializadas de gestão de People e Organization. Os contratos preservam
-membership ativa, não expõem `user_id` ou `company_id`, não abrem SELECT de
-tabela e ainda não possuem integração UI. Writes e Human Review permanecem
-suspensos; o MVP continua em 98%.
-
-A 0085 foi corrigida antes de publicação: a timeline especializada exclui Auth
-`actor_id`, metadata bruta e eventos `restricted`. A 0084 publicada conserva seu
-contrato legado e requer correção forward-only coordenada. Também permanece
-pendente sign-off de privacidade sobre exposição do perfil People completo a
-employee/manager antes de produção.
-
-A PR C integra as oito boundaries 0085 nas rotas MVP de People e Organization.
-A migration forward-only 0086 preserva a 0085 e alinha o selector externo
-`person` aos eventos históricos e correntes persistidos como `employee`, inclusive
-quando a pessoa é o sujeito do evento. A saída permanece normalizada como
-`person`, sem reescrever histórico. Writes continuam pendentes, o hardening da
-0084 e o sign-off de privacidade permanecem follow-ups, Human Review segue
-suspenso e o MVP continua em 98%.
-
-Resumo de encerramento das fases anteriores:
-
-- Phases 1/2: migrations 0070–0072 e invariantes persistentes;
-- Phase 3: migration 0074, sete RPCs confiáveis e `ACTOR != EXECUTOR`;
-- Phase 4: **Complete by Prior Delivery**;
-- Phase 5: emissão, reenvio, revogação, token lifecycle e delivery;
-- Phase 6: aceite, integração Auth e continuidade login/signup;
-- Phase 7: resolver determinístico, preferência persistida e Action de seleção;
-- Phase 8: caracterização de autorização e hardening 0077/0078.
-
-As fronteiras vigentes continuam `SECURITY DEFINER`, `auth.uid()` como ator
-humano, tenant revalidado no banco e nenhuma operação humana baseada em
-`service_role`.
-
-Na baseline `b7ad3c5`, a PR E adiciona pela migration 0087 sete read boundaries
-especializadas para catálogo de Competencies, plans/goals/actions de Development
-e templates/goals/actions. A matriz histórica de leitura é preservada para todas
-as memberships ativas, `created_by`/Auth IDs são excluídos e nenhum SELECT de
-tabela é reaberto. A integração UI e todos os writes permanecem pendentes;
-privacy gate de People, hardening 0084 e Human Review seguem suspensos. MVP 98%.
-
-**PRIVACY SIGN-OFF REQUIRED BEFORE PRODUCTION — DEVELOPMENT:** a policy
-histórica e a 0087 permitem que qualquer membership ativa, inclusive employee,
-leia plans, goals e actions de outras pessoas do tenant. A 0087 não amplia a
-matriz existente, mas essa exposição precisa de confirmação explícita de Produto.
-
-Na baseline `cc926be`, a PD-020 formaliza privacy by default para conversas de
-Feedback. A migration 0088 adiciona sete boundaries especializadas para catálogo,
-estrutura, cycle management e evaluator workspace de Assessment, além de
-directory/detail/messages de Feedback. Policies históricas mais permissivas não
-são promovidas ao novo contrato. A camada DB fica pronta, mas páginas continuam
-sem integração, writes permanecem pendentes, Human Review suspenso e MVP em 98%.
-
-Na baseline `035ef5f`, a PR F integra as sete boundaries 0087 nas rotas MVP de
-Competencies e Development por adapters server-only, validação estrita e
-seletores tenant-scoped, sem fallback para leitura direta. Os writes continuam
-`WRITE_BOUNDARY_MISSING`; os privacy gates de People e Development e o hardening
-da 0084 permanecem pendentes. Human Review segue suspenso e o MVP permanece em
-98%.
-
-Na baseline `8ea0404`, a PR H integra as sete boundaries 0088 nas sete rotas
-navegáveis de Assessments e Feedback. Adapters server-only validam respostas com
-Zod strict, preservam o workspace exclusivo do evaluator, compõem a leitura
-administrativa auditada quando aplicável e tratam a boundary DB como autoridade
-de PD-020. Não há fallback para SELECT direto nem erro PostgREST exposto nas
-rotas; nomes de participantes/autores vêm das projeções minimizadas. Writes de
-Assessment e Feedback continuam `WRITE_BOUNDARY_MISSING`; privacy gates de
-People e Development, participant email no cycle sob o gate de People,
-hardening 0084 e Human Review permanecem pendentes. O MVP continua em 98%.
-
-Na baseline `7854120`, a auditoria de mutations confirmou como P0 o CRUD core de
-People, Departments, Teams e Positions. A PR I1 materializa pela migration 0089
-doze boundaries de create/update/archive para esses quatro roots tenant-owned.
-Todas derivam o ator de `auth.uid()`, exigem membership ativa `owner/admin/hr`,
-validam referências no tenant, persistem Activity atomicamente e concedem apenas
-`EXECUTE` a `authenticated`. Creates possuem chave idempotente; archives são
-soft e repetíveis. Encerrar uma Person desativa atomicamente sua membership ativa
-quando as proteções de ownership da PD-019 permitem, sem desvincular identidade ou
-criar Auth access. Grants DML continuam fechados e não há `service_role` no fluxo
-humano. A aplicação ainda usa repositories legados e será integrada em PR
-separada; writes dos demais domínios, privacy gates, hardening 0084 e Human Review
-permanecem pendentes. O MVP continua em 98%.
-
-Na baseline `e71abce`, a PR I2 integra essa camada à aplicação: as doze Server
-Actions de People, Departments, Teams e Positions consomem exclusivamente as RPCs
-0089 por um adapter server-only (`people-organization-mutations`), com `companyId`
-derivado do contexto canônico. Não há mais DML direto protegido nos write paths
-P0, nem Activity duplicada, nem browser authority; erros estáveis da 0089 viram
-mensagens públicas seguras. `tsc`, lint e 996 testes web passam. O smoke
-autenticado, os writes P1/P2 e os gates de privacidade/0084 permanecem pendentes;
-não há CRUD-safe global e o MVP segue em 98%.
-
-A partir de `e71abce`, o programa MVP Closure prosseguiu com os slices a seguir,
-todos incorporados a `main` e aqui reconciliados factualmente (baseline atual
-`c5a5451`):
-
-- **PR J1 — People historical safe reads** (migrations 0090/0091; commits
-  `49e9ddc`, `fe1e604`, `7b6a85a`). Boundaries `SECURITY DEFINER` aditivas
-  (`..._v2`) que retornam todos os status de ciclo de vida, incluindo
-  `terminated`, para as visões de gestão históricas (Desligados) e o detalhe de
-  competências do perfil. A 0091 expõe exatamente as colunas do perfil de
-  employee-competency que a directory boundary não trazia. O perfil histórico de
-  People passa a consumir apenas essas boundaries, sem read direto protegido
-  (42501). Mesma postura de segurança da 0085: ator de `auth.uid()`, gate de
-  membership ativa, sem grant de tabela/RLS/policy.
-- **People Analytics safe reads** (migration 0092; commit `96f9ddf`). O dashboard
-  de Analytics passa a obter as vagas abertas e a contagem de aprovações
-  pendentes por boundaries membership-gated `SECURITY DEFINER`, eliminando os
-  reads diretos protegidos que derrubavam a página inteira dentro do `Promise.all`
-  all-or-nothing. Nenhum acesso direto a tabela é aberto.
-- **Recruitment trusted mutation program** (migrations 0093–0098; commits
-  `2ac18b8`, `cd65f40`, `9c3effd`, `2dd9794`, `c5a5451`). O ciclo navegável de
-  vaga passa a operar por trusted boundaries atômicas, com o Approval Framework
-  event-sourced como autoridade e sem DML direto protegido nos write paths:
-  create (0093) persiste a vaga como rascunho; submit (0094) transiciona
-  rascunho → aguardando aprovação persistindo o aggregate de aprovação; a 0095
-  habilita a timeline de `job_opening`; approve (0096) decide a aprovação com
-  `expected_version` e transiciona para aprovada; open (0097) transiciona
-  aprovada → aberta; reject (0098) decide a rejeição e devolve a vaga a rascunho
-  preservando o histórico da approval request. Fluxo positivo validado por Human
-  Review: Nova vaga → Rascunho → Enviar para aprovação → Aguardando aprovação →
-  Aprovar → Aprovada → Abrir → Aberta; e caminho negativo: Aguardando aprovação →
-  Rejeitar/Voltar para rascunho → Rascunho. A timeline consolida Vaga criada,
-  Vaga enviada para aprovação, Vaga aprovada, Vaga aberta e Vaga rejeitada. O
-  `StatCard` "Vagas abertas" de Recruitment deriva da source of truth segura e
-  Analytics reflete `status='open'` automaticamente pela 0092.
-
-Permanecem factualmente em aberto (sem prioridade atribuída aqui, cada um exige
-Discovery própria): o smoke autenticado core que retoma o Human Review global; os
-writes P1 restantes (Competencies/assignments, Import, Development authoring,
-Assessment admin e Feedback — este dependente de congelar a matriz de transições
-PD-020); as transições de Recruitment ainda no caminho legado (`cancelled`,
-`closed`, `paused`, `filled`), que continuam roteadas pelo `updateStatus` genérico
-e não por trusted boundary; e os gates pendentes de privacidade (People/Development)
-e o hardening forward-only da 0084. O MVP permanece na baseline de 98%.
-
-Na baseline `d5db5b3`, o **Competency Catalog Core Mutation Boundary** (migration
-0099) fecha a última escrita P0: create/update/archive de `competencies` passam a
-operar por trusted boundaries `SECURITY DEFINER` (gate `owner/admin/hr`, ator de
-`auth.uid()`, tenant-scoped, sem grant de tabela, Activity atômica, create
-idempotente por `intentKey` derivada server-side, archive soft via `active=false`,
-assignments intactos), removendo o DML direto protegido do catálogo. Human Review
-dedicado PASS; pgTAP 43/43 e full DB 1365/1365.
-
-Com People/Organization (0089), Competency Catalog (0099) e o ciclo de Recruitment
-(0093–0098) todos por trusted boundaries, o **AUTHENTICATED CORE SMOKE = PASS**:
-validados na UI Auth/Tenant, Departments, Positions/Cargos, People, Competency
-Catalog, Analytics e Recruitment (1 vaga OPEN + 1 DRAFT, indicador de vagas
-abertas correto, list/detail operando; os Human Reviews dedicados das transições
-de Recruitment permanecem válidos), sem `42501`/permission-denied/erro de servidor
-nas rotas core. **O Human Review core deixa de estar suspenso.** O percentual do
-MVP não é alterado aqui: sua atualização depende de decisão explícita do Product
-Owner.
-
-Reconciliação de backlog pós-smoke (registro consolidado; nenhum item iniciado,
-prioridade e governança detalhadas na Discovery). **Career/Organization:**
-senioridade (Jr/Pleno/Sênior) inexistente no schema e distinta de nível
-hierárquico (`positions.hierarchical_level` já existe); identidade/unicidade de
-Cargo a revisar (homônimos coexistem); Cargo já tem `department_id`, mas a
-listagem depende de Descrição para identificar; People precisa explicitar
-Departamento na lotação e filtrar Cargo por Departamento; papel/discoverability de
-Team a revisar (o CRUD de Team existe). **Competencies:** `position_competencies`
-já possui `expected_level`/`weight`/`required`/`type`, enquanto o catálogo global
-`competencies` ainda duplica `expected_level`/`weight` — a arquitetura precisa
-reconciliar essa duplicidade e considerar Cargo+Senioridade ↔ Competency; as
-escalas 1–5 de proficiência e de peso/importância precisam de semântica explícita
-e distinta; o gap deve comparar o esperado do Cargo/Senioridade com o nível
-demonstrado da pessoa. **Recruitment:** draft persistence/autosave/proteção de
-navegação; headcount como source-of-truth (hoje manual); replacement; quadro
-atual/ideal/gap; lifecycle remanescente (`cancelled/closed/paused/filled`);
-rejection reason UI (hoje comentário fixo); notifications; stat cards incompletos
-(Pendentes/Em andamento/Contratações); candidates/hiring e compensation/cost
-mantidos pós-MVP conforme a Discovery. **Activity UX:** a timeline cresce
-indefinidamente e empurra o conteúdo principal (visto em Cargo); avaliar padrão
-compartilhado (últimas ~10, histórico completo, busca/filtros, paginação/load-more)
-sem truncar histórico no banco. **P1 security/mutation program:** competency
-assignments, Import, Development authoring, Assessment admin e Feedback writes
-permanecem pendentes — Feedback bloqueado até a decisão de produto da matriz de
-transições de escrita (PD-020); privacy sign-offs (People/Development) e o
-hardening forward-only da 0084 seguem abertos.
-
-Governança da taxonomia de carreira: **PD-021 — Career / Seniority + Position
-Taxonomy (Approved)** e **ADR-0017 — Position-Seniority Profile as Career
-Assignment Boundary (Accepted)** estão versionadas. Elas fixam os eixos ortogonais
-(Departamento/Cargo/Senioridade/Nível hierárquico), o `position_seniority_profiles`
-como âncora de aplicabilidade Cargo × Senioridade (base profile com senioridade
-NULL para cargos sem senioridade), a lotação de People e a matriz de competências
-referenciando o profile, o Departamento derivado da Position, a relocação
-forward-only de `expected_level`/`weight` para a matriz, as escalas 1–5 de
-proficiência e de peso, e o gate de auditoria de homônimos antes de qualquer
-unicidade de Cargo. O Implementation Plan da taxonomia está versionado em
-`docs/Execution/CAREER-SENIORITY-POSITION-TAXONOMY-IMPLEMENTATION-PLAN.md`
-(Approved), com o rollout additive → backfill → compatibility → cutover →
-deprecate e o slice map 1A→5 + gate de unicidade + follow-ups.
-
-**Estado real (reconciliado 2026-08-27):** o rollout **JÁ FOI EXECUTADO até 3B** e
-está em `main` — **Slice 1A** (Seniority Catalog Foundation, `0100`), **1B**
-(read boundary `0101` + Admin UI `/app/company/seniority`), **2A**
-(Position-Seniority Profiles, `0102`), **2B** (Cargo↔Senioridade config UI +
-`0106`), **3A/3B** (People profile assignment + lotação UX, `0103–0105`) — todas
-**CLOSED / PASS**. **Não reimplementar 1A–3B.** O próximo passo executável é o
-**Slice 4A — Competency Matrix Relocation** (`position_seniority_competencies`),
-ainda **não implementado** e com **alto risco de dados/backfill** — novo gate que
-exige recovery + design/re-read do plano + autorização explícita antes de qualquer
-migration. O **Position Uniqueness audit gate** permanece um gate separado de
-decisão humana/produto (plano §9).
-
-## 7. Arquitetura consolidada
-
-- Clean Architecture e responsabilidades por camada;
-- Domain-Driven Design;
-- Composition Roots e Server Factories;
-- Server Actions como fronteiras finas;
-- Trusted Persistence;
-- Secure Administrative Read;
-- autorização capability-based;
-- autoridade humana separada do executor técnico;
-- Global Competency Concepts e versionamento imutável;
-- Tenant Mapping;
-- snapshots e lineage;
-- Development Templates híbridos;
-- integridade tenant-owned por FKs compostas;
-- RLS e defesa em profundidade.
-
-Detalhes permanecem em [Arquitetura](../ARCHITECTURE.md),
-[ADRs](./adr/README.md) e [padrões](./Architecture/patterns/).
-
-## 8. Princípios arquiteturais invioláveis
-
-Alteração destes princípios exige nova Product Decision ou ADR, conforme a
-natureza da mudança:
-
-- snapshots são imutáveis;
-- histórico nunca é reescrito;
+- snapshots são imutáveis e o histórico nunca é reescrito;
 - IA apenas sugere; confirmação e decisão pertencem ao humano;
-- operações privilegiadas são server-only;
-- menor privilégio e fail-closed são obrigatórios;
+- operações privilegiadas são server-only, de menor privilégio e fail-closed;
 - ator humano e executor técnico são identidades distintas;
 - operações privilegiadas e decisões humanas são auditáveis;
 - resolução e aplicação são determinísticas;
@@ -454,77 +106,9 @@ natureza da mudança:
 - nenhum identificador tenant-owned atravessa empresas;
 - documentação e código divergentes interrompem a implementação.
 
-## 9. Histórico resumido
+## Referências oficiais
 
-Este resumo oferece orientação; o registro oficial de entregas é o
-[CHANGELOG](./CHANGELOG.md).
-
-| Entrega | Descrição | Commit ou referência |
-| --- | --- | --- |
-| Fundação inicial | Auth, empresas e primeiros domínios | Histórico anterior às PRs numeradas |
-| PR #6 e #10–#14 | Workspaces e Engineering Foundation | [CHANGELOG](./CHANGELOG.md) |
-| PRs #15–#45 | Organization Planning | [CHANGELOG](./CHANGELOG.md) |
-| PRs #46–#57 | KPI Platform | [CHANGELOG](./CHANGELOG.md) |
-| PRs #59–#76 | Executive Decision Center e Financeiro | [CHANGELOG](./CHANGELOG.md) |
-| Assessment Hardening | PD-016 e ADR-0010 | `597ec0b` |
-| Notification Hardening | PD-017 e ADR-0011 | `b9d51cd` |
-| ADR-0012 Slice 1 | Núcleo tenant-owned | `7271f49` |
-| ADR-0012 Slice 2 | Recruitment | `9c66958` |
-| Executive Composition Root | Composição server do Executive Home | `bd96398` |
-| ADR-0012 Slice 3A | Development operacional | `fe3d891` |
-| Governança da PR 3B | PD-018, plano e ADR-0013 | `730dd29`, `11063e0`, `9a256fc` |
-| ADR-0012 Slice 3B | Global Concepts e Tenant Mappings | `f4a1a5d` |
-| PR 3C — Fase 3 | Trusted Persistence | `fe08394` |
-| PR 3C — Fase 4 | Application Layer e composição | `5c1d12f` |
-| PR 3C — Fase 5 | Contrato retrocompatível | `08bd7cf` |
-| PR 3C — Fase 6 | Actions e experiência mínima | `ca2f173` |
-| PR 3C — Fase 7 | Testes, observabilidade e cutover V2 | `95625d4` |
-| PR 3C — encerramento | Validação final e encerramento histórico | `5c2675b` |
-| MVP-PR1 — Phase 1 | Persistence Foundation | `48d71fa` |
-| MVP-PR1 — Phase 2 | Persistent Invariants | `dbf592c` |
-| Extension schema hardening | Migration 0073 e ambiente canônico alinhado | `f77b229` |
-| MVP-PR1 — Phase 3 | Trusted Persistence / Actor != Executor | `3559a9b` |
-
-## 10. Como iniciar uma nova conversa
-
-1. Leia o [MASTER_PROMPT](./Prompts/MASTER_PROMPT.md) e este PROJECT_STATE.
-2. Confirme o estado do worktree, ROADMAP e NEXT_STEPS.
-3. Leia somente as Product Decisions, ADRs e planos relacionados à entrega atual.
-4. Nunca use conversas anteriores como especificação.
-5. Compare documentação e código e interrompa diante de divergência.
-6. Somente proponha implementação quando prioridade, dependências e autorização
-   estiverem explícitas nos documentos versionados.
-
-## 11. Referências oficiais
-
-- [MASTER_PROMPT](./Prompts/MASTER_PROMPT.md)
-- [Product Decisions](./Product/PRODUCT_DECISIONS.md)
-- [ADRs](./adr/README.md)
-- [Implementation Plan do MVP-PR1](./Execution/MVP-PR1-TENANT-MULTIUSER-ACTIVATION-IMPLEMENTATION-PLAN.md)
-- [ROADMAP](./ROADMAP.md)
-- [NEXT_STEPS](./NEXT_STEPS.md)
-- [MVP Plan](./MVP_PLAN.md)
-- [EPICS](./EPICS.md)
-- [CHANGELOG](./CHANGELOG.md)
-- [Product Vision](./Product/PRODUCT_VISION.md)
-
-## Regra de Ouro
-
-Este documento é uma fotografia oficial do estado do projeto.
-
-Ele nunca cria decisões.
-
-Ele nunca substitui Product Decisions, ADRs ou Implementation Plans.
-
-Quando houver divergência entre documentos, prevalece obrigatoriamente a seguinte ordem:
-
-1. Product Decisions
-2. ADRs
-3. Implementation Plans
-4. PROJECT_STATE.md
-5. Código
-6. Conversas
-
-Toda divergência interrompe imediatamente a implementação até sua reconciliação.
-
-Este documento existe para facilitar a continuidade do desenvolvimento, nunca para substituir a documentação normativa.
+[Product Vision](./Product/PRODUCT_VISION.md) · [ROADMAP](./ROADMAP.md) ·
+[MVP_PLAN](./MVP_PLAN.md) · [EPICS](./EPICS.md) · [CHANGELOG](./CHANGELOG.md) ·
+[ADRs](./adr/README.md) · [Environment Governance](./Execution/ENVIRONMENT-GOVERNANCE.md) ·
+[Environment Identity](./Execution/ENVIRONMENT-IDENTITY.md)

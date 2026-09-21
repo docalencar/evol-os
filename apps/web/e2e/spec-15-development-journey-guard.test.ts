@@ -1,7 +1,7 @@
 /** Static guards for the E2E-6 Development hosted harness. No Review access. */
 
 import assert from "node:assert/strict"
-import { readFileSync } from "node:fs"
+import { readdirSync, readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import test from "node:test"
 
@@ -218,6 +218,62 @@ test("a state change is asserted on the surface that actually renders it", () =>
   // ...and still by an independent durable readback afterwards.
   assert.match(spec, /from\("development_template_versions"\)/)
   assert.match(spec, /toBe\("published"\)/)
+})
+
+test("a test's first actor logs in; sign-out is only for switching mid-test", () => {
+  // `signOutThroughUi` ends a LIVE session through the real UI — that sign-out is
+  // what proves the authorization boundary, so it is never softened into "log in
+  // if not already signed in". It therefore has a precondition: a session exists.
+  //
+  // `mode: "serial"` shares ordering and failure propagation between tests; it
+  // does NOT share the `page` fixture. Run 260921172652-e6b59e opened block B
+  // with `switchTo` and waited 15s for "Sair" on a fresh `about:blank` page.
+  //
+  // Checked as a property across every spec that switches actors, so this cannot
+  // be reintroduced here or anywhere else, and phrased against the switch helper
+  // rather than against the literal "Sair" selector.
+  const LOGIN = /^(enterAs|loginThroughUi|enterTenantB)$/
+  const SWITCH = /^switchTo/
+
+  const specsDir = resolve(root, "specs")
+  for (const file of readdirSync(specsDir).filter((name) => name.endsWith(".spec.ts"))) {
+    const source = code(readFileSync(resolve(specsDir, file), "utf8"))
+    if (!SWITCH.test(source.match(/async function (\w+)/g)?.join(" ") ?? "")) {
+      if (!/switchTo/.test(source)) continue
+    }
+
+    // Local helpers, so the search can see through one call: spec 13 establishes
+    // its first actor inside `discoverRunResourceId`, which is correct. A guard
+    // that only scanned the test body would call that a defect — it did.
+    const helpers = new Map<string, string>()
+    for (const match of source.matchAll(/async function (\w+)\([\s\S]*?\n\}/g)) {
+      helpers.set(match[1], match[0])
+    }
+
+    /** The first actor operation reachable from a body, following local calls. */
+    const firstActorOp = (body: string, seen = new Set<string>()): string | null => {
+      for (const call of body.matchAll(/\b(\w+)\s*\(/g)) {
+        const name = call[1]
+        if (LOGIN.test(name) || SWITCH.test(name)) return name
+        if (helpers.has(name) && !seen.has(name)) {
+          seen.add(name)
+          const nested = firstActorOp(helpers.get(name)!.replace(/^async function \w+/, ""), seen)
+          if (nested) return nested
+        }
+      }
+      return null
+    }
+
+    for (const body of source.split(/\n\s*test\(/).slice(1)) {
+      const first = firstActorOp(body.slice(0, body.indexOf("\n  })")))
+      if (!first) continue
+      assert.match(
+        first,
+        LOGIN,
+        `${file}: a test must establish its first actor by logging in, not by switching`,
+      )
+    }
+  }
 })
 
 test("the spec targets Review only, through the harness identity gate", () => {

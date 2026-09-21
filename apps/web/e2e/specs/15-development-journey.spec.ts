@@ -74,6 +74,26 @@ const NO_ORIGIN_LABEL = "Sem template de origem"
 const ACTION_SAVED = "Ação atualizada com sucesso."
 const REVIEW_SAVED = "Revisão registrada com sucesso."
 const PLAN_SAVED = "Plano atualizado com sucesso."
+const VERSION_PUBLISHED = "Versão publicada com sucesso."
+
+/**
+ * Published state has two different browser-visible representations, and the
+ * word "Publicado" is only ever ONE of them.
+ *
+ * On the templates INDEX it is the status badge, from the table's own
+ * presentation map (`draft → Rascunho`, `published → Publicado`). That is "the
+ * container reads published".
+ *
+ * On the template DETAIL page the word never appears at all: publication is
+ * expressed by the authoring controls being withdrawn — "Publicar versão" is
+ * replaced by "Tornar obsoleto" — and by the immutability notice. That is "the
+ * version becomes immutable".
+ *
+ * Run 260921170444-21443c asserted the index's vocabulary against the detail
+ * page. Publication had in fact succeeded.
+ */
+const PUBLISHED_STATUS = "Publicado"
+const VERSION_IMMUTABLE = "Esta versão já foi publicada e não aceita alterações."
 
 async function confirm(page: Page, message: string): Promise<void> {
   await expect(page.getByText(message, { exact: true })).toBeVisible({ timeout: 30_000 })
@@ -329,8 +349,25 @@ test.describe("development journey: authoring, application, execution, reviews, 
     }
 
     // 4. publish. The version becomes immutable and the container reads published.
+    //
+    // Each half of that clause is asserted on the surface that actually renders
+    // it, through the product's own semantics rather than a borrowed label.
     await page.getByRole("button", { name: "Publicar versão" }).click()
-    await expect(page.getByText("Publicado")).toBeVisible({ timeout: 30_000 })
+    await confirm(page, VERSION_PUBLISHED)
+
+    // Immutable: the refreshed server render withdraws the authoring controls.
+    // The absence of "Publicar versão" is asserted as well as the presence of
+    // its replacement, because a page still offering to publish would mean the
+    // refresh never landed — and that is the failure this must not silently pass.
+    await expect(page.getByText(VERSION_IMMUTABLE)).toBeVisible({ timeout: 30_000 })
+    await expect(page.getByRole("button", { name: "Tornar obsoleto" })).toBeVisible()
+    await expect(page.getByRole("button", { name: "Publicar versão" })).toHaveCount(0)
+
+    // The container reads published — symmetric with the draft assertion above,
+    // on the surface whose vocabulary that is.
+    await templatesHome(page)
+    await expect(page.getByRole("row", { name: new RegExp(name) })).toContainText(PUBLISHED_STATUS)
+    await page.goto(`/app/development/templates/${templateId}`)
 
     const versions = await adminClient()
       .from("development_template_versions")

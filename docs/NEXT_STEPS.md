@@ -12,9 +12,22 @@ PATH  = GOVERNED
 
 ## GOAL
 
-Fechar o `SELECT` direto de `authenticated` sobre o ledger de aplicação de
-template de Development, preservando integralmente o acesso purpose-bound já
-existente.
+Fechar o `SELECT` direto de `authenticated` sobre **as quatro relações** do ledger
+de aplicação de template de Development — `applications`, `attempts`, `snapshots`
+e `lineage` — preservando integralmente o acesso purpose-bound já existente.
+
+### Intenção congelada
+
+Estas decisões estão **fechadas**; não reabrir durante a implementação:
+
+- o revoke cobre **as quatro relações**, não apenas `lineage`/`snapshots`;
+- as policies de `SELECT` existentes **permanecem**, como defesa em profundidade,
+  mesmo ficando inalcançáveis após o revoke;
+- RLS permanece habilitada;
+- o acesso trusted purpose-bound permanece;
+- o comportamento de `0133` permanece;
+- o contrato de retenção de quatro relações permanece;
+- nenhuma mudança de UI ou de produto.
 
 ## WHY
 
@@ -30,7 +43,8 @@ entrega a origem histórica sem exigir privilégio de tabela do chamador.
 
 ## IN_SCOPE
 
-- migration nova fechando o `SELECT` direto de `authenticated` no ledger;
+- migration nova revogando `SELECT` de `authenticated` nas quatro relações do
+  ledger, sem tocar em policies nem em RLS;
 - suíte pgTAP dedicada provando fechamento e continuidade;
 - re-ancoragem das duas asserções `STALE_TEST` que hoje codificam a exposição;
 - gate local em PostgreSQL real;
@@ -40,6 +54,7 @@ entrega a origem histórica sem exigir privilégio de tabela do chamador.
 
 - qualquer mudança de UI, produto ou comportamento de aplicação;
 - alteração de `0133`, do tooling D-R2 ou do contrato de retenção;
+- remoção ou alteração das policies de `SELECT` e do estado de RLS;
 - promoção para Review (gate separado, autorização separada);
 - remoção do `getPublishedDevelopmentTemplateCatalog`;
 - origem histórica no detalhe do PDI;

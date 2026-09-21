@@ -78,9 +78,10 @@ individual para não criar uma segunda verdade.
 
 | Decisão | Dono |
 | --- | --- |
-| Abrangência do D-SEC1: fechar `SELECT` nas quatro relações do ledger ou apenas em lineage/snapshots | Produto/Engenharia — decidir antes de implementar |
-| Manter ou remover as policies de `SELECT` que ficam inalcançáveis após o revoke | Recomendação: manter como defesa em profundidade |
 | Momento de congelar o contrato hosted de Development e atribuir `E2E-6` | Depende de readiness, não de calendário |
+
+O escopo do D-SEC1 **não** é uma decisão aberta: está congelado no slice ativo
+([`NEXT_STEPS.md`](./NEXT_STEPS.md)).
 
 ## Arquitetura consolidada
 

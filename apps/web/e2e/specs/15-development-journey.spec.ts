@@ -125,6 +125,18 @@ async function enterAs(page: Page, role: SyntheticRole): Promise<void> {
   await expectAuthenticatedShell(page)
 }
 
+/**
+ * Change actor WITHIN a test: end the live session through the real UI, then log
+ * the next actor in. The sign-out is the point — it proves the authorization
+ * boundary rather than assuming it — so this is never softened into "log in if
+ * not already signed in".
+ *
+ * It therefore requires a live session, and a test's FIRST actor must use
+ * `enterAs`. `mode: "serial"` shares ordering and failure propagation between
+ * tests; it does NOT share the `page` fixture. Run 260921172652-e6b59e opened
+ * block B with `switchTo` and clicked for "Sair" on a fresh `about:blank` page
+ * that had never been authenticated. Specs 13 and 14 already follow this rule.
+ */
 async function switchTo(page: Page, role: SyntheticRole): Promise<void> {
   await signOutThroughUi(page)
   await enterAs(page, role)
@@ -382,7 +394,7 @@ test.describe("development journey: authoring, application, execution, reviews, 
   test("B. 5-10 a manager applies the published template to a direct report", async ({ page }) => {
     const before = await retentionCounts()
 
-    await switchTo(page, MANAGER)
+    await enterAs(page, MANAGER)
     // 5. reached independently of the authoring surface.
     await developmentHome(page)
 
@@ -441,7 +453,7 @@ test.describe("development journey: authoring, application, execution, reviews, 
   // ------------------------------------------------------------------ C
   test("C. 11-14 the PDI is visible to its participants and to nobody else", async ({ page }) => {
     // 11. the subject reads their own plan.
-    await switchTo(page, SUBJECT)
+    await enterAs(page, SUBJECT)
     await openPlan(page)
     await expect(page.getByText(developmentTemplateName(manifest().runId))).toBeVisible()
 
@@ -464,7 +476,7 @@ test.describe("development journey: authoring, application, execution, reviews, 
   test("D. 15-17 the subject executes, management skips, progress is server-derived", async ({
     page,
   }) => {
-    await switchTo(page, SUBJECT)
+    await enterAs(page, SUBJECT)
     await openPlan(page)
 
     // 15. start, then re-read durable state rather than trusting the button.
@@ -508,7 +520,7 @@ test.describe("development journey: authoring, application, execution, reviews, 
 
   // ------------------------------------------------------------------ E
   test("E. 18-22 reviews are append-only and survive one another", async ({ page }) => {
-    await switchTo(page, AUTHOR)
+    await enterAs(page, AUTHOR)
     await openPlan(page)
 
     await page.locator("#review-summary").fill(FIRST_REVIEW)
@@ -561,7 +573,7 @@ test.describe("development journey: authoring, application, execution, reviews, 
 
   // ------------------------------------------------------------------ F + G
   test("F/G. 23-29 completion is terminal, readable and irreversible", async ({ page }) => {
-    await switchTo(page, AUTHOR)
+    await enterAs(page, AUTHOR)
     await openPlan(page)
 
     // 23-24. prerequisites are server-derived; completion is a management act.

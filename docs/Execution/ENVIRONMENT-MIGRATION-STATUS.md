@@ -3,6 +3,30 @@
 > Operational snapshot, not deployment authorization. Update only from verified
 > read-only evidence or after an explicitly approved promotion.
 
+## Current authoritative update — D-R3
+
+Canonical Review `rwfvxvbzaosgcyfxdjpt` is validated through migration `0134` as
+of 2026-09-21. The canonical runner
+`scripts/review/promote-d-r3-ledger-closure.sh` used source commit
+`31d4ac91c1d417953eeaaf3b806644b1cbf09355` and payload SHA-256
+`2f55002c1e58843b7acc706b2e9cc5e72f37b888630fb847fff5a09c1d4363d3`.
+PRE proved contiguous history through `0133`, exactly `0134` pending, four
+authenticated SELECT grants, zero other client privileges, four retained SELECT
+policies, four hardened trusted boundaries, and intact `0133` and retention
+contracts. One authorized mutation completed. Independent read-only POST proved
+`MIGRATION_0134_COUNT=1`, no unexpected later migration, zero authenticated
+SELECT grants across the same four ledger relations, unchanged RLS/policy/trusted
+boundary/`0133`/retention fingerprints, and the exact four-relation retention
+output. Result: `PROMOTION_OUTCOME=APPLIED_AND_VERIFIED`, `D_R3_POST=PASS`.
+
+Local is also at `0134`: the D-SEC1 full database gate passed 73 files and 2652
+assertions, and the D-R3 tooling gate replayed the canonical payload and both
+catalog snapshots against real local PostgreSQL before Review was accessed.
+
+The older Local/Review rows below are retained as historical D-R2 evidence; where
+they say either environment ends at `0133`, this current D-R3 update supersedes
+them. Production and Legacy were not accessed.
+
 | Environment | Project ref | Purpose | Latest migration | Last verified | Status | Notes |
 | --- | --- | --- | ---: | --- | --- | --- |
 | Local | `evol-os` | Disposable development and local review | `0133` | 2026-09-18 | ALIGNED WITH COMMITTED MAIN | Committed `main` ends at `0133`; the official local gate `supabase db reset && supabase test db` replayed the full canonical history and passed the whole pgTAP suite (**Files=72, Tests=2631, Result: PASS**), including the dedicated `0133` suite and the retention gate. Committed and Local both end at `0133`; lag is zero. Evidence: D-R2 local tooling gate (`scripts/review/run-d-r2-local-db-gate.sh`), `D_R2_LOCAL_GATE=PASS`. |

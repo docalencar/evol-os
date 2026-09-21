@@ -4,12 +4,14 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
 import { failureResult, successResult } from "@/lib/actions"
+import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 import {
   applyDevelopmentTemplateV2,
   createConsoleDevelopmentTemplateApplicationObserver,
   developmentTemplateApplicationMessage,
 } from "../application"
+import { getDevelopmentPlanById } from "../queries/get-development-plan-by-id"
 
 const schema = z.object({
   applicationId: z.string().uuid(), idempotencyKey: z.string().uuid(), correlationId: z.string().uuid(),
@@ -32,6 +34,12 @@ export async function confirmDevelopmentTemplateApplicationAction(values: z.infe
       idempotencyKey: parsed.data.idempotencyKey,
     }
     if (result.status === "created" || result.status === "idempotent_retry") {
+      const { companyId } = await getCurrentCompanyContext()
+      const canonicalPlan = await getDevelopmentPlanById(companyId, result.planId)
+      if (!canonicalPlan) {
+        observer.record({ ...base, outcome: "persistence_failure", failureCode: "DEVELOPMENT_TEMPLATE_CANONICAL_READBACK_FAILED" })
+        return failureResult("O plano foi processado, mas a leitura canônica não pôde ser confirmada.")
+      }
       observer.record({ ...base, outcome: result.status === "created" ? "created" : "idempotent_replay" })
       revalidatePath("/app/development")
       revalidatePath(`/app/development/plans/${result.planId}`)
@@ -39,7 +47,7 @@ export async function confirmDevelopmentTemplateApplicationAction(values: z.infe
         result.status === "idempotent_retry"
           ? "Aplicação já concluída; o mesmo plano foi recuperado."
           : "Plano de desenvolvimento criado com sucesso.",
-        { planId: result.planId },
+        { planId: canonicalPlan.id },
       )
     }
 

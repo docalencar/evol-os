@@ -276,6 +276,34 @@ test("a test's first actor logs in; sign-out is only for switching mid-test", ()
   }
 })
 
+test("a control the product derives is asserted, never driven", () => {
+  // For a manager the application presentation returns `owners: [actor]` and
+  // `fixedOwnerId: actor.id`, and the dialog renders the owner select disabled
+  // with that value. Run 260921180706-8fac13 spent 15s trying to select it.
+  //
+  // Tied to the product's own derivation rather than to the literal id: if
+  // ownership ever becomes selectable for a manager, this guard fails and the
+  // question is reopened deliberately instead of a spec silently drifting.
+  const presentation = readFileSync(
+    resolve(root, "../src/features/development/templates/services/get-template-application-presentation.ts"),
+    "utf8",
+  )
+  const dialog = readFileSync(
+    resolve(root, "../src/features/development/templates/components/apply-development-template-dialog.tsx"),
+    "utf8",
+  )
+  assert.match(presentation, /fixedOwnerId: actor\.id/, "a manager's ownership must stay derived")
+  assert.match(dialog, /disabled=\{isPending \|\| Boolean\(fixedOwnerId\)\}/)
+
+  // So the spec must not drive it, and must prove it instead — visibly and then
+  // independently from canonical state.
+  assert.doesNotMatch(code(spec), /#ownerId"\)\.selectOption/)
+  assert.match(spec, /expect\(ownerSelect\)\.toBeDisabled\(\)/)
+  assert.match(spec, /expect\(ownerSelect\)\.toHaveValue\(personIdOf\(MANAGER\)\)/)
+  assert.match(spec, /select\("id, status, employee_id, owner_id/)
+  assert.match(spec, /expect\(plan\.owner_id\)\.toBe\(personIdOf\(MANAGER\)\)/)
+})
+
 test("the spec targets Review only, through the harness identity gate", () => {
   const active = code(spec + fixture)
   // No hard-coded environment. The gate lives in global setup and fails closed.

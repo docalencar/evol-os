@@ -343,6 +343,45 @@ async function openPlanGoal(page: Page): Promise<Locator> {
   return expandGoal(page, developmentCompetencyName(manifest().runId))
 }
 
+/**
+ * Record a review through the product's own form.
+ *
+ * `nextStep` is REQUIRED for a periodic review and optional for a final one. The
+ * product says so twice — in the submit button's disabled condition and again
+ * server-side, which refuses with "Próximo passo obrigatório para revisão
+ * periódica." — and the field's own label switches between "(obrigatório)" and
+ * "(opcional)" with the selected type.
+ *
+ * Run 260921193504-12231c filled only the summary for the second review and
+ * spent 15s waiting on a button the product was correctly keeping disabled.
+ *
+ * The type is chosen BEFORE the text is judged, because what `nextStep` requires
+ * depends on it.
+ */
+async function recordReview(
+  page: Page,
+  review: { summary: string; nextStep?: string; final?: boolean },
+): Promise<void> {
+  if (review.final) {
+    // Enabled only once every action is terminal and one was completed, so this
+    // also asserts that server-derived gate.
+    const finalType = page.getByRole("button", { name: "Final", exact: true })
+    await expect(finalType).toBeEnabled({ timeout: 30_000 })
+    await finalType.click()
+  }
+
+  await page.locator("#review-summary").fill(review.summary)
+  await page.locator("#review-next-step").fill(review.nextStep ?? "")
+
+  // The precondition is ASSERTED rather than waited out: a disabled submit means
+  // the form is incomplete by the product's rules, not that the app is slow, and
+  // saying so costs one assertion instead of a fifteen-second timeout.
+  const submit = page.getByRole("button", { name: "Registrar revisão" })
+  await expect(submit).toBeEnabled()
+  await submit.click()
+  await confirm(page, REVIEW_SAVED)
+}
+
 /** Canonical identity, never a rendered label. */
 function personIdOf(role: SyntheticRole): string {
   const id = actor(role).personId
@@ -683,10 +722,10 @@ test.describe("development journey: authoring, application, execution, reviews, 
     await enterAs(page, AUTHOR)
     await openPlan(page)
 
-    await page.locator("#review-summary").fill(FIRST_REVIEW)
-    await page.locator("#review-next-step").fill("Manter acompanhamento quinzenal.")
-    await page.getByRole("button", { name: "Registrar revisão" }).click()
-    await confirm(page, REVIEW_SAVED)
+    await recordReview(page, {
+      summary: FIRST_REVIEW,
+      nextStep: "Manter acompanhamento quinzenal.",
+    })
     await page.reload()
     await expect(page.getByText(FIRST_REVIEW, { exact: true })).toBeVisible({ timeout: 30_000 })
 
@@ -700,9 +739,12 @@ test.describe("development journey: authoring, application, execution, reviews, 
     // 20-21. a second review appends; the first is untouched; nothing edits or deletes.
     await switchTo(page, MANAGER)
     await openPlan(page)
-    await page.locator("#review-summary").fill(SECOND_REVIEW)
-    await page.getByRole("button", { name: "Registrar revisão" }).click()
-    await confirm(page, REVIEW_SAVED)
+    // Periodic, so the next step is mandatory — the product refuses without it
+    // both in the button and server-side.
+    await recordReview(page, {
+      summary: SECOND_REVIEW,
+      nextStep: "Acompanhar a execução até a conclusão do plano.",
+    })
     await page.reload()
     await expect(page.getByText(FIRST_REVIEW, { exact: true })).toBeVisible()
     await expect(page.getByText(SECOND_REVIEW, { exact: true })).toBeVisible()
@@ -710,16 +752,10 @@ test.describe("development journey: authoring, application, execution, reviews, 
       await expect(page.getByRole("button", { name: label })).toHaveCount(0)
     }
 
-    // 22. the final review, recorded after the last action transition.
-    await page.locator("#review-summary").fill(FINAL_REVIEW)
-    // The review type is chosen with a button, not a checkbox. It stays disabled
-    // until every action is terminal and at least one was completed — which block
-    // D has just made true — so this also asserts that server-derived gate.
-    const finalType = page.getByRole("button", { name: "Final", exact: true })
-    await expect(finalType).toBeEnabled({ timeout: 30_000 })
-    await finalType.click()
-    await page.getByRole("button", { name: "Registrar revisão" }).click()
-    await confirm(page, REVIEW_SAVED)
+    // 22. the final review, recorded after the last action transition. The type
+    // is chosen with a button, not a checkbox, and for a final review the next
+    // step is optional — which is only true once the type has been switched.
+    await recordReview(page, { summary: FINAL_REVIEW, final: true })
     await page.reload()
 
     const reviews = await readReviews()

@@ -44,7 +44,11 @@ test.describe.configure({ mode: "serial" })
  *   employee    → same-tenant nonparticipant. The fixture keeps it deliberately
  *                 unrelated; it is the established authorization probe.
  *   onboarding  → owns tenant B, so it is the foreign actor. No second fixture
- *                 company is created for this spec.
+ *                 company is created for this spec: tenant B is spec 02's, and
+ *                 this spec DEPENDS on spec 02 having completed, exactly as
+ *                 specs 03, 04, 07, 10 and 13 do. Until then that identity is
+ *                 unattached — no membership, no person, no company — and is not
+ *                 yet the contract's `foreign_owner`.
  */
 const AUTHOR: SyntheticRole = "admin"
 const MANAGER: SyntheticRole = "manager"
@@ -120,7 +124,40 @@ function manifest(): RunManifest {
   return cached
 }
 
+/**
+ * Tenant B, which the contract's `foreign_owner` must OWN (§2: "separate
+ * tenant"). It is created by spec 02's real onboarding wizard and recorded in
+ * the run journal — the same dependency specs 03, 04, 07, 10 and 13 declare.
+ *
+ * `onboarding` is only the foreign owner AFTER that has happened. Before it, the
+ * identity is unattached: it has no membership, no person and no company, and
+ * the product correctly sends it to first-access onboarding. Run
+ * 260921185836-f8c2dd resolved the actor by role name, which skipped this
+ * dependency, and then failed on a tenant-shell marker that an unattached
+ * identity cannot satisfy by definition.
+ */
+function foreignTenant() {
+  const tenant = manifest().onboardingCompany
+  if (!tenant) {
+    throw new Error(
+      "E2E_TENANT_B_MISSING: the contract's foreign_owner is the owner of a SEPARATE " +
+        "tenant, not an unattached identity. Spec 02 must complete first.",
+    )
+  }
+  return tenant
+}
+
 function actor(role: SyntheticRole) {
+  // The foreign actor is defined by its TENANT, so it is resolved from that
+  // tenant's owner rather than by role name — otherwise the dependency above can
+  // be silently bypassed.
+  if (role === FOREIGN) {
+    const owner = manifest().users.find(
+      (candidate) => candidate.userId === foreignTenant().ownerUserId,
+    )
+    if (!owner) throw new Error("E2E_TENANT_B_OWNER_MISSING")
+    return owner
+  }
   const found = manifest().users.find((candidate) => candidate.role === role)
   if (!found) throw new Error(`E2E_FIXTURE_MISSING_ROLE: ${role}`)
   return found
@@ -135,6 +172,12 @@ function tenantACompanyId(): string {
 async function enterAs(page: Page, role: SyntheticRole): Promise<void> {
   await loginThroughUi(page, actor(role))
   await expectAuthenticatedShell(page)
+  if (role === FOREIGN) {
+    // Foreignness is PROVED, not assumed: this actor resolves its own, different
+    // tenant. Without it the isolation negatives could pass against an actor that
+    // merely happened to be denied, which is a weaker claim than the contract's.
+    await expect(page.getByText(foreignTenant().companyName).first()).toBeVisible()
+  }
 }
 
 /**

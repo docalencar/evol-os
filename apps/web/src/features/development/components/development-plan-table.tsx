@@ -11,20 +11,11 @@ import {
 
 import type {
   DevelopmentPlanListItem,
-  DevelopmentPlanOwnerOption,
 } from "../types/development-plan-list-item"
 
-import {
-  DevelopmentPlanEditDialog,
-} from "./development-plan-edit-dialog"
-
-import {
-  DevelopmentPlanStatusButton,
-} from "./development-plan-status-button"
 
 type DevelopmentPlanTableProps = {
   plans: DevelopmentPlanListItem[]
-  owners: DevelopmentPlanOwnerOption[]
 }
 
 function formatDate(date: string | null) {
@@ -64,7 +55,6 @@ function ProgressIndicator({
 
 export function DevelopmentPlanTable({
   plans,
-  owners,
 }: DevelopmentPlanTableProps) {
   return (
     <DataTable
@@ -156,52 +146,6 @@ export function DevelopmentPlanTable({
                   Abrir plano
               </Button>
 
-              {(item.plan.status === "draft" ||
-                item.plan.status === "active") ? (
-                <DevelopmentPlanEditDialog
-                  plan={item.plan}
-                  employeeName={
-                    item.employeeName
-                  }
-                  templateName={
-                    item.templateName
-                  }
-                  owners={owners}
-                />
-              ) : null}
-
-              {item.plan.status === "draft" ? (
-                <DevelopmentPlanStatusButton
-                  planId={item.plan.id}
-                   currentStatus={item.plan.status}
-                   targetStatus="active"
-                />
-              ) : null}
-
-              {item.plan.status === "active" ? (
-                <>
-                 <DevelopmentPlanStatusButton
-                   planId={item.plan.id}
-                   currentStatus={item.plan.status}
-                    targetStatus="completed"
-                  />
-
-                 <DevelopmentPlanStatusButton
-                  planId={item.plan.id}
-                   currentStatus={item.plan.status}
-                  targetStatus="cancelled"
-                  />
-                </>
-              ) : null}
-
-              {(item.plan.status === "completed" ||
-                item.plan.status === "cancelled") ? (
-                <DevelopmentPlanStatusButton
-                  planId={item.plan.id}
-                  currentStatus={item.plan.status}
-                  targetStatus="active"
-                />
-              ) : null}
             </div>
           ),
         },

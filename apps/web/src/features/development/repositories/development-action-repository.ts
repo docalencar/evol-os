@@ -113,5 +113,37 @@ export async function createDevelopmentActionRepository() {
       const created = canonical.data?.find((row) => row.action_id === actionId) ?? null
       return { data: created ? mapDevelopmentAction(created) : null, error: null }
     },
+
+    async transition(
+      companyId: string,
+      planId: string,
+      actionId: string,
+      transition: "start" | "complete" | "skip",
+      reason?: string
+    ) {
+      const before = await read(companyId, null)
+      if (before.error) return { data: null, error: before.error }
+      const authoritative = before.data?.find((row) => row.action_id === actionId)
+      if (!authoritative || authoritative.plan_id !== planId) {
+        return { data: null, error: new Error("Development action is unavailable.") }
+      }
+      const result = transition === "start"
+        ? await supabase.rpc("start_development_action_v1", { p_action_id: actionId })
+        : transition === "complete"
+          ? await supabase.rpc("complete_development_action_v1", { p_action_id: actionId })
+          : await supabase.rpc("skip_development_action_v1", {
+              p_action_id: actionId,
+              p_reason: reason ?? "",
+            })
+
+      if (result.error) return { data: null, error: result.error }
+
+      // The RPC result is an acknowledgement. Product state always comes from
+      // a fresh authorized read of the durable ledger.
+      const canonical = await read(companyId, planId)
+      if (canonical.error) return { data: null, error: canonical.error }
+      const action = canonical.data?.find((row) => row.action_id === actionId)
+      return { data: action ? mapDevelopmentAction(action) : null, error: null }
+    },
   }
 }

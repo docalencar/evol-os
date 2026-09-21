@@ -1,6 +1,7 @@
 export type { DevelopmentPlan } from "./types/development-plan"
 export type { DevelopmentGoal } from "./types/development-goal"
 export type { DevelopmentAction } from "./types/development-action"
+export type { DevelopmentReview } from "./types/development-review"
 
 export {
   DEVELOPMENT_PLAN_PRIORITIES,
@@ -46,6 +47,7 @@ export { getDevelopmentPlansByEmployee } from "./queries/get-development-plans-b
 export {
   getDevelopmentPlanById,
 } from "./queries/get-development-plan-by-id"
+export { getDevelopmentPlanOrigins } from "./queries/get-development-plan-origins"
 
 export {
   getDevelopmentGoalsByPlan,
@@ -79,12 +81,9 @@ export {
 export {
   DevelopmentPlanEditDialog,
 } from "./components/development-plan-edit-dialog"
-export {
-  changeDevelopmentPlanStatus,
-} from "./services/change-development-plan-status"
-export {
-  changeDevelopmentPlanStatusAction,
-} from "./actions/change-development-plan-status-action"
+export { DevelopmentActionControls, DevelopmentReviewAndCompletion } from "./components/development-plan-execution"
+export { getDevelopmentReviewsByPlan } from "./queries/get-development-reviews-by-plan"
+export { getPlanCompletionPrerequisites, resolveDevelopmentPlanCapabilities } from "./services/development-plan-capabilities"
 export {
   calculateDevelopmentDashboardKpis,
 } from "./services/get-development-dashboard-kpis"

@@ -66,7 +66,6 @@ export default async function DevelopmentPage() {
 
       <DevelopmentPlanTable
         plans={dashboard.planList.plans}
-        owners={dashboard.planList.owners}
       />
     </div>
   )

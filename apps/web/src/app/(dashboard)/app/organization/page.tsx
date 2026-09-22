@@ -172,6 +172,15 @@ export default async function OrganizationPage() {
           >
             <ScenarioList
               scenarios={scenarios}
+              baseline={
+                latestSnapshot
+                  ? {
+                      workspaceId:
+                        latestSnapshot.workspaceId,
+                      snapshotId: latestSnapshot.id,
+                    }
+                  : null
+              }
             />
           </DashboardSection>
         </div>

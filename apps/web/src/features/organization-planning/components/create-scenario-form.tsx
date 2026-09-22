@@ -9,7 +9,15 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 
-import { createScenarioAction } from "../actions"
+/**
+ * Loaded on demand, not at module scope. `actions/index.ts` re-exports every
+ * planning server action and pulls in `current-company`, and therefore
+ * `server-only`, so importing the barrel from a client component drags that
+ * whole chain into the module graph. `publication-wizard.tsx` already loads its
+ * actions this way.
+ */
+const createScenarioActionModule = () =>
+  import("../actions/create-scenario-action")
 
 type CreateScenarioFormProps = {
   workspaceId: string
@@ -29,6 +37,9 @@ export function CreateScenarioForm({
 
   function handleSubmit(formData: FormData) {
     startTransition(async () => {
+      const { createScenarioAction } =
+        await createScenarioActionModule()
+
       const result = await createScenarioAction({
         scenarioId: crypto.randomUUID(),
         workspaceId,

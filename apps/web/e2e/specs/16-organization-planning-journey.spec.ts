@@ -173,6 +173,21 @@ async function activeChangeSets() {
   return (await readChangeSets()).filter((changeSet) => changeSet.active)
 }
 
+/**
+ * The tenant's planning workspace, or null. One per company by unique
+ * constraint, so `maybeSingle` is the honest shape — bootstrap is conditional on
+ * this, never on whether a button happens to render.
+ */
+async function findWorkspace() {
+  const { data, error } = await adminClient()
+    .from("organization_planning_workspaces")
+    .select("id, company_id, version")
+    .eq("company_id", tenantACompanyId())
+    .maybeSingle()
+  if (error) throw new Error(`E2E_WORKSPACE_LOOKUP_FAILED: ${error.message}`)
+  return data
+}
+
 async function readSnapshots() {
   const { data, error } = await adminClient()
     .from("organization_planning_snapshots")
@@ -249,24 +264,25 @@ test.describe("organization planning journey: authoring, lifecycle, publication"
     await enterAs(page, AUTHOR)
     await organizationHome(page)
 
-    // 1. The workspace is bootstrapped through the product if the tenant has
-    // none. `bootstrap_planning_workspace` also writes the baseline snapshot, so
-    // a workspace without one is not a valid starting state.
-    if ((await page.getByRole("button", { name: "Novo Workspace" }).count()) > 0) {
+    // 1. The workspace is bootstrapped through the product only if the tenant has
+    // none. Whether one exists is read from CANONICAL STATE, not inferred from a
+    // control: "Novo Workspace" renders in the workspace card's header either
+    // way, so its presence says nothing about whether a workspace exists — run
+    // 260922165410-439b90 would have created a second one had the unique
+    // constraint allowed it.
+    if (!(await findWorkspace())) {
       const workspaceDialog = await openDialog(page, "Novo Workspace")
       await workspaceDialog.getByRole("button", { name: "Criar workspace" }).click()
       await confirm(page, WORKSPACE_CREATED)
       await page.reload()
     }
 
-    const workspace = await adminClient()
-      .from("organization_planning_workspaces")
-      .select("id, company_id, version")
-      .eq("company_id", tenantACompanyId())
-      .single()
-    if (workspace.error) throw new Error(`E2E_WORKSPACE_MISSING: ${workspace.error.message}`)
-    workspaceId = workspace.data.id as string
+    const workspace = await findWorkspace()
+    if (!workspace) throw new Error("E2E_WORKSPACE_MISSING")
+    workspaceId = workspace.id as string
 
+    // `bootstrap_planning_workspace` writes the baseline snapshot in the same
+    // statement, so a workspace without one is not a valid starting state.
     const baseline = await adminClient()
       .from("organization_planning_snapshots")
       .select("id, version")

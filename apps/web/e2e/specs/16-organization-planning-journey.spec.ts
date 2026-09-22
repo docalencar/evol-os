@@ -19,7 +19,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test"
 
 import { expectAuthenticatedShell, loginThroughUi, signOutThroughUi } from "../auth/login"
-import { adminClient } from "../helpers/admin-client"
+import { adminClient, userClient } from "../helpers/admin-client"
 import { readManifest, type RunManifest, type SyntheticRole } from "../helpers/run-context"
 
 test.describe.configure({ mode: "serial" })
@@ -188,6 +188,33 @@ async function findWorkspace() {
   return data
 }
 
+/**
+ * The run's scenario id, resolved through the canonical trusted read the product
+ * itself uses, scoped by company and by the unique run-scoped name.
+ *
+ * Called with a member session rather than the service-role client on purpose:
+ * `get_planning_scenarios_v1(p_company_id)` is `security definer` and requires
+ * `auth.uid()` to be an active member of the company, so service-role — which
+ * has no `auth.uid()` — would read nothing.
+ */
+async function resolveScenarioId(): Promise<string> {
+  const author = actor(AUTHOR)
+  const client = await userClient(author.email, author.password)
+  const { data, error } = await client.rpc("get_planning_scenarios_v1", {
+    p_company_id: tenantACompanyId(),
+  })
+  if (error) throw new Error(`E2E_SCENARIO_LOOKUP_FAILED: ${error.message}`)
+  const rows = (data ?? []) as Array<{ id: string; name: string }>
+  const matches = rows.filter((row) => row.name === scenarioName)
+  if (matches.length !== 1) {
+    throw new Error(
+      `E2E_SCENARIO_NOT_UNIQUE: expected exactly one scenario named ` +
+        `"${scenarioName}", found ${matches.length}`,
+    )
+  }
+  return matches[0]!.id
+}
+
 async function readSnapshots() {
   const { data, error } = await adminClient()
     .from("organization_planning_snapshots")
@@ -300,8 +327,22 @@ test.describe("organization planning journey: authoring, lifecycle, publication"
     await scenarioDialog.getByRole("button", { name: "Criar cenário" }).click()
     await confirm(page, SCENARIO_CREATED)
 
-    await page.waitForURL(/\/app\/organization\/planning\/[0-9a-f-]{36}/, { timeout: 30_000 })
-    scenarioId = page.url().split("/").pop() ?? ""
+    // The product closes the dialog and refreshes in place; it does NOT redirect.
+    // Run 260922174024-8b6eb2 waited 30s for a navigation that is not part of the
+    // contract, on a scenario that had been created correctly. The browser-visible
+    // outcome is the card appearing in the list, as a draft.
+    const created = page.getByRole("heading", { name: scenarioName, level: 3 })
+    await expect(created).toBeVisible({ timeout: 30_000 })
+    await expect(
+      page.locator("div").filter({ has: created }).filter({ hasText: "Rascunho" }).last(),
+    ).toBeVisible()
+
+    // The id is resolved through the product's own trusted read, as an authorised
+    // member — never predicted, and never scraped from a URL the product does not
+    // produce. `get_planning_scenarios_v1` is `security definer` but gates on
+    // `auth.uid()` being an active member, so it must be called with a user
+    // session; the service-role client would see zero rows.
+    scenarioId = await resolveScenarioId()
     expect(scenarioId).toMatch(/^[0-9a-f-]{36}$/)
 
     const scenario = await readScenario()

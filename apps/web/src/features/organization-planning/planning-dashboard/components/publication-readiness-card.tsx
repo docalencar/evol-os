@@ -9,6 +9,7 @@ type PublicationReadinessCardProps = {
   generatedAt: string
   version: number
   scenario: ScenarioDTO
+  canManage: boolean
 }
 
 const generatedAtFormatter = new Intl.DateTimeFormat("pt-BR", {
@@ -16,7 +17,7 @@ const generatedAtFormatter = new Intl.DateTimeFormat("pt-BR", {
   timeStyle: "short",
 })
 
-export function PublicationReadinessCard({ generatedAt, version, scenario }: PublicationReadinessCardProps) {
+export function PublicationReadinessCard({ generatedAt, version, scenario, canManage }: PublicationReadinessCardProps) {
   return (
     <DashboardCard
       title="Prontidão para publicação"
@@ -37,7 +38,7 @@ export function PublicationReadinessCard({ generatedAt, version, scenario }: Pub
         </div>
       </dl>
 
-      <div className="mt-6"><PublicationWizard scenarioId={scenario.id} name={scenario.name} status={scenario.status} version={scenario.version} /></div>
+      <div className="mt-6"><PublicationWizard scenarioId={scenario.id} name={scenario.name} status={scenario.status} version={scenario.version} canPublish={canManage && scenario.status === "approved"} /></div>
     </DashboardCard>
   )
 }

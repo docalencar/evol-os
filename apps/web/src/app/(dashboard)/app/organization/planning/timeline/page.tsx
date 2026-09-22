@@ -5,11 +5,11 @@ import { PlanningTimelinePage } from "@/features/organization-planning/timeline-
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
 type PlanningTimelineRouteProps = {
-  searchParams: Promise<{ workspaceId?: string; includeArchived?: string }>
+  searchParams: Promise<{ workspaceId?: string }>
 }
 
 export default async function PlanningTimelineRoute({ searchParams }: PlanningTimelineRouteProps) {
-  const [{ workspaceId, includeArchived }, { companyId }] = await Promise.all([
+  const [{ workspaceId }, { companyId, currentUser }] = await Promise.all([
     searchParams,
     getCurrentCompanyContext(),
   ])
@@ -17,7 +17,8 @@ export default async function PlanningTimelineRoute({ searchParams }: PlanningTi
   if (!workspaceId) notFound()
 
   const service = await createPlanningTimelineService(companyId)
-  const timeline = await service.execute({ workspaceId, includeArchived: includeArchived === "true" })
+  const timeline = await service.execute({ workspaceId })
+  const canManage = ["owner", "admin", "hr"].includes(currentUser.role)
 
-  return <PlanningTimelinePage timeline={timeline} includeArchived={includeArchived === "true"} />
+  return <PlanningTimelinePage timeline={timeline} canManage={canManage} />
 }

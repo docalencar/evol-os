@@ -3,21 +3,15 @@ import type {
   PlanningBaselineRepository,
 } from "../application"
 import { parseProjectedOrganization } from "./projected-organization-record"
+import { OrganizationPlanningWorkspace } from "../domain/organization-planning-workspace"
+import { mapPublishedSnapshotRow, type SnapshotRow } from "./snapshot-record"
 
 type DatabaseResult = Readonly<{
   data: unknown
   error: Readonly<{ message: string }> | null
 }>
 
-interface BaselineQuery extends PromiseLike<DatabaseResult> {
-  eq(column: string, value: string): BaselineQuery
-  maybeSingle(): PromiseLike<DatabaseResult>
-}
-
 export interface PlanningBaselineDatabase {
-  from(table: string): Readonly<{
-    select(columns: string): BaselineQuery
-  }>
   rpc(
     name: string,
     parameters: Readonly<Record<string, unknown>>
@@ -29,15 +23,10 @@ export function createPlanningBaselineRepositoryAdapter(
 ): PlanningBaselineRepository {
   return {
     async existsBaselineByCompany(companyId: string) {
-      const { data, error } = await database
-        .from("organization_planning_snapshots")
-        .select("id")
-        .eq("company_id", companyId)
-        .eq("kind", "baseline")
-        .maybeSingle()
+      const { data, error } = await database.rpc("get_planning_snapshots_v1", { p_company_id: companyId })
 
       if (error) throw new Error(error.message)
-      return data !== null
+      return Array.isArray(data) && data.some((row) => (row as { kind?: unknown }).kind === "baseline")
     },
 
     async create(input: CreatePlanningBaselineInput) {
@@ -49,18 +38,24 @@ export function createPlanningBaselineRepositoryAdapter(
         throw new Error("PLANNING_BASELINE_SNAPSHOT_KIND_REQUIRED")
       }
 
-      const { error } = await database.rpc(
-        "bootstrap_planning_workspace",
+      const { data, error } = await database.rpc(
+        "bootstrap_planning_workspace_v1",
         {
           p_company_id: workspace.companyId,
           p_workspace_id: workspace.id,
           p_snapshot_id: snapshot.id,
-          p_created_at: workspace.createdAt.toISOString(),
           p_organization: organization,
         }
       )
 
       if (error) throw new Error(error.message)
+      const result = data as { workspace?: Record<string, unknown>; snapshot?: SnapshotRow }
+      if (!result.workspace || !result.snapshot) throw new Error("PLANNING_BASELINE_RESULT_INVALID_DATA")
+      const row = result.workspace as { id:string;company_id:string;version:number;created_at:string;updated_at:string }
+      return Object.freeze({
+        workspace: OrganizationPlanningWorkspace.restore({ id:row.id,companyId:row.company_id,version:row.version,createdAt:new Date(row.created_at),updatedAt:new Date(row.updated_at) }),
+        snapshot: mapPublishedSnapshotRow(result.snapshot),
+      })
     },
   }
 }

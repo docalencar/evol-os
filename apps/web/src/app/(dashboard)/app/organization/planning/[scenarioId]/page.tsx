@@ -7,12 +7,12 @@ type PlanningScenarioDashboardRouteProps = {
 }
 
 export default async function PlanningScenarioDashboardRoute({ params }: PlanningScenarioDashboardRouteProps) {
-  const [{ scenarioId }, { companyId }] = await Promise.all([
+  const [{ scenarioId }, { companyId, currentUser }] = await Promise.all([
     params,
     getCurrentCompanyContext(),
   ])
   const service = await createPlanningReadService(companyId)
   const dashboard = await service.execute(scenarioId)
 
-  return <PlanningDashboardPage dashboard={dashboard} />
+  return <PlanningDashboardPage dashboard={dashboard} canManage={["owner","admin","hr"].includes(currentUser.role)} />
 }

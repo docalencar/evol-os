@@ -5,14 +5,14 @@ import { TimelineHeader } from "./components/timeline-header"
 
 type PlanningTimelinePageProps = {
   timeline: PlanningTimelineViewModel
-  includeArchived?: boolean
+  canManage?: boolean
 }
 
-export function PlanningTimelinePage({ timeline, includeArchived = false }: PlanningTimelinePageProps) {
+export function PlanningTimelinePage({ timeline, canManage = false }: PlanningTimelinePageProps) {
   return (
     <div className="space-y-8">
-      <TimelineHeader workspaceId={timeline.workspaceId} includeArchived={includeArchived} />
-      {timeline.isEmpty ? <TimelineEmptyState /> : <Timeline timeline={timeline} />}
+      <TimelineHeader workspaceId={timeline.workspaceId} />
+      {timeline.isEmpty ? <TimelineEmptyState /> : <Timeline timeline={timeline} canManage={canManage} />}
     </div>
   )
 }

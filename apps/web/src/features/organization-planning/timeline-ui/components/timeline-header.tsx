@@ -1,14 +1,9 @@
 import { GitBranch } from "lucide-react"
-import Link from "next/link"
-
-import { Button } from "@/components/ui/button"
-
 type TimelineHeaderProps = {
   workspaceId: string
-  includeArchived?: boolean
 }
 
-export function TimelineHeader({ workspaceId, includeArchived = false }: TimelineHeaderProps) {
+export function TimelineHeader({ workspaceId }: TimelineHeaderProps) {
   return (
     <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div>
@@ -23,9 +18,6 @@ export function TimelineHeader({ workspaceId, includeArchived = false }: Timelin
       </div>
 
       <div className="flex items-center gap-3">
-      <Button variant="outline" nativeButton={false} render={<Link href={`/app/organization/planning/timeline?workspaceId=${workspaceId}${includeArchived ? "" : "&includeArchived=true"}`} />}>
-        {includeArchived ? "Ocultar arquivados" : "Ver arquivados"}
-      </Button>
       <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm">
         <span className="block text-xs font-medium uppercase tracking-wide text-slate-400">
           Workspace

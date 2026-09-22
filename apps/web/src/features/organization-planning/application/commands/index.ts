@@ -7,7 +7,6 @@ export type {
 } from "./planning-commands"
 
 export {
-  archiveScenarioCommandSchema,
   createScenarioCommandSchema,
   createScenarioBranchCommandSchema,
   createWorkspaceCommandSchema,

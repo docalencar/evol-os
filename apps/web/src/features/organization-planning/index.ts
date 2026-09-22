@@ -1,6 +1,5 @@
 export { createWorkspace } from "./services/create-workspace"
 export { createScenario } from "./services/create-scenario"
-export { archiveScenario } from "./services/archive-scenario"
 export { publishScenario } from "./services/publish-scenario"
 
 export { getScenario } from "./queries/get-scenario"

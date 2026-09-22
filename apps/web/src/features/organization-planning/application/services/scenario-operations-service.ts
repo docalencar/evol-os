@@ -21,20 +21,10 @@ export class ScenarioOperationsService {
 
   async rename(command: z.input<typeof renameSchema>) {
     const input = renameSchema.parse(command)
-    const scenario = await this.load(input.companyId, input.scenarioId, input.expectedVersion)
-    const renamed = scenario.rename(input.name, input.occurredAt)
-    await this.scenarios.save(renamed, input.expectedVersion)
+    await this.load(input.companyId, input.scenarioId, input.expectedVersion)
+    const renamed = await this.scenarios.rename(input.scenarioId, input.expectedVersion, input.name)
     this.eventCollector.collect({ scenario: renamed })
     return toScenarioDTO(renamed)
-  }
-
-  async restore(command: z.input<typeof mutationSchema>) {
-    const input = mutationSchema.parse(command)
-    const scenario = await this.load(input.companyId, input.scenarioId, input.expectedVersion)
-    const restored = scenario.restoreArchive(input.occurredAt)
-    await this.scenarios.save(restored, input.expectedVersion)
-    this.eventCollector.collect({ scenario: restored })
-    return toScenarioDTO(restored)
   }
 
   async delete(command: Omit<z.input<typeof mutationSchema>, "occurredAt">): Promise<void> {
@@ -43,12 +33,6 @@ export class ScenarioOperationsService {
     if (scenario.status !== "draft") {
       throw new PlanningApplicationError("invalid_relation", "Apenas cenários em rascunho podem ser excluídos.")
     }
-    const [hasChildren, hasPublishedSnapshot] = await Promise.all([
-      this.scenarios.hasChildren(input.companyId, input.scenarioId),
-      this.scenarios.hasPublishedSnapshot(input.companyId, input.scenarioId),
-    ])
-    if (hasChildren) throw new PlanningApplicationError("invalid_relation", "O cenário possui cenários derivados.")
-    if (hasPublishedSnapshot) throw new PlanningApplicationError("invalid_relation", "O cenário é utilizado por um snapshot publicado.")
     await this.scenarios.deleteDraft(input.companyId, input.scenarioId, input.expectedVersion)
   }
 

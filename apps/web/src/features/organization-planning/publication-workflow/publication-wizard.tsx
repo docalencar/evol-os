@@ -13,7 +13,7 @@ import { PublicationResult } from "./publication-result"
 import { PublicationSummaryStep } from "./publication-summary-step"
 import { PublicationValidationStep } from "./publication-validation-step"
 
-type Props = Readonly<{ scenarioId: string; name: string; status: string; version: number }>
+type Props = Readonly<{ scenarioId: string; name: string; status: string; version: number; canPublish?: boolean }>
 
 export function PublicationWizard(props: Props) {
   const [open, setOpen] = useState(false)
@@ -44,7 +44,7 @@ export function PublicationWizard(props: Props) {
 
   return (
     <>
-      <Button type="button" onClick={openWizard}>Publicar Cenário</Button>
+      <Button type="button" onClick={openWizard} disabled={!props.canPublish}>Publicar Cenário</Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>Publicação do cenário</DialogTitle><DialogDescription>Valide o cenário antes de criar o Snapshot definitivo.</DialogDescription></DialogHeader>

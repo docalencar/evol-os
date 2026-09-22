@@ -3,10 +3,8 @@ import type {
   PublishPlanningScenarioInput,
 } from "../application"
 import { parseProjectedOrganization } from "./projected-organization-record"
-import {
-  mapPlanningPublicationRow,
-  type PlanningPublicationRow,
-} from "./planning-publication-record"
+import { mapScenario, type ScenarioRow } from "./scenario-record"
+import { mapPublishedSnapshotRow, type SnapshotRow } from "./snapshot-record"
 
 export interface PlanningPublicationDatabase {
   rpc(
@@ -27,13 +25,11 @@ export function createPlanningPublicationRepositoryAdapter(
         input.organization
       )
       const { data, error } = await database.rpc(
-        "publish_planning_scenario",
+        "publish_planning_scenario_v1",
         {
-          p_company_id: input.companyId,
           p_scenario_id: input.scenarioId,
           p_expected_version: input.expectedVersion,
           p_snapshot_id: input.snapshotId,
-          p_published_at: input.publishedAt.toISOString(),
           p_organization: organization,
           p_change_sets: input.changeSets.map((changeSet) => ({
             id: changeSet.id,
@@ -46,15 +42,20 @@ export function createPlanningPublicationRepositoryAdapter(
 
       if (error) throw new Error(error.message)
 
-      const row = Array.isArray(data) ? data[0] : undefined
-
-      if (!row) {
+      const result = data as { snapshotId?: unknown }
+      if (typeof result?.snapshotId !== "string") {
         throw new Error("PLANNING_PUBLICATION_RESULT_NOT_FOUND")
       }
-
-      return mapPlanningPublicationRow(
-        row as PlanningPublicationRow
-      )
+      const [scenarios,snapshots]=await Promise.all([
+        database.rpc("get_planning_scenarios_v1",{p_company_id:input.companyId}),
+        database.rpc("get_planning_snapshots_v1",{p_company_id:input.companyId}),
+      ])
+      if(scenarios.error)throw new Error(scenarios.error.message)
+      if(snapshots.error)throw new Error(snapshots.error.message)
+      const scenario=(scenarios.data as ScenarioRow[]).find((row)=>row.id===input.scenarioId)
+      const snapshot=(snapshots.data as SnapshotRow[]).find((row)=>row.id===result.snapshotId)
+      if(!scenario||!snapshot)throw new Error("PLANNING_PUBLICATION_READBACK_NOT_FOUND")
+      return Object.freeze({scenario:mapScenario(scenario),snapshot:mapPublishedSnapshotRow(snapshot),organization})
     },
   }
 }

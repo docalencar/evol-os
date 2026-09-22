@@ -64,7 +64,7 @@ function createFixture(
   const service = new ScenarioPublicationValidationService({
     scenarios: {
       async findById() { return scenario },
-      async create() {},
+      async create(value) { return value },
       async save() {},
     },
     workspaces: {

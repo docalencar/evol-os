@@ -10,6 +10,7 @@ import {
   CreateScenarioBranchService,
   CreateWorkspaceHandler,
   PlanningDomainEventCollector,
+  PlanningContentEditorService,
   PublishScenarioHandler,
   SimplePlanningUnitOfWork,
   ScenarioOperationsService,
@@ -31,6 +32,7 @@ export type ServerPlanningApplication = Readonly<{
   publishScenario: PublishScenarioHandler
   scenarioOperations: ScenarioOperationsService
   validatePublication: ScenarioPublicationValidationService
+  contentEditor: PlanningContentEditorService
   eventCollector: PlanningDomainEventCollector
 }>
 
@@ -107,6 +109,7 @@ export async function createServerPlanningApplication(
       changeSets,
       executor: ScenarioExecutor.create(),
     }),
+    contentEditor: new PlanningContentEditorService(scenarios, changeSets),
 
     eventCollector,
   })

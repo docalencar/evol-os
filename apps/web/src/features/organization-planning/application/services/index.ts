@@ -19,6 +19,12 @@ export {
   PlanningReadApplicationService,
 } from "./planning-read-application-service"
 
+export {
+  PlanningContentEditorService,
+  type DepartmentCreateContent,
+  type PlanningContentReadback,
+} from "./planning-content-editor-service"
+
 export type {
   PlanningReadApplicationDependencies,
 } from "./planning-read-application-service"

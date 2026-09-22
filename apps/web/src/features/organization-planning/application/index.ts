@@ -5,7 +5,11 @@ export * from "./ports"
 export * from "./services"
 export * from "./transactions"
 export { PlanningDomainEventCollector } from "./planning-domain-event-collector"
-export type { PlanningDashboardViewModel } from "./contracts/planning-dashboard-contract"
+export type {
+  PlanningContentEditorItem,
+  PlanningContentEditorViewModel,
+  PlanningDashboardViewModel,
+} from "./contracts/planning-dashboard-contract"
 export type {
   PublicationValidationIssue,
   PublicationValidationResult,

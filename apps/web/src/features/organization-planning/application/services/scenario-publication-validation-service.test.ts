@@ -80,7 +80,7 @@ function createFixture(
         }
       },
     },
-    changeSets: { async create() {}, async listPublishableByScenario() { return [] } },
+    changeSets: { async listPublishableByScenario() { return [] } },
     executor: {
       execute() {
         executionCalls += 1

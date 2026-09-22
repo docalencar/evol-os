@@ -15,3 +15,13 @@ export { duplicateScenarioAction } from "./duplicate-scenario-action"
 export { renameScenarioAction } from "./rename-scenario-action"
 export { transitionScenarioAction } from "./transition-scenario-action"
 export { validatePublicationAction } from "./validate-publication-action"
+export {
+  createPlanningDepartmentAction,
+  removePlanningChangeSetAction,
+  reorderPlanningChangeSetsAction,
+  replacePlanningDepartmentAction,
+  type CreatePlanningDepartmentInput,
+  type RemovePlanningChangeSetActionInput,
+  type ReorderPlanningChangeSetsActionInput,
+  type ReplacePlanningDepartmentInput,
+} from "./planning-content-actions"

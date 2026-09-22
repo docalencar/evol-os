@@ -2,6 +2,7 @@ import type { PlanningDashboardViewModel } from "../application"
 import { ExecutiveSummaryCard } from "./components/executive-summary-card"
 import { PlanningDashboardEmptyState } from "./components/empty-state"
 import { PlanningImpactCard } from "./components/planning-impact-card"
+import { PlanningContentEditor } from "./components/planning-content-editor"
 import { PlanningKpiGrid } from "./components/planning-kpi-grid"
 import { PlanningOpportunitiesCard } from "./components/planning-opportunities-card"
 import { PlanningRecommendationsCard } from "./components/planning-recommendations-card"
@@ -26,6 +27,15 @@ export function PlanningDashboardPage({ dashboard, canManage = false }: Planning
       </header>
 
       <ExecutiveSummaryCard dashboard={dashboard} />
+
+      {dashboard.scenario.status === "draft" ? (
+        <PlanningContentEditor
+          scenarioId={dashboard.scenario.id}
+          expectedVersion={dashboard.scenario.version}
+          canManage={canManage}
+          content={dashboard.content}
+        />
+      ) : null}
 
       {dashboard.comparison.summary.isEmpty ? (
         <PlanningDashboardEmptyState />

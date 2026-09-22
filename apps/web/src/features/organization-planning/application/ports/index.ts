@@ -17,8 +17,13 @@ export type {
   PublishPlanningScenarioInput,
 } from "./planning-publication-repository"
 export type {
+  CreatePlanningChangeSetInput,
   ListPlanningChangeSetsInput,
+  PlanningChangeSetMutationRepository,
   PlanningChangeSetRepository,
+  RemovePlanningChangeSetInput,
+  ReorderPlanningChangeSetsInput,
+  ReplacePlanningChangeSetInput,
 } from "./planning-change-set-repository"
 export type {
   PlanningProjectionSnapshotRepository,

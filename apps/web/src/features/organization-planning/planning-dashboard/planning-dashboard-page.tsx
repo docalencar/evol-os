@@ -11,9 +11,10 @@ import { PublicationReadinessCard } from "./components/publication-readiness-car
 
 type PlanningDashboardPageProps = {
   dashboard: PlanningDashboardViewModel
+  canManage?: boolean
 }
 
-export function PlanningDashboardPage({ dashboard }: PlanningDashboardPageProps) {
+export function PlanningDashboardPage({ dashboard, canManage = false }: PlanningDashboardPageProps) {
   return (
     <div className="space-y-8">
       <header>
@@ -40,7 +41,7 @@ export function PlanningDashboardPage({ dashboard }: PlanningDashboardPageProps)
         <PlanningRisksCard risks={dashboard.insights.warnings} />
         <PlanningRecommendationsCard recommendations={dashboard.insights.recommendations} />
         <PlanningOpportunitiesCard opportunities={dashboard.insights.opportunities} />
-        <PublicationReadinessCard generatedAt={dashboard.generatedAt} version={dashboard.version} scenario={dashboard.scenario} />
+        <PublicationReadinessCard generatedAt={dashboard.generatedAt} version={dashboard.version} scenario={dashboard.scenario} canManage={canManage} />
       </div>
     </div>
   )

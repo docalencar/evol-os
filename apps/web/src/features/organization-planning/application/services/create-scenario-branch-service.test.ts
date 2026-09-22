@@ -160,9 +160,11 @@ class MemoryScenarioBranchRepository
     return scenario?.companyId === receivedCompanyId ? scenario : null
   }
 
-  async createBranch(scenario: PlanningScenario) {
+  async createBranch(scenario: PlanningScenario, sourceVersion: number) {
+    assert.equal(sourceVersion, this.scenarios.get(scenario.parentScenarioId ?? "")?.version)
     if (this.scenarios.has(scenario.id)) throw new Error("SCENARIO_ALREADY_EXISTS")
     this.scenarios.set(scenario.id, scenario)
     this.created.push(scenario)
+    return scenario
   }
 }

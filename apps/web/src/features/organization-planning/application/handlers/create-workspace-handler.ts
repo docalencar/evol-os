@@ -52,13 +52,13 @@ export class CreateWorkspaceHandler {
       createdAt: input.occurredAt,
     })
 
-    await this.baseline.create({
+    const persisted = await this.baseline.create({
       workspace,
       snapshot: initialSnapshot,
       organization,
     })
-    this.eventCollector.collect({ workspace, snapshot: initialSnapshot })
+    this.eventCollector.collect({ workspace: persisted.workspace, snapshot: persisted.snapshot })
 
-    return toWorkspaceDTO(workspace, initialSnapshot)
+    return toWorkspaceDTO(persisted.workspace, persisted.snapshot)
   }
 }

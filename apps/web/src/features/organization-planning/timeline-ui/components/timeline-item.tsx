@@ -11,11 +11,12 @@ import { ScenarioOperationsMenu } from "./scenario-operations-menu"
 type TimelineItemProps = {
   item: PlanningTimelineItemViewModel
   showConnector: boolean
+  canManage: boolean
 }
 
 const actions = ["Visualizar", "Comparar", "Publicar"] as const
 
-export function TimelineItem({ item, showConnector }: TimelineItemProps) {
+export function TimelineItem({ item, showConnector, canManage }: TimelineItemProps) {
   return (
     <li className="relative grid grid-cols-[2.5rem_minmax(0,1fr)] gap-4 sm:grid-cols-[3rem_minmax(0,1fr)] sm:gap-6">
       <div className="relative flex justify-center">
@@ -76,7 +77,7 @@ export function TimelineItem({ item, showConnector }: TimelineItemProps) {
               {action}
             </Button>
           ))}
-          <ScenarioOperationsMenu item={item} />
+          <ScenarioOperationsMenu item={item} canManage={canManage} />
         </div>
       </Card>
     </li>

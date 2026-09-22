@@ -52,7 +52,7 @@ test("carrega e executa uma projeção válida", async () => {
           return createScenario()
         },
 
-        async create() {},
+        async create(scenario) { return scenario },
         async save() {},
       },
 
@@ -160,7 +160,7 @@ test("interrompe quando o cenário não existe", async () => {
           return null
         },
 
-        async create() {},
+        async create(scenario) { return scenario },
         async save() {},
       },
 
@@ -258,7 +258,7 @@ function createDependencies() {
         return createScenario()
       },
 
-      async create() {},
+      async create(scenario: PlanningScenario) { return scenario },
       async save() {},
     },
 

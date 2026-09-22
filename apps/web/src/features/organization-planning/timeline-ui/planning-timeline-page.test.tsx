@@ -64,7 +64,7 @@ const timeline: PlanningTimelineViewModel = {
 }
 
 test("renderiza a Timeline vertical com múltiplos cenários", () => {
-  const html = renderToStaticMarkup(<PlanningTimelinePage timeline={timeline} />)
+  const html = renderToStaticMarkup(<PlanningTimelinePage timeline={timeline} canManage />)
 
   assert.match(html, /Timeline de cenários/)
   assert.match(html, /aria-label="Evolução dos cenários"/)
@@ -86,14 +86,15 @@ test("exibe badges, datas, resumo e baseline diretamente do ViewModel", () => {
   assert.match(html, /Não publicado/)
 })
 
-test("mantém ações futuras desabilitadas e expõe operações de cenário", () => {
-  const html = renderToStaticMarkup(<PlanningTimelinePage timeline={timeline} />)
+test("deriva operações do status/capacidade e não expõe archive/restore", () => {
+  const html = renderToStaticMarkup(<PlanningTimelinePage timeline={timeline} canManage />)
 
   for (const action of ["Visualizar", "Comparar", "Publicar"]) {
     assert.match(html, new RegExp(`disabled=""[^>]*>${action}</button>`))
   }
-  assert.match(html, /Operações de Expansão Nordeste/)
+  assert.doesNotMatch(html, /Operações de Expansão Nordeste/)
   assert.match(html, /Operações de Reorganização Comercial/)
+  assert.doesNotMatch(html, /Arquivar|Restaurar/)
 })
 
 test("renderiza a Timeline vazia", () => {

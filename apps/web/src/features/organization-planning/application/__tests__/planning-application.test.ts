@@ -93,6 +93,7 @@ class MemoryScenarioRepository
   async create(scenario: PlanningScenario) {
     if (this.shouldFailCreate) throw new Error("scenario failure")
     this.items.set(scenario.id, scenario)
+    return scenario
   }
 
   async save(scenario: PlanningScenario, expectedVersion: number) {
@@ -165,6 +166,7 @@ class MemoryBaselineRepository
     if (this.shouldFailCreate) throw new Error("baseline failure")
     this.inputs.push(input)
     this.exists = true
+    return { workspace: input.workspace, snapshot: input.snapshot }
   }
 }
 

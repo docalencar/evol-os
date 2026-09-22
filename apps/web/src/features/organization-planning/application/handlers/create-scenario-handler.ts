@@ -71,9 +71,9 @@ export class CreateScenarioHandler {
         createdAt: input.occurredAt,
       })
 
-      await this.scenarios.create(scenario)
-      this.eventCollector.collect({ scenario })
-      return toScenarioDTO(scenario)
+      const persisted = await this.scenarios.create(scenario)
+      this.eventCollector.collect({ scenario: persisted })
+      return toScenarioDTO(persisted)
     })
   }
 }

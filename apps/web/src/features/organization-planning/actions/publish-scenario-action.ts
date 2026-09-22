@@ -12,6 +12,7 @@ import {
 } from "../application"
 import { createServerPlanningApplication } from "../server"
 import { getPublicationRevalidationPaths } from "./publication-revalidation"
+import { planningActionErrorMessage } from "./planning-action-error"
 
 export type PublishScenarioActionInput = Readonly<{
   scenarioId: string
@@ -57,7 +58,7 @@ export async function publishScenarioAction(
 
     return {
       success: false,
-      message: "Não foi possível publicar o cenário.",
+      message: planningActionErrorMessage(error),
     }
   }
 }

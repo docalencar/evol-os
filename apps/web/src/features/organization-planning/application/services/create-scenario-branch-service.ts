@@ -22,9 +22,9 @@ export class CreateScenarioBranchService {
       createdAt: input.occurredAt,
     })
 
-    await this.scenarios.createBranch(branch)
-    this.eventCollector.collect({ scenario: branch })
+    const persisted = await this.scenarios.createBranch(branch, source.version)
+    this.eventCollector.collect({ scenario: persisted })
 
-    return toScenarioDTO(branch)
+    return toScenarioDTO(persisted)
   }
 }

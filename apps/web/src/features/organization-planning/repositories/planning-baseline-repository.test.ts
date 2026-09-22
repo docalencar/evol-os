@@ -1,98 +1,36 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import { createWorkspace } from "../services/create-workspace"
 import { createEmptyProjectedOrganization } from "../projection"
-import {
-  createPlanningBaselineRepositoryAdapter,
-  type PlanningBaselineDatabase,
-} from "./planning-baseline-repository-adapter"
+import { createWorkspace } from "../services/create-workspace"
+import { createPlanningBaselineRepositoryAdapter } from "./planning-baseline-repository-adapter"
 
-test("checks whether the Company's Workspace already has a Baseline", async () => {
-  const calls: [string, string][] = []
-  const database = databaseMock(calls, { id: "snapshot-1" })
-  const repository = createPlanningBaselineRepositoryAdapter(database)
+const companyId = "00000000-0000-4000-8000-000000000001"
+const workspaceId = "00000000-0000-4000-8000-000000000002"
+const snapshotId = "00000000-0000-4000-8000-000000000003"
+const createdAt = new Date("2026-07-30T12:00:00.000Z")
 
-  assert.equal(
-    await repository.existsBaselineByCompany("company-1"),
-    true
-  )
-  assert.deepEqual(calls, [
-    ["company_id", "company-1"],
-    ["kind", "baseline"],
-  ])
+test("reads baseline existence through the trusted snapshots RPC", async () => {
+  const calls: unknown[] = []
+  const repository = createPlanningBaselineRepositoryAdapter({ async rpc(name, parameters) {
+    calls.push({ name, parameters }); return { data: [{ kind: "baseline" }], error: null }
+  } })
+  assert.equal(await repository.existsBaselineByCompany(companyId), true)
+  assert.deepEqual(calls, [{ name: "get_planning_snapshots_v1", parameters: { p_company_id: companyId } }])
 })
 
-test("persists Workspace and Baseline atomically through the RPC", async () => {
-  const rpcCalls: {
-    name: string
-    parameters: Readonly<Record<string, unknown>>
-  }[] = []
-  const database = databaseMock([], null, rpcCalls)
-  const repository = createPlanningBaselineRepositoryAdapter(database)
-  const createdAt = new Date("2026-07-30T12:00:00.000Z")
-  const { workspace, initialSnapshot } = createWorkspace({
-    id: "00000000-0000-4000-8000-000000000002",
-    companyId: "00000000-0000-4000-8000-000000000001",
-    initialSnapshotId: "00000000-0000-4000-8000-000000000003",
-    allocatedInitialSnapshotVersion: 1,
-    createdAt,
-  })
+test("bootstraps atomically and returns canonical persisted readback", async () => {
+  const { workspace, initialSnapshot } = createWorkspace({ id: workspaceId, companyId, initialSnapshotId: snapshotId, allocatedInitialSnapshotVersion: 1, createdAt })
   const organization = createEmptyProjectedOrganization()
-
-  await repository.create({
-    workspace,
-    snapshot: initialSnapshot,
-    organization,
-  })
-
-  assert.deepEqual(rpcCalls, [{
-    name: "bootstrap_planning_workspace",
-    parameters: {
-      p_company_id: "00000000-0000-4000-8000-000000000001",
-      p_workspace_id: "00000000-0000-4000-8000-000000000002",
-      p_snapshot_id: "00000000-0000-4000-8000-000000000003",
-      p_created_at: createdAt.toISOString(),
-      p_organization: organization,
-    },
-  }])
-  assert.equal(initialSnapshot.kind, "baseline")
-  assert.equal(initialSnapshot.version, 1)
+  const repository = createPlanningBaselineRepositoryAdapter({ async rpc(name, parameters) {
+    assert.equal(name, "bootstrap_planning_workspace_v1")
+    assert.deepEqual(parameters, { p_company_id: companyId, p_workspace_id: workspaceId, p_snapshot_id: snapshotId, p_organization: organization })
+    return { data: {
+      workspace: { id: workspaceId, company_id: companyId, version: 1, created_at: createdAt.toISOString(), updated_at: createdAt.toISOString() },
+      snapshot: { id: snapshotId, company_id: companyId, workspace_id: workspaceId, source_scenario_id: null, version: 1, published_at: createdAt.toISOString(), kind: "baseline", organization },
+    }, error: null }
+  } })
+  const result = await repository.create({ workspace, snapshot: initialSnapshot, organization })
+  assert.equal(result.workspace.id, workspaceId)
+  assert.equal(result.snapshot.id, snapshotId)
 })
-
-function databaseMock(
-  calls: [string, string][] = [],
-  existing: unknown = null,
-  rpcCalls: {
-    name: string
-    parameters: Readonly<Record<string, unknown>>
-  }[] = []
-): PlanningBaselineDatabase {
-  const result = { data: existing, error: null }
-  const query = {
-    eq(column: string, value: string) {
-      calls.push([column, value])
-      return query
-    },
-    maybeSingle() {
-      return Promise.resolve(result)
-    },
-    then<TResult1 = typeof result, TResult2 = never>(
-      onfulfilled?: ((value: typeof result) => TResult1 | PromiseLike<TResult1>) | null,
-      onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null
-    ) {
-      return Promise.resolve(result).then(onfulfilled, onrejected)
-    },
-  }
-
-  return {
-    from(table) {
-      assert.equal(table, "organization_planning_snapshots")
-      return { select: () => query }
-    },
-    async rpc(name, parameters) {
-      rpcCalls.push({ name, parameters })
-      return { data: null, error: null }
-    },
-  }
-}

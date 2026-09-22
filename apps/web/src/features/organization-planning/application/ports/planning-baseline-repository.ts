@@ -10,5 +10,8 @@ export type CreatePlanningBaselineInput = Readonly<{
 
 export interface PlanningBaselineRepository {
   existsBaselineByCompany(companyId: string): Promise<boolean>
-  create(input: CreatePlanningBaselineInput): Promise<void>
+  create(input: CreatePlanningBaselineInput): Promise<Readonly<{
+    workspace: OrganizationPlanningWorkspace
+    snapshot: PublishedSnapshot
+  }>>
 }

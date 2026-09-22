@@ -6,7 +6,6 @@ import {
 } from "@/features/authorization"
 
 import {
-  ArchiveScenarioHandler,
   CreateScenarioHandler,
   CreateScenarioBranchService,
   CreateWorkspaceHandler,
@@ -29,7 +28,6 @@ export type ServerPlanningApplication = Readonly<{
   createWorkspace: CreateWorkspaceHandler
   createScenario: CreateScenarioHandler
   createScenarioBranch: CreateScenarioBranchService
-  archiveScenario: ArchiveScenarioHandler
   publishScenario: PublishScenarioHandler
   scenarioOperations: ScenarioOperationsService
   validatePublication: ScenarioPublicationValidationService
@@ -70,7 +68,6 @@ export async function createServerPlanningApplication(
    * UnitOfWork permanecem apenas nos handlers ainda não migrados.
    */
   const createScenarioUnitOfWork = new SimplePlanningUnitOfWork()
-  const archiveScenarioUnitOfWork = new SimplePlanningUnitOfWork()
   return Object.freeze({
     createWorkspace: new CreateWorkspaceHandler(
       baseline,
@@ -91,13 +88,6 @@ export async function createServerPlanningApplication(
     createScenarioBranch: new CreateScenarioBranchService(
       scenarios,
       eventCollector
-    ),
-
-    archiveScenario: new ArchiveScenarioHandler(
-      scenarios,
-      archiveScenarioUnitOfWork,
-      eventCollector,
-      authorization
     ),
 
     publishScenario: new PublishScenarioHandler(

@@ -49,6 +49,7 @@ test("renders empty and loading states", () => {
 })
 
 const planningDashboard: PlanningDashboardViewModel = {
+  content: { changeSets: [], projectedDepartments: [] },
   scenario: {
     id: "scenario-1", companyId: "company-1", workspaceId: "workspace-1", baseSnapshotId: "snapshot-1",
     parentScenarioId: null, branchDepth: 0, branchPath: "scenario-1", name: "Expansão regional", description: null,

@@ -8,7 +8,11 @@ import type {
   PlanningComparisonViewModel,
   PlanningInsightsViewModel,
 } from "../../presentation"
-import type { PlanningDashboardViewModel } from "../contracts/planning-dashboard-contract"
+import { parseDepartmentChangeSet } from "../../projection"
+import type {
+  PlanningContentEditorViewModel,
+  PlanningDashboardViewModel,
+} from "../contracts/planning-dashboard-contract"
 import { toScenarioDTO } from "../dto/planning-dto-mappers"
 import type {
   PlanningProjectionReadResult,
@@ -81,6 +85,7 @@ export class PlanningReadApplicationService {
 
     return createDashboardViewModel({
       scenario: projection.scenario,
+      content: createContentEditorViewModel(projection),
       comparison:
         this.dependencies.comparisonPresenter.present(
           comparison,
@@ -98,6 +103,7 @@ export class PlanningReadApplicationService {
 function createDashboardViewModel(
   input: Readonly<{
     scenario: PlanningScenario
+    content: PlanningContentEditorViewModel
     comparison: PlanningComparisonViewModel
     insights: PlanningInsightsViewModel
     generatedAt: Date
@@ -105,10 +111,41 @@ function createDashboardViewModel(
 ): PlanningDashboardViewModel {
   return Object.freeze({
     scenario: toScenarioDTO(input.scenario),
+    content: input.content,
     comparison: input.comparison,
     insights: input.insights,
     generatedAt:
       input.generatedAt.toISOString(),
     version: input.scenario.version,
+  })
+}
+
+function createContentEditorViewModel(
+  projection: PlanningProjectionReadResult
+): PlanningContentEditorViewModel {
+  const changeSets = projection.changeSets.flatMap((changeSet) => {
+    if (changeSet.changeType !== "department.create") return []
+    const parsed = parseDepartmentChangeSet(changeSet)
+    if (!parsed.success || parsed.changeSet.changeType !== "department.create") {
+      return []
+    }
+    return [Object.freeze({
+      id: changeSet.id,
+      version: changeSet.version,
+      ...parsed.changeSet.payload,
+    })]
+  })
+  const createdIds = new Set(changeSets.map((changeSet) => changeSet.departmentId))
+  const projectedDepartments = projection.execution.organization.departments
+    .filter((department) => createdIds.has(department.id))
+    .map((department) => Object.freeze({
+      id: department.id,
+      name: department.name,
+      code: department.code,
+    }))
+
+  return Object.freeze({
+    changeSets: Object.freeze(changeSets),
+    projectedDepartments: Object.freeze(projectedDepartments),
   })
 }

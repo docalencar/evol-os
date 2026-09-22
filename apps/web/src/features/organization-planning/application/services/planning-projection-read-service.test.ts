@@ -78,7 +78,6 @@ test("carrega e executa uma projeção válida", async () => {
       },
 
       changeSets: {
-        async create() {},
 
         async listPublishableByScenario(
           input,
@@ -269,7 +268,6 @@ function createDependencies() {
     },
 
     changeSets: {
-      async create() {},
 
       async listPublishableByScenario() {
         return createChangeSets()

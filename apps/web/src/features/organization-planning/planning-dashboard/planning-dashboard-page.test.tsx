@@ -11,6 +11,7 @@ import { PlanningDashboardPage } from "./planning-dashboard-page"
 Object.assign(globalThis, { React })
 
 const dashboard: PlanningDashboardViewModel = {
+  content: { changeSets: [], projectedDepartments: [] },
   scenario: {
     id: "scenario-1",
     companyId: "company-1",

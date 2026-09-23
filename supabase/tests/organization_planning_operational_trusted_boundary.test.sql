@@ -106,9 +106,9 @@ select is((select count(*) from public.get_planning_change_sets_v1('b5000000-000
 select set_config('request.jwt.claims','{"sub":"b1000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
 select is(public.create_planning_scenario_v1('b3000000-0000-4000-8000-000000000001','b4000000-0000-4000-8000-000000000001','b5000000-0000-4000-8000-000000000004','New scenario',null)->>'status','draft','owner creates canonical draft');
 select is(public.create_planning_scenario_branch_v1('b5000000-0000-4000-8000-000000000001',1,'b5000000-0000-4000-8000-000000000005')->>'parent_scenario_id','b5000000-0000-4000-8000-000000000001','owner creates canonical branch');
-select throws_ok($$select public.create_planning_scenario_branch_v1('b5000000-0000-4000-8000-000000000001',9,'b5000000-0000-4000-8000-000000000006')$$,'40001','PLANNING_VERSION_CONFLICT','stale branch source is rejected');
+select throws_ok($$select public.create_planning_scenario_branch_v1('b5000000-0000-4000-8000-000000000001',9,'b5000000-0000-4000-8000-000000000006')$$,'P0001','PLANNING_VERSION_CONFLICT','stale branch source is rejected');
 select is(public.rename_planning_scenario_v1('b5000000-0000-4000-8000-000000000004',1,'Renamed scenario')->>'version','2','rename returns persisted incremented version');
-select throws_ok($$select public.rename_planning_scenario_v1('b5000000-0000-4000-8000-000000000004',1,'Stale rename')$$,'40001','PLANNING_VERSION_CONFLICT','stale rename is rejected');
+select throws_ok($$select public.rename_planning_scenario_v1('b5000000-0000-4000-8000-000000000004',1,'Stale rename')$$,'P0001','PLANNING_VERSION_CONFLICT','stale rename is rejected');
 select is(public.delete_planning_scenario_v1('b5000000-0000-4000-8000-000000000003',1)->>'deleted','true','draft delete returns canonical result');
 select is((select count(*) from public.get_planning_scenarios_v1('b2000000-0000-4000-8000-000000000001') where id='b5000000-0000-4000-8000-000000000003'),0::bigint,'deleted draft is absent from canonical readback');
 reset role;

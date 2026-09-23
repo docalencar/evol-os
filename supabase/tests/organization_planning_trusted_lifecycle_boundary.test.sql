@@ -116,9 +116,9 @@ select is((select reason from public.organization_planning_lifecycle_audit where
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"a1000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
 select throws_ok($$select public.transition_planning_scenario_v1('a5000000-0000-4000-8000-000000000004','approve',1,'a7000000-0000-4000-8000-000000000012',null)$$,'55000','PLANNING_TRANSITION_INVALID','draft cannot approve');
-select throws_ok($$select public.transition_planning_scenario_v1('a5000000-0000-4000-8000-000000000004','submit',9,'a7000000-0000-4000-8000-000000000013',null)$$,'40001','PLANNING_VERSION_CONFLICT','stale write denied');
+select throws_ok($$select public.transition_planning_scenario_v1('a5000000-0000-4000-8000-000000000004','submit',9,'a7000000-0000-4000-8000-000000000013',null)$$,'P0001','PLANNING_VERSION_CONFLICT','stale write denied');
 select lives_ok($$select public.transition_planning_scenario_v1('a5000000-0000-4000-8000-000000000006','approve',1,'a7000000-0000-4000-8000-000000000014',null)$$,'approve wins logical race');
-select throws_ok($$select public.transition_planning_scenario_v1('a5000000-0000-4000-8000-000000000006','reject',1,'a7000000-0000-4000-8000-000000000015','Late reject')$$,'40001','PLANNING_VERSION_CONFLICT','stale reject loses logical race');
+select throws_ok($$select public.transition_planning_scenario_v1('a5000000-0000-4000-8000-000000000006','reject',1,'a7000000-0000-4000-8000-000000000015','Late reject')$$,'P0001','PLANNING_VERSION_CONFLICT','stale reject loses logical race');
 reset role;
 select is((select status from public.organization_planning_scenarios where id='a5000000-0000-4000-8000-000000000006'),'approved','race winner is durable');
 select is((select count(*) from public.organization_planning_lifecycle_audit where scenario_id='a5000000-0000-4000-8000-000000000006'),1::bigint,'race loser leaves no partial audit');

@@ -47,3 +47,39 @@ test("the stale conflict emits durable non-overwrite evidence", () => {
   assert.match(step, /expect\(payloads\)\.not\.toContain\(`\$\{departmentName\} STALE`\)/)
   assert.match(step, /testInfo\.attach\("step-6-non-overwrite\.json"/)
 })
+
+function helper(name: string, nextName: string): string {
+  const start = spec.indexOf(`async function ${name}`)
+  assert.ok(start >= 0, `${name} must exist`)
+  const end = spec.indexOf(`async function ${nextName}`, start)
+  assert.ok(end > start, `${nextName} must follow ${name}`)
+  return spec.slice(start, end)
+}
+
+test("operation selection opens a menu that starts closed", () => {
+  const ensureOpen = helper("ensureOperationsMenuOpen", "runOperation")
+
+  assert.match(ensureOpen, /if \(!\(await operationsMenuIsOpen\(page\)\)\)/)
+  assert.match(ensureOpen, /getByRole\("button", \{ name: `Operações de \$\{scenarioName\}` \}\)\.click\(\)/)
+  assert.match(ensureOpen, /expect\.poll\(\(\) => operationsMenuIsOpen\(page\)\)\.toBe\(true\)/)
+})
+
+test("operation selection reuses a menu that is already open", () => {
+  const run = helper("runOperation", "offeredOperations")
+
+  assert.match(run, /await ensureOperationsMenuOpen\(page\)/)
+  assert.match(run, /getByRole\("button", \{ name: label \}\)\.click\(\)/)
+  assert.doesNotMatch(run, /Operações de \$\{scenarioName\}/)
+})
+
+test("capability inspection closes its menu before operation execution", () => {
+  const inspect = spec.slice(spec.indexOf("async function offeredOperations"), spec.indexOf("test.describe("))
+  const inspectCapabilities = inspect.indexOf("for (const label of OPERATION_LABELS)")
+  const closeMenu = inspect.indexOf('getByRole("button", { name: `Operações de ${scenarioName}` }).click()')
+  const proveClosed = inspect.indexOf("operationsMenuIsOpen(page)).toBe(false)")
+
+  assert.match(inspect, /await ensureOperationsMenuOpen\(page\)/)
+  assert.ok(inspectCapabilities >= 0)
+  assert.ok(closeMenu > inspectCapabilities)
+  assert.ok(proveClosed > closeMenu)
+})

@@ -56,6 +56,15 @@ const REVISED = "Cenário devolvido para revisão."
 /** Surface markers, each unconditional on the surface that renders it. */
 const PLANNING_SECTION = "Planejamento organizacional"
 const SCENARIOS_SECTION = "Cenários"
+const OPERATION_LABELS = [
+  "Renomear cenário",
+  "Duplicar cenário",
+  "Excluir cenário",
+  "Enviar para aprovação",
+  "Aprovar cenário",
+  "Rejeitar cenário",
+  "Revisar rascunho",
+] as const
 
 let workspaceId = ""
 let scenarioId = ""
@@ -251,9 +260,22 @@ async function openDialog(page: Page, trigger: string): Promise<Locator> {
  * `submit`, submitted offers `approve`/`reject`, rejected offers `revise` — so an
  * item's ABSENCE is the product's statement about the lifecycle, not a defect.
  */
+async function operationsMenuIsOpen(page: Page): Promise<boolean> {
+  for (const label of OPERATION_LABELS) {
+    if ((await page.getByRole("button", { name: label }).count()) > 0) return true
+  }
+  return false
+}
+
+async function ensureOperationsMenuOpen(page: Page): Promise<void> {
+  if (!(await operationsMenuIsOpen(page))) {
+    await page.getByRole("button", { name: `Operações de ${scenarioName}` }).click()
+  }
+  await expect.poll(() => operationsMenuIsOpen(page)).toBe(true)
+}
 
 async function runOperation(page: Page, label: string, reason?: string): Promise<void> {
-  await page.getByRole("button", { name: `Operações de ${scenarioName}` }).click()
+  await ensureOperationsMenuOpen(page)
   await page.getByRole("button", { name: label }).click()
   if (reason !== undefined) {
     await page.getByLabel("Motivo privado da rejeição").fill(reason)
@@ -265,20 +287,13 @@ async function runOperation(page: Page, label: string, reason?: string): Promise
 
 /** The operations the product offers for the current status. */
 async function offeredOperations(page: Page): Promise<string[]> {
-  await page.getByRole("button", { name: `Operações de ${scenarioName}` }).click()
-  const labels = [
-    "Renomear cenário",
-    "Duplicar cenário",
-    "Excluir cenário",
-    "Enviar para aprovação",
-    "Aprovar cenário",
-    "Rejeitar cenário",
-    "Revisar rascunho",
-  ]
+  await ensureOperationsMenuOpen(page)
   const offered: string[] = []
-  for (const label of labels) {
+  for (const label of OPERATION_LABELS) {
     if ((await page.getByRole("button", { name: label }).count()) > 0) offered.push(label)
   }
+  await page.getByRole("button", { name: `Operações de ${scenarioName}` }).click()
+  await expect.poll(() => operationsMenuIsOpen(page)).toBe(false)
   return offered
 }
 

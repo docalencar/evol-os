@@ -133,7 +133,10 @@ async function openScenario(page: Page): Promise<void> {
 }
 
 async function planningTimeline(page: Page): Promise<void> {
-  await page.goto("/app/organization/planning/timeline")
+  if (!workspaceId) throw new Error("E2E_WORKSPACE_MISSING")
+  await page.goto(
+    `/app/organization/planning/timeline?workspaceId=${encodeURIComponent(workspaceId)}`,
+  )
   await expect(page.getByRole("heading", { name: SCENARIOS_SECTION }).first()).toBeVisible({
     timeout: 30_000,
   })
@@ -356,7 +359,7 @@ test.describe("organization planning journey: authoring, lifecycle, publication"
   test("3-6. content is authored, read back canonically, projected, and version-guarded", async ({
     page,
     context,
-  }) => {
+  }, testInfo) => {
     await enterAs(page, AUTHOR)
     await openScenario(page)
 
@@ -400,18 +403,44 @@ test.describe("organization planning journey: authoring, lifecycle, publication"
     await page.getByRole("button", { name: "Adicionar departamento" }).click()
     await confirm(page, DEPARTMENT_ADDED)
     const afterWinner = await readScenario()
+    const canonicalBeforeStale = await readScenario()
+    const contentBeforeStale = await activeChangeSets()
 
     await stale.getByLabel("Nome", { exact: true }).first().fill(`${departmentName} STALE`)
+    const staleSettlementStartedAt = performance.now()
     await stale.getByRole("button", { name: "Adicionar departamento" }).click()
     await confirm(stale, VERSION_CONFLICT)
+    const staleSettlementMs = Math.round(performance.now() - staleSettlementStartedAt)
 
     // Nothing of the refused write reached canonical state.
     const afterStale = await readScenario()
     expect(afterStale.version).toBe(afterWinner.version)
-    const payloads = (await activeChangeSets()).map(
+    const contentAfterStale = await activeChangeSets()
+    expect(contentAfterStale).toEqual(contentBeforeStale)
+    const payloads = contentAfterStale.map(
       (entry) => (entry.payload as { name?: string })?.name,
     )
     expect(payloads).not.toContain(`${departmentName} STALE`)
+
+    await testInfo.attach("step-6-non-overwrite.json", {
+      body: JSON.stringify(
+        {
+          staleSettlementMs,
+          surfacedConflict: VERSION_CONFLICT,
+          staleExpectedVersion: afterCreate.version,
+          winningVersion: afterWinner.version,
+          canonicalVersionBeforeStale: canonicalBeforeStale.version,
+          canonicalVersionAfterStale: afterStale.version,
+          activeChangeSetsBeforeStale: contentBeforeStale,
+          activeChangeSetsAfterStale: contentAfterStale,
+          staleContentAbsent: !payloads.includes(`${departmentName} STALE`),
+          verdict: "NON_OVERWRITE=PASS",
+        },
+        null,
+        2,
+      ),
+      contentType: "application/json",
+    })
     await stale.close()
   })
 

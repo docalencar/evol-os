@@ -93,7 +93,7 @@ select throws_ok($$select public.create_planning_change_set_v1('c5000000-0000-40
 select throws_ok($$select public.create_planning_change_set_v1('c5000000-0000-4000-8000-000000000001',1,'c6000000-0000-4000-8000-000000000095','unknown.change','{}')$$,'22023','PLANNING_CHANGE_SET_INPUT_INVALID','unsupported change type is rejected');
 select is(public.create_planning_change_set_v1('c5000000-0000-4000-8000-000000000001',1,'c6000000-0000-4000-8000-000000000001','department.create','{"department":{"id":"alpha","name":"Alpha"}}')->'scenario'->>'version','2','owner create increments and returns scenario version');
 select is((select version from public.get_planning_change_sets_v1('c5000000-0000-4000-8000-000000000001') where id='c6000000-0000-4000-8000-000000000001'),1,'create is canonically readable in projection order');
-select throws_ok($$select public.create_planning_change_set_v1('c5000000-0000-4000-8000-000000000001',1,'c6000000-0000-4000-8000-000000000096','team.create','{}')$$,'40001','PLANNING_VERSION_CONFLICT','stale create is rejected');
+select throws_ok($$select public.create_planning_change_set_v1('c5000000-0000-4000-8000-000000000001',1,'c6000000-0000-4000-8000-000000000096','team.create','{}')$$,'P0001','PLANNING_VERSION_CONFLICT','stale create is rejected');
 
 select is(public.replace_planning_change_set_v1('c5000000-0000-4000-8000-000000000001',2,'c6000000-0000-4000-8000-000000000001','c6000000-0000-4000-8000-000000000002','department.update','{"department":{"id":"alpha","name":"Alpha 2"}}')->'scenario'->>'version','3','replace increments and returns scenario version');
 reset role;
@@ -102,7 +102,7 @@ select ok((select not active and archived_at is not null from public.organizatio
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"c1000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
 select is((select id from public.get_planning_change_sets_v1('c5000000-0000-4000-8000-000000000001')),'c6000000-0000-4000-8000-000000000002'::uuid,'canonical readback exposes only active replacement');
-select throws_ok($$select public.replace_planning_change_set_v1('c5000000-0000-4000-8000-000000000001',2,'c6000000-0000-4000-8000-000000000002','c6000000-0000-4000-8000-000000000097','department.update','{}')$$,'40001','PLANNING_VERSION_CONFLICT','stale replace is rejected atomically');
+select throws_ok($$select public.replace_planning_change_set_v1('c5000000-0000-4000-8000-000000000001',2,'c6000000-0000-4000-8000-000000000002','c6000000-0000-4000-8000-000000000097','department.update','{}')$$,'P0001','PLANNING_VERSION_CONFLICT','stale replace is rejected atomically');
 
 select is(public.create_planning_change_set_v1('c5000000-0000-4000-8000-000000000001',3,'c6000000-0000-4000-8000-000000000003','team.create','{"team":{"id":"beta"}}')->'changeSet'->>'version','2','create appends deterministic projection order');
 select is(public.remove_planning_change_set_v1('c5000000-0000-4000-8000-000000000001',4,'c6000000-0000-4000-8000-000000000002')->'scenario'->>'version','5','remove increments and returns scenario version');
@@ -111,16 +111,16 @@ select ok((select not active and archived_at is not null from public.organizatio
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"c1000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
 select is((select count(*) from public.get_planning_change_sets_v1('c5000000-0000-4000-8000-000000000001')),1::bigint,'remove canonical readback omits archived history');
-select throws_ok($$select public.remove_planning_change_set_v1('c5000000-0000-4000-8000-000000000001',4,'c6000000-0000-4000-8000-000000000003')$$,'40001','PLANNING_VERSION_CONFLICT','stale remove leaves active content unchanged');
+select throws_ok($$select public.remove_planning_change_set_v1('c5000000-0000-4000-8000-000000000001',4,'c6000000-0000-4000-8000-000000000003')$$,'P0001','PLANNING_VERSION_CONFLICT','stale remove leaves active content unchanged');
 
 select is(public.reorder_planning_change_sets_v1('c5000000-0000-4000-8000-000000000008',1,array['c6000000-0000-4000-8000-000000000083','c6000000-0000-4000-8000-000000000081','c6000000-0000-4000-8000-000000000082']::uuid[])->'scenario'->>'version','2','reorder increments and returns scenario version');
 select results_eq($$select id from public.get_planning_change_sets_v1('c5000000-0000-4000-8000-000000000008') order by version,id$$,$$values
  ('c6000000-0000-4000-8000-000000000083'::uuid),('c6000000-0000-4000-8000-000000000081'::uuid),('c6000000-0000-4000-8000-000000000082'::uuid)$$,'reorder persists canonical deterministic projection order');
 select throws_ok($$select public.reorder_planning_change_sets_v1('c5000000-0000-4000-8000-000000000008',2,array['c6000000-0000-4000-8000-000000000083','c6000000-0000-4000-8000-000000000083','c6000000-0000-4000-8000-000000000082']::uuid[])$$,'22023','PLANNING_CHANGE_SET_ORDER_INVALID','duplicate reorder input is rejected');
-select throws_ok($$select public.reorder_planning_change_sets_v1('c5000000-0000-4000-8000-000000000008',1,array['c6000000-0000-4000-8000-000000000081','c6000000-0000-4000-8000-000000000082','c6000000-0000-4000-8000-000000000083']::uuid[])$$,'40001','PLANNING_VERSION_CONFLICT','stale reorder is rejected before mutation');
+select throws_ok($$select public.reorder_planning_change_sets_v1('c5000000-0000-4000-8000-000000000008',1,array['c6000000-0000-4000-8000-000000000081','c6000000-0000-4000-8000-000000000082','c6000000-0000-4000-8000-000000000083']::uuid[])$$,'P0001','PLANNING_VERSION_CONFLICT','stale reorder is rejected before mutation');
 
 select is(public.create_planning_change_set_v1('c5000000-0000-4000-8000-000000000009',1,'c6000000-0000-4000-8000-000000000009','vacancy.create','{"vacancy":{"id":"v1"}}')->'scenario'->>'version','2','first logical concurrent writer succeeds');
-select throws_ok($$select public.create_planning_change_set_v1('c5000000-0000-4000-8000-000000000009',1,'c6000000-0000-4000-8000-000000000010','vacancy.create','{}')$$,'40001','PLANNING_VERSION_CONFLICT','second logical concurrent writer loses on expected_version');
+select throws_ok($$select public.create_planning_change_set_v1('c5000000-0000-4000-8000-000000000009',1,'c6000000-0000-4000-8000-000000000010','vacancy.create','{}')$$,'P0001','PLANNING_VERSION_CONFLICT','second logical concurrent writer loses on expected_version');
 
 select throws_ok($$select public.create_planning_change_set_v1('c5000000-0000-4000-8000-000000000004',1,'c6000000-0000-4000-8000-000000000014','team.create','{}')$$,'55000','PLANNING_CONTENT_REQUIRES_DRAFT','submitted content is locked');
 select throws_ok($$select public.replace_planning_change_set_v1('c5000000-0000-4000-8000-000000000005',1,'c6000000-0000-4000-8000-000000000005','c6000000-0000-4000-8000-000000000015','department.update','{}')$$,'55000','PLANNING_CONTENT_REQUIRES_DRAFT','rejected content is locked until lifecycle revise');

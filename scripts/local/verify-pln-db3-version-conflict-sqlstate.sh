@@ -68,23 +68,76 @@ if grep -rl "'40001','PLANNING_VERSION_CONFLICT'" supabase/tests >/dev/null 2>&1
   STATIC_CONTRACT=FAIL
 fi
 
-# 0139 itself must not raise the old code, and must not alter privileges.
-if grep -qE "errcode\s*=\s*'40001'" "$MIGRATION_0139"; then
-  say "[pln-db3]     STATIC: 0139 still raises 40001."
-  STATIC_CONTRACT=FAIL
-fi
-if grep -qiE "^(grant|revoke)" "$MIGRATION_0139"; then
-  say "[pln-db3]     STATIC: 0139 issues GRANT/REVOKE; CREATE OR REPLACE must retain privileges."
+# --------------------------------------------------------------------------
+# Everything below judges the EXECUTABLE surface of 0139, never its prose.
+#
+# An earlier revision of this gate banned the strings DEVELOPMENT_VERSION_CONFLICT
+# and TENANT_CONFLICT anywhere in the file. That failed the slice on its own
+# header comment — the note recording those surfaces as deliberately OUT of scope.
+# Documenting what a change does not touch is evidence of discipline, not a
+# violation of it. A guard must test the delta, not the vocabulary.
+# --------------------------------------------------------------------------
+EXEC_0139=$(mktemp -t plndb3exec.XXXXXX)
+grep -vE '^[[:space:]]*--' "$MIGRATION_0139" >"$EXEC_0139"
+
+# 1. The executable surface is exactly the eight identified Planning functions.
+EXPECTED_TARGETS="create_planning_change_set_v1
+create_planning_scenario_branch_v1
+delete_planning_scenario_v1
+remove_planning_change_set_v1
+rename_planning_scenario_v1
+reorder_planning_change_sets_v1
+replace_planning_change_set_v1
+transition_planning_scenario_v1"
+ACTUAL_TARGETS=$(grep -oE '^create or replace function public\.[a-z_0-9]+' "$EXEC_0139" \
+                 | sed 's#^create or replace function public\.##' | sort)
+if [ "$ACTUAL_TARGETS" != "$(printf '%s' "$EXPECTED_TARGETS" | sort)" ]; then
+  say "[pln-db3]     STATIC: 0139 redefines an unexpected set of functions."
+  say "              expected:"; printf '%s\n' "$EXPECTED_TARGETS" | sort | sed 's/^/                /'
+  say "              actual:";   printf '%s\n' "$ACTUAL_TARGETS"          | sed 's/^/                /'
   STATIC_CONTRACT=FAIL
 fi
 
-# Out-of-scope surfaces must be untouched by this slice.
-for guard in DEVELOPMENT_VERSION_CONFLICT TENANT_CONFLICT; do
-  if grep -q "$guard" "$MIGRATION_0139"; then
-    say "[pln-db3]     STATIC: 0139 mentions $guard; this slice is Planning-only."
-    STATIC_CONTRACT=FAIL
-  fi
-done
+# 2. No executable statement other than those CREATE OR REPLACE FUNCTION bodies.
+#    In particular no GRANT/REVOKE: CREATE OR REPLACE must retain privileges, so
+#    a privilege statement here would mean the fingerprint was re-asserted rather
+#    than preserved.
+STRAY=$(grep -nE '^(grant|revoke|alter|drop|truncate|comment on|insert|update|delete)\b' "$EXEC_0139")
+if [ -n "$STRAY" ]; then
+  say "[pln-db3]     STATIC: 0139 contains executable statements beyond the eight bodies:"
+  printf '%s\n' "$STRAY" | sed 's/^/                /'
+  STATIC_CONTRACT=FAIL
+fi
+
+# 3. No executable reference to an out-of-scope boundary. Comments may discuss
+#    them; code may not touch them.
+OUT_OF_SCOPE=$(grep -nE 'DEVELOPMENT_VERSION_CONFLICT|TENANT_CONFLICT|APPROVAL_VERSION_CONFLICT|_development_|tenant_access|approval_request' "$EXEC_0139")
+if [ -n "$OUT_OF_SCOPE" ]; then
+  say "[pln-db3]     STATIC: 0139 executably references an out-of-scope boundary:"
+  printf '%s\n' "$OUT_OF_SCOPE" | sed 's/^/                /'
+  STATIC_CONTRACT=FAIL
+fi
+
+# 4. Planning's deterministic conflict must no longer be raised as 40001.
+if grep -qE "errcode[[:space:]]*=[[:space:]]*'40001'" "$EXEC_0139"; then
+  say "[pln-db3]     STATIC: 0139 still raises 40001."
+  STATIC_CONTRACT=FAIL
+fi
+CONFLICT_RAISES=$(grep -cE "errcode[[:space:]]*=[[:space:]]*'P0001'[[:space:]]*,[[:space:]]*message[[:space:]]*=[[:space:]]*'PLANNING_VERSION_CONFLICT'" "$EXEC_0139")
+if [ "$CONFLICT_RAISES" -ne 8 ]; then
+  say "[pln-db3]     STATIC: expected 8 P0001 conflict raises in 0139, found $CONFLICT_RAISES."
+  STATIC_CONTRACT=FAIL
+fi
+
+# 5. This was a targeted correction, not a blanket replacement: genuine 40001
+#    semantics must survive elsewhere in the migration history.
+SURVIVING_40001=$(grep -rlE "errcode[[:space:]]*=[[:space:]]*'40001'" supabase/migrations 2>/dev/null | wc -l | tr -d ' ')
+if [ "${SURVIVING_40001:-0}" -eq 0 ]; then
+  say "[pln-db3]     STATIC: no 40001 remains anywhere — this looks like a blanket replacement."
+  STATIC_CONTRACT=FAIL
+fi
+
+rm -f "$EXEC_0139"
 
 [ "$STATIC_CONTRACT" = PASS ] || { say ""; say "PLN_DB3_MAC_GATE=FAIL"; say "STATIC_CONTRACT=FAIL"; exit 1; }
 say "[pln-db3]     STATIC_CONTRACT=PASS"

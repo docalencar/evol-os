@@ -66,10 +66,20 @@ const OPERATION_LABELS = [
   "Revisar rascunho",
 ] as const
 
+type LiveOrganizationEntry = Readonly<{
+  entityType: string
+  entityId: string
+  name: string
+  status: string | null
+  departmentId: string | null
+  parentEntityId: string | null
+}>
+
 let workspaceId = ""
 let scenarioId = ""
 let scenarioName = ""
 let departmentName = ""
+let liveOrganizationBefore: readonly LiveOrganizationEntry[] = []
 
 let cached: RunManifest | null = null
 function manifest(): RunManifest {
@@ -185,6 +195,70 @@ async function activeChangeSets() {
   return (await readChangeSets()).filter((changeSet) => changeSet.active)
 }
 
+async function readLifecycleHistory() {
+  const author = actor(AUTHOR)
+  const client = await userClient(author.email, author.password)
+  const { data, error } = await client.rpc("get_planning_scenario_lifecycle_v1", {
+    p_scenario_id: scenarioId,
+  })
+  if (error) throw new Error(`E2E_LIFECYCLE_READBACK_FAILED: ${error.message}`)
+  return (data ?? []) as Array<{
+    event_type: string
+    from_status: string
+    to_status: string
+    resulting_version: number
+    reason: string | null
+  }>
+}
+
+async function readTrustedScenario() {
+  const author = actor(AUTHOR)
+  const client = await userClient(author.email, author.password)
+  const { data, error } = await client.rpc("get_planning_scenarios_v1", {
+    p_company_id: tenantACompanyId(),
+  })
+  if (error) throw new Error(`E2E_TRUSTED_SCENARIO_READBACK_FAILED: ${error.message}`)
+  const matches = ((data ?? []) as Array<{
+    id: string
+    company_id: string
+    status: string
+    version: number
+  }>).filter((scenario) => scenario.id === scenarioId)
+  if (matches.length !== 1) {
+    throw new Error(`E2E_TRUSTED_SCENARIO_READBACK_NOT_UNIQUE: found ${matches.length}`)
+  }
+  return matches[0]!
+}
+
+/** Semantic, order-independent fingerprint of the canonical live organization. */
+async function readLiveOrganization() {
+  const author = actor(AUTHOR)
+  const client = await userClient(author.email, author.password)
+  const { data, error } = await client.rpc("get_tenant_organization_directory_v1", {
+    p_company_id: tenantACompanyId(),
+  })
+  if (error) throw new Error(`E2E_LIVE_ORGANIZATION_READBACK_FAILED: ${error.message}`)
+  return ((data ?? []) as Array<{
+    entity_type: string
+    entity_id: string
+    name: string
+    status: string | null
+    department_id: string | null
+    parent_entity_id: string | null
+  }>)
+    .map((entry): LiveOrganizationEntry => ({
+      entityType: entry.entity_type,
+      entityId: entry.entity_id,
+      name: entry.name,
+      status: entry.status,
+      departmentId: entry.department_id,
+      parentEntityId: entry.parent_entity_id,
+    }))
+    .sort((left, right) =>
+      `${left.entityType}:${left.entityId}`.localeCompare(`${right.entityType}:${right.entityId}`),
+    )
+}
+
 /**
  * The tenant's planning workspace, or null. One per company by unique
  * constraint, so `maybeSingle` is the honest shape — bootstrap is conditional on
@@ -297,6 +371,12 @@ async function offeredOperations(page: Page): Promise<string[]> {
   return offered
 }
 
+async function expectTerminalControlUnavailable(page: Page, label: string): Promise<void> {
+  const control = page.getByRole("button", { name: label })
+  if ((await control.count()) === 0) return
+  await expect(control).toBeDisabled()
+}
+
 test.describe("organization planning journey: authoring, lifecycle, publication", () => {
   // ------------------------------------------------------------------ A
   test("1-2. a workspace with a baseline exists and a draft scenario is created", async ({
@@ -325,6 +405,8 @@ test.describe("organization planning journey: authoring, lifecycle, publication"
     const workspace = await findWorkspace()
     if (!workspace) throw new Error("E2E_WORKSPACE_MISSING")
     workspaceId = workspace.id as string
+    liveOrganizationBefore = await readLiveOrganization()
+    expect(liveOrganizationBefore.some((entry) => entry.name === departmentName)).toBe(false)
 
     // `bootstrap_planning_workspace` writes the baseline snapshot in the same
     // statement, so a workspace without one is not a valid starting state.
@@ -484,6 +566,18 @@ test.describe("organization planning journey: authoring, lifecycle, publication"
     await expect.poll(async () => (await readScenario()).status, { timeout: 30_000 }).toBe(
       "rejected",
     )
+    const rejectedScenario = await readTrustedScenario()
+    expect(rejectedScenario.company_id).toBe(tenantACompanyId())
+    const rejectionFacts = (await readLifecycleHistory()).filter(
+      (entry) => entry.event_type === "planning.scenario.rejected",
+    )
+    expect(rejectionFacts).toHaveLength(1)
+    expect(rejectionFacts[0]).toMatchObject({
+      from_status: "submitted",
+      to_status: "rejected",
+      resulting_version: rejectedScenario.version,
+      reason: REJECTION_REASON,
+    })
 
     // 9. a rejected scenario is still not editable.
     await openScenario(page)
@@ -580,6 +674,11 @@ test.describe("organization planning journey: authoring, lifecycle, publication"
     expect(JSON.stringify(snapshot?.organization ?? {})).toContain(
       `${departmentName}${REVISED_SUFFIX}`,
     )
+    const liveOrganizationAfter = await readLiveOrganization()
+    expect(liveOrganizationAfter).toEqual(liveOrganizationBefore)
+    expect(
+      liveOrganizationAfter.some((entry) => entry.name === `${departmentName}${REVISED_SUFFIX}`),
+    ).toBe(false)
 
     // 16. canonical scenario reads published.
     const scenario = await readScenario()
@@ -593,10 +692,10 @@ test.describe("organization planning journey: authoring, lifecycle, publication"
       "Adicionar departamento",
       "Salvar edição",
       "Remover",
-      "Publicar Cenário",
     ]) {
       await expect(page.getByRole("button", { name: label })).toHaveCount(0)
     }
+    await expectTerminalControlUnavailable(page, "Publicar Cenário")
     await planningTimeline(page)
     expect(await offeredOperations(page)).toEqual([])
 

@@ -1,9 +1,12 @@
 /** Static guards for the PLN-P6 hosted Planning harness. No Review access. */
 
 import assert from "node:assert/strict"
-import { readFileSync } from "node:fs"
+import { mkdtempSync, readFileSync } from "node:fs"
+import { tmpdir } from "node:os"
 import { resolve } from "node:path"
 import test from "node:test"
+
+import { runEvidenceFile } from "./helpers/run-paths"
 
 const spec = readFileSync(
   resolve(import.meta.dirname, "specs/16-organization-planning-journey.spec.ts"),
@@ -45,7 +48,25 @@ test("the stale conflict emits durable non-overwrite evidence", () => {
   assert.match(step, /expect\(afterStale\.version\)\.toBe\(afterWinner\.version\)/)
   assert.match(step, /expect\(contentAfterStale\)\.toEqual\(contentBeforeStale\)/)
   assert.match(step, /expect\(payloads\)\.not\.toContain\(`\$\{departmentName\} STALE`\)/)
-  assert.match(step, /testInfo\.attach\("step-6-non-overwrite\.json"/)
+  assert.match(step, /runEvidenceFile\(manifest\(\)\.runId, "step-6-non-overwrite\.json"\)/)
+  assert.match(step, /writeFileSync\(temporaryEvidencePath, step6Evidence, \{ mode: 0o600 \}\)/)
+  assert.match(step, /renameSync\(temporaryEvidencePath, evidencePath\)/)
+  assert.match(step, /testInfo\.attach\("step-6-non-overwrite\.json", \{\s*path: evidencePath,/)
+})
+
+test("step-6 evidence has a durable run-scoped archive path", () => {
+  const previous = process.env.E2E_RUN_DIR
+  const isolatedRunDir = mkdtempSync(resolve(tmpdir(), "pln-p6g-evidence-"))
+  process.env.E2E_RUN_DIR = isolatedRunDir
+  try {
+    assert.equal(
+      runEvidenceFile("260924012303-51e37c", "step-6-non-overwrite.json"),
+      resolve(isolatedRunDir, "archive", "260924012303-51e37c", "step-6-non-overwrite.json"),
+    )
+  } finally {
+    if (previous === undefined) delete process.env.E2E_RUN_DIR
+    else process.env.E2E_RUN_DIR = previous
+  }
 })
 
 function helper(name: string, nextName: string): string {
@@ -73,15 +94,43 @@ test("operation selection reuses a menu that is already open", () => {
 })
 
 test("capability inspection closes its menu before operation execution", () => {
-  const inspect = spec.slice(spec.indexOf("async function offeredOperations"), spec.indexOf("test.describe("))
-  const inspectCapabilities = inspect.indexOf("for (const label of OPERATION_LABELS)")
-  const closeMenu = inspect.indexOf('getByRole("button", { name: `Operações de ${scenarioName}` }).click()')
+  const inspect = helper("offeredOperations", "visibleOperations")
+  const inspectCapabilities = inspect.indexOf("visibleOperations(page)")
+  const closeMenu = inspect.indexOf("await trigger.click()")
   const proveClosed = inspect.indexOf("operationsMenuIsOpen(page)).toBe(false)")
 
   assert.match(inspect, /await ensureOperationsMenuOpen\(page\)/)
   assert.ok(inspectCapabilities >= 0)
   assert.ok(closeMenu > inspectCapabilities)
   assert.ok(proveClosed > closeMenu)
+})
+
+test("an absent operations trigger means no lifecycle menu is required", () => {
+  const inspect = helper("offeredOperations", "visibleOperations")
+
+  assert.match(inspect, /if \(\(await trigger\.count\(\)\) === 0\)/)
+  assert.match(inspect, /return visibleOperations\(page\)/)
+  assert.ok(
+    inspect.indexOf("trigger.count()") < inspect.indexOf("ensureOperationsMenuOpen(page)"),
+    "absence must settle before any attempt to open the menu",
+  )
+})
+
+test("a present operations trigger is inspected whether initially closed or open", () => {
+  const inspect = helper("offeredOperations", "visibleOperations")
+
+  assert.match(inspect, /await ensureOperationsMenuOpen\(page\)/)
+  assert.match(inspect, /const offered = await visibleOperations\(page\)/)
+  assert.match(inspect, /await trigger\.click\(\)/)
+})
+
+test("actionable terminal operations are still returned and rejected", () => {
+  const visible = helper("visibleOperations", "expectTerminalControlUnavailable")
+  const terminalStep = spec.slice(spec.indexOf("// 17. a published scenario"), spec.indexOf("// 18. terminality"))
+
+  assert.match(visible, /for \(const label of OPERATION_LABELS\)/)
+  assert.match(visible, /offered\.push\(label\)/)
+  assert.match(terminalStep, /expect\(await offeredOperations\(page\)\)\.toEqual\(\[\]\)/)
 })
 
 function terminalControlAccepted(count: number, enabled: boolean): boolean {

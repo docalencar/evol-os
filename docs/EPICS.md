@@ -80,13 +80,8 @@ humanos e preservados por Application Snapshots. Competências operacionais
 continuam estritamente tenant-owned; templates company-owned referenciam somente
 competências da própria empresa; IA pode sugerir mappings, mas nunca confirmá-los.
 
-Restante: comprovar autorização e fechar a jornada periódica com Feedback e
-Liderança, além de implementar o hardening relacional de Development conforme
-ADR-0012 e PD-018.
-
-Próximo gate recomendado: readiness discovery da Jornada 4 — Desenvolvimento.
-Antes de qualquer harness hosted, devem ser adjudicados privacy, trusted
-authoring, PDI alcançável, conclusão de ações e revisões periódicas.
+O fluxo ponta a ponta de Development está `CLOSED / PASS` pelo E2E-6. A integração
+mais ampla com a jornada periódica de Liderança permanece separada.
 
 ## Recrutamento e Aprovações — parcial
 
@@ -102,6 +97,12 @@ insights, timeline, branching, validação e publicação.
 
 Seu uso operacional continua subordinado ao gate de Fundação e às invariantes da
 organização de origem.
+
+Evidência hosted operacional: PLN-P6 `CLOSED / PASS`, run
+`260924115952-39d810`, com lifecycle, concorrência sem overwrite, publicação,
+snapshot imutável, live organization inalterada, isolamento entre tenants e
+terminalidade provados. Esse resultado não fecha as demais capacidades da Jornada
+6 — RH Estratégico.
 
 ## KPI e Analytics — concluído na fundação
 

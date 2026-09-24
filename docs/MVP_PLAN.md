@@ -141,6 +141,12 @@ decisões humanas.
   insights, timeline, branching e publicação determinísticos e persistidos.
 - **Documentação:** `docs/Architecture/organization-planning.md` e ADRs 0007–0009.
 - **PRs relacionadas:** #19–#45 e #72–#73.
+- **Evidência hosted operacional:** PLN-P6 `CLOSED / PASS`; run
+  `260924115952-39d810`, `main`
+  `71c0df749d92ad64a34349774a41b6dae3d3bd7e`, 9/9 testes e passos 1–19
+  PASS sem retry. Ver
+  `Execution/PLN-P6-HOSTED-PLANNING-JOURNEY-CLOSURE.md`. Esse fechamento não
+  declara concluídas as capacidades restantes de RH Estratégico.
 
 ### Executive
 
@@ -224,7 +230,10 @@ puderem ser executadas com autorização e persistência confiáveis.
 | E2E-4 | Primeiro ciclo completo de Avaliação | CLOSED / PASS |
 | E2E-5 | Feedback formal de avaliação | CLOSED / PASS — 24/24 PROVEN |
 | E2E-6 | Jornada de Desenvolvimento ponta a ponta | CLOSED / PASS — 29/29 PROVEN |
+| PLN-P6 | Jornada operacional de Organization Planning | CLOSED / PASS — passos 1–19 HOSTED-PROVEN |
 
-Desenvolvimento está comprovado como jornada hosted completa. **Liderança e
-decisão executiva permanecem não comprovadas** — são o próximo domínio normativo
-do Gate do MVP.
+Desenvolvimento e a jornada operacional de Planning estão comprovados em Review.
+**Planning não equivale à Jornada 6**: turnover, clima, desempenho agregado,
+potencial, sucessão e planos estratégicos permanecem abertos. **Liderança
+(Jornada 5)** é o próximo domínio normativo; decisão executiva e o restante de RH
+Estratégico continuam não comprovados.

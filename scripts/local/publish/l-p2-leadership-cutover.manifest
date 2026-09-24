@@ -1,0 +1,14 @@
+# L-P2 — Leadership product cutover.
+#
+# No migration, no ACL, no environment change. The production build is required
+# from CI rather than asserted locally: the authoring environment cannot reach
+# Google Fonts, so next/font fails on layout.tsx, a file this slice never edits.
+
+branch        = feat/l-p2-leadership-cutover
+base          = 1f2a48538d77c3db9bec1c56779123fa9a0146cd
+candidate     = 7efcd27d1ef1a5122f67d441464482abd1934571
+commits       = 7efcd27d1ef1a5122f67d441464482abd1934571
+files         = apps/web/package.json apps/web/src/app/(dashboard)/app/development/page.tsx apps/web/src/app/(dashboard)/app/manager/error.tsx apps/web/src/app/(dashboard)/app/manager/page.tsx apps/web/src/components/layout/sidebar.tsx apps/web/src/features/development/templates/components/apply-development-template-dialog.tsx apps/web/src/features/manager-intelligence/components/attention-queue/attention-queue.tsx apps/web/src/features/manager-intelligence/index.ts apps/web/src/features/manager-intelligence/leadership-cutover.test.ts apps/web/src/features/manager-intelligence/presenters/attention-queue-presenter.ts apps/web/src/features/manager-intelligence/queries/get-attention-queue.ts apps/web/src/features/manager-intelligence/repositories/leadership-attention-repository-adapter.ts apps/web/src/features/manager-intelligence/repositories/leadership-attention-repository.ts apps/web/src/features/manager-intelligence/services/create-attention-queue.ts apps/web/src/features/manager-intelligence/types/attention-item.ts apps/web/src/features/manager-intelligence/view-models/attention-queue-view-model.ts
+pr_title      = feat(leadership): cut /app/manager over to the trusted attention boundary
+pr_body       = /tmp/l-p2-pr-body.md
+require_check = web

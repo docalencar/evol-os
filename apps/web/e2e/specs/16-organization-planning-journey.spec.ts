@@ -62,6 +62,7 @@ const SUBMITTED = "Cenário enviado para aprovação."
 const APPROVED = "Cenário aprovado."
 const REJECTED = "Cenário rejeitado."
 const REVISED = "Cenário devolvido para revisão."
+const FOREIGN_DENIAL = "Não foi possível carregar o cenário"
 
 /** Surface markers, each unconditional on the surface that renders it. */
 const PLANNING_SECTION = "Planejamento organizacional"
@@ -773,8 +774,18 @@ test.describe("organization planning journey: authoring, lifecycle, publication"
     await expect(page.getByRole("button", { name: "Adicionar departamento" })).toHaveCount(0)
 
     await switchTo(page, FOREIGN)
-    const response = await page.goto(`/app/organization/planning/${scenarioId}`)
-    expect(response?.status()).toBe(404)
-    await expect(page.getByRole("heading", { name: scenarioName })).toHaveCount(0)
+    await page.goto(`/app/organization/planning/${scenarioId}`)
+    await expect(page.getByText(FOREIGN_DENIAL, { exact: true })).toBeVisible()
+    await expect(page.getByText(scenarioName, { exact: false })).toHaveCount(0)
+    await expect(page.getByText(departmentName, { exact: false })).toHaveCount(0)
+    for (const label of [
+      "Adicionar departamento",
+      "Salvar edição",
+      "Remover",
+      "Publicar Cenário",
+      ...OPERATION_LABELS,
+    ]) {
+      await expect(page.getByRole("button", { name: label })).toHaveCount(0)
+    }
   })
 })

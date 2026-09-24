@@ -1,15 +1,14 @@
 # Evol OS — Roadmap
 
-> **Estado atual (2026-09-17; baseline do contrato = `main`/HEAD
-> `60e7931443bea1553714ba06928b7f1a1283fb7b`).** Os gates hosted E2E-0 a
-> E2E-5 estão **CLOSED / PASS**. E2E-5 — Assessment Feedback lifecycle — foi
-> fechado pelo run `260916024159-e593c0`: 62/62 PASS, contrato 24/24 provado e
-> teardown `RETIRED / HEALTHY`. A próxima capacidade na sequência normativa é a
-> **Jornada 4 — Desenvolvimento**. O contrato D-P0 de privacy, atores e lifecycle
-> está aceito; ela ainda não possui contrato hosted nem numeração E2E aprovada. A
-> próxima prioridade é **D-DB1 — Development Trusted Read/Mutation Boundary**,
-> conforme `NEXT_STEPS.md`. Não iniciar UI, harness ou hosted proof antes das
-> boundaries e validações locais exigidas pelo D-P0. Production:
+> **Estado atual (2026-09-24; baseline = `main`/HEAD
+> `71c0df749d92ad64a34349774a41b6dae3d3bd7e`).** Development e a jornada
+> operacional de Organization Planning estão `CLOSED / PASS / HOSTED-PROVEN`.
+> Planning fechou no run `260924115952-39d810`, com 9/9 testes e passos 1–19
+> PASS em uma execução sem retry. Isso não conclui a Jornada 6 — RH Estratégico.
+> A próxima prioridade normativa é **L-P0 — readiness discovery da Jornada 5
+> (Liderança)**, conforme `NEXT_STEPS.md`; decisão executiva e as capacidades
+> restantes de RH Estratégico permanecem abertas. O drift global de ACL em
+> Review é dívida de segurança separada. Production:
 > `UNKNOWN / REVERIFY BEFORE USE`. Legacy:
 > `NOT A PROMOTION TARGET`. O corpo histórico abaixo preserva programas e
 > prioridades anteriores; a entrega operacional corrente vive em

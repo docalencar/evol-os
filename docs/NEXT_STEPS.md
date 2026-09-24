@@ -5,32 +5,35 @@
 > Estado canônico em [`PROJECT_STATE.md`](./PROJECT_STATE.md).
 
 ```
-SLICE = (a definir) — readiness discovery da próxima jornada do Gate do MVP
+SLICE = L-P0 — readiness discovery da Jornada 5 (Liderança)
 PATH  = GOVERNED
-STATE = AGUARDANDO SELEÇÃO DO DOMÍNIO
+STATE = AGUARDANDO AUTORIZAÇÃO
 ```
 
 ## KNOWN_STATE
 
-- a jornada hosted de **Development está provada**: run `260921200250-49c266`
-  contra Review canônica, `main` `44b61e613c7e0ae4386670103bbea8fce627e425`,
-  **13/13 PASS**, contrato **29/29 PROVEN**, terminal **RETIRED**. Fechamento em
+- Development permanece fechado em
   [`Execution/E2E-6-DEVELOPMENT-JOURNEY-CLOSURE.md`](./Execution/E2E-6-DEVELOPMENT-JOURNEY-CLOSURE.md);
-- o gate hosted de Development está numerado `E2E-6`; as decisões abertas do
-  D-E2E0 — numeração do gate, nome do spec, profundidade da prova de tenant
-  estrangeiro e contagem de reviews — estão todas resolvidas pelo contrato
-  congelado e pela run;
-- `0134` é canônica em `main` e está aplicada e verificada em Review;
-  **Production permanece `UNKNOWN / REVERIFY BEFORE USE`**; Legacy fora dos alvos;
-- pelo Gate do MVP, **liderança e decisão executiva permanecem não comprovadas**
-  como jornadas hosted completas. Esse é o próximo domínio normativo — não outro
-  slice de Development.
+- a jornada operacional de **Organization Planning** está `CLOSED / PASS /
+  HOSTED-PROVEN`: run `260924115952-39d810`, `main`
+  `71c0df749d92ad64a34349774a41b6dae3d3bd7e`, **9/9 PASS**, passos **1–19
+  PASS**, sem retry, terminal **RETIRED**. Fechamento em
+  [`Execution/PLN-P6-HOSTED-PLANNING-JOURNEY-CLOSURE.md`](./Execution/PLN-P6-HOSTED-PLANNING-JOURNEY-CLOSURE.md);
+- Planning não equivale à Jornada 6: turnover, clima, desempenho agregado,
+  potencial, sucessão e planos estratégicos não foram promovidos a concluídos;
+- pelo Gate do MVP, **Liderança (Jornada 5)** é a próxima jornada normativa ainda
+  não comprovada; decisão executiva e o restante de RH Estratégico permanecem
+  posteriores;
+- o drift global de ACL em Review permanece `OPEN / SEPARATE SECURITY DEBT`, fora
+  do fechamento Planning. Production segue `UNKNOWN / REVERIFY BEFORE USE` e
+  Legacy fora dos alvos.
 
 ## EXPECTED_NEXT
 
-Selecionar o domínio e abrir sua **readiness discovery**, na mesma ordem que
-Development seguiu: contrato de produto e privacy → fronteira de DB → contrato
-hosted congelado → spec → execução autorizada.
+Abrir **L-P0 — readiness discovery da Jornada 5 (Liderança)**. Reconstruir o
+fluxo real `alertas → avaliar equipe → insights → feedbacks → acompanhar evolução`
+e separar capacidades já cobertas por Avaliações/Feedback/Development das lacunas
+reais de liderança antes de congelar qualquer contrato hosted.
 
 Nenhum slice de Development está aberto. `cancel_development_plan_v1` continua
 sem chamador na aplicação, deliberadamente fora da jornada congelada; reabrir

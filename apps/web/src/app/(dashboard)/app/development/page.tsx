@@ -24,7 +24,12 @@ import {
   getCurrentCompanyContext,
 } from "@/lib/supabase/supabase/current-company"
 
-export default async function DevelopmentPage() {
+type DevelopmentPageProps = {
+  searchParams: Promise<{ applyFor?: string }>
+}
+
+export default async function DevelopmentPage({ searchParams }: DevelopmentPageProps) {
+  const { applyFor } = await searchParams
   const { companyId, currentUser, personId } =
     await getCurrentCompanyContext()
 
@@ -46,6 +51,11 @@ export default async function DevelopmentPage() {
     actorPersonId: personId,
     actorRole: currentUser.role,
   })
+  const requestedEmployeeId = applicationPresentation?.targets.some(
+    (person) => person.id === applyFor
+  )
+    ? applyFor
+    : undefined
 
   return (
     <div className="space-y-6">
@@ -60,6 +70,7 @@ export default async function DevelopmentPage() {
                 employees={applicationPresentation.targets}
                 owners={applicationPresentation.owners}
                 fixedOwnerId={applicationPresentation.fixedOwnerId}
+                initialEmployeeId={requestedEmployeeId}
               />
             ) : null}
             {isAdministrativeRole(currentUser.role) ? (

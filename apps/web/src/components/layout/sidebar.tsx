@@ -9,6 +9,7 @@ import {
   MessageSquare,
   Settings,
   Target,
+  UserRoundCheck,
   Users,
 } from "lucide-react";
 const items = [
@@ -21,6 +22,7 @@ const items = [
   { href: "/app/assessments", label: "Avaliações", icon: ClipboardList },
   { href: "/app/feedbacks", label: "Feedbacks", icon: MessageSquare },
   { href: "/app/development", label: "Desenvolvimento", icon: Target },
+  { href: "/app/manager", label: "Liderança", icon: UserRoundCheck },
   { href: "/app/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/app/company", label: "Empresa", icon: Building2 },
   { href: "/app/settings", label: "Configurações", icon: Settings }

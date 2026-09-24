@@ -1,33 +1,35 @@
-export const ATTENTION_PRIORITIES = [
-  "critical",
-  "high",
-  "medium",
-  "low",
-] as const
+export const ATTENTION_PRIORITIES = ["high", "medium", "low"] as const
 
 export type AttentionPriority =
   (typeof ATTENTION_PRIORITIES)[number]
 
 export const ATTENTION_REASON_TYPES = [
-  "health-score",
-  "assessment-overdue",
-  "missing-development-plan",
-  "critical-competency",
-  "recognition",
+  "assigned_assessment_overdue",
+  "assigned_assessment_pending",
+  "formal_feedback_pending",
+  "development_follow_up_overdue",
+  "development_follow_up_due",
+  "development_plan_missing",
 ] as const
 
 export type AttentionReasonType =
   (typeof ATTENTION_REASON_TYPES)[number]
 
+export type AttentionSourceType =
+  | "assessment_response"
+  | "development_plan"
+  | "development_subject"
+
 export type AttentionItem = {
-  employeeId: string
-  employeeName: string
-  positionName: string | null
-  departmentName: string | null
+  subjectId: string
+  subjectName: string
+  subjectStatus: "active" | "on_leave"
+  reason: AttentionReasonType
   priority: AttentionPriority
-  reasonType: AttentionReasonType
-  reason: string
-  recommendedAction: string
-  healthScore: number | null
-  updatedAt: string | null
+  sourceType: AttentionSourceType
+  sourceId: string
+  sourceStatus: string
+  dueDate: string | null
+  sourceVersion: number | null
+  sourceUpdatedAt: string | null
 }

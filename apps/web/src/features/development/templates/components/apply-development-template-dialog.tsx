@@ -36,6 +36,7 @@ type ApplyDevelopmentTemplateDialogProps = {
   employees: Employee[]
   owners?: Employee[]
   fixedOwnerId?: string | null
+  initialEmployeeId?: string
 }
 
 function getTodayDateInputValue() {
@@ -60,11 +61,12 @@ export function ApplyDevelopmentTemplateDialog({
   employees,
   owners,
   fixedOwnerId = null,
+  initialEmployeeId = "",
 }: ApplyDevelopmentTemplateDialogProps) {
   const router = useRouter()
 
   const [employeeId, setEmployeeId] =
-    useState("")
+    useState(initialEmployeeId)
 
   const [selectedTemplateId, setSelectedTemplateId] =
     useState(templateId ?? "")
@@ -115,7 +117,7 @@ export function ApplyDevelopmentTemplateDialog({
   }
 
   function resetForm() {
-    setEmployeeId("")
+    setEmployeeId(initialEmployeeId)
     setSelectedTemplateId(templateId ?? "")
     setOwnerId(fixedOwnerId ?? "")
     setPriority("medium")
@@ -130,7 +132,7 @@ export function ApplyDevelopmentTemplateDialog({
     <CrudCreateDialog
       trigger={
         <Button disabled={!hasEmployees || !hasTemplates}>
-          Aplicar template
+          {initialEmployeeId ? "Aplicar template para esta pessoa" : "Aplicar template"}
         </Button>
       }
       title="Plano de Desenvolvimento Individual"

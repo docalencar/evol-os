@@ -3,35 +3,25 @@ import type {
   AttentionReasonType,
 } from "../types/attention-item"
 
-export type AttentionQueueActionViewModel = {
-  id: string
-  label: string
-  href: string
-  estimatedMinutes: number
-}
-
 export type AttentionQueueItemViewModel = {
-  employeeId: string
-  employeeName: string
-  contextLabel: string
+  id: string
+  subjectId: string
+  subjectName: string
+  subjectStatusLabel: string
   priority: AttentionPriority
   priorityLabel: string
   reasonType: AttentionReasonType
-  reason: string
-  recommendedActions: AttentionQueueActionViewModel[]
-  impact: string
-  healthScore: number | null
-  healthScoreLabel: string
-  decisionScore: number
-  decisionSummary: string
-  updatedAt: string | null
+  reasonLabel: string
+  sourceStatusLabel: string
+  dueDateLabel: string | null
+  actionLabel: string
+  actionHref: string
+  sourceUpdatedAt: string | null
 }
 
 export type AttentionQueueViewModel = {
-  topPriority: AttentionQueueItemViewModel | null
   items: AttentionQueueItemViewModel[]
   total: number
-  critical: number
   high: number
   medium: number
   low: number

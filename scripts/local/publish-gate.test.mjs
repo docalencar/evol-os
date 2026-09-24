@@ -596,3 +596,76 @@ test("this repo's workflow exposes exactly the check name the manifests require"
     assert.ok(jobs.includes(declared), `${file} requires '${declared}', which is not a job in ci.yml`)
   }
 })
+
+/* ---------------------------------------------------------------------------
+ * TOOL-PUB5 — pushing onto an existing branch is a fast-forward, not divergence.
+ *
+ * PR #169 was open at f7c22ff. Adding the TOOL-PUB4 commit produced a0a110e,
+ * whose PARENT is exactly f7c22ff — a strictly linear fast-forward. The gate
+ * refused it anyway, because step 2/9 asked whether the remote head was
+ * IDENTICAL to the candidate rather than whether it was an ANCESTOR of it. That
+ * turned the ordinary "add a commit to an open PR" case into a false divergence,
+ * and would have pressured a pointless reconciliation merge to work around it.
+ * ------------------------------------------------------------------------- */
+
+const PUSH_PRE = resolve(HERE, "publish-push-precondition.sh")
+
+function pushDecision(work, remote, candidate) {
+  try {
+    execFileSync("bash", [PUSH_PRE, remote, candidate],
+      { cwd: work, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
+    return 0
+  } catch (error) { return error.status ?? 1 }
+}
+
+test("an absent remote branch is safe to push", () => {
+  const s = scenario()
+  try { assert.equal(pushDecision(s.work, "", s.candidate), 0) } finally { s.cleanup() }
+})
+
+test("a remote already at the candidate is a no-op push, which is what makes resuming safe", () => {
+  const s = scenario()
+  try { assert.equal(pushDecision(s.work, s.candidate, s.candidate), 0) } finally { s.cleanup() }
+})
+
+test("a remote that is an ancestor of the candidate is a fast-forward", () => {
+  // Exactly the PR #169 shape: remote at the parent, candidate one commit ahead.
+  const s = scenario()
+  try {
+    const parent = git(s.work, "rev-parse", `${s.candidate}^`).trim()
+    assert.equal(pushDecision(s.work, parent, s.candidate), 0,
+      "adding a commit to an open PR must not be refused as divergence")
+  } finally { s.cleanup() }
+})
+
+test("a remote that is NOT an ancestor is refused, and never forced", () => {
+  const s = scenario()
+  try {
+    // A sibling commit on the same base: real divergence.
+    const base = git(s.work, "rev-parse", `${s.candidate}^`).trim()
+    git(s.work, "checkout", "-q", "-b", "sibling", base)
+    writeFileSync(join(s.work, "docs/Execution/OTHER.md"), "other\n")
+    git(s.work, "add", "docs/Execution/OTHER.md")
+    git(s.work, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "sibling")
+    const sibling = git(s.work, "rev-parse", "HEAD").trim()
+    assert.notEqual(pushDecision(s.work, sibling, s.candidate), 0)
+  } finally { s.cleanup() }
+})
+
+test("a remote commit absent locally fails closed rather than being assumed safe", () => {
+  const s = scenario()
+  try {
+    assert.notEqual(pushDecision(s.work, "0".repeat(40), s.candidate), 0)
+  } finally { s.cleanup() }
+})
+
+test("the push step decides by ancestry and still never forces", () => {
+  const gate = readFileSync(GATE, "utf8")
+  const block = gate.slice(gate.indexOf('say "[publish] 2/9 push'),
+                           gate.indexOf('say "[publish] 3/9 pull request'))
+  assert.match(block, /publish-push-precondition\.sh" "\$REMOTE_BEFORE" "\$m_candidate"/)
+  assert.doesNotMatch(block, /--force|--force-with-lease|push\s+-f\b/)
+  assert.match(block, /is NOT an ancestor of .* do NOT force push/)
+  // The old rule must not survive anywhere in the step.
+  assert.doesNotMatch(block, /\[ "\$REMOTE_BEFORE" != "\$m_candidate" \];\s*then\s*\n\s*stop/)
+})

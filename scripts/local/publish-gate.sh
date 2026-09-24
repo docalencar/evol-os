@@ -212,8 +212,16 @@ fi
 # ---------------------------------------------------------------------------
 say "[publish] 2/9 push ..."
 REMOTE_BEFORE="$(git ls-remote --heads origin "$m_branch" | cut -f1)"
+# "Not identical" is not divergence. A branch whose PR is already open and which
+# gains a review commit is the ordinary case, and refusing it used to force a
+# pointless reconciliation merge. The question is ancestry: is the remote head
+# contained in the candidate? If not — or if it cannot be proven — refuse, and
+# never force.
+if ! bash "$REPO_ROOT/scripts/local/publish-push-precondition.sh" "$REMOTE_BEFORE" "$m_candidate"; then
+  stop "remote branch exists at $REMOTE_BEFORE and is NOT an ancestor of $m_candidate — classify the divergence, do NOT force push"
+fi
 if [ -n "$REMOTE_BEFORE" ] && [ "$REMOTE_BEFORE" != "$m_candidate" ]; then
-  stop "remote branch exists at $REMOTE_BEFORE — classify the divergence, do NOT force push"
+  say "            fast-forward: remote $REMOTE_BEFORE is an ancestor of the candidate"
 fi
 git push origin "$m_branch" || stop "push failed"
 [ "$(git ls-remote --heads origin "$m_branch" | cut -f1)" = "$m_candidate" ] || stop "remote head != candidate"

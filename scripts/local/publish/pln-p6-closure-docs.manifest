@@ -1,0 +1,14 @@
+# PLN-P6 closure documentation slice.
+#
+# Documentation only. The closure record is included so the three Planning
+# references resolve through the Git index rather than only on a case-insensitive
+# checkout, and it is tracked under the canonical docs/Execution/ casing.
+
+branch        = docs/pln-p6-closure-state
+base          = 1f2a48538d77c3db9bec1c56779123fa9a0146cd
+candidate     = a7f43a4b0b720e49216ffd87a6029a0125a1e093
+commits       = a7f43a4b0b720e49216ffd87a6029a0125a1e093
+files         = docs/EPICS.md docs/Execution/PLN-P6-HOSTED-PLANNING-JOURNEY-CLOSURE.md docs/MVP_PLAN.md docs/NEXT_STEPS.md docs/PROJECT_STATE.md docs/ROADMAP.md
+pr_title      = docs(state): record the PLN-P6 Planning closure and the next normative domain
+pr_body       = /tmp/pln-p6-docs-pr-body.md
+require_check = web

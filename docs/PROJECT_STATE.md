@@ -14,13 +14,13 @@
 
 | Campo | Valor |
 | --- | --- |
-| `CURRENT_DOMAIN` | Development (Jornada 4) |
-| `CURRENT_SLICE` | D-E2E2 — execução hosted da jornada Development · `CLOSED / PASS` |
-| `LAST_CANONICAL_MAIN` | `44b61e613c7e0ae4386670103bbea8fce627e425`; autoridade factual = `git rev-parse origin/main` |
-| `LATEST_COMMITTED_MIGRATION` | `0134` — Development ledger direct-read closure |
-| `LATEST_REVIEW_DB_VERSION` | `0134` — `APPLIED / VERIFIED` (promoção governada D-R3) |
-| `HOSTED_E2E_STATE` | E2E-0…**E2E-6** `CLOSED / PASS`. A jornada hosted de Development foi executada contra Review canônica no run `260921200250-49c266`: **13/13 PASS**, contrato **29/29 PROVEN**, terminal **RETIRED**. Fechamento em `Execution/E2E-6-DEVELOPMENT-JOURNEY-CLOSURE.md` |
-| `NEXT_GATE` | Readiness discovery da próxima jornada exigida pelo Gate do MVP — liderança e decisão executiva permanecem não comprovadas como jornadas hosted |
+| `CURRENT_DOMAIN` | Liderança (Jornada 5) — próxima discovery; nenhuma implementação iniciada |
+| `CURRENT_SLICE` | PLN-P6 — jornada hosted operacional de Planning · `CLOSED / PASS / HOSTED-PROVEN` |
+| `LAST_CANONICAL_MAIN` | `71c0df749d92ad64a34349774a41b6dae3d3bd7e`; autoridade factual = `git rev-parse origin/main` |
+| `LATEST_COMMITTED_MIGRATION` | `0139` — Planning deterministic version-conflict SQLSTATE |
+| `LATEST_REVIEW_DB_VERSION` | `0139` — `APPLIED / VERIFIED` |
+| `HOSTED_E2E_STATE` | E2E-0…E2E-6 e PLN-P6 `CLOSED / PASS`. Planning: run `260924115952-39d810`, **9/9 PASS**, passos **1–19 PASS**, uma execução sem retry, terminal **RETIRED**. Fechamento em `Execution/PLN-P6-HOSTED-PLANNING-JOURNEY-CLOSURE.md` |
+| `NEXT_GATE` | L-P0 — readiness discovery da Jornada 5 (Liderança); decisão executiva e o restante de RH Estratégico permanecem não comprovados |
 
 Congelar o contrato **não equivale** a um PASS hosted: o D-E2E0 fixa o que precisa
 ser provado. O PASS correspondente existe e está registrado em
@@ -39,6 +39,15 @@ capabilities derivado no servidor.
 `cancel_development_plan_v1` **não possui chamador na aplicação**; cancelamento
 permanece fora da jornada hosted congelada. Ausência registrada para que um slice
 futuro não a confunda com regressão.
+
+### Fechamento de Organization Planning
+
+PLN-P6 provou em Review o fluxo operacional de autoria, concorrência sem
+overwrite, lifecycle com rejeição durável, readiness, publicação, snapshot
+imutável, organização viva inalterada, terminalidade, isolamento entre tenants e
+aposentadoria dos caminhos legados/DML direto. Isso fecha Planning, não toda a
+Jornada 6: as capacidades estratégicas enumeradas em `Product/USER_JOURNEYS.md`
+continuam abertas.
 
 ## Precedência
 
@@ -70,6 +79,7 @@ Para **estado factual do repositório**, o Git vence; ver `OPERATING-METHOD.md` 
 | D-E2E0 | Contrato do hosted Development E2E — congelado e canônico | CLOSED / PASS |
 | D-E2E1 | Spec hosted da jornada Development contra o contrato congelado | CLOSED / PASS |
 | D-E2E2 | Execução hosted da jornada Development em Review — E2E-6 | CLOSED / PASS |
+| PLN-P1…P6 | Lifecycle, trusted boundaries, editor e execução hosted de Organization Planning | CLOSED / PASS |
 | AI-CTX-1/2/3 | Método permanente, estado condensado e reconciliação de contexto | CLOSED / PASS |
 
 O contrato de cada um está no respectivo documento de `Execution/`; os commits e
@@ -95,6 +105,7 @@ individual para não criar uma segunda verdade.
 | **`getPublishedDevelopmentTemplateCatalog` sem consumidor ativo** | `CLOSED` — D-P4B lhe deu consumidor ativo na superfície de aplicação pelo manager, exatamente a jornada para a qual a capacidade havia sido preservada |
 | **App smoke remoto autenticado (Slice 0115-B2-C)** | `NOT DEMONSTRATED (gated)` — dívida aceita; registro em [CHANGELOG](./CHANGELOG.md) |
 | Itens abertos anteriores ao D-P0 (hardening `0084`, writes MVP-PR1, matriz de transições de Feedback, gates de privacidade People) | **Não readjudicados.** Narrativa recuperável por `git log -p docs/PROJECT_STATE.md` e pelo CHANGELOG |
+| **Drift global de ACL em Review fora de Planning** | `OPEN / SEPARATE SECURITY DEBT` — não bloqueia nem é fechado por PLN-P6; requer slice próprio |
 
 ## Open decisions
 

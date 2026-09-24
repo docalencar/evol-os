@@ -66,7 +66,14 @@ done
 # ---------------------------------------------------------------------------
 m_branch=""; m_base=""; m_candidate=""; m_commits=""; m_files=""
 m_pr_title=""; m_pr_body=""; m_require_check=""; m_ancestors=""
+# bash 3.2 (what macOS ships) treats an EMPTY array as UNSET, so under `set -u`
+# both "${m_guards[@]}" and ${#m_guards[@]} abort when no guard is declared. The
+# count is therefore tracked as a plain integer, and the array is only ever
+# expanded through the ${arr[@]+"${arr[@]}"} form, which is safe on 3.2 and 5.x
+# alike. Zero guards is a valid manifest; it must run zero guard commands, not
+# fail, and must not require a no-op guard to paper over it.
 m_guards=()
+m_guard_count=0
 
 lineno=0
 while IFS= read -r line || [ -n "$line" ]; do
@@ -87,7 +94,8 @@ while IFS= read -r line || [ -n "$line" ]; do
     pr_title)      m_pr_title="$val" ;;
     pr_body)       m_pr_body="$val" ;;
     require_check) m_require_check="$val" ;;
-    guard)         m_guards+=("$val") ;;
+    guard)         [ -n "$val" ] || stop "manifest line $lineno: guard path is empty"
+                   m_guards+=("$val"); m_guard_count=$((m_guard_count + 1)) ;;
     *)             stop "unknown manifest key '$key' on line $lineno" ;;
   esac
 done < "$MANIFEST"
@@ -142,6 +150,26 @@ EXPECT_FILES="$(printf '%s\n' $m_files | sort | tr '\n' ' ')"
 git diff --name-status "$m_base..HEAD" | grep -q '^R' && stop "a file was renamed or moved"
 git diff --check "$m_base..HEAD" || stop "diff --check failed"
 
+# The PR body is a publication input like any other, so it is verified here -
+# before the push - and therefore identically in dry-run and in a real run. It
+# used to be checked in step 3/9, after the branch had already been pushed, which
+# left a remote branch with no PR when the path was wrong.
+#
+# It must be repository-backed. An executor-local path such as /tmp/body.md is
+# valid only on the machine that wrote it, so a publication prepared on one
+# machine and resumed on another fails after mutating the remote. A relative path
+# resolves against the repository root.
+case "$m_pr_body" in
+  /*) PR_BODY_ABS="$m_pr_body" ;;
+  *)  PR_BODY_ABS="$REPO_ROOT/$m_pr_body" ;;
+esac
+case "$PR_BODY_ABS" in
+  "$REPO_ROOT"/*) : ;;
+  *) stop "pr_body must live inside the repository so it survives a change of machine: $m_pr_body" ;;
+esac
+[ -f "$PR_BODY_ABS" ] || stop "pr_body file not found: $m_pr_body"
+m_pr_body="$PR_BODY_ABS"
+
 PROT_OK=1
 for f in "${PROTECTED_FILES[@]}"; do
   [ -f "$f" ] || { say "            MISSING protected file: $f"; PROT_OK=0; }
@@ -159,14 +187,14 @@ git cat-file -t "$PROTECTED_STASH" >/dev/null 2>&1 || { say "            protect
 
 # Slice-specific guards. Each is a script; exit 0 is the only pass. They receive
 # the identities so they never have to re-derive them.
-for g in "${m_guards[@]}"; do
+for g in ${m_guards[@]+"${m_guards[@]}"}; do
   [ -f "$g" ] || stop "guard script not found: $g"
   say "[publish]     guard: $g"
   PUBLISH_BASE="$m_base" PUBLISH_CANDIDATE="$m_candidate" PUBLISH_BRANCH="$m_branch" \
     bash "$g" || stop "guard failed: $g"
 done
 
-say "[publish]     identity, ancestry, scope, protected state and $(( ${#m_guards[@]} )) guard(s) PASS"
+say "[publish]     identity, ancestry, scope, protected state and $m_guard_count guard(s) PASS"
 
 if [ "$DRY_RUN" = 1 ]; then
   say ""
@@ -184,8 +212,16 @@ fi
 # ---------------------------------------------------------------------------
 say "[publish] 2/9 push ..."
 REMOTE_BEFORE="$(git ls-remote --heads origin "$m_branch" | cut -f1)"
+# "Not identical" is not divergence. A branch whose PR is already open and which
+# gains a review commit is the ordinary case, and refusing it used to force a
+# pointless reconciliation merge. The question is ancestry: is the remote head
+# contained in the candidate? If not — or if it cannot be proven — refuse, and
+# never force.
+if ! bash "$REPO_ROOT/scripts/local/publish-push-precondition.sh" "$REMOTE_BEFORE" "$m_candidate"; then
+  stop "remote branch exists at $REMOTE_BEFORE and is NOT an ancestor of $m_candidate — classify the divergence, do NOT force push"
+fi
 if [ -n "$REMOTE_BEFORE" ] && [ "$REMOTE_BEFORE" != "$m_candidate" ]; then
-  stop "remote branch exists at $REMOTE_BEFORE — classify the divergence, do NOT force push"
+  say "            fast-forward: remote $REMOTE_BEFORE is an ancestor of the candidate"
 fi
 git push origin "$m_branch" || stop "push failed"
 [ "$(git ls-remote --heads origin "$m_branch" | cut -f1)" = "$m_candidate" ] || stop "remote head != candidate"
@@ -194,7 +230,6 @@ git push origin "$m_branch" || stop "push failed"
 # 3. pull request
 # ---------------------------------------------------------------------------
 say "[publish] 3/9 pull request ..."
-[ -f "$m_pr_body" ] || stop "pr_body file not found: $m_pr_body"
 if gh pr view "$m_branch" --json number >/dev/null 2>&1; then
   say "[publish]     a PR already exists for this branch; reusing it"
 else
@@ -235,9 +270,14 @@ if printf '%s' "$CI" | grep -qvE '^(SUCCESS|SKIPPED|NEUTRAL)'; then
 fi
 # A named check the slice depends on — e.g. a build whose local run was
 # environmental. SKIPPED is not evidence, so this demands SUCCESS by name.
+#
+# `require_check` is a CHECK-RUN name, which for GitHub Actions is the JOB id,
+# not the workflow name and not a step. The selection is an EXACT match on the
+# name column: a substring or regex match could be satisfied by an unrelated
+# green job, or by the state column itself.
 if [ -n "$m_require_check" ]; then
-  STATE="$(printf '%s' "$CI" | grep -iE "$m_require_check" | head -1 | cut -f1)"
-  [ -n "$STATE" ] || stop "required check '$m_require_check' was not reported for this commit"
+  STATE="$(printf '%s\n' "$CI" | bash "$REPO_ROOT/scripts/local/publish-check-state.sh" "$m_require_check")" \
+    || stop "required check '$m_require_check' was not reported for this commit — reported: $(printf '%s' "$CI" | cut -f2 | tr '\n' ' ')"
   [ "$STATE" = "SUCCESS" ] || stop "required check '$m_require_check' is '$STATE', not SUCCESS"
   say "[publish]     required check '$m_require_check': SUCCESS"
 fi

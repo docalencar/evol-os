@@ -15,7 +15,7 @@
 
 import assert from "node:assert/strict"
 import { execFileSync } from "node:child_process"
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync, appendFileSync } from "node:fs"
+import { mkdtempSync, rmSync, writeFileSync, readFileSync, readdirSync, mkdirSync, appendFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import test from "node:test"
@@ -290,4 +290,382 @@ test("pending CI is treated as pending, not as failure", () => {
   const src = execFileSync("cat", [GATE], { encoding: "utf8" })
   assert.match(src, /QUEUED\|IN_PROGRESS\|PENDING/)
   assert.match(src, /pending is not failure/)
+})
+
+/* ---------------------------------------------------------------------------
+ * TOOL-PUB2 — zero guards must be a valid manifest state.
+ *
+ * macOS ships bash 3.2, where an EMPTY array is indistinguishable from an unset
+ * one, so under `set -u` both "${m_guards[@]}" and ${#m_guards[@]} abort. The
+ * gate failed in step 1/9 on every guardless manifest. bash >= 4.4 does not
+ * reproduce it, so these behavioural cases are paired with a static check that
+ * the unsafe idiom cannot return — that check is what actually protects a Linux
+ * CI from a macOS-only regression.
+ * ------------------------------------------------------------------------- */
+
+test("zero guards is valid: verification continues and reports a zero count", () => {
+  const s = scenario() // the default manifest declares no guard at all
+  try {
+    assert.equal(s.code, 0)
+    assert.match(s.out, /0 guard\(s\) PASS/)
+    assert.match(s.out, /PUBLICATION=DRY_RUN_OK/)
+    assert.doesNotMatch(s.out, /unbound variable/)
+    assert.doesNotMatch(s.out, /guard: /)
+  } finally { s.cleanup() }
+})
+
+test("one guard executes exactly once", () => {
+  const s = scenario((ctx) => {
+    const log = join(ctx.work, "ran.log")
+    writeFileSync(join(ctx.work, "g1.sh"), `#!/usr/bin/env bash\necho one >> ${log}\nexit 0\n`)
+    ctx.fields.guard = ["g1.sh"]
+    ctx.log = log
+  })
+  try {
+    assert.equal(s.code, 0)
+    assert.match(s.out, /1 guard\(s\) PASS/)
+    assert.equal(readFileSync(s.log, "utf8"), "one\n")
+  } finally { s.cleanup() }
+})
+
+test("multiple guards each execute, in declared order", () => {
+  const s = scenario((ctx) => {
+    const log = join(ctx.work, "ran.log")
+    for (const n of ["a", "b", "c"]) {
+      writeFileSync(join(ctx.work, `g-${n}.sh`), `#!/usr/bin/env bash\necho ${n} >> ${log}\nexit 0\n`)
+    }
+    ctx.fields.guard = ["g-a.sh", "g-b.sh", "g-c.sh"]
+    ctx.log = log
+  })
+  try {
+    assert.equal(s.code, 0)
+    assert.match(s.out, /3 guard\(s\) PASS/)
+    assert.equal(readFileSync(s.log, "utf8"), "a\nb\nc\n")
+  } finally { s.cleanup() }
+})
+
+test("a failing guard still blocks publication even when others pass", () => {
+  const s = scenario((ctx) => {
+    writeFileSync(join(ctx.work, "ok.sh"), "#!/usr/bin/env bash\nexit 0\n")
+    writeFileSync(join(ctx.work, "no.sh"), "#!/usr/bin/env bash\nexit 1\n")
+    ctx.fields.guard = ["ok.sh", "no.sh"]
+  })
+  try {
+    assert.notEqual(s.code, 0)
+    assert.match(s.out, /guard failed: no\.sh/)
+    assert.match(s.out, /PUBLICATION=BLOCKED/)
+  } finally { s.cleanup() }
+})
+
+test("a guard path that does not exist fails closed", () => {
+  const s = scenario((ctx) => { ctx.fields.guard = ["absent.sh"] })
+  try {
+    assert.notEqual(s.code, 0)
+    assert.match(s.out, /guard script not found: absent\.sh/)
+  } finally { s.cleanup() }
+})
+
+test("an empty guard value fails closed rather than counting as zero guards", () => {
+  const s = scenario((ctx) => { ctx.fields.guard = [""] })
+  try {
+    assert.notEqual(s.code, 0)
+    assert.match(s.out, /guard path is empty/)
+    assert.match(s.out, /PUBLICATION=BLOCKED/)
+    assert.doesNotMatch(s.out, /DRY_RUN_OK/)
+  } finally { s.cleanup() }
+})
+
+test("the runner never expands an array in a form bash 3.2 rejects under nounset", () => {
+  // Comments are stripped first: the fix's own explanation names the unsafe
+  // idiom, and a guard that matched prose would fail on its own documentation.
+  const code = readFileSync(GATE, "utf8")
+    .split("\n")
+    .filter((line) => !/^\s*#/.test(line))
+    .join("\n")
+
+  assert.match(code, /set -uo pipefail/, "nounset is contractual and must stay enabled")
+
+  // Remove every SAFE occurrence first, then look for what survives. Trying to
+  // exclude the safe form with a lookaround flags its own inner expansion — the
+  // guard must be written against the delta, not against a substring.
+  const withoutSafe = code
+    .replace(/\$\{([a-zA-Z_][a-zA-Z0-9_]*)\[@\]\+"\$\{\1\[@\]\}"\}/g, "<SAFE>")
+    .replace(/"\$\{PROTECTED_FILES\[@\]\}"/g, "<LITERAL>") // populated at definition, never empty
+
+  const unsafe = [...withoutSafe.matchAll(/\$\{#?[a-zA-Z_][a-zA-Z0-9_]*\[@\]\}/g)].map((m) => m[0])
+  assert.deepEqual(unsafe, [], `unguarded array expansions: ${unsafe.join(", ")}`)
+})
+
+/* ---------------------------------------------------------------------------
+ * TOOL-PUB3 — the PR body must be durable, and verified before the push.
+ *
+ * Publishing TOOL-PUB2 reached step 3/9 and stopped on a pr_body path under
+ * /tmp that existed only on the machine which prepared the manifest. By then the
+ * branch had already been pushed, leaving a remote branch with no PR. A purely
+ * local precondition must not be checked after a remote mutation.
+ * ------------------------------------------------------------------------- */
+
+test("a repository-backed PR body resolves from the repo root", () => {
+  const s = scenario((ctx) => {
+    mkdirSync(join(ctx.work, "scripts/local/publish/bodies"), { recursive: true })
+    writeFileSync(join(ctx.work, "scripts/local/publish/bodies/slice.md"), "durable body\n")
+    ctx.fields.pr_body = "scripts/local/publish/bodies/slice.md"
+  })
+  try {
+    assert.equal(s.code, 0)
+    assert.match(s.out, /PUBLICATION=DRY_RUN_OK/)
+  } finally { s.cleanup() }
+})
+
+test("a configured but missing PR body fails closed", () => {
+  const s = scenario((ctx) => { ctx.fields.pr_body = "scripts/local/publish/bodies/absent.md" })
+  try {
+    assert.notEqual(s.code, 0)
+    assert.match(s.out, /pr_body file not found/)
+    assert.match(s.out, /PUBLICATION=BLOCKED/)
+  } finally { s.cleanup() }
+})
+
+test("an executor-local PR body outside the repository is refused", () => {
+  const s = scenario((ctx) => {
+    const outside = join(tmpdir(), `pub3-outside-${process.pid}.md`)
+    writeFileSync(outside, "body\n")   // it EXISTS: existence is not the objection
+    ctx.fields.pr_body = outside
+    ctx.outside = outside
+  })
+  try {
+    assert.notEqual(s.code, 0)
+    assert.match(s.out, /must live inside the repository/)
+    assert.doesNotMatch(s.out, /DRY_RUN_OK/)
+  } finally { rmSync(s.outside, { force: true }); s.cleanup() }
+})
+
+test("dry-run validates the same PR body dependency as a real publication", () => {
+  // The regression: dry-run used to exit at the end of step 1/9, never reaching
+  // the step 3/9 check, so it reported success for a manifest that could not
+  // publish. Dry-run must refuse exactly what a real run refuses.
+  const s = scenario((ctx) => { ctx.fields.pr_body = "no-such-body.md" })
+  try {
+    assert.notEqual(s.code, 0, "dry-run must fail on a body a real run would reject")
+    assert.match(s.out, /pr_body file not found/)
+  } finally { s.cleanup() }
+})
+
+test("the PR body is verified before the push, never after it", () => {
+  const code = readFileSync(GATE, "utf8")
+  const bodyCheck = code.indexOf('stop "pr_body file not found')
+  const push = code.indexOf('say "[publish] 2/9 push')
+  const prStep = code.indexOf('say "[publish] 3/9 pull request')
+  assert.ok(bodyCheck > 0 && push > 0 && prStep > 0, "anchors must exist")
+  assert.ok(bodyCheck < push, "pr_body must be validated before the push step")
+  assert.ok(push < prStep, "step order must remain 2/9 then 3/9")
+})
+
+test("resuming is safe: the push is never forced and a divergent remote is refused", () => {
+  // The remote branch already exists at the exact candidate after a partial run.
+  // Re-running must be a no-op push, and must still refuse a remote that moved.
+  const code = readFileSync(GATE, "utf8")
+  const pushBlock = code.slice(code.indexOf('say "[publish] 2/9 push'),
+                               code.indexOf('say "[publish] 3/9 pull request'))
+  assert.doesNotMatch(pushBlock, /--force|--force-with-lease|push\s+-f\b/)
+  assert.match(pushBlock, /remote branch exists at .* do NOT force push/)
+  assert.match(pushBlock, /REMOTE_BEFORE" != "\$m_candidate"/)
+  assert.match(pushBlock, /remote head != candidate/)
+})
+
+/* ---------------------------------------------------------------------------
+ * TOOL-PUB4 — required-check evidence must be matched by exact name.
+ *
+ * Publishing PR #169 reported `SUCCESS web` and then stopped: the manifest asked
+ * for `build`, which is an npm STEP, not a check-run. The check-run name for a
+ * GitHub Actions job is the JOB ID — this repo's workflow defines exactly one,
+ * `web`. The gate was right to block; the manifest named something that never
+ * existed as a check.
+ *
+ * Inspection then found a second, latent fault: the matcher was
+ * `grep -iE "$m_require_check"` over the whole "<STATE>\tNAME" line, so an
+ * unrelated green job whose name merely CONTAINED the required string — or the
+ * STATE column itself — could have satisfied a named required check. The
+ * selection is now an exact match on the name column, in a filter that needs no
+ * network and is therefore provable here.
+ * ------------------------------------------------------------------------- */
+
+const CHECK_STATE = resolve(HERE, "publish-check-state.sh")
+
+/** Run the selector over a crafted `gh pr checks` table. */
+function selectCheck(table, name) {
+  try {
+    const out = execFileSync("bash", [CHECK_STATE, name], {
+      input: table, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"],
+    })
+    return { code: 0, state: out.trim() }
+  } catch (error) {
+    return { code: error.status ?? 1, state: (error.stdout ?? "").trim() }
+  }
+}
+
+const GREEN = "SUCCESS\tweb\n"
+
+test("required check reported SUCCESS resolves and advances", () => {
+  const r = selectCheck(GREEN, "web")
+  assert.equal(r.code, 0)
+  assert.equal(r.state, "SUCCESS")
+})
+
+test("required check queued or in progress resolves as pending, not as success", () => {
+  for (const pending of ["QUEUED", "IN_PROGRESS", "PENDING"]) {
+    const r = selectCheck(`${pending}\tweb\n`, "web")
+    assert.equal(r.code, 0, `${pending} must be reported, not treated as missing`)
+    assert.equal(r.state, pending)
+    assert.notEqual(r.state, "SUCCESS")
+  }
+})
+
+test("required check failure resolves as that failure and blocks", () => {
+  for (const bad of ["FAILURE", "CANCELLED", "TIMED_OUT"]) {
+    const r = selectCheck(`${bad}\tweb\n`, "web")
+    assert.equal(r.code, 0)
+    assert.equal(r.state, bad)
+    assert.notEqual(r.state, "SUCCESS")
+  }
+})
+
+test("an unrelated green check never satisfies a missing required check", () => {
+  // The exact failure mode of PR #169: `web` is green, `build` does not exist.
+  const r = selectCheck(GREEN, "build")
+  assert.equal(r.code, 1, "missing required evidence must exit non-zero so the gate blocks")
+  assert.equal(r.state, "")
+
+  // And a substring / regex match must not rescue it either.
+  assert.equal(selectCheck(GREEN, "we").code, 1, "a substring must not match")
+  assert.equal(selectCheck(GREEN, "w.b").code, 1, "a regex must not match")
+  assert.equal(selectCheck(GREEN, "SUCCESS").code, 1, "the state column must never be matched as a name")
+  assert.equal(selectCheck("SUCCESS\tweb-extra\n", "web").code, 1, "a longer job name is a different check")
+})
+
+test("GitHub Actions check-run evidence resolves even with no commit statuses", () => {
+  // PR #169: the commit-status endpoint returns nothing, while the Actions
+  // check-run is green. The gate reads `gh pr checks`, which reports check-runs,
+  // so the absence of legacy commit statuses is not the absence of evidence.
+  const r = selectCheck("SUCCESS\tweb\nSKIPPED\tother\n", "web")
+  assert.equal(r.code, 0)
+  assert.equal(r.state, "SUCCESS")
+
+  const gate = readFileSync(GATE, "utf8")
+  assert.match(gate, /gh pr checks "\$PR_NUM" --json name,state/)
+  assert.doesNotMatch(gate, /\/statuses\/|commit-status/)
+})
+
+test("evidence is bound to the candidate SHA and rechecked before merge", () => {
+  const gate = readFileSync(GATE, "utf8")
+  const ciStep = gate.indexOf('say "[publish] 4/9 waiting for CI')
+  const merge = gate.indexOf('say "[publish] 5/9 merging')
+  assert.ok(ciStep > 0 && merge > ciStep)
+  // The PR head must still be the candidate when the merge is issued, so CI
+  // evidence gathered for one SHA can never authorise merging another.
+  const beforeMerge = gate.slice(merge, gate.indexOf('say "[publish] 6/9'))
+  assert.match(beforeMerge, /headRefOid.*= "\$m_candidate".*\|\| stop "PR head changed after CI"/s)
+})
+
+test("the required-check selection is exact, never a regex over the whole line", () => {
+  const gate = readFileSync(GATE, "utf8")
+  const block = gate.slice(gate.indexOf('if [ -n "$m_require_check" ]'), gate.indexOf('CI_RUN='))
+  assert.doesNotMatch(block, /grep -iE "\$m_require_check"/)
+  assert.match(block, /publish-check-state\.sh" "\$m_require_check"/)
+  assert.match(block, /not SUCCESS/)
+})
+
+test("this repo's workflow exposes exactly the check name the manifests require", () => {
+  const workflow = readFileSync(resolve(HERE, "../../.github/workflows/ci.yml"), "utf8")
+  // Only the block under `jobs:` — `on:` also has two-space keys, and matching
+  // those would report pull_request and push as check names.
+  const jobsBlock = workflow.slice(workflow.indexOf("\njobs:") + 1)
+  const jobs = [...jobsBlock.matchAll(/^ {2}([a-zA-Z0-9_-]+):$/gm)].map((m) => m[1])
+  assert.deepEqual(jobs, ["web"], "the check-run name is the job id")
+
+  // Every manifest in the directory, not a hand-maintained list: a new slice
+  // must not be able to name a check that does not exist just because nobody
+  // remembered to extend this test.
+  const dir = resolve(HERE, "publish")
+  const manifests = readdirSync(dir).filter((f) => f.endsWith(".manifest"))
+  assert.ok(manifests.length > 0, "there must be manifests to validate")
+
+  for (const file of manifests) {
+    const declared = /^require_check\s*=\s*(\S+)/m.exec(readFileSync(join(dir, file), "utf8"))?.[1]
+    if (declared === undefined) continue   // require_check is optional
+    assert.ok(jobs.includes(declared), `${file} requires '${declared}', which is not a job in ci.yml`)
+  }
+})
+
+/* ---------------------------------------------------------------------------
+ * TOOL-PUB5 — pushing onto an existing branch is a fast-forward, not divergence.
+ *
+ * PR #169 was open at f7c22ff. Adding the TOOL-PUB4 commit produced a0a110e,
+ * whose PARENT is exactly f7c22ff — a strictly linear fast-forward. The gate
+ * refused it anyway, because step 2/9 asked whether the remote head was
+ * IDENTICAL to the candidate rather than whether it was an ANCESTOR of it. That
+ * turned the ordinary "add a commit to an open PR" case into a false divergence,
+ * and would have pressured a pointless reconciliation merge to work around it.
+ * ------------------------------------------------------------------------- */
+
+const PUSH_PRE = resolve(HERE, "publish-push-precondition.sh")
+
+function pushDecision(work, remote, candidate) {
+  try {
+    execFileSync("bash", [PUSH_PRE, remote, candidate],
+      { cwd: work, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
+    return 0
+  } catch (error) { return error.status ?? 1 }
+}
+
+test("an absent remote branch is safe to push", () => {
+  const s = scenario()
+  try { assert.equal(pushDecision(s.work, "", s.candidate), 0) } finally { s.cleanup() }
+})
+
+test("a remote already at the candidate is a no-op push, which is what makes resuming safe", () => {
+  const s = scenario()
+  try { assert.equal(pushDecision(s.work, s.candidate, s.candidate), 0) } finally { s.cleanup() }
+})
+
+test("a remote that is an ancestor of the candidate is a fast-forward", () => {
+  // Exactly the PR #169 shape: remote at the parent, candidate one commit ahead.
+  const s = scenario()
+  try {
+    const parent = git(s.work, "rev-parse", `${s.candidate}^`).trim()
+    assert.equal(pushDecision(s.work, parent, s.candidate), 0,
+      "adding a commit to an open PR must not be refused as divergence")
+  } finally { s.cleanup() }
+})
+
+test("a remote that is NOT an ancestor is refused, and never forced", () => {
+  const s = scenario()
+  try {
+    // A sibling commit on the same base: real divergence.
+    const base = git(s.work, "rev-parse", `${s.candidate}^`).trim()
+    git(s.work, "checkout", "-q", "-b", "sibling", base)
+    writeFileSync(join(s.work, "docs/Execution/OTHER.md"), "other\n")
+    git(s.work, "add", "docs/Execution/OTHER.md")
+    git(s.work, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "sibling")
+    const sibling = git(s.work, "rev-parse", "HEAD").trim()
+    assert.notEqual(pushDecision(s.work, sibling, s.candidate), 0)
+  } finally { s.cleanup() }
+})
+
+test("a remote commit absent locally fails closed rather than being assumed safe", () => {
+  const s = scenario()
+  try {
+    assert.notEqual(pushDecision(s.work, "0".repeat(40), s.candidate), 0)
+  } finally { s.cleanup() }
+})
+
+test("the push step decides by ancestry and still never forces", () => {
+  const gate = readFileSync(GATE, "utf8")
+  const block = gate.slice(gate.indexOf('say "[publish] 2/9 push'),
+                           gate.indexOf('say "[publish] 3/9 pull request'))
+  assert.match(block, /publish-push-precondition\.sh" "\$REMOTE_BEFORE" "\$m_candidate"/)
+  assert.doesNotMatch(block, /--force|--force-with-lease|push\s+-f\b/)
+  assert.match(block, /is NOT an ancestor of .* do NOT force push/)
+  // The old rule must not survive anywhere in the step.
+  assert.doesNotMatch(block, /\[ "\$REMOTE_BEFORE" != "\$m_candidate" \];\s*then\s*\n\s*stop/)
 })

@@ -34,3 +34,8 @@ export function journalFile(): string {
 export function storageStateFile(role: string): string {
   return resolve(runDir(), `storage-state.${role}.json`)
 }
+
+/** Durable, run-scoped evidence retained beside the terminal journal archive. */
+export function runEvidenceFile(runId: string, name: string): string {
+  return resolve(runDir(), "archive", runId, name)
+}

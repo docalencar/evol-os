@@ -16,11 +16,15 @@
  * the `0138` RPCs, and this spec reaches them only through the product.
  */
 
+import { mkdirSync, renameSync, writeFileSync } from "node:fs"
+import { dirname } from "node:path"
+
 import { expect, test, type Locator, type Page } from "@playwright/test"
 
 import { expectAuthenticatedShell, loginThroughUi, signOutThroughUi } from "../auth/login"
 import { adminClient, userClient } from "../helpers/admin-client"
 import { readManifest, type RunManifest, type SyntheticRole } from "../helpers/run-context"
+import { runEvidenceFile } from "../helpers/run-paths"
 
 test.describe.configure({ mode: "serial" })
 
@@ -361,13 +365,22 @@ async function runOperation(page: Page, label: string, reason?: string): Promise
 
 /** The operations the product offers for the current status. */
 async function offeredOperations(page: Page): Promise<string[]> {
+  const trigger = page.getByRole("button", { name: `Operações de ${scenarioName}` })
+  if ((await trigger.count()) === 0) {
+    return visibleOperations(page)
+  }
   await ensureOperationsMenuOpen(page)
+  const offered = await visibleOperations(page)
+  await trigger.click()
+  await expect.poll(() => operationsMenuIsOpen(page)).toBe(false)
+  return offered
+}
+
+async function visibleOperations(page: Page): Promise<string[]> {
   const offered: string[] = []
   for (const label of OPERATION_LABELS) {
     if ((await page.getByRole("button", { name: label }).count()) > 0) offered.push(label)
   }
-  await page.getByRole("button", { name: `Operações de ${scenarioName}` }).click()
-  await expect.poll(() => operationsMenuIsOpen(page)).toBe(false)
   return offered
 }
 
@@ -519,23 +532,29 @@ test.describe("organization planning journey: authoring, lifecycle, publication"
     )
     expect(payloads).not.toContain(`${departmentName} STALE`)
 
+    const step6Evidence = JSON.stringify(
+      {
+        staleSettlementMs,
+        surfacedConflict: VERSION_CONFLICT,
+        staleExpectedVersion: afterCreate.version,
+        winningVersion: afterWinner.version,
+        canonicalVersionBeforeStale: canonicalBeforeStale.version,
+        canonicalVersionAfterStale: afterStale.version,
+        activeChangeSetsBeforeStale: contentBeforeStale,
+        activeChangeSetsAfterStale: contentAfterStale,
+        staleContentAbsent: !payloads.includes(`${departmentName} STALE`),
+        verdict: "NON_OVERWRITE=PASS",
+      },
+      null,
+      2,
+    )
+    const evidencePath = runEvidenceFile(manifest().runId, "step-6-non-overwrite.json")
+    mkdirSync(dirname(evidencePath), { recursive: true, mode: 0o700 })
+    const temporaryEvidencePath = `${evidencePath}.tmp`
+    writeFileSync(temporaryEvidencePath, step6Evidence, { mode: 0o600 })
+    renameSync(temporaryEvidencePath, evidencePath)
     await testInfo.attach("step-6-non-overwrite.json", {
-      body: JSON.stringify(
-        {
-          staleSettlementMs,
-          surfacedConflict: VERSION_CONFLICT,
-          staleExpectedVersion: afterCreate.version,
-          winningVersion: afterWinner.version,
-          canonicalVersionBeforeStale: canonicalBeforeStale.version,
-          canonicalVersionAfterStale: afterStale.version,
-          activeChangeSetsBeforeStale: contentBeforeStale,
-          activeChangeSetsAfterStale: contentAfterStale,
-          staleContentAbsent: !payloads.includes(`${departmentName} STALE`),
-          verdict: "NON_OVERWRITE=PASS",
-        },
-        null,
-        2,
-      ),
+      path: evidencePath,
       contentType: "application/json",
     })
     await stale.close()

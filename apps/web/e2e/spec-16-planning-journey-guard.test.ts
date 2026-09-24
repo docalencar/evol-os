@@ -54,12 +54,64 @@ test("foreign-owner denial remains an executed step-19 assertion", () => {
 
   assert.match(step19, /await switchTo\(page, FOREIGN\)/)
   assert.match(step19, /page\.goto\(`\/app\/organization\/planning\/\$\{scenarioId\}`\)/)
-  assert.match(step19, /expect\(response\?\.status\(\)\)\.toBe\(404\)/)
   assert.match(
     step19,
-    /expect\(page\.getByRole\("heading", \{ name: scenarioName \}\)\)\.toHaveCount\(0\)/,
+    /expect\(page\.getByText\(FOREIGN_DENIAL, \{ exact: true \}\)\)\.toBeVisible\(\)/,
+  )
+  assert.match(step19, /getByText\(scenarioName, \{ exact: false \}\)\)\.toHaveCount\(0\)/)
+  assert.match(step19, /getByText\(departmentName, \{ exact: false \}\)\)\.toHaveCount\(0\)/)
+  assert.match(step19, /\.\.\.OPERATION_LABELS/)
+  assert.doesNotMatch(step19, /response\?\.status|toBe\(404\)/)
+})
+
+function foreignDenialAccepted(input: {
+  genericDenialVisible: boolean
+  scenarioIdentityVisible: boolean
+  projectedContentVisible: boolean
+  actionableControlVisible: boolean
+}): boolean {
+  return (
+    input.genericDenialVisible &&
+    !input.scenarioIdentityVisible &&
+    !input.projectedContentVisible &&
+    !input.actionableControlVisible
+  )
+}
+
+test("canonical generic denial with no foreign content passes", () => {
+  assert.equal(
+    foreignDenialAccepted({
+      genericDenialVisible: true,
+      scenarioIdentityVisible: false,
+      projectedContentVisible: false,
+      actionableControlVisible: false,
+    }),
+    true,
   )
 })
+
+for (const [name, exposed] of [
+  ["foreign scenario identity", "scenarioIdentityVisible"],
+  ["projected department content", "projectedContentVisible"],
+  ["scenario mutation or lifecycle control", "actionableControlVisible"],
+] as const) {
+  test(`${name} makes the foreign denial fail`, () => {
+    const deniedSurface = {
+      genericDenialVisible: true,
+      scenarioIdentityVisible: false,
+      projectedContentVisible: false,
+      actionableControlVisible: false,
+    }
+
+    assert.equal(
+      foreignDenialAccepted({
+        ...deniedSurface,
+        [exposed]: true,
+      }),
+      false,
+    )
+  })
+}
 
 test("the stale conflict emits durable non-overwrite evidence", () => {
   const stepStart = spec.indexOf('test("3-6. content is authored')

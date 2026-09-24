@@ -15,7 +15,7 @@
 
 import assert from "node:assert/strict"
 import { execFileSync } from "node:child_process"
-import { mkdtempSync, rmSync, writeFileSync, readFileSync, mkdirSync, appendFileSync } from "node:fs"
+import { mkdtempSync, rmSync, writeFileSync, readFileSync, readdirSync, mkdirSync, appendFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import test from "node:test"
@@ -471,4 +471,128 @@ test("resuming is safe: the push is never forced and a divergent remote is refus
   assert.match(pushBlock, /remote branch exists at .* do NOT force push/)
   assert.match(pushBlock, /REMOTE_BEFORE" != "\$m_candidate"/)
   assert.match(pushBlock, /remote head != candidate/)
+})
+
+/* ---------------------------------------------------------------------------
+ * TOOL-PUB4 — required-check evidence must be matched by exact name.
+ *
+ * Publishing PR #169 reported `SUCCESS web` and then stopped: the manifest asked
+ * for `build`, which is an npm STEP, not a check-run. The check-run name for a
+ * GitHub Actions job is the JOB ID — this repo's workflow defines exactly one,
+ * `web`. The gate was right to block; the manifest named something that never
+ * existed as a check.
+ *
+ * Inspection then found a second, latent fault: the matcher was
+ * `grep -iE "$m_require_check"` over the whole "<STATE>\tNAME" line, so an
+ * unrelated green job whose name merely CONTAINED the required string — or the
+ * STATE column itself — could have satisfied a named required check. The
+ * selection is now an exact match on the name column, in a filter that needs no
+ * network and is therefore provable here.
+ * ------------------------------------------------------------------------- */
+
+const CHECK_STATE = resolve(HERE, "publish-check-state.sh")
+
+/** Run the selector over a crafted `gh pr checks` table. */
+function selectCheck(table, name) {
+  try {
+    const out = execFileSync("bash", [CHECK_STATE, name], {
+      input: table, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"],
+    })
+    return { code: 0, state: out.trim() }
+  } catch (error) {
+    return { code: error.status ?? 1, state: (error.stdout ?? "").trim() }
+  }
+}
+
+const GREEN = "SUCCESS\tweb\n"
+
+test("required check reported SUCCESS resolves and advances", () => {
+  const r = selectCheck(GREEN, "web")
+  assert.equal(r.code, 0)
+  assert.equal(r.state, "SUCCESS")
+})
+
+test("required check queued or in progress resolves as pending, not as success", () => {
+  for (const pending of ["QUEUED", "IN_PROGRESS", "PENDING"]) {
+    const r = selectCheck(`${pending}\tweb\n`, "web")
+    assert.equal(r.code, 0, `${pending} must be reported, not treated as missing`)
+    assert.equal(r.state, pending)
+    assert.notEqual(r.state, "SUCCESS")
+  }
+})
+
+test("required check failure resolves as that failure and blocks", () => {
+  for (const bad of ["FAILURE", "CANCELLED", "TIMED_OUT"]) {
+    const r = selectCheck(`${bad}\tweb\n`, "web")
+    assert.equal(r.code, 0)
+    assert.equal(r.state, bad)
+    assert.notEqual(r.state, "SUCCESS")
+  }
+})
+
+test("an unrelated green check never satisfies a missing required check", () => {
+  // The exact failure mode of PR #169: `web` is green, `build` does not exist.
+  const r = selectCheck(GREEN, "build")
+  assert.equal(r.code, 1, "missing required evidence must exit non-zero so the gate blocks")
+  assert.equal(r.state, "")
+
+  // And a substring / regex match must not rescue it either.
+  assert.equal(selectCheck(GREEN, "we").code, 1, "a substring must not match")
+  assert.equal(selectCheck(GREEN, "w.b").code, 1, "a regex must not match")
+  assert.equal(selectCheck(GREEN, "SUCCESS").code, 1, "the state column must never be matched as a name")
+  assert.equal(selectCheck("SUCCESS\tweb-extra\n", "web").code, 1, "a longer job name is a different check")
+})
+
+test("GitHub Actions check-run evidence resolves even with no commit statuses", () => {
+  // PR #169: the commit-status endpoint returns nothing, while the Actions
+  // check-run is green. The gate reads `gh pr checks`, which reports check-runs,
+  // so the absence of legacy commit statuses is not the absence of evidence.
+  const r = selectCheck("SUCCESS\tweb\nSKIPPED\tother\n", "web")
+  assert.equal(r.code, 0)
+  assert.equal(r.state, "SUCCESS")
+
+  const gate = readFileSync(GATE, "utf8")
+  assert.match(gate, /gh pr checks "\$PR_NUM" --json name,state/)
+  assert.doesNotMatch(gate, /\/statuses\/|commit-status/)
+})
+
+test("evidence is bound to the candidate SHA and rechecked before merge", () => {
+  const gate = readFileSync(GATE, "utf8")
+  const ciStep = gate.indexOf('say "[publish] 4/9 waiting for CI')
+  const merge = gate.indexOf('say "[publish] 5/9 merging')
+  assert.ok(ciStep > 0 && merge > ciStep)
+  // The PR head must still be the candidate when the merge is issued, so CI
+  // evidence gathered for one SHA can never authorise merging another.
+  const beforeMerge = gate.slice(merge, gate.indexOf('say "[publish] 6/9'))
+  assert.match(beforeMerge, /headRefOid.*= "\$m_candidate".*\|\| stop "PR head changed after CI"/s)
+})
+
+test("the required-check selection is exact, never a regex over the whole line", () => {
+  const gate = readFileSync(GATE, "utf8")
+  const block = gate.slice(gate.indexOf('if [ -n "$m_require_check" ]'), gate.indexOf('CI_RUN='))
+  assert.doesNotMatch(block, /grep -iE "\$m_require_check"/)
+  assert.match(block, /publish-check-state\.sh" "\$m_require_check"/)
+  assert.match(block, /not SUCCESS/)
+})
+
+test("this repo's workflow exposes exactly the check name the manifests require", () => {
+  const workflow = readFileSync(resolve(HERE, "../../.github/workflows/ci.yml"), "utf8")
+  // Only the block under `jobs:` — `on:` also has two-space keys, and matching
+  // those would report pull_request and push as check names.
+  const jobsBlock = workflow.slice(workflow.indexOf("\njobs:") + 1)
+  const jobs = [...jobsBlock.matchAll(/^ {2}([a-zA-Z0-9_-]+):$/gm)].map((m) => m[1])
+  assert.deepEqual(jobs, ["web"], "the check-run name is the job id")
+
+  // Every manifest in the directory, not a hand-maintained list: a new slice
+  // must not be able to name a check that does not exist just because nobody
+  // remembered to extend this test.
+  const dir = resolve(HERE, "publish")
+  const manifests = readdirSync(dir).filter((f) => f.endsWith(".manifest"))
+  assert.ok(manifests.length > 0, "there must be manifests to validate")
+
+  for (const file of manifests) {
+    const declared = /^require_check\s*=\s*(\S+)/m.exec(readFileSync(join(dir, file), "utf8"))?.[1]
+    if (declared === undefined) continue   // require_check is optional
+    assert.ok(jobs.includes(declared), `${file} requires '${declared}', which is not a job in ci.yml`)
+  }
 })

@@ -262,9 +262,14 @@ if printf '%s' "$CI" | grep -qvE '^(SUCCESS|SKIPPED|NEUTRAL)'; then
 fi
 # A named check the slice depends on — e.g. a build whose local run was
 # environmental. SKIPPED is not evidence, so this demands SUCCESS by name.
+#
+# `require_check` is a CHECK-RUN name, which for GitHub Actions is the JOB id,
+# not the workflow name and not a step. The selection is an EXACT match on the
+# name column: a substring or regex match could be satisfied by an unrelated
+# green job, or by the state column itself.
 if [ -n "$m_require_check" ]; then
-  STATE="$(printf '%s' "$CI" | grep -iE "$m_require_check" | head -1 | cut -f1)"
-  [ -n "$STATE" ] || stop "required check '$m_require_check' was not reported for this commit"
+  STATE="$(printf '%s\n' "$CI" | bash "$REPO_ROOT/scripts/local/publish-check-state.sh" "$m_require_check")" \
+    || stop "required check '$m_require_check' was not reported for this commit — reported: $(printf '%s' "$CI" | cut -f2 | tr '\n' ' ')"
   [ "$STATE" = "SUCCESS" ] || stop "required check '$m_require_check' is '$STATE', not SUCCESS"
   say "[publish]     required check '$m_require_check': SUCCESS"
 fi

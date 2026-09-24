@@ -83,3 +83,45 @@ test("capability inspection closes its menu before operation execution", () => {
   assert.ok(closeMenu > inspectCapabilities)
   assert.ok(proveClosed > closeMenu)
 })
+
+function terminalControlAccepted(count: number, enabled: boolean): boolean {
+  return count === 0 || (count === 1 && !enabled)
+}
+
+test("an absent terminal control is accepted", () => {
+  assert.equal(terminalControlAccepted(0, false), true)
+})
+
+test("a disabled terminal control is accepted", () => {
+  assert.equal(terminalControlAccepted(1, false), true)
+  const start = spec.indexOf("async function expectTerminalControlUnavailable")
+  const unavailable = spec.slice(start, spec.indexOf("test.describe(", start))
+  assert.match(unavailable, /if \(\(await control\.count\(\)\) === 0\) return/)
+  assert.match(unavailable, /await expect\(control\)\.toBeDisabled\(\)/)
+})
+
+test("an enabled terminal control is rejected", () => {
+  assert.equal(terminalControlAccepted(1, true), false)
+  const terminalStep = spec.slice(spec.indexOf("// 17. a published scenario"), spec.indexOf("// 18. terminality"))
+  assert.match(terminalStep, /expectTerminalControlUnavailable\(page, "Publicar Cenário"\)/)
+  assert.doesNotMatch(terminalStep, /"Publicar Cenário",/)
+})
+
+test("rejection reason is reread through the trusted lifecycle boundary", () => {
+  assert.match(spec, /rpc\("get_planning_scenario_lifecycle_v1"/)
+  assert.match(spec, /const rejectedScenario = await readTrustedScenario\(\)/)
+  assert.match(spec, /rpc\("get_planning_scenarios_v1"/)
+  assert.match(spec, /entry\.event_type === "planning\.scenario\.rejected"/)
+  assert.match(spec, /expect\(rejectionFacts\)\.toHaveLength\(1\)/)
+  assert.match(spec, /reason: REJECTION_REASON/)
+  assert.match(spec, /expect\(rejectedScenario\.company_id\)\.toBe\(tenantACompanyId\(\)\)/)
+})
+
+test("projection contains the authored department while live organization stays unchanged", () => {
+  assert.match(spec, /rpc\("get_tenant_organization_directory_v1"/)
+  assert.match(spec, /liveOrganizationBefore = await readLiveOrganization\(\)/)
+  assert.match(spec, /expect\(liveOrganizationAfter\)\.toEqual\(liveOrganizationBefore\)/)
+  assert.match(spec, /JSON\.stringify\(snapshot\?\.organization \?\? \{\}\)/)
+  assert.match(spec, /expect\(JSON\.stringify\(snapshot\?\.organization/)
+  assert.match(spec, /liveOrganizationAfter\.some\(\(entry\) => entry\.name === `\$\{departmentName\}\$\{REVISED_SUFFIX\}`\)/)
+})

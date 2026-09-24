@@ -22,8 +22,14 @@ import { dirname } from "node:path"
 import { expect, test, type Locator, type Page } from "@playwright/test"
 
 import { expectAuthenticatedShell, loginThroughUi, signOutThroughUi } from "../auth/login"
+import { ensureRunOwnedForeignTenant } from "../fixtures/onboarding-tenant"
 import { adminClient, userClient } from "../helpers/admin-client"
-import { readManifest, type RunManifest, type SyntheticRole } from "../helpers/run-context"
+import {
+  readManifest,
+  type RunManifest,
+  type SyntheticRole,
+  type SyntheticUser,
+} from "../helpers/run-context"
 import { runEvidenceFile } from "../helpers/run-paths"
 
 test.describe.configure({ mode: "serial" })
@@ -35,7 +41,7 @@ test.describe.configure({ mode: "serial" })
  *                only one holding ORGANIZATION_PLANNING_MANAGE.
  *   employee   → same-tenant member. RLS grants it `select` and nothing else, so
  *                it is the authorization probe that is NOT a tenant outsider.
- *   onboarding → owner of tenant B, created by spec 02. The foreign actor.
+ *   onboarding → owner of the run's self-provisioned tenant B. The foreign actor.
  */
 const AUTHOR: SyntheticRole = "admin"
 const MEMBER: SyntheticRole = "employee"
@@ -92,16 +98,16 @@ function manifest(): RunManifest {
 }
 
 /**
- * Tenant B, which the foreign actor must OWN. Created by spec 02's real wizard,
- * the same dependency specs 03, 04, 07, 10, 13 and 15 declare. Before it exists
- * the `onboarding` identity is unattached and is not a foreign OWNER at all.
+ * Tenant B, which the foreign actor must OWN. This spec ensures it through the
+ * real onboarding wizard before the Planning journey starts; targeted execution
+ * therefore has no dependency on another spec or on execution order.
  */
 function foreignTenant() {
   const tenant = manifest().onboardingCompany
   if (!tenant) {
     throw new Error(
       "E2E_TENANT_B_MISSING: the foreign actor is the owner of a SEPARATE tenant, " +
-        "not an unattached identity. Spec 02 must complete first.",
+        "not an unattached identity. The Planning fixture must provision it first.",
     )
   }
   return tenant
@@ -124,6 +130,21 @@ function tenantACompanyId(): string {
   const id = manifest().companyId
   if (!id) throw new Error("E2E_FIXTURE_TENANT_A_MISSING")
   return id
+}
+
+function onboardingUser(): SyntheticUser {
+  const found = manifest().users.find((candidate) => candidate.role === FOREIGN)
+  if (!found) throw new Error("E2E_FIXTURE_MISSING_ROLE: onboarding")
+  return found
+}
+
+async function ensureForeignTenant(page: Page): Promise<void> {
+  const tenantA = tenantACompanyId()
+  const tenant = await ensureRunOwnedForeignTenant(page, onboardingUser(), manifest().runId)
+  expect(tenant.companyId).not.toBe(tenantA)
+  cached = readManifest()
+  expect(foreignTenant().companyId).toBe(tenant.companyId)
+  expect(foreignTenant().ownerUserId).toBe(onboardingUser().userId)
 }
 
 async function enterAs(page: Page, role: SyntheticRole): Promise<void> {
@@ -399,6 +420,8 @@ test.describe("organization planning journey: authoring, lifecycle, publication"
     scenarioName = `E2E Planning Scenario ${runId}`
     departmentName = `E2E Planning Department ${runId}`
 
+    await ensureForeignTenant(page)
+    await signOutThroughUi(page)
     await enterAs(page, AUTHOR)
     await organizationHome(page)
 

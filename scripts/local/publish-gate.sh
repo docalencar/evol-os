@@ -66,7 +66,14 @@ done
 # ---------------------------------------------------------------------------
 m_branch=""; m_base=""; m_candidate=""; m_commits=""; m_files=""
 m_pr_title=""; m_pr_body=""; m_require_check=""; m_ancestors=""
+# bash 3.2 (what macOS ships) treats an EMPTY array as UNSET, so under `set -u`
+# both "${m_guards[@]}" and ${#m_guards[@]} abort when no guard is declared. The
+# count is therefore tracked as a plain integer, and the array is only ever
+# expanded through the ${arr[@]+"${arr[@]}"} form, which is safe on 3.2 and 5.x
+# alike. Zero guards is a valid manifest; it must run zero guard commands, not
+# fail, and must not require a no-op guard to paper over it.
 m_guards=()
+m_guard_count=0
 
 lineno=0
 while IFS= read -r line || [ -n "$line" ]; do
@@ -87,7 +94,8 @@ while IFS= read -r line || [ -n "$line" ]; do
     pr_title)      m_pr_title="$val" ;;
     pr_body)       m_pr_body="$val" ;;
     require_check) m_require_check="$val" ;;
-    guard)         m_guards+=("$val") ;;
+    guard)         [ -n "$val" ] || stop "manifest line $lineno: guard path is empty"
+                   m_guards+=("$val"); m_guard_count=$((m_guard_count + 1)) ;;
     *)             stop "unknown manifest key '$key' on line $lineno" ;;
   esac
 done < "$MANIFEST"
@@ -159,14 +167,14 @@ git cat-file -t "$PROTECTED_STASH" >/dev/null 2>&1 || { say "            protect
 
 # Slice-specific guards. Each is a script; exit 0 is the only pass. They receive
 # the identities so they never have to re-derive them.
-for g in "${m_guards[@]}"; do
+for g in ${m_guards[@]+"${m_guards[@]}"}; do
   [ -f "$g" ] || stop "guard script not found: $g"
   say "[publish]     guard: $g"
   PUBLISH_BASE="$m_base" PUBLISH_CANDIDATE="$m_candidate" PUBLISH_BRANCH="$m_branch" \
     bash "$g" || stop "guard failed: $g"
 done
 
-say "[publish]     identity, ancestry, scope, protected state and $(( ${#m_guards[@]} )) guard(s) PASS"
+say "[publish]     identity, ancestry, scope, protected state and $m_guard_count guard(s) PASS"
 
 if [ "$DRY_RUN" = 1 ]; then
   say ""

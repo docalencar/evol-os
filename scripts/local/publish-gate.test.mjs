@@ -15,7 +15,7 @@
 
 import assert from "node:assert/strict"
 import { execFileSync } from "node:child_process"
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync, appendFileSync } from "node:fs"
+import { mkdtempSync, rmSync, writeFileSync, readFileSync, mkdirSync, appendFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import test from "node:test"
@@ -290,4 +290,108 @@ test("pending CI is treated as pending, not as failure", () => {
   const src = execFileSync("cat", [GATE], { encoding: "utf8" })
   assert.match(src, /QUEUED\|IN_PROGRESS\|PENDING/)
   assert.match(src, /pending is not failure/)
+})
+
+/* ---------------------------------------------------------------------------
+ * TOOL-PUB2 — zero guards must be a valid manifest state.
+ *
+ * macOS ships bash 3.2, where an EMPTY array is indistinguishable from an unset
+ * one, so under `set -u` both "${m_guards[@]}" and ${#m_guards[@]} abort. The
+ * gate failed in step 1/9 on every guardless manifest. bash >= 4.4 does not
+ * reproduce it, so these behavioural cases are paired with a static check that
+ * the unsafe idiom cannot return — that check is what actually protects a Linux
+ * CI from a macOS-only regression.
+ * ------------------------------------------------------------------------- */
+
+test("zero guards is valid: verification continues and reports a zero count", () => {
+  const s = scenario() // the default manifest declares no guard at all
+  try {
+    assert.equal(s.code, 0)
+    assert.match(s.out, /0 guard\(s\) PASS/)
+    assert.match(s.out, /PUBLICATION=DRY_RUN_OK/)
+    assert.doesNotMatch(s.out, /unbound variable/)
+    assert.doesNotMatch(s.out, /guard: /)
+  } finally { s.cleanup() }
+})
+
+test("one guard executes exactly once", () => {
+  const s = scenario((ctx) => {
+    const log = join(ctx.work, "ran.log")
+    writeFileSync(join(ctx.work, "g1.sh"), `#!/usr/bin/env bash\necho one >> ${log}\nexit 0\n`)
+    ctx.fields.guard = ["g1.sh"]
+    ctx.log = log
+  })
+  try {
+    assert.equal(s.code, 0)
+    assert.match(s.out, /1 guard\(s\) PASS/)
+    assert.equal(readFileSync(s.log, "utf8"), "one\n")
+  } finally { s.cleanup() }
+})
+
+test("multiple guards each execute, in declared order", () => {
+  const s = scenario((ctx) => {
+    const log = join(ctx.work, "ran.log")
+    for (const n of ["a", "b", "c"]) {
+      writeFileSync(join(ctx.work, `g-${n}.sh`), `#!/usr/bin/env bash\necho ${n} >> ${log}\nexit 0\n`)
+    }
+    ctx.fields.guard = ["g-a.sh", "g-b.sh", "g-c.sh"]
+    ctx.log = log
+  })
+  try {
+    assert.equal(s.code, 0)
+    assert.match(s.out, /3 guard\(s\) PASS/)
+    assert.equal(readFileSync(s.log, "utf8"), "a\nb\nc\n")
+  } finally { s.cleanup() }
+})
+
+test("a failing guard still blocks publication even when others pass", () => {
+  const s = scenario((ctx) => {
+    writeFileSync(join(ctx.work, "ok.sh"), "#!/usr/bin/env bash\nexit 0\n")
+    writeFileSync(join(ctx.work, "no.sh"), "#!/usr/bin/env bash\nexit 1\n")
+    ctx.fields.guard = ["ok.sh", "no.sh"]
+  })
+  try {
+    assert.notEqual(s.code, 0)
+    assert.match(s.out, /guard failed: no\.sh/)
+    assert.match(s.out, /PUBLICATION=BLOCKED/)
+  } finally { s.cleanup() }
+})
+
+test("a guard path that does not exist fails closed", () => {
+  const s = scenario((ctx) => { ctx.fields.guard = ["absent.sh"] })
+  try {
+    assert.notEqual(s.code, 0)
+    assert.match(s.out, /guard script not found: absent\.sh/)
+  } finally { s.cleanup() }
+})
+
+test("an empty guard value fails closed rather than counting as zero guards", () => {
+  const s = scenario((ctx) => { ctx.fields.guard = [""] })
+  try {
+    assert.notEqual(s.code, 0)
+    assert.match(s.out, /guard path is empty/)
+    assert.match(s.out, /PUBLICATION=BLOCKED/)
+    assert.doesNotMatch(s.out, /DRY_RUN_OK/)
+  } finally { s.cleanup() }
+})
+
+test("the runner never expands an array in a form bash 3.2 rejects under nounset", () => {
+  // Comments are stripped first: the fix's own explanation names the unsafe
+  // idiom, and a guard that matched prose would fail on its own documentation.
+  const code = readFileSync(GATE, "utf8")
+    .split("\n")
+    .filter((line) => !/^\s*#/.test(line))
+    .join("\n")
+
+  assert.match(code, /set -uo pipefail/, "nounset is contractual and must stay enabled")
+
+  // Remove every SAFE occurrence first, then look for what survives. Trying to
+  // exclude the safe form with a lookaround flags its own inner expansion — the
+  // guard must be written against the delta, not against a substring.
+  const withoutSafe = code
+    .replace(/\$\{([a-zA-Z_][a-zA-Z0-9_]*)\[@\]\+"\$\{\1\[@\]\}"\}/g, "<SAFE>")
+    .replace(/"\$\{PROTECTED_FILES\[@\]\}"/g, "<LITERAL>") // populated at definition, never empty
+
+  const unsafe = [...withoutSafe.matchAll(/\$\{#?[a-zA-Z_][a-zA-Z0-9_]*\[@\]\}/g)].map((m) => m[0])
+  assert.deepEqual(unsafe, [], `unguarded array expansions: ${unsafe.join(", ")}`)
 })

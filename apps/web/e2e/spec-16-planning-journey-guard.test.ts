@@ -12,6 +12,10 @@ const spec = readFileSync(
   resolve(import.meta.dirname, "specs/16-organization-planning-journey.spec.ts"),
   "utf8",
 )
+const onboardingFixture = readFileSync(
+  resolve(import.meta.dirname, "fixtures/onboarding-tenant.ts"),
+  "utf8",
+)
 
 test("the timeline route carries the canonical workspace identity", () => {
   const helperStart = spec.indexOf("async function planningTimeline")
@@ -23,6 +27,38 @@ test("the timeline route carries the canonical workspace identity", () => {
     /planning\/timeline\?workspaceId=\$\{encodeURIComponent\(workspaceId\)\}/,
   )
   assert.doesNotMatch(helper, /page\.goto\("\/app\/organization\/planning\/timeline"\)/)
+})
+
+test("targeted Planning provisions its own run-scoped foreign tenant", () => {
+  const firstStep = spec.slice(
+    spec.indexOf('test("1-2. a workspace'),
+    spec.indexOf("// ------------------------------------------------------------------ B"),
+  )
+
+  assert.match(spec, /ensureRunOwnedForeignTenant/)
+  assert.match(firstStep, /await ensureForeignTenant\(page\)/)
+  assert.ok(
+    firstStep.indexOf("ensureForeignTenant(page)") < firstStep.indexOf("enterAs(page, AUTHOR)"),
+  )
+  assert.match(spec, /expect\(tenant\.companyId\)\.not\.toBe\(tenantA\)/)
+  assert.doesNotMatch(spec, /Spec 02|spec 02/)
+  assert.match(onboardingFixture, /const companyName = `E2E Onboarding \$\{runId\}`/)
+  assert.match(onboardingFixture, /resolveAndJournalOnboardingTenant\(journal, user\.userId\)/)
+  assert.match(onboardingFixture, /if \(journal\.onboardingCompany\)/)
+  assert.match(onboardingFixture, /journal\.onboardingCompany\.ownerUserId !== user\.userId/)
+})
+
+test("foreign-owner denial remains an executed step-19 assertion", () => {
+  const stepStart = spec.indexOf("// 19. the change-set lineage")
+  const step19 = spec.slice(stepStart, spec.indexOf("\n  })", stepStart))
+
+  assert.match(step19, /await switchTo\(page, FOREIGN\)/)
+  assert.match(step19, /page\.goto\(`\/app\/organization\/planning\/\$\{scenarioId\}`\)/)
+  assert.match(step19, /expect\(response\?\.status\(\)\)\.toBe\(404\)/)
+  assert.match(
+    step19,
+    /expect\(page\.getByRole\("heading", \{ name: scenarioName \}\)\)\.toHaveCount\(0\)/,
+  )
 })
 
 test("the stale conflict emits durable non-overwrite evidence", () => {

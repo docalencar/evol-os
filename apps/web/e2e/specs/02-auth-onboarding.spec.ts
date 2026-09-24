@@ -1,7 +1,7 @@
 /**
  * E2E-1 spec 02 — authentication and first-access onboarding, end to end.
  *
- * This is the slice's golden path and the only place tenant B is created. The
+ * This is the slice's golden path for tenant-B onboarding. The
  * company is created by the **browser**, through the real two-step wizard, the
  * real `createCompanyAction` server action and the real
  * `create_company_with_owner` RPC. No privileged client creates it; the
@@ -20,9 +20,8 @@
 
 import { expect, test } from "@playwright/test"
 
-import { expectTenantContext, loginExpectingOnboarding } from "../auth/login"
-import { resolveAndJournalOnboardingTenant } from "../fixtures/onboarding-tenant"
-import { readJournal } from "../helpers/journal"
+import { loginExpectingOnboarding } from "../auth/login"
+import { ensureRunOwnedForeignTenant } from "../fixtures/onboarding-tenant"
 import { readManifest, storageStatePath, type RunManifest } from "../helpers/run-context"
 
 test.describe.configure({ mode: "serial" })
@@ -73,36 +72,7 @@ test.describe("first access: login, onboarding, tenant creation", () => {
     const user = onboardingUser()
     const companyName = tenantBName()
 
-    await loginExpectingOnboarding(page, user)
-
-    // Step 1 — identification. The real field, filled the way a person would.
-    const nameField = page.locator("#company-name")
-    await expect(nameField).toBeVisible()
-    await nameField.fill(companyName)
-
-    await page.getByRole("button", { name: /^Continuar$/ }).click()
-
-    // Step 2 — review. The typed name must be echoed back before submission.
-    await expect(page.getByText(companyName).first()).toBeVisible()
-
-    // Submit through the real control. This is the mutation: server action →
-    // create_company_with_owner → company + owner membership + owner person.
-    await Promise.all([
-      page.waitForURL(/\/app(\/|$)/, { timeout: 60_000 }),
-      page.getByRole("button", { name: /Criar empresa e continuar/i }).click(),
-    ])
-
-    // THE ONBOARDING PROOF: the application itself, through its own UI, shows the
-    // new tenant as the current one. Not a database read — the rendered page.
-    await expectTenantContext(page, companyName)
-
-    // Accounting only, and only now that the mutation has certainly happened:
-    // resolve the ids the run must be able to delete, and journal them.
-    // This is NOT the evidence that onboarding worked; the assertion above is.
-    const journal = readJournal()
-    if (!journal) throw new Error("E2E_JOURNAL_MISSING: cannot take ownership of tenant B.")
-
-    const tenant = await resolveAndJournalOnboardingTenant(journal, user.userId)
+    const tenant = await ensureRunOwnedForeignTenant(page, user, manifest().runId)
 
     expect(tenant.companyName).toBe(companyName)
     expect(tenant.ownerUserId).toBe(user.userId)

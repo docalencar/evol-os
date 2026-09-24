@@ -1,26 +1,69 @@
 /**
  * Tenant B — resolved AFTER the browser created it. RUNNER ONLY.
  *
- * This module deliberately creates nothing. The onboarding journey creates the
- * company by clicking a button in the real UI; all that happens here is that the
- * runner reads back what the product did, so that
+ * The reusable ensure helper creates through the real onboarding UI only when the
+ * current run has no tenant B. Resolution then reads back what the product did so
+ * that
  *
  *   1. the ownership journal gains deletion authority over it, and
  *   2. the cross-tenant spec has a foreign tenant to be denied.
  *
  * Reading back through the privileged client is bootstrap/teardown work, not
- * proof. The journey's own proof is the UI readback in spec 02; the isolation
- * proof in spec 04 runs entirely through the browser session.
+ * proof. The journey's own proof is the UI readback; isolation proofs run through
+ * the foreign owner's authenticated browser session.
  */
 
+import { expect, type Page } from "@playwright/test"
+
+import { expectTenantContext, loginExpectingOnboarding, loginThroughUi } from "../auth/login"
 import { adminClient } from "../helpers/admin-client"
-import { setOnboardingCompany, type Journal } from "../helpers/journal"
-import type { OwnedTenant } from "../helpers/run-context"
+import { readJournal, setOnboardingCompany, type Journal } from "../helpers/journal"
+import type { OwnedTenant, SyntheticUser } from "../helpers/run-context"
 
 export type ResolvedOnboardingTenant = OwnedTenant & Readonly<{
   /** The owner's `people` row, created by `create_company_with_owner`. */
   ownerPersonId: string
 }>
+
+/** Ensure this run owns a genuinely foreign tenant through the real product. */
+export async function ensureRunOwnedForeignTenant(
+  page: Page,
+  user: SyntheticUser,
+  runId: string,
+): Promise<ResolvedOnboardingTenant> {
+  const journal = readJournal()
+  if (!journal) throw new Error("E2E_JOURNAL_MISSING: cannot own the foreign tenant.")
+
+  if (journal.onboardingCompany) {
+    if (journal.onboardingCompany.ownerUserId !== user.userId) {
+      throw new Error("E2E_FOREIGN_TENANT_OWNER_MISMATCH")
+    }
+    const ownerPersonId = await resolveOwnerPersonId(
+      journal.onboardingCompany.companyId,
+      user.userId,
+    )
+    await loginThroughUi(page, user)
+    await expectTenantContext(page, journal.onboardingCompany.companyName)
+    return Object.freeze({ ...journal.onboardingCompany, ownerPersonId })
+  }
+
+  const companyName = `E2E Onboarding ${runId}`
+  await loginExpectingOnboarding(page, user)
+  await page.locator("#company-name").fill(companyName)
+  await page.getByRole("button", { name: /^Continuar$/ }).click()
+  await expect(page.getByText(companyName).first()).toBeVisible()
+  await Promise.all([
+    page.waitForURL(/\/app(\/|$)/, { timeout: 60_000 }),
+    page.getByRole("button", { name: /Criar empresa e continuar/i }).click(),
+  ])
+  await expectTenantContext(page, companyName)
+
+  const tenant = await resolveAndJournalOnboardingTenant(journal, user.userId)
+  if (tenant.companyName !== companyName || tenant.ownerUserId !== user.userId) {
+    throw new Error("E2E_FOREIGN_TENANT_IDENTITY_MISMATCH")
+  }
+  return tenant
+}
 
 /**
  * Find the company the given synthetic user owns, and record it as run-owned.

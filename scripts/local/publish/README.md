@@ -18,7 +18,7 @@ because a mistyped guard would otherwise be an invisible loss of governance.
 | `commits` | yes | the full ordered commit sequence over base, space-separated |
 | `files` | yes | the exact changed-file set over base, space-separated |
 | `pr_title` | yes | PR title |
-| `pr_body` | yes | path to a file holding the PR body |
+| `pr_body` | yes | path to a file holding the PR body, **inside the repository** (relative paths resolve from the repo root). An executor-local path such as `/tmp/body.md` is refused: it exists only on the machine that wrote it, and a publication resumed elsewhere would fail after the push |
 | `ancestors` | no | extra SHAs that must remain in ancestry — a reconciliation merge, a prior candidate that must not have been squashed away, a dependency slice |
 | `require_check` | no | a named CI check that must report `SUCCESS`. Use when local evidence was unavailable — a *skipped* job is not evidence |
 | `guard` | no, repeatable | path to a slice-specific guard script |
@@ -42,7 +42,7 @@ candidate     = 2222222222222222222222222222222222222222
 commits       = 2222222222222222222222222222222222222222
 files         = docs/Execution/MY-CONTRACT.md docs/NEXT_STEPS.md
 pr_title      = docs(execution): freeze my contract
-pr_body       = /tmp/my-pr-body.md
+pr_body       = scripts/local/publish/bodies/my-slice.md
 ancestors     = 3333333333333333333333333333333333333333
 require_check = build
 guard         = scripts/local/publish/guards/no-false-claims.sh

@@ -395,3 +395,80 @@ test("the runner never expands an array in a form bash 3.2 rejects under nounset
   const unsafe = [...withoutSafe.matchAll(/\$\{#?[a-zA-Z_][a-zA-Z0-9_]*\[@\]\}/g)].map((m) => m[0])
   assert.deepEqual(unsafe, [], `unguarded array expansions: ${unsafe.join(", ")}`)
 })
+
+/* ---------------------------------------------------------------------------
+ * TOOL-PUB3 — the PR body must be durable, and verified before the push.
+ *
+ * Publishing TOOL-PUB2 reached step 3/9 and stopped on a pr_body path under
+ * /tmp that existed only on the machine which prepared the manifest. By then the
+ * branch had already been pushed, leaving a remote branch with no PR. A purely
+ * local precondition must not be checked after a remote mutation.
+ * ------------------------------------------------------------------------- */
+
+test("a repository-backed PR body resolves from the repo root", () => {
+  const s = scenario((ctx) => {
+    mkdirSync(join(ctx.work, "scripts/local/publish/bodies"), { recursive: true })
+    writeFileSync(join(ctx.work, "scripts/local/publish/bodies/slice.md"), "durable body\n")
+    ctx.fields.pr_body = "scripts/local/publish/bodies/slice.md"
+  })
+  try {
+    assert.equal(s.code, 0)
+    assert.match(s.out, /PUBLICATION=DRY_RUN_OK/)
+  } finally { s.cleanup() }
+})
+
+test("a configured but missing PR body fails closed", () => {
+  const s = scenario((ctx) => { ctx.fields.pr_body = "scripts/local/publish/bodies/absent.md" })
+  try {
+    assert.notEqual(s.code, 0)
+    assert.match(s.out, /pr_body file not found/)
+    assert.match(s.out, /PUBLICATION=BLOCKED/)
+  } finally { s.cleanup() }
+})
+
+test("an executor-local PR body outside the repository is refused", () => {
+  const s = scenario((ctx) => {
+    const outside = join(tmpdir(), `pub3-outside-${process.pid}.md`)
+    writeFileSync(outside, "body\n")   // it EXISTS: existence is not the objection
+    ctx.fields.pr_body = outside
+    ctx.outside = outside
+  })
+  try {
+    assert.notEqual(s.code, 0)
+    assert.match(s.out, /must live inside the repository/)
+    assert.doesNotMatch(s.out, /DRY_RUN_OK/)
+  } finally { rmSync(s.outside, { force: true }); s.cleanup() }
+})
+
+test("dry-run validates the same PR body dependency as a real publication", () => {
+  // The regression: dry-run used to exit at the end of step 1/9, never reaching
+  // the step 3/9 check, so it reported success for a manifest that could not
+  // publish. Dry-run must refuse exactly what a real run refuses.
+  const s = scenario((ctx) => { ctx.fields.pr_body = "no-such-body.md" })
+  try {
+    assert.notEqual(s.code, 0, "dry-run must fail on a body a real run would reject")
+    assert.match(s.out, /pr_body file not found/)
+  } finally { s.cleanup() }
+})
+
+test("the PR body is verified before the push, never after it", () => {
+  const code = readFileSync(GATE, "utf8")
+  const bodyCheck = code.indexOf('stop "pr_body file not found')
+  const push = code.indexOf('say "[publish] 2/9 push')
+  const prStep = code.indexOf('say "[publish] 3/9 pull request')
+  assert.ok(bodyCheck > 0 && push > 0 && prStep > 0, "anchors must exist")
+  assert.ok(bodyCheck < push, "pr_body must be validated before the push step")
+  assert.ok(push < prStep, "step order must remain 2/9 then 3/9")
+})
+
+test("resuming is safe: the push is never forced and a divergent remote is refused", () => {
+  // The remote branch already exists at the exact candidate after a partial run.
+  // Re-running must be a no-op push, and must still refuse a remote that moved.
+  const code = readFileSync(GATE, "utf8")
+  const pushBlock = code.slice(code.indexOf('say "[publish] 2/9 push'),
+                               code.indexOf('say "[publish] 3/9 pull request'))
+  assert.doesNotMatch(pushBlock, /--force|--force-with-lease|push\s+-f\b/)
+  assert.match(pushBlock, /remote branch exists at .* do NOT force push/)
+  assert.match(pushBlock, /REMOTE_BEFORE" != "\$m_candidate"/)
+  assert.match(pushBlock, /remote head != candidate/)
+})

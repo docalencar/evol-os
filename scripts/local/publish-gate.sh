@@ -150,6 +150,26 @@ EXPECT_FILES="$(printf '%s\n' $m_files | sort | tr '\n' ' ')"
 git diff --name-status "$m_base..HEAD" | grep -q '^R' && stop "a file was renamed or moved"
 git diff --check "$m_base..HEAD" || stop "diff --check failed"
 
+# The PR body is a publication input like any other, so it is verified here -
+# before the push - and therefore identically in dry-run and in a real run. It
+# used to be checked in step 3/9, after the branch had already been pushed, which
+# left a remote branch with no PR when the path was wrong.
+#
+# It must be repository-backed. An executor-local path such as /tmp/body.md is
+# valid only on the machine that wrote it, so a publication prepared on one
+# machine and resumed on another fails after mutating the remote. A relative path
+# resolves against the repository root.
+case "$m_pr_body" in
+  /*) PR_BODY_ABS="$m_pr_body" ;;
+  *)  PR_BODY_ABS="$REPO_ROOT/$m_pr_body" ;;
+esac
+case "$PR_BODY_ABS" in
+  "$REPO_ROOT"/*) : ;;
+  *) stop "pr_body must live inside the repository so it survives a change of machine: $m_pr_body" ;;
+esac
+[ -f "$PR_BODY_ABS" ] || stop "pr_body file not found: $m_pr_body"
+m_pr_body="$PR_BODY_ABS"
+
 PROT_OK=1
 for f in "${PROTECTED_FILES[@]}"; do
   [ -f "$f" ] || { say "            MISSING protected file: $f"; PROT_OK=0; }
@@ -202,7 +222,6 @@ git push origin "$m_branch" || stop "push failed"
 # 3. pull request
 # ---------------------------------------------------------------------------
 say "[publish] 3/9 pull request ..."
-[ -f "$m_pr_body" ] || stop "pr_body file not found: $m_pr_body"
 if gh pr view "$m_branch" --json number >/dev/null 2>&1; then
   say "[publish]     a PR already exists for this branch; reusing it"
 else

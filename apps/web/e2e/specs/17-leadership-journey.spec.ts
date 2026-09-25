@@ -266,7 +266,36 @@ test.describe("Leadership MVP hosted journey", () => {
 
     const dialog = page.getByRole("dialog")
     await expect(dialog).toBeVisible({ timeout: 30_000 })
-    await dialog.locator("#templateId").selectOption(templateVersionId)
+    // `#templateId` takes the template CONTAINER id: the product renders
+    //   <option key={template.templateVersionId} value={template.templateId}>
+    // so the version id - which every authoring mutation above correctly uses -
+    // matches no option. Same shape, different entity, which is why the previous
+    // run failed as "did not find some options" rather than as a type error.
+    //
+    // The container id is resolved through the product's own published catalog
+    // boundary, with the run-owned member session, rather than by reading the
+    // development template tables (closed to anon/authenticated by 0131) or by
+    // matching the option label. A label match would pass while proving nothing
+    // about identity.
+    // `rpc()` is typed for the scalar/object returns the rest of this spec uses;
+    // this boundary returns `setof`, so the widening is explicit rather than a
+    // silent structural cast.
+    const catalog = (await rpc(AUTHOR, "get_published_development_template_catalog_v1", {
+      p_company_id: companyId(),
+    })) as unknown as Array<{ id: string; template_id: string }>
+    const published = (catalog ?? []).filter((row) => row.id === templateVersionId)
+    if (published.length !== 1) {
+      throw new Error(
+        `TEMPLATE_CATALOG_AMBIGUOUS: expected exactly 1 published row for version ` +
+          `${templateVersionId}, found ${published.length}`,
+      )
+    }
+    const templateContainerId = published[0].template_id
+    if (!/^[0-9a-f-]{36}$/.test(templateContainerId)) {
+      throw new Error(`TEMPLATE_CATALOG_INVALID_IDENTITY: ${JSON.stringify(templateContainerId)}`)
+    }
+
+    await dialog.locator("#templateId").selectOption(templateContainerId)
     await dialog.getByRole("button", { name: "Verificar aplicação" }).click()
     await expect(dialog.getByRole("button", { name: "Confirmar aplicação" })).toBeEnabled()
     await dialog.getByRole("button", { name: "Confirmar aplicação" }).click()

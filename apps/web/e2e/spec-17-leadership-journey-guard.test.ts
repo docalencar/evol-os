@@ -266,3 +266,95 @@ test("the Development template dialog is opened by its exact preselected trigger
   // applyFor: the generic "Aplicar template" label renders when it did not.
   assert.doesNotMatch(step, /getByRole\("button", \{ name: "Aplicar template" \}\)/)
 })
+
+/* ---------------------------------------------------------------------------
+ * L-E2E8 — the template selector takes a CONTAINER id, not a VERSION id.
+ *
+ * Consumed run 260925145819-cf9357 opened the dialog correctly (L-E2E6 worked)
+ * and then timed out: "did not find some options". The rendered select DID
+ * contain the run-created template — `L-E2E PDI 260925145819-cf9357 · v1` — so it
+ * was present, under a different identity.
+ *
+ *   product:  <option key={template.templateVersionId} value={template.templateId}>
+ *   catalog:  templateId <- row.template_id   templateVersionId <- row.id
+ *   fixture:  create_development_template_draft_v1 RETURNS the version id
+ *
+ * Same shape, different entity, which is why it failed as "option not found"
+ * rather than as a type error. Spec 15 already selects the container id.
+ *
+ * These guards pin the ENTITY, and derive the expectation from the product
+ * component rather than from a literal, so a future change to the option value
+ * fails here instead of in a hosted run.
+ * ------------------------------------------------------------------------- */
+
+const applyDialogSource = readFileSync(
+  resolve(
+    import.meta.dirname,
+    "../src/features/development/templates/components/apply-development-template-dialog.tsx",
+  ),
+  "utf8",
+)
+
+test("the product's option value field is the one the harness selects", () => {
+  // Derived, not asserted: read which field the product puts in `value`.
+  const optionValue =
+    /<option\s+key=\{template\.(\w+)\}\s+value=\{template\.(\w+)\}/.exec(applyDialogSource)
+  assert.ok(optionValue, "the template option must still bind key and value to template fields")
+  const [, keyField, valueField] = optionValue
+  assert.equal(valueField, "templateId", "the selector value is the container id")
+  assert.equal(keyField, "templateVersionId", "the version id is only the React key")
+
+  // The catalog column that becomes `templateId` is `template_id`; the harness
+  // must resolve through that, so the two ends stay aligned by construction.
+  //
+  // Scoped to the PDI step: `p_assessment_template_id` elsewhere in the spec is
+  // an unrelated Assessment field, and a bare substring match would be satisfied
+  // by it — blessing a spec that never touches the development catalog.
+  const code = codeOf(spec)
+  const stepStart = code.indexOf('test("9-11. applies the missing PDI')
+  const step = code.slice(stepStart, code.indexOf("\n  })", stepStart))
+  assert.match(
+    step,
+    /(?:row|template)\.template_id|\btemplate_id\b/,
+    "the harness must resolve the container id from the catalog row",
+  )
+  assert.doesNotMatch(step, /p_assessment_template_id/, "that is a different entity entirely")
+})
+
+test("the version id is never passed directly to the template selector", () => {
+  const code = codeOf(spec)
+  assert.doesNotMatch(
+    code,
+    /#templateId"\)\.selectOption\(templateVersionId\)/,
+    "selectOption must receive the container id, not the version id",
+  )
+  // The version id must still be used where version identity IS canonical.
+  assert.match(code, /p_version_id: templateVersionId/)
+})
+
+test("the container id is resolved through the canonical published catalog", () => {
+  const code = codeOf(spec)
+  const stepStart = code.indexOf('test("9-11. applies the missing PDI')
+  const step = code.slice(stepStart, code.indexOf("\n  })", stepStart))
+
+  assert.match(
+    step,
+    /get_published_development_template_catalog_v1/,
+    "resolve through the product's own trusted boundary",
+  )
+  // Not a direct table read, and not a label match: both would sidestep identity.
+  assert.doesNotMatch(step, /from\("development_template/)
+  assert.doesNotMatch(step, /selectOption\(\{\s*label/)
+
+  const resolve_ = step.indexOf("get_published_development_template_catalog_v1")
+  const select = step.indexOf("#templateId")
+  assert.ok(resolve_ < select, "the catalog must be read before the option is chosen")
+})
+
+test("the catalog match fails closed unless exactly one row is found", () => {
+  const code = codeOf(spec)
+  const stepStart = code.indexOf('test("9-11. applies the missing PDI')
+  const step = code.slice(stepStart, code.indexOf("\n  })", stepStart))
+  assert.match(step, /TEMPLATE_CATALOG_[A-Z_]+/, "a named failure, not a silent fallback")
+  assert.match(step, /length !== 1|length === 1/, "exactly one row must match the known version id")
+})

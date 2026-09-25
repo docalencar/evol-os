@@ -59,6 +59,32 @@ test("routing uses exact owning-domain identities", () => {
   assert.doesNotMatch(spec, /employees\/\$\{|people\/\$\{/)
 })
 
+test("formal Feedback follows the canonical product link before durable readback", () => {
+  const stepStart = spec.indexOf('test("6-8. routes to Assessment')
+  const stepEnd = spec.indexOf('\n  })', stepStart)
+  const feedbackStep = spec.slice(stepStart, stepEnd)
+  const canonicalState = feedbackStep.indexOf(
+    "Esta avaliação já tem uma conversa de feedback aberta.",
+  )
+  const productLink = feedbackStep.indexOf(
+    'getByRole("link", { name: "Abrir conversa de feedback" })',
+  )
+  const click = feedbackStep.indexOf("openFeedback.click()")
+  const routeIdentity = feedbackStep.indexOf("const feedbackThreadId = new URL(page.url())")
+  const readback = feedbackStep.indexOf('.from("feedback_threads")')
+
+  assert.ok(canonicalState >= 0)
+  assert.ok(productLink > canonicalState)
+  assert.ok(click > productLink)
+  assert.ok(routeIdentity > click)
+  assert.ok(readback > routeIdentity)
+  assert.match(feedbackStep, /id: feedbackThreadId/)
+  assert.doesNotMatch(
+    feedbackStep,
+    /getByRole\("button", \{ name: "Criar feedback" \}\)\.click\(\)\s*\n\s*await page\.waitForURL/,
+  )
+})
+
 test("Leadership remains a trusted read with no direct People dependency", () => {
   assert.match(product, /get_manager_leadership_attention_v1/)
   assert.doesNotMatch(product, /\.from\(["']people["']\)/)

@@ -219,12 +219,24 @@ test.describe("Leadership MVP hosted journey", () => {
     await page.locator("#assessment-feedback-initial-message")
       .fill(`Feedback formal Leadership ${manifest().runId}`)
     await page.getByRole("button", { name: "Criar feedback" }).click()
-    await page.waitForURL(/\/app\/feedbacks\/[0-9a-f-]{36}/)
+    await expect(page.getByText(
+      "Esta avaliação já tem uma conversa de feedback aberta.",
+      { exact: true },
+    )).toBeVisible({ timeout: 30_000 })
+    const openFeedback = page.getByRole("link", { name: "Abrir conversa de feedback" })
+    await expect(openFeedback).toBeVisible()
+    await Promise.all([
+      page.waitForURL(/\/app\/feedbacks\/[0-9a-f-]{36}$/),
+      openFeedback.click(),
+    ])
+    const feedbackThreadId = new URL(page.url()).pathname.split("/").at(-1) ?? ""
+    expect(feedbackThreadId).toMatch(/^[0-9a-f-]{36}$/)
     const feedback = await adminClient().from("feedback_threads")
       .select("id,assessment_response_id,sender_id,receiver_id,status")
       .eq("assessment_response_id", responseId).single()
     expect(feedback.error).toBeNull()
-    expect(feedback.data).toMatchObject({ sender_id: personId(MANAGER),
+    expect(feedback.data).toMatchObject({ id: feedbackThreadId,
+      assessment_response_id: responseId, sender_id: personId(MANAGER),
       receiver_id: personId(SUBJECT), status: "active" })
     steps.add(8)
   })

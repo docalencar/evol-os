@@ -55,6 +55,8 @@ export type OwnedTenant = Readonly<{
   ownerUserId: string
 }>
 
+import type { DeploymentIdentity } from "./deployment-identity"
+
 export type RunManifest = {
   runId: string
   createdAt: string
@@ -71,6 +73,11 @@ export type RunManifest = {
    */
   onboardingCompany: OwnedTenant | null
   users: SyntheticUser[]
+  /**
+   * Which BUILD this run exercised. Bound before the first Review mutation, so a
+   * green run can name the deployment it proved, not merely the environment.
+   */
+  deployment: DeploymentIdentity | null
 }
 
 /**

@@ -40,6 +40,7 @@ const SEED = {
   companyId: null,
   companySlug: null,
   companyName: null,
+    deployment: null,
 }
 
 function user(role: SyntheticUser["role"], id: string): SyntheticUser {

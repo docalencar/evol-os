@@ -34,6 +34,17 @@ test("foreign fixture ownership is explicitly ended before the manager journey",
   assert.match(firstJourneyTest, /await enterAs\(page, MANAGER\)/)
 })
 
+test("foreign-person isolation retains the canonical owner identity returned by tenant B", () => {
+  assert.match(spec, /const foreignTenant = await ensureRunOwnedForeignTenant\(/)
+  assert.match(spec, /foreignOwnerPersonId = foreignTenant\.ownerPersonId/)
+  assert.match(
+    spec,
+    /initialQueue\.some\(\(row\) => row\.subject_id === foreignOwnerPersonId\)/,
+  )
+  assert.match(spec, /foreignPersonId: foreignOwnerPersonId/)
+  assert.doesNotMatch(spec, /personId\(FOREIGN\)/)
+})
+
 test("all frozen Leadership steps and durable evidence are explicit", () => {
   for (let step = 1; step <= 12; step += 1) assert.match(spec, new RegExp(`steps\\.add\\(${step}\\)`))
   assert.match(spec, /leadership-journey-evidence\.json/)

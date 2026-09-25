@@ -25,6 +25,7 @@ let responseId = ""
 let templateVersionId = ""
 let planId = ""
 let actionId = ""
+let foreignOwnerPersonId = ""
 let initialQueue: Array<Record<string, unknown>> = []
 const steps = new Set<number>()
 const SUBMIT_SUCCESS_MESSAGE = "Avaliação enviada com sucesso."
@@ -160,9 +161,14 @@ async function leadership(page: Page): Promise<void> {
 
 test.describe("Leadership MVP hosted journey", () => {
   test("1-5. authenticates, enters normally and proves direct-report scope", async ({ page }) => {
-    await ensureRunOwnedForeignTenant(page, actor(FOREIGN), manifest().runId)
+    const foreignTenant = await ensureRunOwnedForeignTenant(
+      page,
+      actor(FOREIGN),
+      manifest().runId,
+    )
+    foreignOwnerPersonId = foreignTenant.ownerPersonId
     cached = readManifest()
-    expect(manifest().onboardingCompany?.companyId).not.toBe(companyId())
+    expect(foreignTenant.companyId).not.toBe(companyId())
     await prepareAssessment()
     await prepareDevelopmentTemplate()
 
@@ -189,7 +195,7 @@ test.describe("Leadership MVP hosted journey", () => {
     ]))
     steps.add(4)
     expect(initialQueue.some((row) => row.subject_id === personId(UNRELATED))).toBe(false)
-    expect(initialQueue.some((row) => row.subject_id === personId(FOREIGN))).toBe(false)
+    expect(initialQueue.some((row) => row.subject_id === foreignOwnerPersonId)).toBe(false)
     steps.add(5)
   })
 
@@ -283,7 +289,8 @@ test.describe("Leadership MVP hosted journey", () => {
     const temporary = `${evidencePath}.tmp`
     writeFileSync(temporary, JSON.stringify({ runId: manifest().runId, companyId: companyId(),
       managerId: personId(MANAGER), subjectId: personId(SUBJECT),
-      unrelatedId: personId(UNRELATED), foreignCompanyId: manifest().onboardingCompany?.companyId,
+      unrelatedId: personId(UNRELATED), foreignPersonId: foreignOwnerPersonId,
+      foreignCompanyId: manifest().onboardingCompany?.companyId,
       responseId, templateVersionId, planId, actionId, initialQueue,
       finalQueue: await attention(MANAGER), steps: [...steps].sort((a,b) => a-b),
       verdict: "LEADERSHIP_JOURNEY=PASS" }, null, 2), { mode: 0o600 })

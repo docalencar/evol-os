@@ -54,6 +54,7 @@ const SEED = {
   companyId: null,
   companySlug: null,
   companyName: null,
+    deployment: null,
 }
 
 function syntheticUser(userId: string) {

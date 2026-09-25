@@ -19,6 +19,7 @@ import { e2eEnv, isCanonicalReviewRun } from "./helpers/env"
 import { markSetupComplete, openJournal, recordUser } from "./helpers/journal"
 import { newRunId, type SyntheticRole, type SyntheticUser } from "./helpers/run-context"
 import { assertReviewTarget } from "./helpers/target-identity"
+import { assertDeploymentIdentity, probeDeployment } from "./helpers/deployment-identity"
 import { createSyntheticUser } from "./fixtures/synthetic-identity"
 import { createTenantFixture, destroyRunFixtures } from "./fixtures/tenant-fixture"
 
@@ -40,6 +41,14 @@ export default async function globalSetup(): Promise<void> {
   const identity = await assertReviewTarget()
   const canonical = isCanonicalReviewRun(env)
 
+  // Which build, not just which environment. Fail-closed for a governed run: a
+  // run that cannot name the deployment it is about to exercise creates nothing.
+  const deployment = assertDeploymentIdentity(await probeDeployment(env.baseUrl), {
+    required: !env.allowNonReviewTarget,
+    declaredCommitSha: process.env.E2E_DEPLOYED_COMMIT_SHA?.trim() || null,
+    expectedBuildId: process.env.E2E_EXPECTED_BUILD_ID?.trim() || null,
+  })
+
   console.log(
     [
       "[e2e] target        : " + env.baseUrl,
@@ -47,6 +56,10 @@ export default async function globalSetup(): Promise<void> {
       "[e2e] ref in bundle : " + identity.refFoundInBundle,
       "[e2e] chunks scanned: " + identity.chunksScanned,
       "[e2e] canonical run : " + canonical,
+      "[e2e] build id      : " + (deployment.buildId ?? "<none>"),
+      "[e2e] provider      : " + (deployment.provider ?? "<unknown>"),
+      "[e2e] commit sha    : " + (deployment.declaredCommitSha ?? "<none>") +
+        " (" + deployment.commitShaVerification + ")",
     ].join("\n"),
   )
 
@@ -70,6 +83,7 @@ export default async function globalSetup(): Promise<void> {
     companyId: null,
     companySlug: null,
     companyName: null,
+    deployment,
   })
 
   try {

@@ -33,6 +33,7 @@ const SEED = {
   companyId: null,
   companySlug: null,
   companyName: null,
+    deployment: null,
 }
 
 test.afterEach(() => discardJournal())

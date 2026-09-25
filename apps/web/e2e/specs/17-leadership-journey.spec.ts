@@ -232,12 +232,12 @@ test.describe("Leadership MVP hosted journey", () => {
     const feedbackThreadId = new URL(page.url()).pathname.split("/").at(-1) ?? ""
     expect(feedbackThreadId).toMatch(/^[0-9a-f-]{36}$/)
     const feedback = await adminClient().from("feedback_threads")
-      .select("id,assessment_response_id,sender_id,receiver_id,status")
+      .select("id,assessment_response_id,sender_employee_id,receiver_employee_id,status")
       .eq("assessment_response_id", responseId).single()
     expect(feedback.error).toBeNull()
     expect(feedback.data).toMatchObject({ id: feedbackThreadId,
-      assessment_response_id: responseId, sender_id: personId(MANAGER),
-      receiver_id: personId(SUBJECT), status: "active" })
+      assessment_response_id: responseId, sender_employee_id: personId(MANAGER),
+      receiver_employee_id: personId(SUBJECT), status: "awaiting_acknowledgement" })
     steps.add(8)
   })
 
@@ -253,8 +253,12 @@ test.describe("Leadership MVP hosted journey", () => {
     await dialog.getByRole("button", { name: "Confirmar aplicação" }).click()
     await page.waitForURL(/\/app\/development\/plans\/[0-9a-f-]{36}/)
     planId = page.url().split("/").pop() ?? ""
+    const goals = await adminClient().from("development_goals").select("id")
+      .eq("plan_id", planId)
+    if (goals.error) throw new Error(`DEVELOPMENT_GOAL_READBACK_FAILED: ${goals.error.message}`)
+    const goalIds = (goals.data ?? []).map((row) => row.id)
     const action = await adminClient().from("development_actions").select("id")
-      .eq("development_plan_id", planId).single()
+      .in("goal_id", goalIds).single()
     if (action.error) throw new Error(`DEVELOPMENT_ACTION_READBACK_FAILED: ${action.error.message}`)
     actionId = action.data.id
     await switchTo(page, SUBJECT)

@@ -1,6 +1,5 @@
 import {
   AttentionQueue,
-  createAttentionQueue,
   getAttentionQueue,
   presentAttentionQueue,
 } from "@/features/manager-intelligence"
@@ -13,19 +12,17 @@ export default async function ManagerPage() {
   const items =
     await getAttentionQueue(companyId)
 
-  const queue = createAttentionQueue(items)
-
-  const viewModel = presentAttentionQueue(queue)
+  const viewModel = presentAttentionQueue(items)
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold">
-          Manager Workspace
+          Liderança
         </h1>
 
         <p className="mt-2 text-muted-foreground">
-          Quem precisa da sua atenção hoje?
+          Acompanhe fatos que exigem sua atuação junto às pessoas que respondem diretamente a você.
         </p>
       </div>
 

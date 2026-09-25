@@ -10,10 +10,6 @@ export type {
 } from "./types/attention-item"
 
 export {
-  createAttentionQueue,
-} from "./services/create-attention-queue"
-
-export {
   presentAttentionQueue,
 } from "./presenters/attention-queue-presenter"
 

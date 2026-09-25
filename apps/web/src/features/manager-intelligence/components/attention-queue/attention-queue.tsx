@@ -7,118 +7,47 @@ type AttentionQueueProps = {
   viewModel: AttentionQueueViewModel
 }
 
-const PRIORITY_CLASS_NAMES: Record<
-  AttentionPriority,
-  string
-> = {
-  critical:
-    "border-red-200 bg-red-50 text-red-700",
-  high:
-    "border-orange-200 bg-orange-50 text-orange-700",
-  medium:
-    "border-amber-200 bg-amber-50 text-amber-700",
-  low:
-    "border-emerald-200 bg-emerald-50 text-emerald-700",
+const PRIORITY_CLASS_NAMES: Record<AttentionPriority, string> = {
+  high: "border-orange-200 bg-orange-50 text-orange-700",
+  medium: "border-amber-200 bg-amber-50 text-amber-700",
+  low: "border-slate-200 bg-slate-50 text-slate-700",
 }
 
-export function AttentionQueue({
-  viewModel,
-}: AttentionQueueProps) {
+export function AttentionQueue({ viewModel }: AttentionQueueProps) {
   if (viewModel.empty) {
     return (
       <div className="rounded-xl border border-dashed p-10 text-center">
-        <h2 className="font-semibold">
-          Nenhuma atenção necessária
-        </h2>
-
+        <h2 className="font-semibold">Nenhum item de atenção no momento</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Sua equipe não possui prioridades identificadas neste
-          momento.
+          Não há fatos dos fluxos de Avaliação, Feedback ou Desenvolvimento que
+          gerem atenção agora.
         </p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-8">
-      {viewModel.topPriority && (
-        <section className="rounded-xl border-2 border-primary bg-card p-6 shadow-sm">
-          <div className="mb-4">
-            <p className="text-sm font-semibold uppercase tracking-wide text-primary">
-              Today&apos;s Focus
-            </p>
-
-            <h2 className="mt-1 text-2xl font-bold">
-              {viewModel.topPriority.employeeName}
-            </h2>
-
-            <p className="mt-2 text-muted-foreground">
-              {viewModel.topPriority.decisionSummary}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            {viewModel.topPriority.recommendedActions.map((action) => (
-              <Link
-                key={action.id}
-                href={action.href}
-                className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-              >
-                {action.label}
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-
-      <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+    <div className="space-y-6">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-xl border bg-card p-4">
-          <p className="text-sm text-muted-foreground">
-            Pessoas na fila
-          </p>
-
-          <p className="mt-2 text-3xl font-bold">
-            {viewModel.total}
-          </p>
+          <p className="text-sm text-muted-foreground">Itens de atenção</p>
+          <p className="mt-2 text-3xl font-bold">{viewModel.total}</p>
         </div>
-
         <div className="rounded-xl border bg-card p-4">
-          <p className="text-sm text-muted-foreground">
-            Críticas
-          </p>
-
-          <p className="mt-2 text-3xl font-bold text-red-600">
-            {viewModel.critical}
-          </p>
-        </div>
-
-        <div className="rounded-xl border bg-card p-4">
-          <p className="text-sm text-muted-foreground">
-            Altas
-          </p>
-
+          <p className="text-sm text-muted-foreground">Prioridade alta</p>
           <p className="mt-2 text-3xl font-bold text-orange-600">
             {viewModel.high}
           </p>
         </div>
-
         <div className="rounded-xl border bg-card p-4">
-          <p className="text-sm text-muted-foreground">
-            Médias
-          </p>
-
+          <p className="text-sm text-muted-foreground">Prioridade média</p>
           <p className="mt-2 text-3xl font-bold text-amber-600">
             {viewModel.medium}
           </p>
         </div>
-
         <div className="rounded-xl border bg-card p-4">
-          <p className="text-sm text-muted-foreground">
-            Baixas
-          </p>
-
-          <p className="mt-2 text-3xl font-bold text-emerald-600">
+          <p className="text-sm text-muted-foreground">Prioridade baixa</p>
+          <p className="mt-2 text-3xl font-bold text-slate-600">
             {viewModel.low}
           </p>
         </div>
@@ -126,17 +55,11 @@ export function AttentionQueue({
 
       <div className="space-y-4">
         {viewModel.items.map((item) => (
-          <article
-            key={`${item.employeeId}-${item.reasonType}`}
-            className="rounded-xl border bg-card p-5 shadow-sm"
-          >
+          <article key={item.id} className="rounded-xl border bg-card p-5 shadow-sm">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0 space-y-3">
                 <div className="flex flex-wrap items-center gap-3">
-                  <h2 className="text-lg font-semibold">
-                    {item.employeeName}
-                  </h2>
-
+                  <h2 className="text-lg font-semibold">{item.subjectName}</h2>
                   <span
                     className={[
                       "inline-flex rounded-full border px-2.5 py-1 text-xs font-medium",
@@ -147,77 +70,34 @@ export function AttentionQueue({
                   </span>
                 </div>
 
-                <p className="text-sm text-muted-foreground">
-                  {item.contextLabel}
-                </p>
-
-                <div>
-                  <p className="font-medium">
-                    {item.reason}
-                  </p>
-
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {item.impact}
-                  </p>
-
-                  <p className="mt-3 rounded-md bg-muted px-3 py-2 text-sm">
-                    {item.decisionSummary}
-                  </p>
-
-                  <div className="mt-4 space-y-2">
-                    <p className="font-medium">
-                      Próximas ações
-                    </p>
-
-                    {item.recommendedActions.map((action) => (
-                      <Link
-                        key={action.id}
-                        href={action.href}
-                        className="flex items-center justify-between rounded-md border px-3 py-2 text-sm hover:bg-muted"
-                      >
-                        <span>{action.label}</span>
-
-                        <span className="text-muted-foreground">
-                          {action.estimatedMinutes} min
-                        </span>
-                      </Link>
-                    ))}
+                <p className="font-medium">{item.reasonLabel}</p>
+                <dl className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
+                  <div>
+                    <dt className="inline font-medium text-foreground">Pessoa: </dt>
+                    <dd className="inline">{item.subjectStatusLabel}</dd>
                   </div>
-                </div>
+                  <div>
+                    <dt className="inline font-medium text-foreground">Status: </dt>
+                    <dd className="inline">{item.sourceStatusLabel}</dd>
+                  </div>
+                  {item.dueDateLabel ? (
+                    <div>
+                      <dt className="inline font-medium text-foreground">Prazo: </dt>
+                      <dd className="inline">{item.dueDateLabel}</dd>
+                    </div>
+                  ) : null}
+                </dl>
               </div>
 
-              <div className="flex shrink-0 flex-wrap items-center gap-3">
-                <div className="rounded-lg border px-4 py-2 text-center">
-                  <p className="text-xs text-muted-foreground">
-                    Health Score
-                  </p>
-
-                  <p className="mt-1 font-semibold">
-                    {item.healthScoreLabel}
-                  </p>
-                </div>
-
-                <div className="rounded-lg border px-4 py-2 text-center">
-                  <p className="text-xs text-muted-foreground">
-                    Decision Score
-                  </p>
-
-                  <p className="mt-1 font-semibold">
-                    {item.decisionScore}
-                  </p>
-                </div>
-
-                <Link
-                  href={`/app/people/${item.employeeId}`}
-                  className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-                >
-                  Abrir colaborador
-                </Link>
-              </div>
+              <Link
+                href={item.actionHref}
+                className="inline-flex h-10 shrink-0 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+              >
+                {item.actionLabel}
+              </Link>
             </div>
           </article>
         ))}
-      </div>
       </div>
     </div>
   )

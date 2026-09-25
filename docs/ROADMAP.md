@@ -1,12 +1,14 @@
 # Evol OS — Roadmap
 
-> **Estado atual (2026-09-24; baseline = `main`/HEAD
-> `71c0df749d92ad64a34349774a41b6dae3d3bd7e`).** Development e a jornada
+> **Estado atual (2026-09-25; baseline = `main`/HEAD
+> `800ceb2282a4c9d6b58533455bc93d8bc4818ac1`).** Development e a jornada
 > operacional de Organization Planning estão `CLOSED / PASS / HOSTED-PROVEN`.
 > Planning fechou no run `260924115952-39d810`, com 9/9 testes e passos 1–19
 > PASS em uma execução sem retry. Isso não conclui a Jornada 6 — RH Estratégico.
-> A próxima prioridade normativa é **L-P0 — readiness discovery da Jornada 5
-> (Liderança)**, conforme `NEXT_STEPS.md`; decisão executiva e as capacidades
+> Liderança possui contrato MVP congelado, boundary `0140` validada em Review e
+> cutover de produto publicado. A próxima prioridade normativa é **L-E2E0 —
+> freeze do contrato hosted da Jornada 5**, conforme `NEXT_STEPS.md`; decisão
+> executiva e as capacidades
 > restantes de RH Estratégico permanecem abertas. O drift global de ACL em
 > Review é dívida de segurança separada. Production:
 > `UNKNOWN / REVERIFY BEFORE USE`. Legacy:

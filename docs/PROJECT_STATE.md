@@ -14,13 +14,13 @@
 
 | Campo | Valor |
 | --- | --- |
-| `CURRENT_DOMAIN` | Liderança (Jornada 5) — próxima discovery; nenhuma implementação iniciada |
-| `CURRENT_SLICE` | PLN-P6 — jornada hosted operacional de Planning · `CLOSED / PASS / HOSTED-PROVEN` |
-| `LAST_CANONICAL_MAIN` | `71c0df749d92ad64a34349774a41b6dae3d3bd7e`; autoridade factual = `git rev-parse origin/main` |
-| `LATEST_COMMITTED_MIGRATION` | `0139` — Planning deterministic version-conflict SQLSTATE |
-| `LATEST_REVIEW_DB_VERSION` | `0139` — `APPLIED / VERIFIED` |
-| `HOSTED_E2E_STATE` | E2E-0…E2E-6 e PLN-P6 `CLOSED / PASS`. Planning: run `260924115952-39d810`, **9/9 PASS**, passos **1–19 PASS**, uma execução sem retry, terminal **RETIRED**. Fechamento em `Execution/PLN-P6-HOSTED-PLANNING-JOURNEY-CLOSURE.md` |
-| `NEXT_GATE` | L-P0 — readiness discovery da Jornada 5 (Liderança); decisão executiva e o restante de RH Estratégico permanecem não comprovados |
+| `CURRENT_DOMAIN` | Liderança (Jornada 5) — contrato, trusted read boundary e cutover de produto publicados; prova hosted ainda não congelada nem executada |
+| `CURRENT_SLICE` | L-P2 — Leadership application/UI/navigation cutover · `CLOSED / PASS / PUBLISHED` |
+| `LAST_CANONICAL_MAIN` | `800ceb2282a4c9d6b58533455bc93d8bc4818ac1`; autoridade factual = `git rev-parse origin/main` |
+| `LATEST_COMMITTED_MIGRATION` | `0140` — trusted Leadership attention read boundary |
+| `LATEST_REVIEW_DB_VERSION` | `0140` — `APPLIED / VERIFIED` |
+| `HOSTED_E2E_STATE` | E2E-0…E2E-6 e PLN-P6 `CLOSED / PASS`; Leadership ainda não possui contrato hosted congelado nem execução hosted |
+| `NEXT_GATE` | L-E2E0 — congelar o contrato hosted da Jornada 5 sobre L-P1, L-DB1 e L-P2; não executar hosted E2E no mesmo slice |
 
 Congelar o contrato **não equivale** a um PASS hosted: o D-E2E0 fixa o que precisa
 ser provado. O PASS correspondente existe e está registrado em
@@ -80,6 +80,9 @@ Para **estado factual do repositório**, o Git vence; ver `OPERATING-METHOD.md` 
 | D-E2E1 | Spec hosted da jornada Development contra o contrato congelado | CLOSED / PASS |
 | D-E2E2 | Execução hosted da jornada Development em Review — E2E-6 | CLOSED / PASS |
 | PLN-P1…P6 | Lifecycle, trusted boundaries, editor e execução hosted de Organization Planning | CLOSED / PASS |
+| L-P1 | Contrato MVP de Liderança — atenção derivada, direct reports e reuso de Assessment/Feedback/Development | CLOSED / PASS |
+| L-DB1 | Trusted Leadership attention read boundary (`0140`) e promoção para Review | CLOSED / PASS |
+| L-P2 | Cutover application/UI/navigation para a boundary canônica | CLOSED / PASS |
 | AI-CTX-1/2/3 | Método permanente, estado condensado e reconciliação de contexto | CLOSED / PASS |
 
 O contrato de cada um está no respectivo documento de `Execution/`; os commits e

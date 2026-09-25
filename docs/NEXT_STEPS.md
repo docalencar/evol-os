@@ -5,7 +5,7 @@
 > Estado canônico em [`PROJECT_STATE.md`](./PROJECT_STATE.md).
 
 ```
-SLICE = L-P0 — readiness discovery da Jornada 5 (Liderança)
+SLICE = L-E2E0 — freeze do contrato hosted da Jornada 5 (Liderança)
 PATH  = GOVERNED
 STATE = AGUARDANDO AUTORIZAÇÃO
 ```
@@ -21,19 +21,24 @@ STATE = AGUARDANDO AUTORIZAÇÃO
   [`Execution/PLN-P6-HOSTED-PLANNING-JOURNEY-CLOSURE.md`](./Execution/PLN-P6-HOSTED-PLANNING-JOURNEY-CLOSURE.md);
 - Planning não equivale à Jornada 6: turnover, clima, desempenho agregado,
   potencial, sucessão e planos estratégicos não foram promovidos a concluídos;
-- pelo Gate do MVP, **Liderança (Jornada 5)** é a próxima jornada normativa ainda
-  não comprovada; decisão executiva e o restante de RH Estratégico permanecem
-  posteriores;
+- o contrato MVP de Liderança está congelado em
+  [`Execution/L-P1-LEADERSHIP-MVP-CONTRACT.md`](./Execution/L-P1-LEADERSHIP-MVP-CONTRACT.md);
+- L-DB1 publicou e promoveu para Review a boundary
+  `get_manager_leadership_attention_v1(uuid)` pela migration `0140`; L-P2 publicou
+  o cutover de `/app/manager`, rotas donas e navegação na `main`
+  `800ceb2282a4c9d6b58533455bc93d8bc4818ac1`;
+- Liderança ainda não está hosted-proven; decisão executiva e o restante de RH
+  Estratégico permanecem posteriores;
 - o drift global de ACL em Review permanece `OPEN / SEPARATE SECURITY DEBT`, fora
   do fechamento Planning. Production segue `UNKNOWN / REVERIFY BEFORE USE` e
   Legacy fora dos alvos.
 
 ## EXPECTED_NEXT
 
-Abrir **L-P0 — readiness discovery da Jornada 5 (Liderança)**. Reconstruir o
-fluxo real `alertas → avaliar equipe → insights → feedbacks → acompanhar evolução`
-e separar capacidades já cobertas por Avaliações/Feedback/Development das lacunas
-reais de liderança antes de congelar qualquer contrato hosted.
+Abrir **L-E2E0 — freeze do contrato hosted da Jornada 5 (Liderança)**. Traduzir o
+contrato L-P1 e as boundaries já publicadas em atores/fixtures, passos, provas de
+readback, isolamento e teardown governados. Não executar o hosted E2E nesse mesmo
+slice.
 
 Nenhum slice de Development está aberto. `cancel_development_plan_v1` continua
 sem chamador na aplicação, deliberadamente fora da jornada congelada; reabrir

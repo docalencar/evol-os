@@ -11,6 +11,7 @@
 | Jornada completa até o MVP | [`MVP_PLAN.md`](./MVP_PLAN.md) |
 | Estado funcional das capacidades | [`EPICS.md`](./EPICS.md) |
 | Próxima entrega operacional | [`NEXT_STEPS.md`](./NEXT_STEPS.md) |
+| Contrato MVP de Liderança | [`Execution/L-P1-LEADERSHIP-MVP-CONTRACT.md`](./Execution/L-P1-LEADERSHIP-MVP-CONTRACT.md) |
 | Plano do Slice 3 de Development | [`Execution/ADR-0012-SLICE-3-DEVELOPMENT-IMPLEMENTATION-PLAN.md`](./Execution/ADR-0012-SLICE-3-DEVELOPMENT-IMPLEMENTATION-PLAN.md) |
 | Grandes entregas incorporadas | [`CHANGELOG.md`](./CHANGELOG.md) |
 | Arquitetura | [`../ARCHITECTURE.md`](../ARCHITECTURE.md) e [`adr/`](./adr/) |
@@ -19,7 +20,7 @@
 | Engenharia | [`engineering/`](./engineering/) |
 | Produto | [`Product/`](./Product/) |
 | Domínio de Notifications | [`domain/NOTIFICATION_DOMAIN.md`](./domain/NOTIFICATION_DOMAIN.md) |
-| Prompt padrão para agentes | [`prompts/MASTER_PROMPT.md`](./prompts/MASTER_PROMPT.md) |
+| Prompt padrão para agentes | [`Prompts/MASTER_PROMPT.md`](./Prompts/MASTER_PROMPT.md) |
 
 ## Regra de precedência
 

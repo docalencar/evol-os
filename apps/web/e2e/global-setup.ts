@@ -57,6 +57,8 @@ export default async function globalSetup(): Promise<void> {
       "[e2e] chunks scanned: " + identity.chunksScanned,
       "[e2e] canonical run : " + canonical,
       "[e2e] build id      : " + (deployment.buildId ?? "<none>"),
+      "[e2e] build binding : " + (deployment.assetFingerprint ?? "<none>") +
+        " (" + deployment.assetCount + " assets)",
       "[e2e] provider      : " + (deployment.provider ?? "<unknown>"),
       "[e2e] commit sha    : " + (deployment.declaredCommitSha ?? "<none>") +
         " (" + deployment.commitShaVerification + ")",

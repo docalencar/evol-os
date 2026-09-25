@@ -166,6 +166,10 @@ test.describe("Leadership MVP hosted journey", () => {
     await prepareAssessment()
     await prepareDevelopmentTemplate()
 
+    // `ensureRunOwnedForeignTenant` finishes inside tenant B as its onboarding
+    // owner. End that setup session explicitly, then establish the journey's
+    // first actor through the canonical first-login helper.
+    await signOutThroughUi(page)
     await enterAs(page, MANAGER)
     steps.add(1)
     await leadership(page)

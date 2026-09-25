@@ -17,6 +17,23 @@ test("the hosted journey is self-contained and owns both tenants", () => {
   assert.doesNotMatch(spec, /spec 02|Spec 02|14-assessment|15-development/)
 })
 
+test("foreign fixture ownership is explicitly ended before the manager journey", () => {
+  const journeyStart = spec.indexOf('test("1-5. authenticates')
+  const journeyEnd = spec.indexOf('\n  })', journeyStart)
+  const firstJourneyTest = spec.slice(journeyStart, journeyEnd)
+  const foreignFixture = firstJourneyTest.indexOf("ensureRunOwnedForeignTenant")
+  const foreignSignOut = firstJourneyTest.indexOf("signOutThroughUi(page)")
+  const managerLogin = firstJourneyTest.indexOf("enterAs(page, MANAGER)")
+  const firstStep = firstJourneyTest.indexOf("steps.add(1)")
+
+  assert.ok(foreignFixture >= 0)
+  assert.ok(foreignSignOut > foreignFixture)
+  assert.ok(managerLogin > foreignSignOut)
+  assert.ok(firstStep > managerLogin)
+  assert.match(firstJourneyTest, /await signOutThroughUi\(page\)/)
+  assert.match(firstJourneyTest, /await enterAs\(page, MANAGER\)/)
+})
+
 test("all frozen Leadership steps and durable evidence are explicit", () => {
   for (let step = 1; step <= 12; step += 1) assert.match(spec, new RegExp(`steps\\.add\\(${step}\\)`))
   assert.match(spec, /leadership-journey-evidence\.json/)

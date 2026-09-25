@@ -188,3 +188,81 @@ test("development actions are reached through their goal, never by a plan column
   assert.match(spec, /from\("development_goals"\)[\s\S]{0,120}?\.eq\("plan_id", planId\)/)
   assert.match(spec, /from\("development_actions"\)[\s\S]{0,120}?\.in\("goal_id", goalIds\)/)
 })
+
+/* ---------------------------------------------------------------------------
+ * L-E2E6 — a portal dialog must be opened by its trigger before it is used.
+ *
+ * Consumed run 260925143012-cc25e5 reached steps 1-8 and then timed out at
+ * step 9 waiting for getByRole('dialog').locator('#templateId'). The preserved
+ * page snapshot shows no dialog and an ENABLED trigger that was never clicked:
+ *
+ *   button "Aplicar template para esta pessoa" [ref=e75] [cursor=pointer]
+ *
+ * Development had already accepted applyFor and revalidated the subject - that
+ * label only renders when initialEmployeeId survived the authorized target list -
+ * so the product was correct and the harness simply skipped a user action.
+ * `#templateId` lives inside CrudCreateDialog, a portal that mounts nothing until
+ * its trigger is clicked. Spec 15 documents exactly this and opens the same
+ * dialog through a trigger click.
+ *
+ * The guard is about ORDERING, not about a label: every dialog handle must be
+ * preceded by a trigger click, so a future dialog interaction cannot regress the
+ * same way.
+ * ------------------------------------------------------------------------- */
+
+/**
+ * Strip line comments before judging ordering. The correction's own comment names
+ * `#templateId` and the trigger label, so a guard that scanned raw text would
+ * measure its own documentation — the same mistake this stream has made before.
+ */
+function codeOf(text: string): string {
+  return text
+    .split("\n")
+    .map((line) => line.replace(/\s*\/\/.*$/, ""))
+    .join("\n")
+}
+
+test("every portal dialog is opened by clicking its trigger first", () => {
+  const code = codeOf(spec)
+  const dialogUses = [...code.matchAll(/getByRole\("dialog"\)/g)]
+  assert.ok(dialogUses.length > 0, "the journey still interacts with a dialog")
+
+  for (const use of dialogUses) {
+    const before = code.slice(0, use.index)
+    // The nearest preceding action must be a button click that opens the portal,
+    // not a link navigation. A link only routes; it never mounts the dialog.
+    const lastTriggerClick = before.lastIndexOf('getByRole("button"')
+    const lastLinkClick = before.lastIndexOf('getByRole("link"')
+
+    assert.ok(
+      lastTriggerClick > lastLinkClick,
+      "a dialog was reached after a link navigation with no trigger click in between: " +
+        "the portal mounts nothing until its button is clicked",
+    )
+
+    const clickWindow = before.slice(lastTriggerClick)
+    assert.match(
+      clickWindow,
+      /\.click\(\)/,
+      "the trigger must actually be clicked before the dialog is used",
+    )
+  }
+})
+
+test("the Development template dialog is opened by its exact preselected trigger", () => {
+  const code = codeOf(spec)
+  const stepStart = code.indexOf('test("9-11. applies the missing PDI')
+  const step = code.slice(stepStart, code.indexOf("\n  })", stepStart))
+
+  const trigger = step.indexOf('"Aplicar template para esta pessoa"')
+  const templateSelect = step.indexOf('#templateId')
+
+  assert.ok(trigger >= 0, "the L-P2 preselected trigger label must be used verbatim")
+  assert.ok(
+    trigger < templateSelect,
+    "the trigger must be clicked before #templateId is touched",
+  )
+  // Opening via the preselected label also asserts that Development revalidated
+  // applyFor: the generic "Aplicar template" label renders when it did not.
+  assert.doesNotMatch(step, /getByRole\("button", \{ name: "Aplicar template" \}\)/)
+})

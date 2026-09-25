@@ -246,7 +246,26 @@ test.describe("Leadership MVP hosted journey", () => {
     await leadership(page)
     await page.getByRole("link", { name: "Aplicar template de PDI" }).click()
     await expect(page).toHaveURL(new RegExp(`applyFor=${personId(SUBJECT)}`))
+
+    // The Leadership item only ROUTES here with the direct report preselected.
+    // Opening the application dialog is a separate user action, and `#templateId`
+    // lives inside a portal that mounts nothing until its trigger is clicked —
+    // the same interaction class spec 15 documents for this dialog.
+    //
+    // The trigger label is asserted, not incidental: `/app/development` renders
+    // "Aplicar template para esta pessoa" only when it revalidated `applyFor`
+    // against its own authorized target list. The generic "Aplicar template"
+    // would mean the selector was refused, and selecting the employee by hand
+    // would hide that.
+    const trigger = page.getByRole("button", {
+      name: "Aplicar template para esta pessoa",
+      exact: true,
+    })
+    await expect(trigger).toBeEnabled()
+    await trigger.click()
+
     const dialog = page.getByRole("dialog")
+    await expect(dialog).toBeVisible({ timeout: 30_000 })
     await dialog.locator("#templateId").selectOption(templateVersionId)
     await dialog.getByRole("button", { name: "Verificar aplicação" }).click()
     await expect(dialog.getByRole("button", { name: "Confirmar aplicação" })).toBeEnabled()

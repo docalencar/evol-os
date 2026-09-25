@@ -1,6 +1,6 @@
 /** Static contract guards for L-E2E0. No hosted access. */
 import assert from "node:assert/strict"
-import { readFileSync } from "node:fs"
+import { readFileSync, readdirSync } from "node:fs"
 import { resolve } from "node:path"
 import test from "node:test"
 
@@ -101,4 +101,90 @@ test("failure and empty state remain distinct in the active product", () => {
   )
   assert.match(errorBoundary, /A fila de atenção não foi substituída por um resultado vazio/)
   assert.match(page, /getAttentionQueue/)
+})
+
+/* ---------------------------------------------------------------------------
+ * L-E2E4 — direct DB readbacks must name canonical columns.
+ *
+ * Hosted run 260925133926-18822f failed at step 6-8 with SQLSTATE 42703,
+ * `column feedback_threads.sender_id does not exist`. The table has always
+ * declared sender_employee_id / receiver_employee_id (0043). Auditing the rest of
+ * the spec found two more stale identifiers that would each have failed a later
+ * step in turn: `status: "active"`, which is not in the feedback_threads CHECK
+ * list and is not what 0128 inserts; and development_actions.development_plan_id,
+ * which has never existed - actions belong to a goal, and the goal belongs to the
+ * plan.
+ *
+ * The catalog-driven test below is the one that matters. A hand-written list of
+ * the three known names would not have caught the second and third, and would not
+ * catch the fourth.
+ * ------------------------------------------------------------------------- */
+
+const migrations = readdirSync(resolve(import.meta.dirname, "../../../supabase/migrations"))
+  .filter((file) => file.endsWith(".sql") && !file.includes(" 2."))
+  .map((file) => readFileSync(resolve(import.meta.dirname, "../../../supabase/migrations", file), "utf8"))
+  .join("\n")
+
+/** Columns of a table, from its CREATE plus any later ADD COLUMN. */
+function canonicalColumns(table: string) {
+  const created = new RegExp(
+    `create table(?: if not exists)? public\\.${table}\\s*\\(([\\s\\S]*?)\\n\\);`,
+  ).exec(migrations)
+  const columns = new Set(
+    created
+      ? [...created[1].matchAll(
+          /^\s{2,4}([a-z_]+)\s+(?:uuid|text|boolean|timestamptz|date|integer|bigint|jsonb|numeric)/gm,
+        )].map((m) => m[1])
+      : [],
+  )
+  for (const m of migrations.matchAll(
+    new RegExp(`alter table (?:only )?public\\.${table}\\s*\\n?\\s*add column(?: if not exists)? ([a-z_]+)`, "g"),
+  )) columns.add(m[1])
+  return columns
+}
+
+test("every direct DB readback in the spec names columns that exist in the schema", () => {
+  const readbacks = [...spec.matchAll(
+    /\.from\("(\w+)"\)([\s\S]{0,260}?)(?=\n\s*(?:const|if|expect|await|\}))/g,
+  )]
+  assert.ok(readbacks.length >= 4, "the spec must still perform its durable readbacks")
+
+  for (const [, table, body] of readbacks) {
+    const columns = canonicalColumns(table)
+    assert.ok(columns.size > 0, `no canonical columns found for ${table}`)
+
+    const selected = /\.select\("([^"]+)"\)/.exec(body)
+    const used = new Set(selected ? selected[1].split(",") : [])
+    for (const m of body.matchAll(/\.(?:eq|in)\("(\w+)"/g)) used.add(m[1])
+
+    const stale = [...used].filter((column) => !columns.has(column))
+    assert.deepEqual(stale, [], `${table}: stale column(s) ${stale.join(", ")}`)
+  }
+})
+
+test("the Feedback readback uses canonical participant columns and the canonical created status", () => {
+  const stepStart = spec.indexOf('test("6-8. routes to Assessment')
+  const step = spec.slice(stepStart, spec.indexOf("\n  })", stepStart))
+
+  assert.match(step, /sender_employee_id/)
+  assert.match(step, /receiver_employee_id/)
+  // The retired names must never come back.
+  assert.doesNotMatch(step, /\bsender_id\b/)
+  assert.doesNotMatch(step, /\breceiver_id\b/)
+
+  // 0128 inserts the thread as `awaiting_acknowledgement`; `active` is not even a
+  // permitted value of the status CHECK.
+  assert.match(step, /status: "awaiting_acknowledgement"/)
+  assert.doesNotMatch(step, /status: "active"/)
+  assert.match(migrations, /'awaiting_acknowledgement'/)
+})
+
+test("development actions are reached through their goal, never by a plan column", () => {
+  assert.doesNotMatch(
+    spec,
+    /from\("development_actions"\)[\s\S]{0,160}?development_plan_id/,
+    "development_actions has no development_plan_id; actions belong to a goal",
+  )
+  assert.match(spec, /from\("development_goals"\)[\s\S]{0,120}?\.eq\("plan_id", planId\)/)
+  assert.match(spec, /from\("development_actions"\)[\s\S]{0,120}?\.in\("goal_id", goalIds\)/)
 })

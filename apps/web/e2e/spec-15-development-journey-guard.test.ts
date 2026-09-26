@@ -243,8 +243,19 @@ test("a goal's disclosure is expanded before its contents are addressed", () => 
   //
   // A static selector audit cannot see this: the trigger's own component is
   // correct, and the gate is an ancestor in a different file.
-  assert.match(spec, /async function expandGoal/)
-  assert.match(spec, /toHaveJSProperty\("open", true\)/)
+  // Re-anchored, not relaxed. L-E2E10 moved this precondition into the shared
+  // contract at helpers/development-interactions.ts, because spec 17 re-derived it
+  // wrongly and cost four hosted runs. The invariant is unchanged: the disclosure
+  // must be expanded and the open state asserted — it is simply owned in one place
+  // now, and a local redeclaration is forbidden by the cross-spec guard.
+  assert.match(spec, /from "\.\.\/helpers\/development-interactions"/)
+  assert.match(spec, /\bexpandGoal\b/)
+  const contract = readFileSync(
+    resolve(import.meta.dirname, "helpers/development-interactions.ts"),
+    "utf8",
+  )
+  assert.match(contract, /export async function expandGoal/)
+  assert.match(contract, /toHaveJSProperty\("open", true\)/)
 
   // The trigger must be resolved WITHIN the expanded goal, never from the page.
   const loop = spec.slice(spec.indexOf("for (const title of [ACTION_ONE, ACTION_TWO]"))
@@ -261,8 +272,11 @@ test("a goal's disclosure is expanded before its contents are addressed", () => 
   // and every reload closes it again. Run 260921184137-70e10c resolved the
   // action's <p> 33 times and reported it hidden. Same class, second surface —
   // so this guard is extended rather than duplicated.
-  assert.match(spec, /async function openPlanGoal/)
-  assert.match(spec, /return expandGoal\(page, developmentCompetencyName/)
+  // Same re-anchor: openPlanGoal now lives in the shared contract, which derives
+  // the competency name from the run id so both journeys expand the same goal.
+  assert.match(contract, /export async function openPlanGoal/)
+  assert.match(contract, /return expandGoal\(page, developmentCompetencyName/)
+  assert.match(spec, /\bopenPlanGoal\(page, manifest\(\)\.runId\)/)
 
   // Every action addressed on the plan page must have the disclosure opened
   // since the last render: walking back from each `actionCard`, the nearest
@@ -271,13 +285,13 @@ test("a goal's disclosure is expanded before its contents are addressed", () => 
   for (const match of [...body.matchAll(/actionCard\(page,/g)]) {
     const before = body.slice(0, match.index)
     const landmark = Math.max(
-      before.lastIndexOf("openPlanGoal(page)"),
+      before.lastIndexOf("openPlanGoal(page"),
       before.lastIndexOf("page.reload()"),
       before.lastIndexOf("openPlan(page)"),
     )
     assert.ok(landmark >= 0, "an action is addressed before the plan is even open")
     assert.equal(
-      before.slice(landmark).startsWith("openPlanGoal(page)"),
+      before.slice(landmark).startsWith("openPlanGoal(page"),
       true,
       "an action is addressed on the plan page without reopening its disclosure",
     )

@@ -9,6 +9,7 @@ import { expectAuthenticatedShell, loginThroughUi, signOutThroughUi } from "../a
 import { createDevelopmentFixture, DEVELOPMENT_EXPECTED_LEVEL } from "../fixtures/development-fixture"
 import { ensureRunOwnedForeignTenant } from "../fixtures/onboarding-tenant"
 import { adminClient, userClient } from "../helpers/admin-client"
+import { actionCard, openPlanGoal } from "../helpers/development-interactions"
 import { readManifest, type RunManifest, type SyntheticRole } from "../helpers/run-context"
 import { runEvidenceFile } from "../helpers/run-paths"
 
@@ -16,6 +17,12 @@ test.describe.configure({ mode: "serial" })
 
 const MANAGER: SyntheticRole = "manager"
 const SUBJECT: SyntheticRole = "evaluatee"
+
+/** The template action this journey applies. One definition, used by the fixture
+ * that creates it and by the card scope that interacts with it. */
+function actionTitle(): string {
+  return `L-E2E Action ${manifest().runId}`
+}
 const UNRELATED: SyntheticRole = "employee"
 const FOREIGN: SyntheticRole = "onboarding"
 const AUTHOR: SyntheticRole = "admin"
@@ -145,7 +152,7 @@ async function prepareDevelopmentTemplate(): Promise<void> {
     p_description: "Leadership follow-up", p_target: DEVELOPMENT_EXPECTED_LEVEL, p_order: 0,
   }) as string
   await rpc(AUTHOR, "add_development_template_action_v1", {
-    p_goal_id: goalId, p_title: `L-E2E Action ${run}`, p_description: "Leadership E2E",
+    p_goal_id: goalId, p_title: actionTitle(), p_description: "Leadership E2E",
     p_type: "mentoring", p_due_days: 15, p_order: 0,
   })
   await rpc(AUTHOR, "publish_development_template_version_v1", {
@@ -311,7 +318,16 @@ test.describe("Leadership MVP hosted journey", () => {
     actionId = action.data.id
     await switchTo(page, SUBJECT)
     await page.goto(`/app/development/plans/${planId}`)
-    await page.getByRole("button", { name: "Iniciar ação" }).click()
+    // Actions live inside the goal's native <details>, which no server render ever
+    // emits `open`. The children stay in the DOM while collapsed, so a direct click
+    // waits on a control that exists and is not visible — the previous run's exact
+    // failure. Expansion is a product precondition, and every render and reload
+    // closes it again, so it is reopened before each interaction rather than once.
+    const subjectGoal = await openPlanGoal(page, manifest().runId)
+    await expect(subjectGoal).toHaveJSProperty("open", true)
+    await actionCard(page, actionTitle())
+      .getByRole("button", { name: "Iniciar ação" })
+      .click()
     await expect(page.getByText("Ação atualizada com sucesso.", { exact: true })).toBeVisible()
     await switchTo(page, MANAGER)
     await page.goto(`/app/development/plans/${planId}`)

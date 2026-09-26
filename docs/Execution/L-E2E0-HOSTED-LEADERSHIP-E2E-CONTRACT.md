@@ -1,6 +1,9 @@
 # L-E2E0 — Hosted Leadership E2E Contract
 
-**Status:** Frozen, prepared, not executed. **Baseline:**
+**Status:** Frozen and **EXECUTED** — closed by run `260926114143-bf6bb4`, 8/8 PASS,
+steps 1–12 PASS; see
+[`L-E2E11-LEADERSHIP-JOURNEY-CLOSURE.md`](./L-E2E11-LEADERSHIP-JOURNEY-CLOSURE.md).
+The run is terminal and must not be repeated. **Baseline (unchanged):**
 `40a410d485b5fd1cd8a6105fe3a87fad716044d7`. **Target:** canonical Review only.
 
 This contract operationalizes the accepted

@@ -14,13 +14,13 @@
 
 | Campo | Valor |
 | --- | --- |
-| `CURRENT_DOMAIN` | Liderança (Jornada 5) — contrato, trusted read boundary e cutover de produto publicados; prova hosted ainda não congelada nem executada |
-| `CURRENT_SLICE` | L-P2 — Leadership application/UI/navigation cutover · `CLOSED / PASS / PUBLISHED` |
-| `LAST_CANONICAL_MAIN` | `800ceb2282a4c9d6b58533455bc93d8bc4818ac1`; autoridade factual = `git rev-parse origin/main` |
+| `CURRENT_DOMAIN` | Liderança (Jornada 5) — `CLOSED / PASS / HOSTED-PROVEN`; próximo domínio normativo ainda não aberto |
+| `CURRENT_SLICE` | L-E2E11 — fechamento canônico da jornada Liderança · `DOCUMENTATION-ONLY` |
+| `LAST_CANONICAL_MAIN` | `e6916b7a3125535154badd25186ee91c84f12a80`; autoridade factual = `git rev-parse origin/main` |
 | `LATEST_COMMITTED_MIGRATION` | `0140` — trusted Leadership attention read boundary |
 | `LATEST_REVIEW_DB_VERSION` | `0140` — `APPLIED / VERIFIED` |
-| `HOSTED_E2E_STATE` | E2E-0…E2E-6 e PLN-P6 `CLOSED / PASS`; Leadership ainda não possui contrato hosted congelado nem execução hosted |
-| `NEXT_GATE` | L-E2E0 — congelar o contrato hosted da Jornada 5 sobre L-P1, L-DB1 e L-P2; não executar hosted E2E no mesmo slice |
+| `HOSTED_E2E_STATE` | E2E-0…E2E-6, PLN-P6 e Liderança `CLOSED / PASS`. Liderança: run `260926114143-bf6bb4`, **8/8 PASS**, passos **1–12 PASS**, build binding `assets:c3a7259bdd14e5d3` (17 assets), SHA declarado `e6916b7a…` com `commitShaVerification = UNVERIFIABLE_FROM_DEPLOYMENT`, terminal **RETIRED**. Fechamento em `Execution/L-E2E11-LEADERSHIP-JOURNEY-CLOSURE.md` |
+| `NEXT_GATE` | readiness discovery do próximo domínio normativo — Executive / decisão executiva, `Parcial` em `MVP_PLAN.md`. Nenhuma implementação autorizada; a ordem canônica pede discovery antes de contrato, boundary e cutover |
 
 Congelar o contrato **não equivale** a um PASS hosted: o D-E2E0 fixa o que precisa
 ser provado. O PASS correspondente existe e está registrado em
@@ -48,6 +48,20 @@ imutável, organização viva inalterada, terminalidade, isolamento entre tenant
 aposentadoria dos caminhos legados/DML direto. Isso fecha Planning, não toda a
 Jornada 6: as capacidades estratégicas enumeradas em `Product/USER_JOURNEYS.md`
 continuam abertas.
+
+### Fechamento de Liderança
+
+A Jornada 5 está `CLOSED / PASS / HOSTED-PROVEN`. O run `260926114143-bf6bb4`
+provou, numa execução, os doze passos congelados por L-E2E0: fila derivada ao vivo
+restrita aos direct reports atuais, roteamento para a resposta de Assessment exata,
+conclusão da avaliação, criação e releitura canônica do Feedback formal, aplicação
+do PDI ausente com reautorização do domínio dono, progresso e review, rederivação
+da fila a partir de fatos duráveis, e isolamento entre tenants não-oracular.
+
+A identidade provada é de **build**, não de commit: `assets:c3a7259bdd14e5d3` sobre
+17 assets servidos. O SHA `e6916b7a…` é declarado e permanece
+`UNVERIFIABLE_FROM_DEPLOYMENT` — a aplicação não serve metadado de build. Liderança
+fechada **não** fecha a Jornada 6 nem a decisão executiva.
 
 ## Precedência
 

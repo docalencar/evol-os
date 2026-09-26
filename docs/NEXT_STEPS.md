@@ -5,10 +5,14 @@
 > Estado canônico em [`PROJECT_STATE.md`](./PROJECT_STATE.md).
 
 ```
-SLICE = L-E2E0 — freeze do contrato hosted da Jornada 5 (Liderança)
+SLICE = E-P0 — readiness discovery de Executive / decisão executiva
 PATH  = GOVERNED
 STATE = AGUARDANDO AUTORIZAÇÃO
 ```
+
+O nome `E-P0` segue o padrão já usado por `D-P0` (Development) e `PLN-SEC0`/`L-P1`
+(discovery antes de contrato): o primeiro slice de um domínio é discovery read-only,
+não implementação. Confirmar o rótulo na abertura do slice.
 
 ## KNOWN_STATE
 
@@ -27,18 +31,29 @@ STATE = AGUARDANDO AUTORIZAÇÃO
   `get_manager_leadership_attention_v1(uuid)` pela migration `0140`; L-P2 publicou
   o cutover de `/app/manager`, rotas donas e navegação na `main`
   `800ceb2282a4c9d6b58533455bc93d8bc4818ac1`;
-- Liderança ainda não está hosted-proven; decisão executiva e o restante de RH
-  Estratégico permanecem posteriores;
+- a **Jornada 5 — Liderança** está `CLOSED / PASS / HOSTED-PROVEN`: run
+  `260926114143-bf6bb4`, **8/8 PASS**, passos **1–12 PASS**, uma execução, terminal
+  **RETIRED**, build binding `assets:c3a7259bdd14e5d3` (17 assets). O SHA declarado
+  `e6916b7a…` permanece `UNVERIFIABLE_FROM_DEPLOYMENT`. Fechamento em
+  [`Execution/L-E2E11-LEADERSHIP-JOURNEY-CLOSURE.md`](./Execution/L-E2E11-LEADERSHIP-JOURNEY-CLOSURE.md).
+  O run é terminal e não deve ser repetido;
+- decisão executiva e o restante de RH Estratégico permanecem posteriores e não
+  provados;
 - o drift global de ACL em Review permanece `OPEN / SEPARATE SECURITY DEBT`, fora
   do fechamento Planning. Production segue `UNKNOWN / REVERIFY BEFORE USE` e
   Legacy fora dos alvos.
 
 ## EXPECTED_NEXT
 
-Abrir **L-E2E0 — freeze do contrato hosted da Jornada 5 (Liderança)**. Traduzir o
-contrato L-P1 e as boundaries já publicadas em atores/fixtures, passos, provas de
-readback, isolamento e teardown governados. Não executar o hosted E2E nesse mesmo
-slice.
+Abrir a **readiness discovery de Executive / decisão executiva** — read-only,
+contra o repositório, no mesmo formato que `D-P0` e a discovery de Planning
+seguiram: provar o estado atual antes de redesenhar produto. Executive está
+`Parcial` em [`MVP_PLAN.md`](./MVP_PLAN.md) e depende dos domínios operacionais, de
+Planning e de KPI.
+
+Não implementar Executive nesta etapa, não congelar contrato hosted e não executar
+hosted E2E. Liderança está fechada; isso abre o caminho para o próximo domínio, não
+o executa.
 
 Nenhum slice de Development está aberto. `cancel_development_plan_v1` continua
 sem chamador na aplicação, deliberadamente fora da jornada congelada; reabrir

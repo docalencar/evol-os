@@ -22,6 +22,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test"
 
 import { expectAuthenticatedShell, loginThroughUi, signOutThroughUi } from "../auth/login"
 import { adminClient } from "../helpers/admin-client"
+import { actionCard, expandGoal, openDialog, openPlanGoal } from "../helpers/development-interactions"
 import {
   createDevelopmentFixture,
   developmentCompetencyName,
@@ -282,15 +283,6 @@ async function openPlan(page: Page): Promise<void> {
 // the labels a trigger and its submit button share ("Adicionar ação" is both).
 // ---------------------------------------------------------------------------
 
-async function openDialog(scope: Page | Locator, trigger: string | RegExp) {
-  await scope.getByRole("button", { name: trigger, exact: true }).first().click()
-  // The dialog is a portal: it is a child of <body>, never of the scope that
-  // owns the trigger, so it is always looked up from the page.
-  const page = "page" in scope ? scope.page() : scope
-  const dialog = page.getByRole("dialog")
-  await expect(dialog).toBeVisible({ timeout: 30_000 })
-  return dialog
-}
 
 /**
  * Template goals are native `<details>` disclosures and the page never renders
@@ -303,15 +295,6 @@ async function openDialog(scope: Page | Locator, trigger: string | RegExp) {
  * Idempotent on purpose: whether a re-render preserves the open state is a
  * detail of React reconciliation this spec should not depend on either way.
  */
-async function expandGoal(page: Page, competencyName: string): Promise<Locator> {
-  const goal = page.locator("details").filter({ hasText: competencyName })
-  await expect(goal).toBeVisible({ timeout: 30_000 })
-  if (!(await goal.evaluate((element: HTMLDetailsElement) => element.open))) {
-    await goal.locator("summary").click()
-  }
-  await expect(goal).toHaveJSProperty("open", true)
-  return goal
-}
 
 /**
  * The plan page renders actions as nested `div` cards — there is no table and no
@@ -321,12 +304,6 @@ async function expandGoal(page: Page, competencyName: string): Promise<Locator> 
  * `.last()` is load-bearing: `filter` also matches any ancestor card that
  * contains the title, and in document order the innermost match comes last.
  */
-function actionCard(page: Page, title: string) {
-  return page
-    .locator("div.rounded-lg.border.border-slate-200.bg-white")
-    .filter({ hasText: title })
-    .last()
-}
 
 /**
  * The PLAN page nests a goal's actions in the same native `<details>` disclosure
@@ -339,9 +316,6 @@ function actionCard(page: Page, title: string) {
  * times and reported it `hidden`: the manager was correctly authorized and the
  * action was correctly rendered, inside a collapsed panel.
  */
-async function openPlanGoal(page: Page): Promise<Locator> {
-  return expandGoal(page, developmentCompetencyName(manifest().runId))
-}
 
 /**
  * Record a review through the product's own form.
@@ -641,7 +615,7 @@ test.describe("development journey: authoring, application, execution, reviews, 
     // 12. the responsible manager reads it.
     await switchTo(page, MANAGER)
     await openPlan(page)
-    const managerGoal = await openPlanGoal(page)
+    const managerGoal = await openPlanGoal(page, manifest().runId)
     await expect(managerGoal.getByText(ACTION_ONE, { exact: true })).toBeVisible()
 
     // 13-14. nonparticipant and foreign actor are refused, and refused
@@ -673,7 +647,7 @@ test.describe("development journey: authoring, application, execution, reviews, 
     // 15. start, then re-read durable state rather than trusting the button.
     // The goal disclosure is reopened before every action interaction: each
     // server render and each reload closes it again.
-    await openPlanGoal(page)
+    await openPlanGoal(page, manifest().runId)
     await actionCard(page, ACTION_ONE).getByRole("button", { name: "Iniciar ação" }).click()
     await confirm(page, ACTION_SAVED)
     await page.reload()
@@ -684,7 +658,7 @@ test.describe("development journey: authoring, application, execution, reviews, 
 
     // 16. complete. Canonical progress moves to 50% of two actions, derived by
     // the server; the browser never computes it.
-    await openPlanGoal(page)
+    await openPlanGoal(page, manifest().runId)
     await actionCard(page, ACTION_ONE).getByRole("button", { name: "Concluir ação" }).click()
     await confirm(page, ACTION_SAVED)
     await page.reload()
@@ -697,14 +671,14 @@ test.describe("development journey: authoring, application, execution, reviews, 
     // 17. the subject may not skip — skip is a management transition. Asserted
     // on the OPEN disclosure, so it proves the control is absent from a rendered
     // surface rather than merely absent from a collapsed one.
-    await openPlanGoal(page)
+    await openPlanGoal(page, manifest().runId)
     await expect(
       actionCard(page, ACTION_TWO).getByRole("button", { name: "Ignorar ação" }),
     ).toHaveCount(0)
 
     await switchTo(page, MANAGER)
     await openPlan(page)
-    await openPlanGoal(page)
+    await openPlanGoal(page, manifest().runId)
     const secondCard = actionCard(page, ACTION_TWO)
     await secondCard.getByLabel("Motivo privado para ignorar").fill(SKIP_REASON)
     await secondCard.getByRole("button", { name: "Ignorar ação" }).click()

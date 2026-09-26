@@ -69,6 +69,14 @@ HR, isolamento de tenant e timeline restrita. Permanecem separados: jornadas de
 one-on-one, check-ins, reconhecimentos e planos de ação, além das capacidades de
 Feedback explicitamente deferidas no fechamento.
 
+O recorte MVP de **Liderança** está `CLOSED / PASS / HOSTED-PROVEN` pelo run
+`260926114143-bf6bb4`, fechado em
+[`Execution/L-E2E11-LEADERSHIP-JOURNEY-CLOSURE.md`](./Execution/L-E2E11-LEADERSHIP-JOURNEY-CLOSURE.md):
+fila de atenção derivada ao vivo sobre os direct reports atuais, roteamento para o
+domínio dono e rederivação a partir de fatos duráveis. A integração com decisões
+executivas **não** está provada e Executive permanece `Parcial`; alertas duráveis,
+roll-ups, scores e reconhecimento avulso seguem fora do contrato.
+
 ## Desenvolvimento — parcial
 
 Entrega planos, objetivos, ações, templates, acompanhamento de estado e
@@ -80,8 +88,9 @@ humanos e preservados por Application Snapshots. Competências operacionais
 continuam estritamente tenant-owned; templates company-owned referenciam somente
 competências da própria empresa; IA pode sugerir mappings, mas nunca confirmá-los.
 
-O fluxo ponta a ponta de Development está `CLOSED / PASS` pelo E2E-6. A integração
-mais ampla com a jornada periódica de Liderança permanece separada.
+O fluxo ponta a ponta de Development está `CLOSED / PASS` pelo E2E-6. A jornada de
+Liderança consome Development pela fronteira do domínio dono e está fechada em
+L-E2E11; a integração periódica mais ampla permanece separada.
 
 ## Recrutamento e Aprovações — parcial
 

@@ -231,11 +231,13 @@ puderem ser executadas com autorização e persistência confiáveis.
 | E2E-5 | Feedback formal de avaliação | CLOSED / PASS — 24/24 PROVEN |
 | E2E-6 | Jornada de Desenvolvimento ponta a ponta | CLOSED / PASS — 29/29 PROVEN |
 | PLN-P6 | Jornada operacional de Organization Planning | CLOSED / PASS — passos 1–19 HOSTED-PROVEN |
-| L-P1/L-DB1/L-P2 | Contrato, trusted read boundary e cutover de Liderança | CLOSED / PASS — hosted E2E ainda não congelado nem executado |
+| L-P1/L-DB1/L-P2 | Contrato, trusted read boundary e cutover de Liderança | CLOSED / PASS |
+| L-E2E11 | Jornada de Liderança ponta a ponta | CLOSED / PASS — passos 1–12 HOSTED-PROVEN |
 
 Desenvolvimento e a jornada operacional de Planning estão comprovados em Review.
 **Planning não equivale à Jornada 6**: turnover, clima, desempenho agregado,
 potencial, sucessão e planos estratégicos permanecem abertos. **Liderança
-(Jornada 5)** possui contrato, boundary e produto publicados, mas ainda depende
-do freeze e da execução hosted para ser comprovada. Decisão executiva e o restante
-de RH Estratégico continuam não comprovados.
+(Jornada 5)** está comprovada em Review pelo run `260926114143-bf6bb4`, fechada em
+`Execution/L-E2E11-LEADERSHIP-JOURNEY-CLOSURE.md`. Decisão executiva e o restante
+de RH Estratégico continuam **não comprovados**: Executive permanece `Parcial` e o
+próximo passo canônico é sua readiness discovery.

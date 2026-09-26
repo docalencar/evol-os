@@ -5,11 +5,13 @@
 > operacional de Organization Planning estão `CLOSED / PASS / HOSTED-PROVEN`.
 > Planning fechou no run `260924115952-39d810`, com 9/9 testes e passos 1–19
 > PASS em uma execução sem retry. Isso não conclui a Jornada 6 — RH Estratégico.
-> Liderança possui contrato MVP congelado, boundary `0140` validada em Review e
-> cutover de produto publicado. A próxima prioridade normativa é **L-E2E0 —
-> freeze do contrato hosted da Jornada 5**, conforme `NEXT_STEPS.md`; decisão
-> executiva e as capacidades
-> restantes de RH Estratégico permanecem abertas. O drift global de ACL em
+> A **Jornada 5 — Liderança** também está `CLOSED / PASS / HOSTED-PROVEN`: run
+> `260926114143-bf6bb4`, 8/8 testes e passos 1–12 PASS numa execução, terminal
+> RETIRED, ligada ao build `assets:c3a7259bdd14e5d3`; o SHA declarado permanece
+> `UNVERIFIABLE_FROM_DEPLOYMENT`. A próxima prioridade normativa é a **readiness
+> discovery de Executive / decisão executiva**, conforme `NEXT_STEPS.md`; decisão
+> executiva e as capacidades restantes de RH Estratégico permanecem abertas e não
+> provadas. O drift global de ACL em
 > Review é dívida de segurança separada. Production:
 > `UNKNOWN / REVERIFY BEFORE USE`. Legacy:
 > `NOT A PROMOTION TARGET`. O corpo histórico abaixo preserva programas e

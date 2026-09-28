@@ -37,14 +37,13 @@ select ok(
 
 -- The payload must be aggregates only. A column named after a response, answer,
 -- score or identity would mean the boundary leaks more than the consumer needs.
-select results_eq(
-  $$select p.proargnames[i]
-      from pg_proc p, generate_subscripts(p.proargnames, 1) i
-     where p.oid = 'public.get_company_assessment_summary_v1(uuid,text)'::regprocedure
-       and p.proargmodes[i] = 't'
-     order by i$$,
-  $$values ('employee_id'), ('completed_assessments'), ('pending_assessments'),
-           ('latest_completed_at')$$,
+select is(
+  (select array_agg(p.proargnames[i] order by i)::text[]
+     from pg_proc p, generate_subscripts(p.proargnames, 1) i
+    where p.oid = 'public.get_company_assessment_summary_v1(uuid,text)'::regprocedure
+      and p.proargmodes[i] = 't'),
+  array['employee_id', 'completed_assessments', 'pending_assessments',
+        'latest_completed_at']::text[],
   'the boundary returns aggregates only — no response, answer, score or identity');
 
 -- ---------------------------------------------------------------------------
@@ -222,7 +221,9 @@ select throws_ok(
 -- TEST 7 — audit cardinality: ONE event per aggregated read, not one per employee
 -- ---------------------------------------------------------------------------
 reset role;
-delete from public.activity_events
+create temporary table e_db1_audit_events_before on commit drop as
+select id
+  from public.activity_events
  where company_id = '12000000-0000-4000-8000-000000000001'
    and activity_type = 'assessments.administrative_read';
 
@@ -232,10 +233,19 @@ select count(*) from public.get_company_assessment_summary_v1(
   '12000000-0000-4000-8000-000000000001','employee_intelligence_list');
 
 reset role;
+create temporary table e_db1_new_audit_events on commit drop as
+select event.*
+  from public.activity_events event
+ where event.company_id = '12000000-0000-4000-8000-000000000001'
+   and event.activity_type = 'assessments.administrative_read'
+   and not exists (
+     select 1
+       from e_db1_audit_events_before before_event
+      where before_event.id = event.id
+   );
+
 select is(
-  (select count(*) from public.activity_events
-    where company_id = '12000000-0000-4000-8000-000000000001'
-      and activity_type = 'assessments.administrative_read'),
+  (select count(*) from e_db1_new_audit_events),
   1::bigint,
   'one aggregated read writes exactly one audit event, not one per employee');
 
@@ -244,25 +254,19 @@ select is(
 -- "more than one row", abort the transaction, and bury the one assertion that
 -- actually names the defect under a cascade of unrelated failures.
 select is(
-  (select entity_type from public.activity_events
-    where company_id = '12000000-0000-4000-8000-000000000001'
-      and activity_type = 'assessments.administrative_read'
+  (select entity_type from e_db1_new_audit_events
     order by id limit 1),
   'assessment_company_summary',
   'the audit event names the aggregated company scope');
 
 select is(
-  (select metadata->>'reason' from public.activity_events
-    where company_id = '12000000-0000-4000-8000-000000000001'
-      and activity_type = 'assessments.administrative_read'
+  (select metadata->>'reason' from e_db1_new_audit_events
     order by id limit 1),
   'employee_intelligence_list',
   'the caller reason is recorded verbatim');
 
 select is(
-  (select visibility from public.activity_events
-    where company_id = '12000000-0000-4000-8000-000000000001'
-      and activity_type = 'assessments.administrative_read'
+  (select visibility from e_db1_new_audit_events
     order by id limit 1),
   'restricted', 'the audit event stays restricted');
 
@@ -284,7 +288,8 @@ select throws_ok(
   'a malformed reason raises rather than returning an empty set');
 select throws_ok(
   $$select * from public.get_company_assessment_summary_v1(null, 'employee_intelligence_list')$$,
-  '22023', 'a null company id raises ASSESSMENT_SUMMARY_COMPANY_REQUIRED');
+  '22023', 'ASSESSMENT_SUMMARY_COMPANY_REQUIRED',
+  'a null company id raises ASSESSMENT_SUMMARY_COMPANY_REQUIRED');
 
 -- ---------------------------------------------------------------------------
 -- COMPATIBILITY — the existing scopes are untouched

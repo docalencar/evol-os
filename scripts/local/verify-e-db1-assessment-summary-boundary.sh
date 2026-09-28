@@ -105,6 +105,8 @@ MUT_TENANCY=FAIL
 MUT_AUTHORIZATION=FAIL
 MUT_AUDIT_CARDINALITY=FAIL
 RESTORED=FAIL
+PARSER_MUTATION_PROOF=FAIL
+RUNNER_OUTPUT_CAPTURE_PROOF=FAIL
 
 # Restore the migration file whatever happens, including on interrupt. A gate
 # that can leave the working tree missing a migration is worse than no gate.
@@ -115,19 +117,74 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-# Run one suite file directly and report PASS/FAIL. pgTAP reports failures as
-# `not ok` lines and bailouts as `Bail out!`; psql's own exit status is not
+# Parse the aligned output emitted by psql without accepting partial TAP. A pass
+# requires one exact plan, every assertion number exactly once, and no database
+# error or negative assertion.
+parse_pgtap_25() {
+  awk '
+    {
+      line = $0
+      sub(/^[[:space:]]+/, "", line)
+      if (line ~ /^Bail out!/) bad = 1
+      if (line ~ /(^|[[:space:]])(ERROR|FATAL):/) bad = 1
+      if (line ~ /^not ok[[:space:]]+[0-9]+([[:space:]]|$)/) bad = 1
+      if (line == "1..25") plans++
+      if (line ~ /^ok[[:space:]]+[0-9]+([[:space:]]|$)/) {
+        split(line, fields, /[[:space:]]+/)
+        assertion = fields[2] + 0
+        seen[assertion]++
+        assertions++
+      }
+    }
+    END {
+      if (bad || plans != 1 || assertions != 25) exit 1
+      for (i = 1; i <= 25; i++) if (seen[i] != 1) exit 1
+      for (i in seen) if ((i + 0) < 1 || (i + 0) > 25) exit 1
+    }
+  ' "$1"
+}
+
+prove_parser_mutations() {
+  local green="$WORK/parser-green.log"
+  local mutated="$WORK/parser-mutated.log"
+
+  awk 'BEGIN { for (i = 1; i <= 25; i++) print "   ok " i " - assertion"; print " 1..25" }' >"$green"
+  parse_pgtap_25 "$green" || return 1
+
+  sed 's/^   ok 13 /   not ok 13 /' "$green" >"$mutated"
+  parse_pgtap_25 "$mutated" && return 1
+
+  sed '/^   ok 13 /d' "$green" >"$mutated"
+  parse_pgtap_25 "$mutated" && return 1
+
+  sed 's/^ 1\.\.25$/ 1..24/' "$green" >"$mutated"
+  parse_pgtap_25 "$mutated" && return 1
+
+  { printf '%s\n' 'psql:test.sql:1: ERROR: unexpected failure'; sed -n '1,$p' "$green"; } >"$mutated"
+  parse_pgtap_25 "$mutated" && return 1
+
+  return 0
+}
+
+if prove_parser_mutations; then
+  PARSER_MUTATION_PROOF=PASS
+  say "[e-db1] parser mutation proof: GREEN/pass; not-ok/missing/wrong-plan/ERROR fail."
+else
+  say "STOP: pgTAP parser mutation proof failed."
+  say "E_DB1_MAC_GATE=FAIL"
+  say "PARSER_MUTATION_PROOF=FAIL"
+  exit 1
+fi
+
+# Run one suite file directly and report PASS/FAIL. psql's own exit status is not
 # sufficient, because a suite can produce failing assertions and still exit 0.
 run_suite() {
   # $1 = suite path, $2 = log path; echoes PASS or FAIL.
   local log="$2"
   psql "$DB_URL" -v ON_ERROR_STOP=0 -f "$1" >"$log" 2>&1
-  if grep -qE "^not ok|Bail out!|^psql:.*ERROR" "$log"; then
-    printf 'FAIL'
-  elif grep -qE "^ok 1" "$log"; then
+  if parse_pgtap_25 "$log"; then
     printf 'PASS'
   else
-    # No assertions ran at all. That is not a pass.
     printf 'FAIL'
   fi
 }
@@ -334,22 +391,53 @@ mutate_and_expect_red() {
   # $1 = label, $2 = sql, $3 = tag; echoes PASS when the suite goes RED.
   local tag="$3"
   if ! apply_sql "$2" "$WORK/mut-$tag-apply.log"; then
-    say "[e-db1]     MUTATION $1 could not be applied — inconclusive, not a pass."
-    grep -nE "ERROR:|DETAIL:" "$WORK/mut-$tag-apply.log" | head -10 | sed 's/^/  /'
+    say "[e-db1]     MUTATION $1 could not be applied — inconclusive, not a pass." >&2
+    grep -nE "ERROR:|DETAIL:" "$WORK/mut-$tag-apply.log" | head -10 | sed 's/^/  /' >&2
     printf 'FAIL'
     return
   fi
   local run
   run=$(run_suite "$SUITE" "$WORK/mut-$tag.log")
   if [ "$run" = FAIL ]; then
-    say "[e-db1]     MUTATION $1 → suite RED (correct). Failing assertions:"
-    grep -E "^not ok" "$WORK/mut-$tag.log" | head -8 | sed 's/^/  /'
+    say "[e-db1]     MUTATION $1 → suite RED (correct). Failing assertions:" >&2
+    grep -E "^not ok" "$WORK/mut-$tag.log" | head -8 | sed 's/^/  /' >&2
     printf 'PASS'
   else
-    say "[e-db1]     MUTATION $1 → suite still GREEN. The suite does not prove this property."
+    say "[e-db1]     MUTATION $1 → suite still GREEN. The suite does not prove this property." >&2
     printf 'FAIL'
   fi
 }
+
+prove_mutation_output_capture() {
+  local diagnostics="$WORK/mutation-output-capture.log"
+  local red_value green_value
+
+  mutation_output_probe() {
+    say "diagnostic remains visible on stderr: $1" >&2
+    printf '%s' "$2"
+  }
+
+  red_value=$(mutation_output_probe red PASS 2>"$diagnostics")
+  [ "$red_value" = PASS ] || return 1
+  grep -q "diagnostic remains visible on stderr: red" "$diagnostics" || return 1
+
+  green_value=$(mutation_output_probe green FAIL 2>>"$diagnostics")
+  [ "$green_value" = FAIL ] || return 1
+  grep -q "diagnostic remains visible on stderr: green" "$diagnostics" || return 1
+
+  [ "$(wc -l <"$diagnostics" | tr -d ' ')" = 2 ] || return 1
+  return 0
+}
+
+if prove_mutation_output_capture; then
+  RUNNER_OUTPUT_CAPTURE_PROOF=PASS
+  say "[e-db1] mutation output capture proof: diagnostics preserved; values exact PASS/FAIL."
+else
+  say "STOP: mutation output capture proof failed."
+  say "E_DB1_MAC_GATE=FAIL"
+  say "RUNNER_OUTPUT_CAPTURE_PROOF=FAIL"
+  exit 1
+fi
 
 if [ "$E_DB1_PGTAP" = PASS ]; then
   say "[e-db1] 3/5 MUTATION proof ..."
@@ -363,19 +451,19 @@ fi
 # --------------------------------------------------------------------------
 # 5. PHASE RESTORE — canonical 0141 back in the database, re-proven green
 # --------------------------------------------------------------------------
-say "[e-db1] 4/5 RESTORE — reapplying the canonical 0141 definition ..."
-if psql "$DB_URL" -v ON_ERROR_STOP=1 -q -f "$MIGRATION" >"$WORK/restore.log" 2>&1; then
+say "[e-db1] 4/5 RESTORE — resetting to the full canonical migration history ..."
+if supabase db reset >"$WORK/restore.log" 2>&1; then
   RESTORE_RUN=$(run_suite "$SUITE" "$WORK/restore-suite.log")
   if [ "$RESTORE_RUN" = PASS ]; then
     RESTORED=PASS
-    say "[e-db1]     RESTORED=PASS — the canonical definition is back and green."
+    say "[e-db1]     RESTORED=PASS — reset and E-DB1 suite are green."
   else
-    say "[e-db1]     RESTORED=FAIL — the suite is not green after restoring. Reset before using this DB."
+    say "[e-db1]     RESTORED=FAIL — the E-DB1 suite is not green after reset."
     grep -E "^not ok" "$WORK/restore-suite.log" | head -10 | sed 's/^/  /'
   fi
 else
-  say "[e-db1]     RESTORED=FAIL — could not reapply 0141. Run 'supabase db reset' before using this DB."
-  grep -nE "ERROR:|DETAIL:" "$WORK/restore.log" | head -10 | sed 's/^/  /'
+  say "[e-db1]     RESTORED=FAIL — canonical supabase db reset failed."
+  grep -nE "ERROR:|CONTEXT:|DETAIL:|FATAL|failed" "$WORK/restore.log" | head -10 | sed 's/^/  /'
 fi
 
 # --------------------------------------------------------------------------
@@ -403,6 +491,8 @@ say "MUTATION_TENANCY_RED=$MUT_TENANCY"
 say "MUTATION_AUTHORIZATION_RED=$MUT_AUTHORIZATION"
 say "MUTATION_AUDIT_CARDINALITY_RED=$MUT_AUDIT_CARDINALITY"
 say "CANONICAL_DEFINITION_RESTORED=$RESTORED"
+say "PARSER_MUTATION_PROOF=$PARSER_MUTATION_PROOF"
+say "RUNNER_OUTPUT_CAPTURE_PROOF=$RUNNER_OUTPUT_CAPTURE_PROOF"
 say "MIGRATION_0141_SHA256=$SHA_MIGRATION"
 say "E_DB1_SUITE_SHA256=$SHA_SUITE"
 say "REVIEW_ACCESSED=NO"

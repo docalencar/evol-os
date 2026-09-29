@@ -76,6 +76,7 @@ const dto = Object.freeze({
       }),
     ]),
   }),
+  sourceFailures: Object.freeze([]),
 }) satisfies ExecutiveHomeDTO
 
 function createEmptyDTO(): ExecutiveHomeDTO {
@@ -99,6 +100,7 @@ function createEmptyDTO(): ExecutiveHomeDTO {
       generatedAt,
       items: Object.freeze([]),
     }),
+    sourceFailures: Object.freeze([]),
   })
 }
 

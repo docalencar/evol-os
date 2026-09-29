@@ -18,7 +18,16 @@ export class ExecutiveContextService {
     const source = await this.provider.load()
     const warnings: ExecutiveContextWarning[] = []
 
-    if (!source.workspaceId) {
+    for (const failure of source.failures ?? []) {
+      warnings.push(Object.freeze({
+        code: failure,
+        message: failure === "workspace_read_failed"
+          ? "Não foi possível carregar o workspace de Planning."
+          : "Não foi possível carregar os cenários de Planning.",
+      }))
+    }
+
+    if (!source.workspaceId && !source.failures?.includes("workspace_read_failed")) {
       warnings.push(
         Object.freeze({
           code: "workspace_unavailable",
@@ -28,7 +37,7 @@ export class ExecutiveContextService {
       )
     }
 
-    if (!source.scenarioId) {
+    if (!source.scenarioId && !source.failures?.includes("scenario_read_failed")) {
       warnings.push(
         Object.freeze({
           code: "scenario_unavailable",

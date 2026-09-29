@@ -158,3 +158,26 @@ test("não associa cenário único a workspace ambíguo", async () => {
     scenarioId: null,
   })
 })
+
+test("preserva falhas de leitura em vez de convertê-las em ausência", async () => {
+  const provider = new PlanningExecutiveContextProvider(
+    companyId,
+    {
+      async list() {
+        throw new Error("workspace unavailable")
+      },
+    },
+    {
+      async list() {
+        throw new Error("scenario unavailable")
+      },
+    },
+  )
+
+  const result = await provider.load()
+
+  assert.deepEqual(result.failures, [
+    "workspace_read_failed",
+    "scenario_read_failed",
+  ])
+})

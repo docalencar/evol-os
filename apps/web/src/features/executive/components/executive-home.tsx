@@ -7,6 +7,8 @@ import { ExecutiveInsights } from "./executive-insights"
 import { ExecutiveNarrative } from "./executive-narrative"
 import { ExecutiveQuickActions } from "./executive-quick-actions"
 import { ExecutiveSummary } from "./executive-summary"
+import { ExecutiveSourceStatus } from "./executive-source-status"
+import { ExecutiveUnavailableCapabilities } from "./executive-unavailable-capabilities"
 
 type ExecutiveHomeProps = {
   data: ExecutiveHomeViewModel
@@ -21,6 +23,11 @@ export function ExecutiveHome({
 
       <ExecutiveNarrative narrative={data.narrative} />
 
+      <ExecutiveSourceStatus
+        dataStatus={data.dataStatus}
+        sourceFailures={data.sourceFailures}
+      />
+
       <ExecutiveQuickActions />
 
       {data.isEmpty ? (
@@ -34,6 +41,8 @@ export function ExecutiveHome({
           <KPIDashboardPage dashboard={data.dashboard} />
         </>
       )}
+
+      <ExecutiveUnavailableCapabilities />
     </div>
   )
 }

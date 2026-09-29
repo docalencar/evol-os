@@ -13,6 +13,8 @@ export type ExecutiveContextResolution = Readonly<{
 export type ExecutiveContextWarningCode =
   | "workspace_unavailable"
   | "scenario_unavailable"
+  | "workspace_read_failed"
+  | "scenario_read_failed"
 
 export type ExecutiveContextWarning = Readonly<{
   code: ExecutiveContextWarningCode

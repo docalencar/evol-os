@@ -11,6 +11,7 @@ const statusClasses = {
   healthy: "border-emerald-200 bg-emerald-50",
   attention: "border-amber-200 bg-amber-50",
   critical: "border-red-200 bg-red-50",
+  partial: "border-slate-300 bg-slate-100",
 } satisfies Record<ExecutiveHealthStatus, string>
 
 export function ExecutiveNarrative({

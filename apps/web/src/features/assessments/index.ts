@@ -40,6 +40,10 @@ export {
 
 export { getAssessmentCycles } from "./queries/get-assessment-cycles"
 export { getAssessmentCycleById } from "./queries/get-assessment-cycle-by-id"
+export {
+  getCompanyAssessmentSummaries,
+  type CompanyAssessmentSummary,
+} from "./queries/get-company-assessment-summaries"
 
 export { getAssessmentTemplates } from "./queries/get-assessment-templates"
 export { getAssessmentTemplateById } from "./queries/get-assessment-template-by-id"

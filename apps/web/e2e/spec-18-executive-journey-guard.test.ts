@@ -29,6 +29,22 @@ test("the Executive fixture uses a canonical Assessment template type", () => {
   )
 })
 
+test("governed fixture provisioning has a bounded setup budget outside product proofs", () => {
+  const journey = /test\.describe\("Executive MVP hosted journey", \(\) => \{([\s\S]*)\n\}\)/
+    .exec(spec)?.[1] ?? ""
+  const setup = /test\.beforeAll\(async \(\{ browser \}, testInfo\) => \{([\s\S]*?)\n  \}\)/
+    .exec(journey)?.[1] ?? ""
+  const firstProof = /test\("1-3\.[\s\S]*?async \(\{ page \}\) => \{([\s\S]*?)\n  \}\)/
+    .exec(journey)?.[1] ?? ""
+
+  assert.match(setup, /testInfo\.setTimeout\(EXECUTIVE_SETUP_TIMEOUT_MS\)/)
+  assert.match(setup, /ensureRunOwnedForeignTenant/)
+  assert.match(setup, /prepareFactualAssessment/)
+  assert.match(setup, /finally[\s\S]*setupPage\.close\(\)/)
+  assert.doesNotMatch(firstProof, /ensureRunOwnedForeignTenant|prepareFactualAssessment/)
+  assert.doesNotMatch(spec, /test\.setTimeout\(/)
+})
+
 test("the future journey owns both tenants and all frozen steps", () => {
   assert.match(spec, /ensureRunOwnedForeignTenant/)
   assert.match(spec, /foreignCompanyId = foreignTenant\.companyId/)

@@ -19,6 +19,7 @@ const HR: SyntheticRole = "hr"
 const MANAGER: SyntheticRole = "manager"
 const EMPLOYEE: SyntheticRole = "employee"
 const FOREIGN: SyntheticRole = "onboarding"
+const EXECUTIVE_SETUP_TIMEOUT_MS = 120_000
 
 let cached: RunManifest | null = null
 let assessmentCycleId = ""
@@ -122,20 +123,35 @@ async function expectOpaqueExecutiveDenial(page: Page, role: SyntheticRole): Pro
 }
 
 test.describe("Executive MVP hosted journey", () => {
+  test.beforeAll(async ({ browser }, testInfo) => {
+    testInfo.setTimeout(EXECUTIVE_SETUP_TIMEOUT_MS)
+    const setupPage = await browser.newPage()
+    try {
+      const foreignTenant = await ensureRunOwnedForeignTenant(
+        setupPage,
+        actor(FOREIGN),
+        manifest().runId,
+      )
+      foreignCompanyId = foreignTenant.companyId
+      foreignOwnerPersonId = foreignTenant.ownerPersonId
+      cached = readManifest()
+      await prepareFactualAssessment()
+    } finally {
+      await setupPage.close()
+    }
+  })
+
   test("1-3. binds Review, owns both tenants and proves authorized navigation", async ({ page }) => {
     expect(manifest().deployment?.assetFingerprint).toMatch(/^assets:[0-9a-f]{16}$/)
     expect(manifest().deployment?.commitShaVerification).toBe("UNVERIFIABLE_FROM_DEPLOYMENT")
     steps.add(1)
 
-    const foreignTenant = await ensureRunOwnedForeignTenant(page, actor(FOREIGN), manifest().runId)
-    foreignCompanyId = foreignTenant.companyId
-    foreignOwnerPersonId = foreignTenant.ownerPersonId
-    cached = readManifest()
     expect(foreignCompanyId).not.toBe(companyId())
-    await prepareFactualAssessment()
+    expect(foreignOwnerPersonId).toMatch(/^[0-9a-f-]{36}$/)
+    expect(assessmentCycleId).toMatch(/^[0-9a-f-]{36}$/)
+    expect(factualEmployeeCount).toBeGreaterThan(0)
     steps.add(2)
 
-    await signOutThroughUi(page)
     for (const role of [OWNER, ADMIN, HR] as const) {
       await enterAs(page, role)
       await openExecutive(page)

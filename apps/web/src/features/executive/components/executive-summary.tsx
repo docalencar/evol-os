@@ -11,6 +11,7 @@ const statusClasses = {
   healthy: "border-emerald-200 bg-emerald-50 text-emerald-700",
   attention: "border-amber-200 bg-amber-50 text-amber-700",
   critical: "border-red-200 bg-red-50 text-red-700",
+  partial: "border-slate-300 bg-slate-100 text-slate-700",
 } satisfies Record<ExecutiveHealthStatus, string>
 
 export function ExecutiveSummary({

@@ -41,7 +41,7 @@ export class CurrentExecutiveHomeSource
       getExecutiveKPIDashboard(),
     ])
 
-    const decisionFeed =
+    const decisionFeedResult =
       await createExecutiveDecisionFeed({
         context,
         dashboard,
@@ -51,7 +51,21 @@ export class CurrentExecutiveHomeSource
       generatedAt: context.generatedAt,
       overview,
       dashboard,
-      decisionFeed,
+      decisionFeed: decisionFeedResult.feed,
+      sourceFailures: Object.freeze([
+        ...contextResolution.warnings.map((warning) => ({
+          source: warning.code,
+          kind: warning.code.endsWith("_read_failed")
+            ? "failure" as const
+            : "unavailable" as const,
+          message: warning.message,
+        })),
+        ...decisionFeedResult.failures.map((failure) => ({
+          source: failure.providerKey,
+          kind: "failure" as const,
+          message: failure.message,
+        })),
+      ]),
     })
   }
 }

@@ -12,6 +12,9 @@ import {
   UserRoundCheck,
   Users,
 } from "lucide-react";
+import type { CorporateRole } from "@/features/authorization";
+import { canAccessExecutive } from "@/features/executive/access/executive-access";
+
 const items = [
   { href: "/app", label: "Início", icon: Home },
   { href: "/app/people", label: "Pessoas", icon: Users },
@@ -23,12 +26,19 @@ const items = [
   { href: "/app/feedbacks", label: "Feedbacks", icon: MessageSquare },
   { href: "/app/development", label: "Desenvolvimento", icon: Target },
   { href: "/app/manager", label: "Liderança", icon: UserRoundCheck },
+  { href: "/app/executive", label: "Executive", icon: BarChart3 },
   { href: "/app/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/app/company", label: "Empresa", icon: Building2 },
   { href: "/app/settings", label: "Configurações", icon: Settings }
 ];
 
-export function Sidebar() {
+export function getSidebarItems(role: CorporateRole) {
+  return items.filter(
+    (item) => item.href !== "/app/executive" || canAccessExecutive(role),
+  );
+}
+
+export function Sidebar({ role }: { role: CorporateRole }) {
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 border-r border-slate-200 bg-white p-4">
       <div className="mb-8">
@@ -37,7 +47,7 @@ export function Sidebar() {
       </div>
 
       <nav className="space-y-1">
-        {items.map((item) => {
+        {getSidebarItems(role).map((item) => {
           const Icon = item.icon;
           return (
             <Link

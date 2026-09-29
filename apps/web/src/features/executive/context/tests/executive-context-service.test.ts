@@ -151,3 +151,22 @@ test("usa apenas o Clock injetado para gerar timestamp", async () => {
     "2026-08-01T12:00:00.000Z",
   )
 })
+
+test("reports Planning read failure distinctly from legitimate absence", async () => {
+  const service = new ExecutiveContextService(
+    createProvider({
+      companyId: "company-1",
+      workspaceId: null,
+      scenarioId: null,
+      failures: ["workspace_read_failed", "scenario_read_failed"],
+    }),
+    new FixedClock(),
+  )
+
+  const resolution = await service.resolve()
+
+  assert.deepEqual(
+    resolution.warnings.map((warning) => warning.code),
+    ["workspace_read_failed", "scenario_read_failed"],
+  )
+})

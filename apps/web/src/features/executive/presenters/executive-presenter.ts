@@ -21,6 +21,13 @@ export class ExecutivePresenter {
 
     const decisionFeed =
       new DecisionFeedPresenter().present(dto.decisionFeed)
+    const sourceFailures = dto.sourceFailures.map((failure) =>
+      Object.freeze({
+        source: failure.source,
+        sourceLabel: sourceLabel(failure.source),
+        kind: failure.kind,
+      }),
+    )
 
     return Object.freeze({
       brief: Object.freeze({
@@ -48,15 +55,38 @@ export class ExecutivePresenter {
 
       dashboard: dto.dashboard,
 
+      dataStatus: sourceFailures.length > 0 ? "partial" : "complete",
+      sourceFailures: Object.freeze(sourceFailures),
+
       isEmpty:
         dto.overview.totalEmployees === 0 &&
         dto.overview.criticalEmployees === 0 &&
         dto.overview.organizationalRisks === 0 &&
         dto.overview.aiSuggestions === 0 &&
         dto.dashboard.isEmpty &&
-        decisionFeed.isEmpty,
+        decisionFeed.isEmpty &&
+        sourceFailures.length === 0,
     })
   }
+}
+
+function sourceLabel(source: string): string {
+  const labels: Readonly<Record<string, string>> = {
+    assessments: "Avaliações",
+    development: "Desenvolvimento",
+    feedback: "Feedback",
+    financeiro: "Financeiro",
+    organization: "Organização",
+    people: "Pessoas",
+    workspace_unavailable: "Workspace de Planning",
+    scenario_unavailable: "Cenário de Planning",
+    workspace_read_failed: "Workspace de Planning",
+    scenario_read_failed: "Cenários de Planning",
+    "planning-timeline": "Timeline de Planning",
+    recruitment: "Recrutamento",
+  }
+
+  return labels[source] ?? "Fonte executiva"
 }
 
 function createNarrative(
@@ -76,7 +106,9 @@ function createNarrative(
       `${alerts} alerta(s) executivo(s) ativo(s).`,
       status === "healthy"
         ? "Nenhum ponto crítico exige ação imediata."
-        : "Priorize os itens destacados no Decision Feed.",
+        : status === "partial"
+          ? "A leitura executiva está incompleta; consulte as fontes indisponíveis."
+          : "Priorize os itens destacados no Decision Feed.",
     ].join(" "),
   })
 }
@@ -84,6 +116,10 @@ function createNarrative(
 function resolveStatus(
   dto: ExecutiveHomeDTO,
 ): ExecutiveHealthStatus {
+  if (dto.sourceFailures.length > 0) {
+    return "partial"
+  }
+
   if (
     dto.overview.criticalEmployees > 0 ||
     dto.overview.organizationalRisks > 0
@@ -110,6 +146,9 @@ function statusLabel(
 
     case "critical":
       return "Crítico"
+
+    case "partial":
+      return "Dados parciais"
   }
 }
 

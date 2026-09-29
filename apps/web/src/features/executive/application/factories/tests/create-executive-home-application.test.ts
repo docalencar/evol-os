@@ -77,5 +77,6 @@ function createDTO(): ExecutiveHomeDTO {
       generatedAt,
       items: Object.freeze([]),
     }),
+    sourceFailures: Object.freeze([]),
   })
 }

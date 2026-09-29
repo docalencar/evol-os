@@ -10,12 +10,20 @@ export type ExecutiveHealthStatus =
   | "healthy"
   | "attention"
   | "critical"
+  | "partial"
+
+export type ExecutiveSourceFailure = Readonly<{
+  source: string
+  kind: "failure" | "unavailable"
+  message: string
+}>
 
 export type ExecutiveHomeDTO = Readonly<{
   generatedAt: string
   overview: ExecutiveOverview
   dashboard: KPIDashboardViewModel
   decisionFeed: DecisionFeedDTO
+  sourceFailures: readonly ExecutiveSourceFailure[]
 }>
 
 export type ExecutiveBriefViewModel = Readonly<{
@@ -43,5 +51,11 @@ export type ExecutiveHomeViewModel = Readonly<{
   narrative: ExecutiveNarrativeViewModel
   decisionFeed: DecisionFeedViewModel
   dashboard: KPIDashboardViewModel
+  dataStatus: "complete" | "partial"
+  sourceFailures: readonly Readonly<{
+    source: string
+    sourceLabel: string
+    kind: "failure" | "unavailable"
+  }>[]
   isEmpty: boolean
 }>

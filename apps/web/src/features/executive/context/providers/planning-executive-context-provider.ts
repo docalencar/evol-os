@@ -48,6 +48,15 @@ export class PlanningExecutiveContextProvider
         ? scenarioResult.value
         : []
 
+    const failures = [
+      ...(workspaceResult.status === "rejected"
+        ? ["workspace_read_failed" as const]
+        : []),
+      ...(scenarioResult.status === "rejected"
+        ? ["scenario_read_failed" as const]
+        : []),
+    ]
+
     const workspaceId =
       resolveWorkspaceId(workspaces)
 
@@ -58,6 +67,9 @@ export class PlanningExecutiveContextProvider
         scenarios,
         workspaceId,
       ),
+      ...(failures.length > 0
+        ? { failures: Object.freeze(failures) }
+        : {}),
     })
   }
 }

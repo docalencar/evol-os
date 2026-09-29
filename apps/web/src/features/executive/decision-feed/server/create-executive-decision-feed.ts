@@ -17,23 +17,14 @@ import type {
   KPIDashboardViewModel,
 } from "@/features/kpi-dashboard/types"
 import {
-  getDepartments,
-} from "@/features/organization/departments"
-import {
-  getPositions,
-} from "@/features/organization/positions"
-import {
-  getTeams,
-} from "@/features/organization/teams"
+  getManagementDepartments,
+  getManagementPeople,
+  getManagementPositions,
+  getManagementTeams,
+} from "@/features/dashboard-read"
 import {
   createPlanningTimelineService,
 } from "@/features/organization-planning/timeline"
-import {
-  getEmployees,
-} from "@/features/people"
-import {
-  getPeopleSummary,
-} from "@/features/people/dashboard/queries/get-people-summary"
 import {
   getJobOpenings,
 } from "@/features/recruitment/job-openings/queries/get-job-openings"
@@ -55,14 +46,11 @@ import {
 } from "../adapters"
 import {
   DecisionFeedAggregator,
+  type DecisionFeedAggregationResult,
 } from "../aggregators"
 import {
   ExecutiveDecisionFeedProviderRegistry,
 } from "../registry"
-import type {
-  DecisionFeedDTO,
-} from "../types"
-
 export type CreateExecutiveDecisionFeedInput =
   Readonly<{
     context: ExecutiveContext
@@ -71,7 +59,7 @@ export type CreateExecutiveDecisionFeedInput =
 
 export async function createExecutiveDecisionFeed(
   input: CreateExecutiveDecisionFeedInput,
-): Promise<DecisionFeedDTO> {
+): Promise<DecisionFeedAggregationResult> {
   const {
     context,
     dashboard,
@@ -84,52 +72,17 @@ export async function createExecutiveDecisionFeed(
   const { currentUser } = await getCurrentCompanyContext()
   const canReadCompetencyIntelligence = isAdministrativeRole(currentUser.role)
 
-  const [
-    jobOpenings,
-    developmentDashboard,
-    assessmentDashboard,
-    feedbackDashboard,
-    peopleSummary,
-    employees,
-    departments,
-    positions,
-    teams,
-  ] = await Promise.all([
-    getJobOpenings(context.companyId),
-
-    getDevelopmentExecutiveDashboard(
+  const jobOpenings = getJobOpenings(context.companyId)
+  const developmentDashboard = getDevelopmentExecutiveDashboard(
       context.companyId,
       canReadCompetencyIntelligence,
-    ),
-
-    getAssessmentExecutiveDashboard(
-      context.companyId,
-    ),
-
-    getFeedbackExecutiveDashboard(
-      context.companyId,
-    ),
-
-    getPeopleSummary(
-      context.companyId,
-    ),
-
-    getEmployees(
-      context.companyId,
-    ),
-
-    getDepartments(
-      context.companyId,
-    ),
-
-    getPositions(
-      context.companyId,
-    ),
-
-    getTeams(
-      context.companyId,
-    ),
-  ])
+    )
+  const assessmentDashboard = getAssessmentExecutiveDashboard(context.companyId)
+  const feedbackDashboard = getFeedbackExecutiveDashboard(context.companyId)
+  const employees = getManagementPeople(context.companyId)
+  const departments = getManagementDepartments(context.companyId)
+  const positions = getManagementPositions(context.companyId)
+  const teams = getManagementTeams(context.companyId)
 
   const registry =
     new ExecutiveDecisionFeedProviderRegistry()
@@ -179,9 +132,14 @@ export async function createExecutiveDecisionFeed(
           context.generatedAt,
           {
             async load() {
+              const people = await employees
               return {
-                summary: peopleSummary,
-                employees,
+                summary: {
+                  total: people.length,
+                  active: people.filter((person) => person.status === "active").length,
+                  inactive: people.filter((person) => person.status === "inactive").length,
+                },
+                employees: people,
               }
             },
           },
@@ -192,10 +150,10 @@ export async function createExecutiveDecisionFeed(
           {
             async load() {
               return {
-                departments,
-                positions,
-                teams,
-                employees,
+                departments: await departments,
+                positions: await positions,
+                teams: await teams,
+                employees: await employees,
               }
             },
           },
@@ -203,24 +161,17 @@ export async function createExecutiveDecisionFeed(
       ])
 
   if (context.scenarioId) {
-    const consultaFinanceira =
-      await criarConsultaFinanceiraExecutiva(
-        context.companyId,
-      )
-
-    const painelFinanceiro =
-      await consultaFinanceira.executar(
-        context.scenarioId,
-      )
-
     registry.register(
       new FinanceiroDecisionFeedProvider(
         context.generatedAt,
         {
           async load() {
+            const consultaFinanceira = await criarConsultaFinanceiraExecutiva(
+              context.companyId,
+            )
             return {
               scenarioId: context.scenarioId!,
-              painel: painelFinanceiro,
+              painel: await consultaFinanceira.executar(context.scenarioId!),
             }
           },
         },
@@ -252,5 +203,5 @@ export async function createExecutiveDecisionFeed(
       context.generatedAt,
     )
 
-  return aggregation.feed
+  return aggregation
 }

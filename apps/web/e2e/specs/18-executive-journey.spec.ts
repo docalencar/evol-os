@@ -20,6 +20,8 @@ const MANAGER: SyntheticRole = "manager"
 const EMPLOYEE: SyntheticRole = "employee"
 const FOREIGN: SyntheticRole = "onboarding"
 const EXECUTIVE_SETUP_TIMEOUT_MS = 120_000
+const EXECUTIVE_DENIAL_FORBIDDEN_CONTENT = /Executive Dashboard|Dados parciais|Workspace de Planning|Avaliação em andamento|Ver contexto|Colaboradores críticos|Riscos organizacionais/i
+const AUTHORIZATION_INTERNALS = /\b(owner|admin|hr|manager|employee|role|permission|unauthorized|forbidden|authorization)\b/i
 
 let cached: RunManifest | null = null
 let assessmentCycleId = ""
@@ -116,10 +118,11 @@ async function expectOpaqueExecutiveDenial(page: Page, role: SyntheticRole): Pro
   await switchTo(page, role)
   await expect(page.getByRole("link", { name: "Executive", exact: true })).toHaveCount(0)
   await page.goto("/app/executive")
-  await expect(page.getByRole("heading", { name: "Executive Dashboard" })).toHaveCount(0)
-  await expect(page.getByText(manifest().companyName ?? "__missing_company__", { exact: true }))
-    .toHaveCount(0)
-  await expect(page.getByText(`E-E2E Cycle ${manifest().runId}`, { exact: false })).toHaveCount(0)
+  const denial = page.locator("main")
+  await expect(denial.getByRole("heading", { name: "404" })).toBeVisible()
+  await expect(denial).not.toContainText(EXECUTIVE_DENIAL_FORBIDDEN_CONTENT)
+  await expect(denial).not.toContainText(assessmentCycleId)
+  await expect(denial).not.toContainText(AUTHORIZATION_INTERNALS)
 }
 
 test.describe("Executive MVP hosted journey", () => {

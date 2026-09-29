@@ -60,6 +60,24 @@ test("authorized and denied role matrices stay exact", () => {
   assert.match(spec, /getByRole\("link", \{ name: "Executive", exact: true \}\)/)
 })
 
+test("same-tenant denial protects Executive content without denying authenticated shell context", () => {
+  const helper = /async function expectOpaqueExecutiveDenial[\s\S]*?\n\}/.exec(spec)?.[0] ?? ""
+
+  assert.match(helper, /getByRole\("link", \{ name: "Executive", exact: true \}\)[\s\S]*toHaveCount\(0\)/)
+  assert.match(helper, /page\.goto\("\/app\/executive"\)/)
+  assert.match(helper, /getByRole\("heading", \{ name: "404" \}\)[\s\S]*toBeVisible\(\)/)
+  assert.match(helper, /EXECUTIVE_DENIAL_FORBIDDEN_CONTENT/)
+  assert.match(helper, /assessmentCycleId/)
+  assert.match(helper, /AUTHORIZATION_INTERNALS/)
+  assert.doesNotMatch(helper, /manifest\(\)\.companyName/)
+
+  const foreignProof = /await switchTo\(page, FOREIGN\)([\s\S]*?)steps\.add\(9\)/
+    .exec(spec)?.[1] ?? ""
+  assert.match(foreignProof, /manifest\(\)\.companyName/)
+  assert.match(foreignProof, /assessmentCycleId/)
+  assert.match(foreignProof, /companyId\(\)/)
+})
+
 test("partial remains visible beside factual Workforce and Assessment evidence", () => {
   assert.match(spec, /factualEmployeeCount/)
   assert.match(spec, /Avaliação em andamento:/)

@@ -11,6 +11,23 @@ const executiveSource = readFileSync(resolve(import.meta.dirname,
   "../src/features/executive/server/current-executive-home-source.ts"), "utf8")
 const executiveBoundary = readFileSync(resolve(import.meta.dirname,
   "../src/features/executive/tests/executive-data-boundary-guard.test.ts"), "utf8")
+const assessmentTemplateTypes = readFileSync(resolve(import.meta.dirname,
+  "../src/features/assessments/types/assessment-template.ts"), "utf8")
+
+test("the Executive fixture uses a canonical Assessment template type", () => {
+  const canonical = /ASSESSMENT_TEMPLATE_TYPES\s*=\s*\[([\s\S]*?)\]\s*as const/
+    .exec(assessmentTemplateTypes)?.[1].match(/"([^"]+)"/g)?.map((value) => value.slice(1, -1)) ?? []
+  const createCall = /create_tenant_assessment_template_v1",\s*\{([\s\S]*?)\}\)/
+    .exec(spec)?.[1] ?? ""
+  const fixtureType = /p_type:\s*"([^"]+)"/.exec(createCall)?.[1]
+
+  assert.ok(canonical.length > 0, "the canonical Assessment template taxonomy must be readable")
+  assert.ok(fixtureType, "the Executive template fixture must declare its type explicitly")
+  assert.ok(
+    canonical.includes(fixtureType),
+    `unsupported Executive Assessment template type: ${fixtureType}`,
+  )
+})
 
 test("the future journey owns both tenants and all frozen steps", () => {
   assert.match(spec, /ensureRunOwnedForeignTenant/)

@@ -65,7 +65,7 @@ async function prepareFactualAssessment(): Promise<void> {
   const run = manifest().runId
   const template = await rpc(OWNER, "create_tenant_assessment_template_v1", {
     p_company_id: companyId(), p_name: `E-E2E ${run}`, p_description: "Executive E2E",
-    p_instructions: "Executive factual source.", p_type: "performance", p_status: "active",
+    p_instructions: "Executive factual source.", p_type: "annual", p_status: "active",
   }) as Record<string, unknown>
   const section = await rpc(OWNER, "create_tenant_assessment_section_v1", {
     p_company_id: companyId(), p_assessment_template_id: template.assessmentTemplateId,

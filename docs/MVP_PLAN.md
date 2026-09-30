@@ -240,4 +240,5 @@ potencial, sucessão e planos estratégicos permanecem abertos. **Liderança
 (Jornada 5)** está comprovada em Review pelo run `260926114143-bf6bb4`, fechada em
 `Execution/L-E2E11-LEADERSHIP-JOURNEY-CLOSURE.md`. Decisão executiva e o restante
 de RH Estratégico continuam **não comprovados**: Executive permanece `Parcial` e o
-próximo passo canônico é sua readiness discovery.
+próximo passo canônico, após contrato, boundary, cutover e harness publicados, é
+uma nova prova hosted governada do contrato mínimo Executive em Review.

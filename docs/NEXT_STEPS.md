@@ -5,14 +5,14 @@
 > Estado canônico em [`PROJECT_STATE.md`](./PROJECT_STATE.md).
 
 ```
-SLICE = E-P0 — readiness discovery de Executive / decisão executiva
+SLICE = E-E2E1 — prova hosted do contrato mínimo Executive
 PATH  = GOVERNED
-STATE = AGUARDANDO AUTORIZAÇÃO
+STATE = READY FOR HOSTED AUTHORIZATION
 ```
 
-O nome `E-P0` segue o padrão já usado por `D-P0` (Development) e `PLN-SEC0`/`L-P1`
-(discovery antes de contrato): o primeiro slice de um domínio é discovery read-only,
-não implementação. Confirmar o rótulo na abertura do slice.
+O contrato mínimo e o harness estão publicados. Este estado não autoriza a
+execução: o próximo run hosted continua dependendo de autorização humana
+explícita e deve ser uma única execução governada em Review.
 
 ## KNOWN_STATE
 
@@ -37,23 +37,37 @@ não implementação. Confirmar o rótulo na abertura do slice.
   `e6916b7a…` permanece `UNVERIFIABLE_FROM_DEPLOYMENT`. Fechamento em
   [`Execution/L-E2E11-LEADERSHIP-JOURNEY-CLOSURE.md`](./Execution/L-E2E11-LEADERSHIP-JOURNEY-CLOSURE.md).
   O run é terminal e não deve ser repetido;
-- decisão executiva e o restante de RH Estratégico permanecem posteriores e não
-  provados;
+- o contrato mínimo Executive está congelado em
+  [`Execution/E-P1-MINIMUM-EXECUTIVE-DECISION-CONTRACT.md`](./Execution/E-P1-MINIMUM-EXECUTIVE-DECISION-CONTRACT.md),
+  e o contrato/harness hosted está congelado em
+  [`Execution/E-E2E0-HOSTED-EXECUTIVE-E2E-CONTRACT.md`](./Execution/E-E2E0-HOSTED-EXECUTIVE-E2E-CONTRACT.md);
+- E-DB1 e E-DATA1 estão publicados. A leitura governada de Review confirmou
+  `E_DB1_REVIEW_PRESENCE=PASS`, migration `0141` presente exatamente uma vez,
+  `authenticated` com o `EXECUTE` contratado e nenhuma mutação remota;
+- E-E2E2, E-E2E4 e E-E2E6 corrigiram somente o harness Executive. A correção
+  E-E2E6 está na canonical main `1ade489eba49df607b450d3b74ce91adad7360d1`;
+- o contrato mínimo Executive ainda **não** está hosted-proven. O run anterior
+  `260929163222-d8b96a` provou os passos 1–7 e parou em uma asserção obsoleta de
+  negação opaca, agora reancorada; passos posteriores não podem ser inferidos;
+- turnover, clima, desempenho agregado, potencial/Nine Box, sucessão e planos
+  estratégicos permanecem indisponíveis e fora do contrato mínimo Executive;
 - o drift global de ACL em Review permanece `OPEN / SEPARATE SECURITY DEBT`, fora
   do fechamento Planning. Production segue `UNKNOWN / REVERIFY BEFORE USE` e
   Legacy fora dos alvos.
 
 ## EXPECTED_NEXT
 
-Abrir a **readiness discovery de Executive / decisão executiva** — read-only,
-contra o repositório, no mesmo formato que `D-P0` e a discovery de Planning
-seguiram: provar o estado atual antes de redesenhar produto. Executive está
-`Parcial` em [`MVP_PLAN.md`](./MVP_PLAN.md) e depende dos domínios operacionais, de
-Planning e de KPI.
+Após autorização humana explícita, executar **exatamente um novo run hosted
+governado** do contrato mínimo Executive na Review canônica, usando somente:
 
-Não implementar Executive nesta etapa, não congelar contrato hosted e não executar
-hosted E2E. Liderança está fechada; isso abre o caminho para o próximo domínio, não
-o executa.
+```bash
+bash scripts/local/run-e-e2e0-executive-review.sh
+```
+
+O run deve refazer seu preflight, vincular a deployment pelo asset fingerprint,
+preservar a disciplina de sem retry cego e provar os 12 passos em uma única
+execução. PASS fecha apenas o contrato mínimo Executive; não conclui toda a
+Jornada 6 nem promove as capabilities explicitamente indisponíveis.
 
 Nenhum slice de Development está aberto. `cancel_development_plan_v1` continua
 sem chamador na aplicação, deliberadamente fora da jornada congelada; reabrir
@@ -74,5 +88,8 @@ D-E2E2.
 
 ## STOP_CONDITIONS
 
-Este documento registra estado. Não autoriza execução hosted, promoção remota,
-mudança de produto, nem reabertura de slice fechado.
+Este documento registra estado e próximo passo; não substitui autorização humana
+para a execução hosted. Drift de deployment, identidade de Review, migration
+`0141`, guards, estado protegido ou canonical main interrompe o run antes de
+fixtures. Não autoriza promoção remota, mudança de produto nem reabertura de
+slice fechado.

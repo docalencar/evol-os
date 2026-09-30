@@ -14,13 +14,13 @@
 
 | Campo | Valor |
 | --- | --- |
-| `CURRENT_DOMAIN` | Executive / decisão executiva — contrato mínimo publicado, hosted ainda não provado |
-| `CURRENT_SLICE` | E-E2E1 — nova prova hosted governada do contrato mínimo Executive · `READY FOR HOSTED AUTHORIZATION` |
-| `LAST_CANONICAL_MAIN` | `1ade489eba49df607b450d3b74ce91adad7360d1`; autoridade factual = `git rev-parse origin/main` |
+| `CURRENT_DOMAIN` | Executive / decisão executiva — contrato mínimo `CLOSED / PASS / HOSTED-PROVEN`; Jornada 6 permanece parcial |
+| `CURRENT_SLICE` | T-P0 — readiness discovery de Turnover · `AWAITING AUTHORIZATION` |
+| `LAST_CANONICAL_MAIN` | `5c348c88adcd9800e4eb601380705d3e1f200e15`; autoridade factual = `git rev-parse origin/main` |
 | `LATEST_COMMITTED_MIGRATION` | `0141` — company Assessment summary trusted read boundary |
 | `LATEST_REVIEW_DB_VERSION` | `0141` — presença exata e `authenticated EXECUTE` verificados read-only |
-| `HOSTED_E2E_STATE` | E2E-0…E2E-6, PLN-P6 e Liderança `CLOSED / PASS`. Executive: contrato mínimo e harness publicados; run `260929163222-d8b96a` provou somente passos 1–7 e parou em `STALE_TEST`, corrigido por E-E2E6; contrato mínimo permanece **NOT HOSTED-PROVEN** |
-| `NEXT_GATE` | após autorização humana explícita, exatamente um novo run hosted governado Executive na Review canônica; PASS dos 12 passos fecha somente o contrato mínimo, não toda a Jornada 6 |
+| `HOSTED_E2E_STATE` | E2E-0…E2E-6, PLN-P6, Liderança e contrato mínimo Executive `CLOSED / PASS`. Executive: run `260930023107-6e005e`, **8/8 PASS**, passos **1–12 PASS**, uma execução sem retry, build binding `assets:a6412db926663e75`, terminal **RETIRED** |
+| `NEXT_GATE` | discovery read-only de Turnover, primeira capacidade ainda aberta após People Analytics na Jornada 6; nenhuma implementação autorizada |
 
 Congelar o contrato **não equivale** a um PASS hosted: o D-E2E0 fixa o que precisa
 ser provado. O PASS correspondente existe e está registrado em
@@ -62,6 +62,19 @@ A identidade provada é de **build**, não de commit: `assets:c3a7259bdd14e5d3` 
 17 assets servidos. O SHA `e6916b7a…` é declarado e permanece
 `UNVERIFIABLE_FROM_DEPLOYMENT` — a aplicação não serve metadado de build. Liderança
 fechada **não** fecha a Jornada 6 nem a decisão executiva.
+
+### Fechamento do contrato mínimo Executive
+
+O contrato mínimo Executive está `CLOSED / PASS / HOSTED-PROVEN` pelo run
+`260930023107-6e005e`: 8/8 testes e passos 1–12 PASS em uma execução, sem retry,
+com Workforce Health e Decision Feed factuais, degradação Planning honesta,
+negações opacas, isolamento entre tenants e boundaries trusted provados. O build
+binding é `assets:a6412db926663e75` sobre 17 assets; o SHA declarado permanece
+`UNVERIFIABLE_FROM_DEPLOYMENT`. Fechamento em
+`Execution/E-E2E1-HOSTED-EXECUTIVE-MINIMUM-CONTRACT-CLOSURE.md`.
+
+Esse recorte não fecha a Jornada 6. Pela ordem normativa, **Turnover** é a próxima
+capacidade aberta e requer discovery antes de contrato ou implementação.
 
 ## Precedência
 

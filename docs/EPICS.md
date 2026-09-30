@@ -73,9 +73,10 @@ O recorte MVP de **Liderança** está `CLOSED / PASS / HOSTED-PROVEN` pelo run
 `260926114143-bf6bb4`, fechado em
 [`Execution/L-E2E11-LEADERSHIP-JOURNEY-CLOSURE.md`](./Execution/L-E2E11-LEADERSHIP-JOURNEY-CLOSURE.md):
 fila de atenção derivada ao vivo sobre os direct reports atuais, roteamento para o
-domínio dono e rederivação a partir de fatos duráveis. A integração com decisões
-executivas **não** está provada e Executive permanece `Parcial`; alertas duráveis,
-roll-ups, scores e reconhecimento avulso seguem fora do contrato.
+domínio dono e rederivação a partir de fatos duráveis. A integração mínima com
+decisões executivas está hosted-proven pelo run `260930023107-6e005e`; Executive
+permanece `Parcial` porque alertas duráveis, roll-ups, scores e reconhecimento
+avulso seguem fora do contrato.
 
 ## Desenvolvimento — parcial
 
@@ -128,6 +129,11 @@ consulta financeira.
 
 Restante: respeitar integralmente autorização das fontes e evoluir custo somente
 depois da definição de dados estruturais de remuneração.
+
+O contrato mínimo Executive foi provado em Review por E-E2E1: Workforce Health e
+Decision Feed factuais, falha parcial explícita e isolamento sem acesso direto a
+People. Isso não entrega turnover, clima, desempenho agregado, potencial/Nine
+Box, sucessão ou planos estratégicos.
 
 ## Talent Intelligence — parcial
 

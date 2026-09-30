@@ -14,13 +14,13 @@
 
 | Campo | Valor |
 | --- | --- |
-| `CURRENT_DOMAIN` | Liderança (Jornada 5) — `CLOSED / PASS / HOSTED-PROVEN`; próximo domínio normativo ainda não aberto |
-| `CURRENT_SLICE` | L-E2E11 — fechamento canônico da jornada Liderança · `DOCUMENTATION-ONLY` |
-| `LAST_CANONICAL_MAIN` | `e6916b7a3125535154badd25186ee91c84f12a80`; autoridade factual = `git rev-parse origin/main` |
-| `LATEST_COMMITTED_MIGRATION` | `0140` — trusted Leadership attention read boundary |
-| `LATEST_REVIEW_DB_VERSION` | `0140` — `APPLIED / VERIFIED` |
-| `HOSTED_E2E_STATE` | E2E-0…E2E-6, PLN-P6 e Liderança `CLOSED / PASS`. Liderança: run `260926114143-bf6bb4`, **8/8 PASS**, passos **1–12 PASS**, build binding `assets:c3a7259bdd14e5d3` (17 assets), SHA declarado `e6916b7a…` com `commitShaVerification = UNVERIFIABLE_FROM_DEPLOYMENT`, terminal **RETIRED**. Fechamento em `Execution/L-E2E11-LEADERSHIP-JOURNEY-CLOSURE.md` |
-| `NEXT_GATE` | readiness discovery do próximo domínio normativo — Executive / decisão executiva, `Parcial` em `MVP_PLAN.md`. Nenhuma implementação autorizada; a ordem canônica pede discovery antes de contrato, boundary e cutover |
+| `CURRENT_DOMAIN` | Executive / decisão executiva — contrato mínimo publicado, hosted ainda não provado |
+| `CURRENT_SLICE` | E-E2E1 — nova prova hosted governada do contrato mínimo Executive · `READY FOR HOSTED AUTHORIZATION` |
+| `LAST_CANONICAL_MAIN` | `1ade489eba49df607b450d3b74ce91adad7360d1`; autoridade factual = `git rev-parse origin/main` |
+| `LATEST_COMMITTED_MIGRATION` | `0141` — company Assessment summary trusted read boundary |
+| `LATEST_REVIEW_DB_VERSION` | `0141` — presença exata e `authenticated EXECUTE` verificados read-only |
+| `HOSTED_E2E_STATE` | E2E-0…E2E-6, PLN-P6 e Liderança `CLOSED / PASS`. Executive: contrato mínimo e harness publicados; run `260929163222-d8b96a` provou somente passos 1–7 e parou em `STALE_TEST`, corrigido por E-E2E6; contrato mínimo permanece **NOT HOSTED-PROVEN** |
+| `NEXT_GATE` | após autorização humana explícita, exatamente um novo run hosted governado Executive na Review canônica; PASS dos 12 passos fecha somente o contrato mínimo, não toda a Jornada 6 |
 
 Congelar o contrato **não equivale** a um PASS hosted: o D-E2E0 fixa o que precisa
 ser provado. O PASS correspondente existe e está registrado em

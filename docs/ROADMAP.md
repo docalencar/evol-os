@@ -1,17 +1,20 @@
 # Evol OS — Roadmap
 
-> **Estado atual (2026-09-25; baseline = `main`/HEAD
-> `800ceb2282a4c9d6b58533455bc93d8bc4818ac1`).** Development e a jornada
+> **Estado atual (2026-09-30; baseline = `main`/HEAD
+> `5c348c88adcd9800e4eb601380705d3e1f200e15`).** Development e a jornada
 > operacional de Organization Planning estão `CLOSED / PASS / HOSTED-PROVEN`.
 > Planning fechou no run `260924115952-39d810`, com 9/9 testes e passos 1–19
 > PASS em uma execução sem retry. Isso não conclui a Jornada 6 — RH Estratégico.
 > A **Jornada 5 — Liderança** também está `CLOSED / PASS / HOSTED-PROVEN`: run
 > `260926114143-bf6bb4`, 8/8 testes e passos 1–12 PASS numa execução, terminal
 > RETIRED, ligada ao build `assets:c3a7259bdd14e5d3`; o SHA declarado permanece
-> `UNVERIFIABLE_FROM_DEPLOYMENT`. A próxima prioridade normativa é a **readiness
-> discovery de Executive / decisão executiva**, conforme `NEXT_STEPS.md`; decisão
-> executiva e as capacidades restantes de RH Estratégico permanecem abertas e não
-> provadas. O drift global de ACL em
+> `UNVERIFIABLE_FROM_DEPLOYMENT`. O contrato mínimo Executive também está
+> `CLOSED / PASS / HOSTED-PROVEN`: run `260930023107-6e005e`, 8/8 testes e passos
+> 1–12 PASS em uma execução sem retry, terminal RETIRED, build binding
+> `assets:a6412db926663e75`; o SHA declarado permanece
+> `UNVERIFIABLE_FROM_DEPLOYMENT`. A Jornada 6 continua parcial. Pela ordem
+> normativa, a próxima prioridade é a **readiness discovery de Turnover**,
+> conforme `NEXT_STEPS.md`. O drift global de ACL em
 > Review é dívida de segurança separada. Production:
 > `UNKNOWN / REVERIFY BEFORE USE`. Legacy:
 > `NOT A PROMOTION TARGET`. O corpo histórico abaixo preserva programas e

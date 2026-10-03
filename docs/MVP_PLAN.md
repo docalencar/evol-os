@@ -159,6 +159,13 @@ decisões humanas.
 - **Documentação:** README local de Executive Context, KPI Dashboard e
   `docs/EPICS.md`.
 - **PRs relacionadas:** #57 e #59–#76.
+- **Evidência hosted do contrato mínimo:** E-E2E1 `CLOSED / PASS`; run
+  `260930023107-6e005e`, canonical main declarada
+  `5c348c88adcd9800e4eb601380705d3e1f200e15`, 8/8 testes e passos 1–12 PASS em
+  uma execução sem retry. Ver
+  `Execution/E-E2E1-HOSTED-EXECUTIVE-MINIMUM-CONTRACT-CLOSURE.md`. Executive
+  permanece `Parcial` porque as capacidades restantes da Jornada 6 não integram
+  esse contrato.
 
 ### KPI
 
@@ -233,12 +240,13 @@ puderem ser executadas com autorização e persistência confiáveis.
 | PLN-P6 | Jornada operacional de Organization Planning | CLOSED / PASS — passos 1–19 HOSTED-PROVEN |
 | L-P1/L-DB1/L-P2 | Contrato, trusted read boundary e cutover de Liderança | CLOSED / PASS |
 | L-E2E11 | Jornada de Liderança ponta a ponta | CLOSED / PASS — passos 1–12 HOSTED-PROVEN |
+| E-E2E1 | Contrato mínimo Executive | CLOSED / PASS — passos 1–12 HOSTED-PROVEN |
 
 Desenvolvimento e a jornada operacional de Planning estão comprovados em Review.
 **Planning não equivale à Jornada 6**: turnover, clima, desempenho agregado,
 potencial, sucessão e planos estratégicos permanecem abertos. **Liderança
 (Jornada 5)** está comprovada em Review pelo run `260926114143-bf6bb4`, fechada em
-`Execution/L-E2E11-LEADERSHIP-JOURNEY-CLOSURE.md`. Decisão executiva e o restante
-de RH Estratégico continuam **não comprovados**: Executive permanece `Parcial` e o
-próximo passo canônico, após contrato, boundary, cutover e harness publicados, é
-uma nova prova hosted governada do contrato mínimo Executive em Review.
+`Execution/L-E2E11-LEADERSHIP-JOURNEY-CLOSURE.md`. O contrato mínimo Executive
+também está comprovado em Review, sem concluir as capacidades restantes de RH
+Estratégico. Executive permanece `Parcial`; pela ordem normativa da Jornada 6, a
+próxima capacidade aberta é **Turnover**, sujeita primeiro a discovery read-only.

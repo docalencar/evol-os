@@ -5,14 +5,14 @@
 > Estado canônico em [`PROJECT_STATE.md`](./PROJECT_STATE.md).
 
 ```
-SLICE = E-E2E1 — prova hosted do contrato mínimo Executive
+SLICE = T-P0 — readiness discovery de Turnover
 PATH  = GOVERNED
-STATE = READY FOR HOSTED AUTHORIZATION
+STATE = AGUARDANDO AUTORIZAÇÃO
 ```
 
-O contrato mínimo e o harness estão publicados. Este estado não autoriza a
-execução: o próximo run hosted continua dependendo de autorização humana
-explícita e deve ser uma única execução governada em Review.
+O contrato mínimo Executive está fechado e não deve ser repetido. O próximo
+passo é discovery read-only da primeira capacidade seguinte na ordem normativa
+da Jornada 6; não implementação.
 
 ## KNOWN_STATE
 
@@ -46,9 +46,12 @@ explícita e deve ser uma única execução governada em Review.
   `authenticated` com o `EXECUTE` contratado e nenhuma mutação remota;
 - E-E2E2, E-E2E4 e E-E2E6 corrigiram somente o harness Executive. A correção
   E-E2E6 está na canonical main `1ade489eba49df607b450d3b74ce91adad7360d1`;
-- o contrato mínimo Executive ainda **não** está hosted-proven. O run anterior
-  `260929163222-d8b96a` provou os passos 1–7 e parou em uma asserção obsoleta de
-  negação opaca, agora reancorada; passos posteriores não podem ser inferidos;
+- o contrato mínimo Executive está `CLOSED / PASS / HOSTED-PROVEN`: run
+  `260930023107-6e005e`, canonical main declarada
+  `5c348c88adcd9800e4eb601380705d3e1f200e15`, 8/8 testes, passos 1–12 PASS em
+  uma execução sem retry, build binding `assets:a6412db926663e75` sobre 17 assets,
+  SHA declarado `UNVERIFIABLE_FROM_DEPLOYMENT` e terminal `RETIRED`. Fechamento em
+  [`Execution/E-E2E1-HOSTED-EXECUTIVE-MINIMUM-CONTRACT-CLOSURE.md`](./Execution/E-E2E1-HOSTED-EXECUTIVE-MINIMUM-CONTRACT-CLOSURE.md);
 - turnover, clima, desempenho agregado, potencial/Nine Box, sucessão e planos
   estratégicos permanecem indisponíveis e fora do contrato mínimo Executive;
 - o drift global de ACL em Review permanece `OPEN / SEPARATE SECURITY DEBT`, fora
@@ -57,17 +60,11 @@ explícita e deve ser uma única execução governada em Review.
 
 ## EXPECTED_NEXT
 
-Após autorização humana explícita, executar **exatamente um novo run hosted
-governado** do contrato mínimo Executive na Review canônica, usando somente:
-
-```bash
-bash scripts/local/run-e-e2e0-executive-review.sh
-```
-
-O run deve refazer seu preflight, vincular a deployment pelo asset fingerprint,
-preservar a disciplina de sem retry cego e provar os 12 passos em uma única
-execução. PASS fecha apenas o contrato mínimo Executive; não conclui toda a
-Jornada 6 nem promove as capabilities explicitamente indisponíveis.
+Após autorização humana explícita, abrir discovery **read-only** de Turnover.
+Determinar intenção de produto, atores, fatos canônicos disponíveis, boundaries,
+privacidade, apresentação honesta de ausência e o menor journey demonstrável.
+Não implementar, criar migration, congelar E2E ou tratar heurística como risco de
+desligamento factual nessa discovery.
 
 Nenhum slice de Development está aberto. `cancel_development_plan_v1` continua
 sem chamador na aplicação, deliberadamente fora da jornada congelada; reabrir
@@ -88,8 +85,6 @@ D-E2E2.
 
 ## STOP_CONDITIONS
 
-Este documento registra estado e próximo passo; não substitui autorização humana
-para a execução hosted. Drift de deployment, identidade de Review, migration
-`0141`, guards, estado protegido ou canonical main interrompe o run antes de
-fixtures. Não autoriza promoção remota, mudança de produto nem reabertura de
-slice fechado.
+Este documento registra estado e próximo passo; não autoriza implementação,
+hosted E2E, promoção remota, mudança de produto nem reabertura de slice fechado.
+Turnover exige discovery e decisão baseada em fatos antes de qualquer contrato.

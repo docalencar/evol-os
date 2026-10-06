@@ -15,12 +15,12 @@
 | Campo | Valor |
 | --- | --- |
 | `CURRENT_DOMAIN` | Executive / decisão executiva — contrato mínimo `CLOSED / PASS / HOSTED-PROVEN`; Jornada 6 permanece parcial |
-| `CURRENT_SLICE` | T-DB1 — trusted Turnover boundary discovery · `AWAITING AUTHORIZATION` |
-| `LAST_CANONICAL_MAIN` | `d9a830456499f4acccd3d5b503c0a1c8ec376c89`; autoridade factual = `git rev-parse origin/main` |
+| `CURRENT_SLICE` | T-DB1 — boundary discovery closure · `AWAITING PUBLICATION` |
+| `LAST_CANONICAL_MAIN` | `dd4a56a883d8a1f0da8ab6d991b3be181b0c921a`; autoridade factual = `git rev-parse origin/main` |
 | `LATEST_COMMITTED_MIGRATION` | `0141` — company Assessment summary trusted read boundary |
 | `LATEST_REVIEW_DB_VERSION` | `0141` — presença exata e `authenticated EXECUTE` verificados read-only |
 | `HOSTED_E2E_STATE` | E2E-0…E2E-6, PLN-P6, Liderança e contrato mínimo Executive `CLOSED / PASS`. Executive: run `260930023107-6e005e`, **8/8 PASS**, passos **1–12 PASS**, uma execução sem retry, build binding `assets:a6412db926663e75`, terminal **RETIRED** |
-| `NEXT_GATE` | T-DB1 read-only: descobrir a menor estrutura durável e purpose-bound para o contrato Turnover; nenhuma implementação autorizada |
+| `NEXT_GATE` | após publicar T-DB1, autorização separada para T-DB2; nenhuma implementação autorizada |
 
 Congelar o contrato **não equivale** a um PASS hosted: o D-E2E0 fixa o que precisa
 ser provado. O PASS correspondente existe e está registrado em
@@ -75,7 +75,8 @@ binding é `assets:a6412db926663e75` sobre 17 assets; o SHA declarado permanece
 
 Esse recorte não fecha a Jornada 6. O contrato mínimo de **Turnover** está
 congelado em `Execution/T-P1-MINIMUM-TURNOVER-CONTRACT.md`; a capacidade continua
-não implementada e requer T-DB1 antes de qualquer decisão de boundary.
+não implementada. T-DB1 recomendou acumulador mensal company-total com coverage
+watermark; a precisão aprovada distingue mês anterior fechado de mês atual MTD.
 
 ## Precedência
 

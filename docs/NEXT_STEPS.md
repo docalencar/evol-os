@@ -5,15 +5,16 @@
 > Estado canônico em [`PROJECT_STATE.md`](./PROJECT_STATE.md).
 
 ```
-SLICE = T-DB1 — discovery da boundary trusted de Turnover
+SLICE = T-DB1 — fechamento documental da discovery de Turnover
 PATH  = GOVERNED
-STATE = AGUARDANDO AUTORIZAÇÃO
+STATE = AGUARDANDO PUBLICAÇÃO
 ```
 
 O contrato mínimo de Turnover está congelado em
 [`Execution/T-P1-MINIMUM-TURNOVER-CONTRACT.md`](./Execution/T-P1-MINIMUM-TURNOVER-CONTRACT.md).
-O próximo passo é descobrir a menor estrutura durável e purpose-bound que prove
-os dois períodos contratados; não implementação.
+T-DB1 recomendou um acumulador mensal company-total com watermark de cobertura e
+boundary agregada. A decisão MTD fecha seu único bloqueio; a implementação ainda
+não está aberta.
 
 ## KNOWN_STATE
 
@@ -59,16 +60,19 @@ os dois períodos contratados; não implementação.
   apenas transições canônicas para `terminated`; headcount inclui `active` e
   `on_leave`; janela é mês UTC atual + anterior; histórico incompleto permanece
   indisponível e rehire/causa do desligamento ficam fora do MVP;
+- o mês anterior é fechado; o mês atual é explicitamente MTD e usa
+  `headcount_as_of` com `generated_at/headcount_as_of_at`, sem confundir o instante
+  factual observado com `period_end_exclusive`;
 - o drift global de ACL em Review permanece `OPEN / SEPARATE SECURITY DEBT`, fora
   do fechamento Planning. Production segue `UNKNOWN / REVERIFY BEFORE USE` e
   Legacy fora dos alvos.
 
 ## EXPECTED_NEXT
 
-Após autorização humana explícita, abrir T-DB1 em discovery **read-only**.
-Determinar a menor estrutura durável e purpose-bound capaz de fornecer numerador
-e headcount inicial/final para os dois meses contratados. Não presumir um modelo
-histórico amplo, criar migration/RPC, implementar produto ou inferir história.
+Após publicação desta precisão documental e autorização humana explícita, abrir
+T-DB2 para implementar a menor estrutura durável e purpose-bound aprovada. Não
+presumir modelo histórico amplo, fazer backfill, inferir história ou ampliar os
+dois períodos contratados.
 
 Nenhum slice de Development está aberto. `cancel_development_plan_v1` continua
 sem chamador na aplicação, deliberadamente fora da jornada congelada; reabrir
@@ -91,4 +95,4 @@ D-E2E2.
 
 Este documento registra estado e próximo passo; não autoriza implementação,
 hosted E2E, promoção remota, mudança de produto nem reabertura de slice fechado.
-T-DB1 exige discovery antes de qualquer decisão de schema, migration ou RPC.
+Este estado não autoriza T-DB2, migration, RPC, produto ou ambiente remoto.

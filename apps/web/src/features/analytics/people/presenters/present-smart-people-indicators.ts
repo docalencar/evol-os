@@ -16,11 +16,6 @@ const metadata: Record<
   SmartIndicatorId,
   { title: string; description: string }
 > = {
-  turnover: {
-    title: "Turnover do período",
-    description:
-      "Desligamentos sobre o headcount médio do mês.",
-  },
   hires: {
     title: "Contratações no período",
     description:

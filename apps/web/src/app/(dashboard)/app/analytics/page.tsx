@@ -2,10 +2,13 @@ import { PageHeader } from "@/components/shared/page-header"
 import {
   getPeopleAnalyticsDashboard,
   getSmartPeopleIndicators,
+  getCompanyTurnoverForAnalytics,
   PeopleAnalyticsDashboardWidget,
   presentPeopleAnalyticsDashboard,
   presentSmartPeopleIndicators,
+  presentTurnoverAnalytics,
   SmartPeopleIndicatorsWidget,
+  TurnoverAnalyticsWidget,
 } from "@/features/analytics"
 import { getCurrentCompanyContext } from "@/lib/supabase/supabase/current-company"
 
@@ -13,9 +16,10 @@ export default async function AnalyticsPage() {
   const { companyId } = await getCurrentCompanyContext()
 
   try {
-    const [dashboard, smartIndicators] = await Promise.all([
+    const [dashboard, smartIndicators, turnover] = await Promise.all([
       getPeopleAnalyticsDashboard(companyId),
       getSmartPeopleIndicators(companyId),
+      getCompanyTurnoverForAnalytics(companyId),
     ])
 
     return (
@@ -37,6 +41,9 @@ export default async function AnalyticsPage() {
             )}
           />
         </section>
+        <TurnoverAnalyticsWidget
+          turnover={presentTurnoverAnalytics(turnover)}
+        />
         <SmartPeopleIndicatorsWidget
           dashboard={presentSmartPeopleIndicators(
             smartIndicators

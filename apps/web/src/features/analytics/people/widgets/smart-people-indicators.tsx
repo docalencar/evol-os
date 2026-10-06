@@ -24,7 +24,7 @@ export function SmartPeopleIndicatorsWidget({
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {dashboard.indicators.map((indicator) => (
           <SmartIndicatorCard
             key={indicator.id}

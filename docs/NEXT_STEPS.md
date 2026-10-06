@@ -5,14 +5,15 @@
 > Estado canônico em [`PROJECT_STATE.md`](./PROJECT_STATE.md).
 
 ```
-SLICE = T-P0 — readiness discovery de Turnover
+SLICE = T-DB1 — discovery da boundary trusted de Turnover
 PATH  = GOVERNED
 STATE = AGUARDANDO AUTORIZAÇÃO
 ```
 
-O contrato mínimo Executive está fechado e não deve ser repetido. O próximo
-passo é discovery read-only da primeira capacidade seguinte na ordem normativa
-da Jornada 6; não implementação.
+O contrato mínimo de Turnover está congelado em
+[`Execution/T-P1-MINIMUM-TURNOVER-CONTRACT.md`](./Execution/T-P1-MINIMUM-TURNOVER-CONTRACT.md).
+O próximo passo é descobrir a menor estrutura durável e purpose-bound que prove
+os dois períodos contratados; não implementação.
 
 ## KNOWN_STATE
 
@@ -54,17 +55,20 @@ da Jornada 6; não implementação.
   [`Execution/E-E2E1-HOSTED-EXECUTIVE-MINIMUM-CONTRACT-CLOSURE.md`](./Execution/E-E2E1-HOSTED-EXECUTIVE-MINIMUM-CONTRACT-CLOSURE.md);
 - turnover, clima, desempenho agregado, potencial/Nine Box, sucessão e planos
   estratégicos permanecem indisponíveis e fora do contrato mínimo Executive;
+- T-P1 congelou Turnover company-total para `owner/admin/hr`: desligamentos são
+  apenas transições canônicas para `terminated`; headcount inclui `active` e
+  `on_leave`; janela é mês UTC atual + anterior; histórico incompleto permanece
+  indisponível e rehire/causa do desligamento ficam fora do MVP;
 - o drift global de ACL em Review permanece `OPEN / SEPARATE SECURITY DEBT`, fora
   do fechamento Planning. Production segue `UNKNOWN / REVERIFY BEFORE USE` e
   Legacy fora dos alvos.
 
 ## EXPECTED_NEXT
 
-Após autorização humana explícita, abrir discovery **read-only** de Turnover.
-Determinar intenção de produto, atores, fatos canônicos disponíveis, boundaries,
-privacidade, apresentação honesta de ausência e o menor journey demonstrável.
-Não implementar, criar migration, congelar E2E ou tratar heurística como risco de
-desligamento factual nessa discovery.
+Após autorização humana explícita, abrir T-DB1 em discovery **read-only**.
+Determinar a menor estrutura durável e purpose-bound capaz de fornecer numerador
+e headcount inicial/final para os dois meses contratados. Não presumir um modelo
+histórico amplo, criar migration/RPC, implementar produto ou inferir história.
 
 Nenhum slice de Development está aberto. `cancel_development_plan_v1` continua
 sem chamador na aplicação, deliberadamente fora da jornada congelada; reabrir
@@ -87,4 +91,4 @@ D-E2E2.
 
 Este documento registra estado e próximo passo; não autoriza implementação,
 hosted E2E, promoção remota, mudança de produto nem reabertura de slice fechado.
-Turnover exige discovery e decisão baseada em fatos antes de qualquer contrato.
+T-DB1 exige discovery antes de qualquer decisão de schema, migration ou RPC.

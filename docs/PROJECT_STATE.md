@@ -15,12 +15,12 @@
 | Campo | Valor |
 | --- | --- |
 | `CURRENT_DOMAIN` | Executive / decisão executiva — contrato mínimo `CLOSED / PASS / HOSTED-PROVEN`; Jornada 6 permanece parcial |
-| `CURRENT_SLICE` | T-P0 — readiness discovery de Turnover · `AWAITING AUTHORIZATION` |
-| `LAST_CANONICAL_MAIN` | `5c348c88adcd9800e4eb601380705d3e1f200e15`; autoridade factual = `git rev-parse origin/main` |
+| `CURRENT_SLICE` | T-DB1 — trusted Turnover boundary discovery · `AWAITING AUTHORIZATION` |
+| `LAST_CANONICAL_MAIN` | `d9a830456499f4acccd3d5b503c0a1c8ec376c89`; autoridade factual = `git rev-parse origin/main` |
 | `LATEST_COMMITTED_MIGRATION` | `0141` — company Assessment summary trusted read boundary |
 | `LATEST_REVIEW_DB_VERSION` | `0141` — presença exata e `authenticated EXECUTE` verificados read-only |
 | `HOSTED_E2E_STATE` | E2E-0…E2E-6, PLN-P6, Liderança e contrato mínimo Executive `CLOSED / PASS`. Executive: run `260930023107-6e005e`, **8/8 PASS**, passos **1–12 PASS**, uma execução sem retry, build binding `assets:a6412db926663e75`, terminal **RETIRED** |
-| `NEXT_GATE` | discovery read-only de Turnover, primeira capacidade ainda aberta após People Analytics na Jornada 6; nenhuma implementação autorizada |
+| `NEXT_GATE` | T-DB1 read-only: descobrir a menor estrutura durável e purpose-bound para o contrato Turnover; nenhuma implementação autorizada |
 
 Congelar o contrato **não equivale** a um PASS hosted: o D-E2E0 fixa o que precisa
 ser provado. O PASS correspondente existe e está registrado em
@@ -73,8 +73,9 @@ binding é `assets:a6412db926663e75` sobre 17 assets; o SHA declarado permanece
 `UNVERIFIABLE_FROM_DEPLOYMENT`. Fechamento em
 `Execution/E-E2E1-HOSTED-EXECUTIVE-MINIMUM-CONTRACT-CLOSURE.md`.
 
-Esse recorte não fecha a Jornada 6. Pela ordem normativa, **Turnover** é a próxima
-capacidade aberta e requer discovery antes de contrato ou implementação.
+Esse recorte não fecha a Jornada 6. O contrato mínimo de **Turnover** está
+congelado em `Execution/T-P1-MINIMUM-TURNOVER-CONTRACT.md`; a capacidade continua
+não implementada e requer T-DB1 antes de qualquer decisão de boundary.
 
 ## Precedência
 

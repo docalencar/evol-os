@@ -9,10 +9,10 @@ SOURCE_COMMIT="67843339d292e659a791d7efcc6a62f7ced61612"
 MIGRATION="supabase/migrations/0142_create_company_turnover_boundary.sql"
 MIGRATION_SHA="17a8d02f8fdf915122d68666ca8714ba5ba2ea62ebebd759b9a81e32b558a4c9"
 EXPECTED_PENDING="0142_create_company_turnover_boundary.sql"
-PRE_RUNNER="scripts/review/verify-t-db2-turnover-pre.sh"; POST_RUNNER="scripts/review/verify-t-db2-turnover-post.sh"; RUNNER="scripts/review/promote-t-db2-turnover.sh"
+PRE_RUNNER="scripts/review/verify-t-db2-turnover-pre.sh"; POST_RUNNER="scripts/review/verify-t-db2-turnover-post.sh"; PARSER="scripts/review/parse-t-db2-pending-set.sh"; RUNNER="scripts/review/promote-t-db2-turnover.sh"
 URL_KEYCHAIN_SERVICE="evol-os-review-pooler-url"; POOLER_HOST_SUFFIX=".pooler.supabase.com"
-LOG=$(mktemp -t tdb2log.XXXXXX); PRE=$(mktemp -t tdb2pre.XXXXXX); TOCTOU=$(mktemp -t tdb2toctou.XXXXXX); POST=$(mktemp -t tdb2post.XXXXXX); DRY=$(mktemp -t tdb2dry.XXXXXX); PUSH=$(mktemp -t tdb2push.XXXXXX); CANONICAL_WORKDIR=$(mktemp -d -t tdb2repo.XXXXXX)
-say(){ printf '%s\n' "$*"; }; evidence(){ say "EVIDENCE LOG=$LOG PRE=$PRE TOCTOU=$TOCTOU POST=$POST DRY=$DRY PUSH=$PUSH"; }
+LOG=$(mktemp -t tdb2log.XXXXXX); PRE=$(mktemp -t tdb2pre.XXXXXX); TOCTOU=$(mktemp -t tdb2toctou.XXXXXX); POST=$(mktemp -t tdb2post.XXXXXX); DRY_OUT=$(mktemp -t tdb2dryout.XXXXXX); DRY_ERR=$(mktemp -t tdb2dryerr.XXXXXX); DRY_STATUS=$(mktemp -t tdb2drystatus.XXXXXX); PUSH_OUT=$(mktemp -t tdb2pushout.XXXXXX); PUSH_ERR=$(mktemp -t tdb2pusherr.XXXXXX); PUSH_STATUS=$(mktemp -t tdb2pushstatus.XXXXXX); CANONICAL_WORKDIR=$(mktemp -d -t tdb2repo.XXXXXX)
+say(){ printf '%s\n' "$*"; }; evidence(){ say "EVIDENCE LOG=$LOG PRE=$PRE TOCTOU=$TOCTOU POST=$POST DRY_OUT=$DRY_OUT DRY_ERR=$DRY_ERR DRY_STATUS=$DRY_STATUS PUSH_OUT=$PUSH_OUT PUSH_ERR=$PUSH_ERR PUSH_STATUS=$PUSH_STATUS"; }
 ROOT=$(cd "$(dirname "$0")/../.." && pwd) || exit 1; cd "$ROOT" || exit 1
 for tool in git shasum psql supabase security tar; do command -v "$tool" >/dev/null || { say "STOP: $tool unavailable"; exit 1; }; done
 git fetch --no-tags origin main >>"$LOG" 2>&1 || { say 'STOP: fetch failed'; exit 1; }
@@ -20,7 +20,7 @@ git fetch --no-tags origin main >>"$LOG" 2>&1 || { say 'STOP: fetch failed'; exi
 [ -z "$(git status --porcelain --untracked-files=no)" ] || { say 'STOP: tracked worktree dirty'; exit 1; }
 git merge-base --is-ancestor "$SOURCE_COMMIT" HEAD || { say 'STOP: source commit absent'; exit 1; }
 [ "$(shasum -a 256 "$MIGRATION"|cut -d' ' -f1)" = "$MIGRATION_SHA" ] || { say 'STOP: migration hash mismatch'; exit 1; }
-for file in "$RUNNER" "$PRE_RUNNER" "$POST_RUNNER"; do local_sha=$(shasum -a 256 "$file"|cut -d' ' -f1); main_sha=$(git show "origin/main:$file" 2>/dev/null|shasum -a 256|cut -d' ' -f1); [ "$local_sha" = "$main_sha" ] || { say "STOP: tooling is not canonical origin/main: $file"; exit 1; }; done
+for file in "$RUNNER" "$PRE_RUNNER" "$POST_RUNNER" "$PARSER"; do local_sha=$(shasum -a 256 "$file"|cut -d' ' -f1); main_sha=$(git show "origin/main:$file" 2>/dev/null|shasum -a 256|cut -d' ' -f1); [ "$local_sha" = "$main_sha" ] || { say "STOP: tooling is not canonical origin/main: $file"; exit 1; }; done
 [ -f supabase/.temp/project-ref ] && [ "$(tr -d '[:space:]'<supabase/.temp/project-ref)" = "$REVIEW_REF" ] || { say 'STOP: linked target is not canonical Review'; exit 1; }
 URL="${T_DB2_REVIEW_DB_URL:-}"; [ -n "$URL" ] || URL=$(security find-generic-password -s "$URL_KEYCHAIN_SERVICE" -a "$USER" -w 2>>"$LOG")
 if [[ ! "$URL" =~ ^postgres(ql)?://([^:/@]+):([^@]*)@([^:/@]+):([0-9]+)/([^?]+)(\?.*)?$ ]]; then say 'SECRET_PRESENT=false'; say 'PROMOTION_OUTCOME=NOT_ATTEMPTED_ENVIRONMENTAL'; exit 1; fi
@@ -37,11 +37,22 @@ LOCAL_HISTORY=$(find supabase/migrations -maxdepth 1 -type f -name '0*.sql' -pri
 snapshot "$TOCTOU" || { say 'PROMOTION_OUTCOME=NOT_ATTEMPTED_TOCTOU_QUERY_FAILED'; evidence; exit 1; }; cmp -s "$PRE" "$TOCTOU" || { say 'PROMOTION_OUTCOME=NOT_ATTEMPTED_TOCTOU_DRIFT'; evidence; exit 1; }
 [ "$(shasum -a 256 "$MIGRATION"|cut -d' ' -f1)" = "$MIGRATION_SHA" ] && [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || { say 'PROMOTION_OUTCOME=NOT_ATTEMPTED_TOCTOU_SOURCE_DRIFT'; evidence; exit 1; }
 git archive HEAD | tar -x -C "$CANONICAL_WORKDIR" || { say 'PROMOTION_OUTCOME=NOT_ATTEMPTED_CANONICAL_SNAPSHOT_FAILED'; exit 1; }
-pending(){ grep -oE '0[0-9]{3}_[a-z0-9_]+\.sql' "$1"|sort -u|paste -sd, -; }
-if ! SUPABASE_DB_URL="$URL" supabase db push --workdir "$CANONICAL_WORKDIR" --dry-run </dev/null>"$DRY" 2>&1 || [ "$(pending "$DRY")" != "$EXPECTED_PENDING" ]; then DRY_PENDING=$(pending "$DRY"); : >"$DRY"; say "PROMOTION_OUTCOME=NOT_ATTEMPTED_DRY_RUN_FAILED [pending=$DRY_PENDING]"; evidence; exit 1; fi
-: >"$DRY"; say PRE_GATE=PASS; say PROMOTION_ATTEMPT=BEGIN
-if ! SUPABASE_DB_URL="$URL" supabase db push --workdir "$CANONICAL_WORKDIR" --yes </dev/null>"$PUSH" 2>&1; then : >"$PUSH"; say PROMOTION_OUTCOME=UNKNOWN_REMOTE_OUTCOME_INSPECT_BEFORE_RETRY; evidence; exit 2; fi
-: >"$PUSH"
+mkdir -p "$CANONICAL_WORKDIR/supabase/.temp" || { say 'PROMOTION_OUTCOME=NOT_ATTEMPTED_CANONICAL_SNAPSHOT_FAILED'; exit 1; }
+for metadata in project-ref pooler-url postgres-version; do cp "supabase/.temp/$metadata" "$CANONICAL_WORKDIR/supabase/.temp/$metadata" || { say 'PROMOTION_OUTCOME=NOT_ATTEMPTED_LINK_METADATA_FAILED'; exit 1; }; done
+export SUPABASE_DB_PASSWORD="$P_PASS"
+set +e
+supabase db push --workdir "$CANONICAL_WORKDIR" --linked --dry-run </dev/null>"$DRY_OUT" 2>"$DRY_ERR"
+DRY_EXIT=$?
+set -e
+printf '%s\n' "$DRY_EXIT" >"$DRY_STATUS"
+if ! DRY_PENDING=$(bash "$PARSER" "$EXPECTED_PENDING" "$DRY_EXIT" "$DRY_OUT" "$DRY_ERR"); then say "PROMOTION_OUTCOME=NOT_ATTEMPTED_DRY_RUN_FAILED [$DRY_PENDING]"; evidence; exit 1; fi
+say "$DRY_PENDING"; say PRE_GATE=PASS; say PROMOTION_ATTEMPT=BEGIN
+set +e
+supabase db push --workdir "$CANONICAL_WORKDIR" --linked --yes </dev/null>"$PUSH_OUT" 2>"$PUSH_ERR"
+PUSH_EXIT=$?
+set -e
+printf '%s\n' "$PUSH_EXIT" >"$PUSH_STATUS"
+if [ "$PUSH_EXIT" -ne 0 ]; then say PROMOTION_OUTCOME=UNKNOWN_REMOTE_OUTCOME_INSPECT_BEFORE_RETRY; evidence; exit 2; fi
 export PRE_PEOPLE_POLICY_FINGERPRINT="$(val PEOPLE_POLICY_FINGERPRINT)" PRE_PEOPLE_ACL_FINGERPRINT="$(val PEOPLE_ACL_FINGERPRINT)" PRE_PEOPLE_CLIENT_DML_COUNT="$(val PEOPLE_CLIENT_DML_COUNT)" PRE_ADMIN_AUDIT_FINGERPRINT="$(val ADMIN_AUDIT_FINGERPRINT)"
 if ! bash "$POST_RUNNER">"$POST" 2>>"$LOG"; then cat "$POST"; say PROMOTION_OUTCOME=POST_VERIFICATION_FAILED_DO_NOT_RETRY; evidence; exit 1; fi
 cat "$POST"; say PROMOTION_OUTCOME=APPLIED_AND_VERIFIED; evidence

@@ -22,11 +22,18 @@ or expose person-level facts.
 
 ## Metric contract
 
-For each supported calendar month:
+For the closed previous calendar month:
 
 ```text
 turnover_percent =
   canonical_terminations / ((headcount_at_start + headcount_at_end) / 2) * 100
+```
+
+For the current calendar month, which is explicitly month-to-date (MTD):
+
+```text
+turnover_mtd_percent =
+  terminations_mtd / ((headcount_at_start + headcount_as_of) / 2) * 100
 ```
 
 - The numerator counts only canonical transitions from a non-terminal status to
@@ -36,8 +43,15 @@ turnover_percent =
   `terminated`.
 - If average headcount is zero, or any required fact is unavailable or
   incomplete, the metric is `unavailable`, never zero or estimated.
-- The MVP exposes the current calendar month and the immediately preceding
-  calendar month, using half-open intervals `[start, next_start)`.
+- The MVP exposes the immediately preceding month as a closed period and the
+  current month as MTD. The current month must never be presented as closed.
+- Both rows retain the civil UTC interval `[period_start,
+  period_end_exclusive)`. For MTD, `period_end_exclusive` is not the observed
+  data limit: `generated_at` and `headcount_as_of_at` identify the factual
+  observation instant used by `headcount_as_of`.
+- Current-month MTD is `unavailable` when `coverage_started_at` is later than
+  `period_start`. The previous month is available only when factual coverage is
+  complete at both its start and end boundaries.
 - Period boundaries use UTC. This is an explicit temporary MVP limitation until
   a canonical company timezone exists.
 
@@ -64,15 +78,20 @@ reconcile separate records or infer an employment episode.
 
 ## T-DB1 boundary discovery
 
-T-DB1 must discover and design the smallest durable, purpose-bound structure that
-can prove the numerator and both headcount boundaries for exactly the two MVP
-periods. It must preserve closed direct-table ACLs, tenant isolation, server-side
-authorization, and aggregate-only output.
+T-DB1 discovered that the smallest sufficient direction is a company-total
+monthly accumulator with an explicit coverage watermark, maintained atomically
+with People status changes and exposed through a trusted aggregate read. Existing
+`activity_events` may provide immutable audit correlation but cannot be the sole
+source because historical coverage is not complete or explicitly marked.
+
+The future boundary must prove the closed previous-month limits and the current
+MTD start/as-of limits for exactly the two MVP periods. It must preserve closed
+direct-table ACLs, tenant isolation, server-side authorization, and aggregate-only
+output.
 
 This contract does **not** predetermine a broad historical model, a new employment
-episode model, or a specific RPC/schema shape. T-DB1 must first determine whether
-existing immutable facts provide complete coverage and add only the minimum
-durable structure that the frozen metric requires.
+episode model, or a specific RPC/schema shape. The implementation slice must add
+only the minimum durable structure that the frozen two-period metric requires.
 
 ## Out of scope
 

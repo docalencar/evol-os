@@ -112,7 +112,8 @@ D-E2E2.
 | O arquivo de run não persiste as contagens de retenção, apenas identidade, propriedade e estado terminal | D-E2E2B | Evidência: contagens não são re-verificáveis após o fato |
 | O guard de publicação do D-E2E1 não está versionado sob `scripts/local/publish/guards/` | D-E2E1 | Governança de ferramenta |
 | `PROMOTION_EVIDENCE_PERSISTENCE` — o tooling de promoção não persiste evidência PRE/POST durável no repositório | D-R2 | Governança de promoção |
-| `TURNOVER_BOOTSTRAP_STALE_MAIN` — o guard de main stale é tautológico: o transport monta o snapshot com `canonicalMain: EXPECTED_MAIN`, então a comparação é da constante contra si mesma e a evidência durável registra o pin, não a main real | T-E2E0C | Governança de tooling. Identidade da mutação foi conferida fora do runner nesta slice; o guard não é load-bearing |
+| `TURNOVER_PIN_STALE_VS_MAIN` — com os dois checks de identidade agora reais, `EXPECTED_MAIN = c30ab3c9…` está desatualizado em relação à canonical main, então um bootstrap hoje seria corretamente recusado por `TURNOVER_BOOTSTRAP_STALE_MAIN`. Inócuo porque o bootstrap está consumido; rollover e fato positivo precisarão de pin próprio | T-E2E0E | Governança de identidade. **Repinar é decisão de governança, não efeito colateral de um fix** |
+| `TURNOVER_SNAPSHOT_FIELD_NAMING` — `canonicalMain` e `migration0142Sha256` continuam dentro de `RemoteSnapshot`, embora sejam fatos **locais** do repositório. Os valores passaram a ser medidos, mas o tipo ainda sugere origem remota | T-E2E0E | Clareza de contrato. Renomear/separar o tipo ripple no schema de evidência durável já gravado |
 | `NEXT_STEPS_SYNC_LAG` — o slice ativo ficou desatualizado em quatro slices consecutivos, chegando a declarar como não publicado um tooling que o Git provava mergeado | T-E2E0C | Governança de contexto. Endereçado em OPERATING-METHOD §12 por esta slice |
 
 ## STOP_CONDITIONS

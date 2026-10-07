@@ -5,9 +5,9 @@
 > Estado canônico em [`PROJECT_STATE.md`](./PROJECT_STATE.md).
 
 ```
-SLICE = T-E2E0 — prova hosted governada de Turnover
+SLICE = T-E2E0A — lifecycle da fixture durável de Turnover
 PATH  = GOVERNED
-STATE = READY FOR ONE REVIEW RUN
+STATE = TOOLING READY FOR PUBLICATION
 ```
 
 O contrato mínimo de Turnover está congelado em
@@ -18,6 +18,13 @@ de promoção e a correção de evidência estão publicados; a migration `0142`
 POST-MAIN CI PASS` na canonical main
 `07d5d021282ba723c04d344439018fc9610c73e8`. Nenhuma prova hosted de Turnover foi
 executada, portanto Turnover ainda não é `HOSTED-PROVEN` nem `CLOSED`.
+
+A discovery read-only encontrou `106` companies e zero rows no accumulator de
+Turnover. A decisão de produto/governança aprovou uma única fixture sintética,
+isolada e durável na Review canônica, com coverage amadurecida apenas por tempo e
+observações canônicas. Seu lifecycle está congelado em
+[`Execution/T-E2E0A-DURABLE-TURNOVER-FIXTURE-LIFECYCLE.md`](./Execution/T-E2E0A-DURABLE-TURNOVER-FIXTURE-LIFECYCLE.md).
+Esta slice publica somente contrato/tooling; a fixture ainda não existe.
 
 ## KNOWN_STATE
 
@@ -75,19 +82,15 @@ executada, portanto Turnover ainda não é `HOSTED-PROVEN` nem `CLOSED`.
 
 ## EXPECTED_NEXT
 
-Preparar e executar **exatamente uma** prova hosted governada de Turnover somente
-na Review canônica. Antes do run, reutilizar o menor padrão canônico de harness,
-confirmar a identidade/binding do deployment compatível com a canonical main e
-confirmar a presença da migration `0142`. A prova deve cobrir autorização
-`owner/admin/hr`, negação `manager/employee`, isolamento entre tenants, mês
-anterior fechado, mês atual MTD, semântica `unavailable` sem conversão para zero,
-fato produzido pela boundary sem fórmula local, falha parcial sem invalidar os
-demais indicadores, ausência de requests diretas às fontes protegidas, ausência
-de PII/breakdowns/heurísticas e teardown limitado a fixtures run-owned.
+Publicar o contrato e tooling T-E2E0A. Depois, sob autorização humana separada,
+executar uma única fase de bootstrap Review-only para criar exatamente uma
+fixture sintética Turnover-owned, iniciar coverage por observação canônica e
+registrar ownership durável. Bootstrap não autoriza prova hosted nem torna o
+período corrente elegível. As fases de rollover, fato positivo, prova única e
+retirement exigem seus gates temporais e autorizações próprias.
 
-Não fazer backfill, alterar produto para obter verde, alterar migration/RPC ou
-executar uma segunda tentativa automática. Se o único run falhar, preservar a
-evidência e diagnosticar sem rerun.
+Não fazer backfill, escrever diretamente no accumulator, alterar coverage,
+produto, migration/RPC ou simular passagem do tempo.
 
 Nenhum slice de Development está aberto. `cancel_development_plan_v1` continua
 sem chamador na aplicação, deliberadamente fora da jornada congelada; reabrir
@@ -108,8 +111,8 @@ D-E2E2.
 
 ## STOP_CONDITIONS
 
-Esta reconciliação não executa nem fecha a prova hosted. Ela autoriza como próximo
-slice somente a preparação e **uma** execução governada de Turnover na Review
-canônica. Não autoriza mudança de produto, DB, migration, RPC, backfill, segunda
-execução automática, Production ou Legacy. Qualquer falha consome a execução e
-exige preservação de evidência e diagnóstico read-only antes de nova decisão.
+T-E2E0A não cria a fixture nem executa prova hosted. A publicação do tooling não
+autoriza credenciais ou mutação remota. Bootstrap, observações de rollover, fato
+positivo, a execução única de T-E2E0 e retirement são fases separadas. Não
+autoriza mudança de produto, DB, migration, RPC, backfill, alteração artificial
+de coverage, Production ou Legacy.

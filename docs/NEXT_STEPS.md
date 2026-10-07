@@ -5,7 +5,7 @@
 > Estado canônico em [`PROJECT_STATE.md`](./PROJECT_STATE.md).
 
 ```
-SLICE = T-E2E0B — runner governado de bootstrap da fixture durável de Turnover
+SLICE = T-E2E0C — transport operacional e comando de bootstrap de Turnover
 PATH  = GOVERNED
 STATE = LOCAL IMPLEMENTATION READY FOR PUBLICATION
 ```
@@ -24,9 +24,10 @@ Turnover. A decisão de produto/governança aprovou uma única fixture sintétic
 isolada e durável na Review canônica, com coverage amadurecida apenas por tempo e
 observações canônicas. Seu lifecycle está congelado em
 [`Execution/T-E2E0A-DURABLE-TURNOVER-FIXTURE-LIFECYCLE.md`](./Execution/T-E2E0A-DURABLE-TURNOVER-FIXTURE-LIFECYCLE.md).
-O lifecycle T-E2E0A está publicado. T-E2E0B adiciona somente o runner local
-purpose-bound com PRE, TOCTOU, mutation receipts, POST e evidência durável; a
-fixture ainda não existe e nenhum ambiente remoto foi acessado.
+O lifecycle T-E2E0A e o runner T-E2E0B estão publicados. T-E2E0C adiciona o
+transport concreto Review-only e o comando operacional
+`npm --workspace apps/web run e2e:turnover:bootstrap-review`; a fixture ainda não
+existe, coverage não iniciou e nenhum ambiente remoto foi acessado nesta slice.
 
 ## KNOWN_STATE
 
@@ -84,7 +85,7 @@ fixture ainda não existe e nenhum ambiente remoto foi acessado.
 
 ## EXPECTED_NEXT
 
-Publicar o runner T-E2E0B. Depois, sob autorização humana separada,
+Publicar o transport/comando T-E2E0C. Depois, sob autorização humana separada,
 executar uma única fase de bootstrap Review-only para criar exatamente uma
 fixture sintética Turnover-owned, iniciar coverage por observação canônica e
 registrar ownership durável. Bootstrap não autoriza prova hosted nem torna o
@@ -113,7 +114,7 @@ D-E2E2.
 
 ## STOP_CONDITIONS
 
-T-E2E0B não cria a fixture nem executa prova hosted. A publicação do runner não
+T-E2E0C não cria a fixture nem executa prova hosted. A publicação do comando não
 autoriza credenciais ou mutação remota. Bootstrap, observações de rollover, fato
 positivo, a execução única de T-E2E0 e retirement são fases separadas. Não
 autoriza mudança de produto, DB, migration, RPC, backfill, alteração artificial

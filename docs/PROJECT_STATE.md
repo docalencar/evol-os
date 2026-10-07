@@ -15,12 +15,12 @@
 | Campo | Valor |
 | --- | --- |
 | `CURRENT_DOMAIN` | Executive / decisão executiva — contrato mínimo `CLOSED / PASS / HOSTED-PROVEN`; Jornada 6 permanece parcial |
-| `CURRENT_SLICE` | T-E2E0C — transport operacional e comando de bootstrap da fixture durável de Turnover · `LOCAL IMPLEMENTATION READY FOR PUBLICATION` |
-| `LAST_CANONICAL_MAIN` | `a2d0d042faccc2781a270c02d46be80b7c7a37ac`; autoridade factual = `git rev-parse origin/main` |
+| `CURRENT_SLICE` | T-E2E0D — reconciliação documental pós-bootstrap de Turnover · `AGUARDANDO PUBLICAÇÃO` |
+| `LAST_CANONICAL_MAIN` | `32753a83f49e3e21e8c0a49eaa6b6908c9d35f8b`; autoridade factual = `git rev-parse origin/main` |
 | `LATEST_COMMITTED_MIGRATION` | `0142` — company Turnover trusted boundary |
 | `LATEST_REVIEW_DB_VERSION` | `0142` — `APPLIED_AND_VERIFIED` na Review canônica |
 | `HOSTED_E2E_STATE` | E2E-0…E2E-6, PLN-P6, Liderança e contrato mínimo Executive `CLOSED / PASS`. Executive: run `260930023107-6e005e`, **8/8 PASS**, passos **1–12 PASS**, uma execução sem retry, build binding `assets:a6412db926663e75`, terminal **RETIRED** |
-| `NEXT_GATE` | publicar T-E2E0C; depois autorizar separadamente o comando Review-only para exatamente uma fixture durável; nenhuma fixture ou prova hosted existe ainda |
+| `NEXT_GATE` | publicar a reconciliação T-E2E0D; depois aguardar a virada UTC real de 2026-11-01 e autorizar separadamente a observação de rollover. A fixture durável existe e coverage começou; nenhuma prova hosted de Turnover existe ainda |
 
 Congelar o contrato **não equivale** a um PASS hosted: o D-E2E0 fixa o que precisa
 ser provado. O PASS correspondente existe e está registrado em
@@ -86,10 +86,18 @@ A discovery read-only encontrou zero rows no accumulator para as 106 companies
 existentes. Foi aprovada uma única fixture sintética durável, isolada e
 Turnover-owned na Review canônica. O contrato de lifecycle está em
 `Execution/T-E2E0A-DURABLE-TURNOVER-FIXTURE-LIFECYCLE.md`; ele preserva
-no-backfill e exige observações canônicas após viradas UTC reais. T-E2E0A está
-publicado e congelado. T-E2E0B publicou o runner governado; T-E2E0C implementa
-localmente sua composição operacional. A fixture não existe, coverage não iniciou,
-credenciais hosted não foram carregadas e o run T-E2E0 não foi consumido.
+no-backfill e exige observações canônicas após viradas UTC reais. T-E2E0A, o
+runner T-E2E0B e o transport/comando T-E2E0C estão publicados.
+
+O bootstrap Review-only foi executado **uma única vez** e terminou em
+`COVERAGE_STARTED`: existe exatamente uma company sintética marcada, três
+identidades owned, quatro tentativas canônicas `VERIFIED` e coverage iniciada por
+observação canônica em `2026-10-07T21:04:31Z`. O boundary respondeu
+`unavailable / incomplete_coverage` — outubro é permanentemente incompleto por
+contrato, e nenhum fato positivo foi produzido ou inferido. `observedPeriods`
+está vazio, nenhum período virou, credenciais hosted não foram carregadas e o run
+T-E2E0 **não** foi consumido. Evidência e findings em
+`Execution/T-E2E0C-TURNOVER-BOOTSTRAP-COVERAGE-STARTED.md`.
 
 ## Precedência
 

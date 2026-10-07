@@ -219,6 +219,34 @@ O slice ativo responde somente: `SLICE`, `GOAL`, `WHY`, `IN_SCOPE`,
 
 Se o slice ativo contradiz um contrato permanente: **parar**, `CONTRACT_CONFLICT`.
 
+### Prompt mínimo
+
+O prompt carrega **intenção, autorização e delta** — não o estado. SHA, branch,
+número de migration, nome de arquivo, resultado de gate e conteúdo de contrato
+são fatos descobríveis: transcrevê-los no prompt não os torna verdadeiros, gasta
+contexto e cria uma segunda fonte que pode divergir do Git. Quando o prompt e o
+repositório discordam sobre um fato descobrível, **o repositório vence** e a
+divergência é reportada; quando discordam sobre autorização ou escopo, o prompt
+vence, porque autorização não é descobrível.
+
+Um fato citado no prompt é tratado como *alegação a verificar*, nunca como
+premissa. Reconferir é obrigatório mesmo quando a alegação parece certa — foi
+assim que um pin de origem desatualizado e um tooling declarado "não publicado"
+que o Git provava mergeado apareceram em slices distintos.
+
+### `NEXT_STEPS` curto e sincronizado
+
+O slice ativo é **uma página**, não um histórico. Fato que já vive em closure
+doc, ADR ou `PROJECT_STATE` é referenciado por link, nunca recopiado: duas cópias
+do mesmo fato envelhecem em ritmos diferentes.
+
+Reconciliar `NEXT_STEPS` e `PROJECT_STATE` é **parte do slice que mudou o
+estado**, não um slice futuro. Um slice fechado que deixa o slice ativo
+desatualizado não está fechado — e um `NEXT_STEPS` obsoleto é um defeito de
+governança por si, porque o próximo executor começa a partir dele. Quando a
+reconciliação não couber no slice, o débito é registrado explicitamente em
+follow-ups, com a classe correta, em vez de ser deixado implícito.
+
 ## 13. Relatórios
 
 **Em PASS** — apenas o delta:

@@ -5,16 +5,19 @@
 > Estado canônico em [`PROJECT_STATE.md`](./PROJECT_STATE.md).
 
 ```
-SLICE = T-DB1 — fechamento documental da discovery de Turnover
+SLICE = T-E2E0 — prova hosted governada de Turnover
 PATH  = GOVERNED
-STATE = AGUARDANDO PUBLICAÇÃO
+STATE = READY FOR ONE REVIEW RUN
 ```
 
 O contrato mínimo de Turnover está congelado em
 [`Execution/T-P1-MINIMUM-TURNOVER-CONTRACT.md`](./Execution/T-P1-MINIMUM-TURNOVER-CONTRACT.md).
-T-DB1 recomendou um acumulador mensal company-total com watermark de cobertura e
-boundary agregada. A decisão MTD fecha seu único bloqueio; a implementação ainda
-não está aberta.
+T-P1 e a precisão MTD estão publicados; T-DB1 está fechado; T-DB2, seu tooling
+de promoção e a correção de evidência estão publicados; a migration `0142` está
+`APPLIED_AND_VERIFIED` na Review canônica; e T-P2 está `PUBLISHED / MERGED /
+POST-MAIN CI PASS` na canonical main
+`07d5d021282ba723c04d344439018fc9610c73e8`. Nenhuma prova hosted de Turnover foi
+executada, portanto Turnover ainda não é `HOSTED-PROVEN` nem `CLOSED`.
 
 ## KNOWN_STATE
 
@@ -25,8 +28,10 @@ não está aberta.
   `71c0df749d92ad64a34349774a41b6dae3d3bd7e`, **9/9 PASS**, passos **1–19
   PASS**, sem retry, terminal **RETIRED**. Fechamento em
   [`Execution/PLN-P6-HOSTED-PLANNING-JOURNEY-CLOSURE.md`](./Execution/PLN-P6-HOSTED-PLANNING-JOURNEY-CLOSURE.md);
-- Planning não equivale à Jornada 6: turnover, clima, desempenho agregado,
-  potencial, sucessão e planos estratégicos não foram promovidos a concluídos;
+- Planning não equivale à Jornada 6: Turnover está implementado, publicado e
+  promovido até Review, mas ainda aguarda prova hosted; clima, desempenho
+  agregado, potencial, sucessão e planos estratégicos não foram promovidos a
+  concluídos;
 - o contrato MVP de Liderança está congelado em
   [`Execution/L-P1-LEADERSHIP-MVP-CONTRACT.md`](./Execution/L-P1-LEADERSHIP-MVP-CONTRACT.md);
 - L-DB1 publicou e promoveu para Review a boundary
@@ -54,8 +59,9 @@ não está aberta.
   uma execução sem retry, build binding `assets:a6412db926663e75` sobre 17 assets,
   SHA declarado `UNVERIFIABLE_FROM_DEPLOYMENT` e terminal `RETIRED`. Fechamento em
   [`Execution/E-E2E1-HOSTED-EXECUTIVE-MINIMUM-CONTRACT-CLOSURE.md`](./Execution/E-E2E1-HOSTED-EXECUTIVE-MINIMUM-CONTRACT-CLOSURE.md);
-- turnover, clima, desempenho agregado, potencial/Nine Box, sucessão e planos
-  estratégicos permanecem indisponíveis e fora do contrato mínimo Executive;
+- Turnover continua fora do contrato mínimo Executive já fechado. Sua boundary
+  `get_company_turnover_v1` e o consumo exclusivo por Analytics estão publicados,
+  mas a capacidade ainda não possui prova hosted;
 - T-P1 congelou Turnover company-total para `owner/admin/hr`: desligamentos são
   apenas transições canônicas para `terminated`; headcount inclui `active` e
   `on_leave`; janela é mês UTC atual + anterior; histórico incompleto permanece
@@ -69,10 +75,19 @@ não está aberta.
 
 ## EXPECTED_NEXT
 
-Após publicação desta precisão documental e autorização humana explícita, abrir
-T-DB2 para implementar a menor estrutura durável e purpose-bound aprovada. Não
-presumir modelo histórico amplo, fazer backfill, inferir história ou ampliar os
-dois períodos contratados.
+Preparar e executar **exatamente uma** prova hosted governada de Turnover somente
+na Review canônica. Antes do run, reutilizar o menor padrão canônico de harness,
+confirmar a identidade/binding do deployment compatível com a canonical main e
+confirmar a presença da migration `0142`. A prova deve cobrir autorização
+`owner/admin/hr`, negação `manager/employee`, isolamento entre tenants, mês
+anterior fechado, mês atual MTD, semântica `unavailable` sem conversão para zero,
+fato produzido pela boundary sem fórmula local, falha parcial sem invalidar os
+demais indicadores, ausência de requests diretas às fontes protegidas, ausência
+de PII/breakdowns/heurísticas e teardown limitado a fixtures run-owned.
+
+Não fazer backfill, alterar produto para obter verde, alterar migration/RPC ou
+executar uma segunda tentativa automática. Se o único run falhar, preservar a
+evidência e diagnosticar sem rerun.
 
 Nenhum slice de Development está aberto. `cancel_development_plan_v1` continua
 sem chamador na aplicação, deliberadamente fora da jornada congelada; reabrir
@@ -93,6 +108,8 @@ D-E2E2.
 
 ## STOP_CONDITIONS
 
-Este documento registra estado e próximo passo; não autoriza implementação,
-hosted E2E, promoção remota, mudança de produto nem reabertura de slice fechado.
-Este estado não autoriza T-DB2, migration, RPC, produto ou ambiente remoto.
+Esta reconciliação não executa nem fecha a prova hosted. Ela autoriza como próximo
+slice somente a preparação e **uma** execução governada de Turnover na Review
+canônica. Não autoriza mudança de produto, DB, migration, RPC, backfill, segunda
+execução automática, Production ou Legacy. Qualquer falha consome a execução e
+exige preservação de evidência e diagnóstico read-only antes de nova decisão.

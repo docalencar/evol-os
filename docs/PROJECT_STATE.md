@@ -15,12 +15,12 @@
 | Campo | Valor |
 | --- | --- |
 | `CURRENT_DOMAIN` | Executive / decisão executiva — contrato mínimo `CLOSED / PASS / HOSTED-PROVEN`; Jornada 6 permanece parcial |
-| `CURRENT_SLICE` | T-DB1 — boundary discovery closure · `AWAITING PUBLICATION` |
-| `LAST_CANONICAL_MAIN` | `dd4a56a883d8a1f0da8ab6d991b3be181b0c921a`; autoridade factual = `git rev-parse origin/main` |
-| `LATEST_COMMITTED_MIGRATION` | `0141` — company Assessment summary trusted read boundary |
-| `LATEST_REVIEW_DB_VERSION` | `0141` — presença exata e `authenticated EXECUTE` verificados read-only |
+| `CURRENT_SLICE` | T-E2E0 — prova hosted governada de Turnover · `READY FOR ONE REVIEW RUN` |
+| `LAST_CANONICAL_MAIN` | `07d5d021282ba723c04d344439018fc9610c73e8`; autoridade factual = `git rev-parse origin/main` |
+| `LATEST_COMMITTED_MIGRATION` | `0142` — company Turnover trusted boundary |
+| `LATEST_REVIEW_DB_VERSION` | `0142` — `APPLIED_AND_VERIFIED` na Review canônica |
 | `HOSTED_E2E_STATE` | E2E-0…E2E-6, PLN-P6, Liderança e contrato mínimo Executive `CLOSED / PASS`. Executive: run `260930023107-6e005e`, **8/8 PASS**, passos **1–12 PASS**, uma execução sem retry, build binding `assets:a6412db926663e75`, terminal **RETIRED** |
-| `NEXT_GATE` | após publicar T-DB1, autorização separada para T-DB2; nenhuma implementação autorizada |
+| `NEXT_GATE` | preparar e executar exatamente uma prova hosted governada de Turnover somente na Review canônica; nenhuma execução ocorreu ainda |
 
 Congelar o contrato **não equivale** a um PASS hosted: o D-E2E0 fixa o que precisa
 ser provado. O PASS correspondente existe e está registrado em
@@ -73,10 +73,14 @@ binding é `assets:a6412db926663e75` sobre 17 assets; o SHA declarado permanece
 `UNVERIFIABLE_FROM_DEPLOYMENT`. Fechamento em
 `Execution/E-E2E1-HOSTED-EXECUTIVE-MINIMUM-CONTRACT-CLOSURE.md`.
 
-Esse recorte não fecha a Jornada 6. O contrato mínimo de **Turnover** está
-congelado em `Execution/T-P1-MINIMUM-TURNOVER-CONTRACT.md`; a capacidade continua
-não implementada. T-DB1 recomendou acumulador mensal company-total com coverage
-watermark; a precisão aprovada distingue mês anterior fechado de mês atual MTD.
+Esse recorte não fecha a Jornada 6. O contrato mínimo de **Turnover** e sua
+precisão MTD estão publicados e congelados em
+`Execution/T-P1-MINIMUM-TURNOVER-CONTRACT.md`; T-DB1 está fechado; T-DB2 e seu
+tooling/correção de promoção estão publicados; a migration `0142` está
+`APPLIED_AND_VERIFIED` na Review canônica; e T-P2 publicou o consumo exclusivo de
+`get_company_turnover_v1` por Analytics na canonical main
+`07d5d021282ba723c04d344439018fc9610c73e8`. Nenhuma prova hosted de Turnover foi
+executada: a capacidade ainda não é `HOSTED-PROVEN` nem `CLOSED`.
 
 ## Precedência
 
@@ -112,6 +116,9 @@ Para **estado factual do repositório**, o Git vence; ver `OPERATING-METHOD.md` 
 | L-P1 | Contrato MVP de Liderança — atenção derivada, direct reports e reuso de Assessment/Feedback/Development | CLOSED / PASS |
 | L-DB1 | Trusted Leadership attention read boundary (`0140`) e promoção para Review | CLOSED / PASS |
 | L-P2 | Cutover application/UI/navigation para a boundary canônica | CLOSED / PASS |
+| T-P1/T-DB1 | Contrato mínimo de Turnover, precisão MTD e discovery da boundary | CLOSED / PASS |
+| T-DB2 | Boundary Turnover (`0142`), tooling/correção de promoção e aplicação verificada em Review | CLOSED / PASS |
+| T-P2 | Consumo exclusivo da boundary de Turnover por Analytics | CLOSED / PASS |
 | AI-CTX-1/2/3 | Método permanente, estado condensado e reconciliação de contexto | CLOSED / PASS |
 
 O contrato de cada um está no respectivo documento de `Execution/`; os commits e

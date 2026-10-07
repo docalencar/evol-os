@@ -3,9 +3,10 @@ import { randomBytes } from "node:crypto"
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 
-import { EXPECTED_MAIN, EXPECTED_MIGRATION_SHA, type RemoteSnapshot, type TurnoverObservation } from "./bootstrap-runner"
+import type { RemoteSnapshot, TurnoverObservation } from "./bootstrap-runner"
 import type { CanonicalTurnoverTransport } from "./canonical-adapter"
 import { REVIEW_REF, TURNOVER_FIXTURE_MARKER } from "./lifecycle"
+import { resolveCanonicalMain, resolveMigrationPayloadSha } from "./repository-identity"
 
 export type OperationalCredentials = Readonly<{
   supabaseUrl: string
@@ -49,7 +50,12 @@ export function operationalReviewTransport(credentials: OperationalCredentials):
       }).trim().split("\n").at(-1)
       const data = JSON.parse(output ?? "{}") as Record<string, unknown>
       if (!data.serverAddr || data.after0142 !== 0 || data.turnoverRpcCount !== 1 || data.companyRpcCount !== 1 || data.peopleRpcCount !== 1 || data.turnoverAuthenticatedExecute !== true) throw new Error("TURNOVER_BOOTSTRAP_INSPECT_INVARIANT_FAILED")
-      return { reviewRef: REVIEW_REF, canonicalMain: EXPECTED_MAIN, ledger: data.ledger as string[], migration0142Count: Number(data.migration0142Count), migration0142Sha256: EXPECTED_MIGRATION_SHA, markerCompanyIds: data.markerCompanyIds as string[], journalRevision: 0 }
+      // canonicalMain and migration0142Sha256 are MEASURED, never echoed from
+      // their pins: echoing them is what made assertPre's comparisons constants
+      // against themselves (TURNOVER_BOOTSTRAP_STALE_MAIN and the hash half of
+      // TURNOVER_BOOTSTRAP_MIGRATION_MISMATCH). Both are local repository facts;
+      // the ledger and the count beside them are real remote reads.
+      return { reviewRef: REVIEW_REF, canonicalMain: resolveCanonicalMain(), ledger: data.ledger as string[], migration0142Count: Number(data.migration0142Count), migration0142Sha256: resolveMigrationPayloadSha("0142"), markerCompanyIds: data.markerCompanyIds as string[], journalRevision: 0 }
     },
     async createSyntheticAuthUser(marker, role) {
       const suffix = randomBytes(12).toString("hex")

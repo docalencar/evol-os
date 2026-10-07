@@ -1,0 +1,137 @@
+#!/usr/bin/env bash
+#
+# F-GATE1 publication guard — the detector cannot be weakened into silence.
+#
+# It does NOT run the database gate: that needs a local PostgreSQL and is red by
+# design. It guards the properties that would let someone turn an honest red into
+# a dishonest green, each of which this slice already got wrong once and fixed.
+#
+# Read-only. No remote contact, no credential, no mutation. Exit 0 is the only
+# pass.
+
+set -uo pipefail
+
+REPO_ROOT=$(cd "$(dirname "$0")/../../../.." && pwd)
+cd "$REPO_ROOT" || { printf 'STOP: cannot reach repository root\n'; exit 1; }
+
+FK="supabase/gates/adr_0012_tenant_owned_fk_sweep.sql"
+ACL="supabase/gates/client_privilege_posture_baseline.sql"
+RUNNER="scripts/local/verify-f-gate1-foundation-sweeps.sh"
+DOC="docs/Execution/F-GATE1-FOUNDATION-SWEEP-BASELINE.md"
+
+FAILURES=0
+fail() { printf '  FAIL %s\n' "$*"; FAILURES=$((FAILURES + 1)); }
+pass() { printf '  ok   %s\n' "$*"; }
+for f in "$FK" "$ACL" "$RUNNER" "$DOC"; do
+  [ -f "$f" ] || { printf 'STOP: missing %s\n' "$f"; exit 1; }
+done
+
+# Judged on comment-stripped SQL: this slice's own static check once matched the
+# prose that forbade the violation it was looking for.
+code() { sed -E 's/--.*$//' "$1"; }
+FK_CODE=$(code "$FK")
+
+printf '[guard f-gate1] the sweep has no allow-list\n'
+
+# 1. The contract assertion must be unfiltered. An allow-list is exactly how a
+#    repo-wide sweep degrades into the per-table suites it replaced.
+if printf '%s\n' "$FK_CODE" | grep -qE "from f_gate1_violation\),[[:space:]]*$" \
+   || printf '%s\n' "$FK_CODE" | grep -qE "select count\(\*\) from f_gate1_violation\)"; then
+  pass "the contract assertion counts f_gate1_violation unfiltered"
+else
+  fail "cannot find an unfiltered count over f_gate1_violation"
+fi
+
+# 2. Tenant ownership must be decided by the presence of company_id — the ADR's
+#    own operational test — and not by a hard-coded set of table names.
+printf '%s\n' "$FK_CODE" | grep -qE "attname = 'company_id'" \
+  && pass "tenant ownership is derived from the company_id column" \
+  || fail "tenant ownership is not derived from company_id"
+
+# 3. Column ORDER must not be asserted: ADR-0012 keeps pre-existing composite
+#    constraints whose order differs (Notifications is (company_id, id)).
+printf '%s\n' "$FK_CODE" | grep -qE "= any\(conkey\)" \
+  && pass "company_id membership is tested with = any(conkey), not by position" \
+  || fail "the sweep does not test membership with = any(conkey)"
+
+printf '[guard f-gate1] the expected set cannot shrink silently\n'
+
+# 4. The reciprocal assertion. Without it, deleting a name from the expected set
+#    makes the regression check pass for the wrong reason.
+printf '%s\n' "$FK_CODE" | grep -qE "f_gate1_expected_constraint\), 30::bigint" \
+  && pass "the expected set is pinned at 30 entries" \
+  || fail "the expected-set size assertion is missing or not 30"
+
+EXPECTED=$(printf '%s\n' "$FK_CODE" \
+  | sed -n '/create temporary view f_gate1_expected_constraint/,/as conname;/p' \
+  | grep -oE "'[a-z0-9_]+_fkey'" | sort -u | wc -l | tr -d ' ')
+if [ "$EXPECTED" = 30 ]; then
+  pass "the expected set literally contains 30 distinct constraint names"
+else
+  fail "the expected set contains $EXPECTED distinct names, not 30"
+fi
+
+# 5. The two constraints retired with position_competencies (0125:69) must stay
+#    OUT, and the retirement must stay cited, so the next reader does not
+#    "restore" them and re-break the gate.
+printf '%s\n' "$FK_CODE" | grep -qE "'position_competencies_[a-z_]+_company_fkey'" \
+  && fail "a constraint retired with position_competencies is back in the expected set" \
+  || pass "the position_competencies constraints stay out of the expected set"
+grep -q "0125" "$FK" && pass "the retirement is cited in the sweep" \
+  || fail "the sweep does not cite 0125, so the omission looks arbitrary"
+
+printf '[guard f-gate1] withdrawn ACL assertions stay withdrawn\n'
+
+# 6. The two ACL assertions were gate hypotheses, not contract. Reinstating them
+#    needs a canonical decision about the platform's default privileges, not an
+#    edit here. They must remain census (`ok(true, ...)`), never `is(...) = 0`.
+ACL_CODE=$(code "$ACL")
+if printf '%s\n' "$ACL_CODE" | grep -qE "is\([[:space:]]*\(select count\(\*\) from pg_default_acl"; then
+  fail "the default-ACL assertion was reinstated as a verdict; it is a census"
+else
+  pass "default ACL is reported as census, not asserted"
+fi
+if printf '%s\n' "$ACL_CODE" | grep -qE "is\(.*TRUNCATE.*0::bigint" ; then
+  fail "the client-TRUNCATE assertion was reinstated as a verdict; it is a census"
+else
+  pass "client TRUNCATE is reported as census, not asserted"
+fi
+printf '%s\n' "$ACL_CODE" | grep -qE "CLIENT_PRIVILEGE_FINGERPRINT" \
+  && pass "the Review-comparison fingerprint is emitted" \
+  || fail "the client-privilege fingerprint is missing"
+
+printf '[guard f-gate1] the baseline is explicit and the fleet stays green\n'
+
+# 7. The baseline must be a named constant that moves only deliberately.
+grep -qE "^readonly BASELINE_OFFENDERS=37$" "$RUNNER" \
+  && pass "the runner pins BASELINE_OFFENDERS=37" \
+  || fail "the runner does not pin BASELINE_OFFENDERS=37"
+
+# 8. The red sweep must NOT be in the fleet path, or every other local gate's
+#    FULL_DB_SUITE=PASS becomes meaningless.
+# `ls A* B*` was the first attempt and it was BLIND: ls exits nonzero when
+# EITHER pattern matches nothing, so one misplaced file read as "all clear".
+# `find` reports what exists instead of conflating absence with failure.
+MISPLACED=$(find supabase/tests -maxdepth 1 \
+  \( -name 'adr_0012_tenant_owned_fk_sweep*' -o -name 'client_privilege_posture_baseline*' \) \
+  2>/dev/null)
+if [ -n "$MISPLACED" ]; then
+  fail "a red-by-design sweep is inside supabase/tests; it would turn the whole fleet red:"
+  printf '%s\n' "$MISPLACED" | sed 's/^/       /'
+else
+  pass "the sweeps stay out of supabase/tests"
+fi
+
+# 9. This slice corrects nothing: no migration may be added or changed by it.
+if [ -n "$(git diff --name-only "${PUBLISH_BASE:-HEAD}" -- supabase/migrations 2>/dev/null)" ]; then
+  fail "the candidate touches supabase/migrations; F-GATE1 corrects no offender"
+else
+  pass "no migration added or changed"
+fi
+
+printf '\n'
+if [ "$FAILURES" -eq 0 ]; then printf 'F_GATE1_DETECTOR_INTEGRITY=PASS\n'; exit 0; fi
+printf 'F_GATE1_DETECTOR_INTEGRITY=FAIL (%s)\n' "$FAILURES"
+printf 'Classify before editing: HARNESS_DEFECT if this guard is wrong about correct\n'
+printf 'content, REGRESSION if the detector was weakened to silence a red.\n'
+exit 1

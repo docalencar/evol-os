@@ -15,12 +15,12 @@
 | Campo | Valor |
 | --- | --- |
 | `CURRENT_DOMAIN` | Executive / decisão executiva — contrato mínimo `CLOSED / PASS / HOSTED-PROVEN`; Jornada 6 permanece parcial |
-| `CURRENT_SLICE` | T-E2E0A — lifecycle da fixture durável de Turnover · `TOOLING READY FOR PUBLICATION` |
-| `LAST_CANONICAL_MAIN` | `07d5d021282ba723c04d344439018fc9610c73e8`; autoridade factual = `git rev-parse origin/main` |
+| `CURRENT_SLICE` | T-E2E0B — runner governado de bootstrap da fixture durável de Turnover · `LOCAL IMPLEMENTATION READY FOR PUBLICATION` |
+| `LAST_CANONICAL_MAIN` | `c30ab3c96fead374c5e334c3e56e345764d5924c`; autoridade factual = `git rev-parse origin/main` |
 | `LATEST_COMMITTED_MIGRATION` | `0142` — company Turnover trusted boundary |
 | `LATEST_REVIEW_DB_VERSION` | `0142` — `APPLIED_AND_VERIFIED` na Review canônica |
 | `HOSTED_E2E_STATE` | E2E-0…E2E-6, PLN-P6, Liderança e contrato mínimo Executive `CLOSED / PASS`. Executive: run `260930023107-6e005e`, **8/8 PASS**, passos **1–12 PASS**, uma execução sem retry, build binding `assets:a6412db926663e75`, terminal **RETIRED** |
-| `NEXT_GATE` | publicar T-E2E0A; depois autorizar separadamente o bootstrap Review-only de exatamente uma fixture durável; nenhuma fixture ou prova hosted existe ainda |
+| `NEXT_GATE` | publicar T-E2E0B; depois autorizar separadamente o bootstrap Review-only de exatamente uma fixture durável; nenhuma fixture ou prova hosted existe ainda |
 
 Congelar o contrato **não equivale** a um PASS hosted: o D-E2E0 fixa o que precisa
 ser provado. O PASS correspondente existe e está registrado em
@@ -86,8 +86,9 @@ A discovery read-only encontrou zero rows no accumulator para as 106 companies
 existentes. Foi aprovada uma única fixture sintética durável, isolada e
 Turnover-owned na Review canônica. O contrato de lifecycle está em
 `Execution/T-E2E0A-DURABLE-TURNOVER-FIXTURE-LIFECYCLE.md`; ele preserva
-no-backfill e exige observações canônicas após viradas UTC reais. T-E2E0A ainda
-não criou a fixture, não carregou credenciais e não consumiu o run T-E2E0.
+no-backfill e exige observações canônicas após viradas UTC reais. T-E2E0A está
+publicado e congelado. T-E2E0B implementa localmente o runner governado; ainda
+não criou a fixture, não carregou credenciais nem consumiu o run T-E2E0.
 
 ## Precedência
 

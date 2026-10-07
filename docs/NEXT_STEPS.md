@@ -5,9 +5,9 @@
 > Estado canônico em [`PROJECT_STATE.md`](./PROJECT_STATE.md).
 
 ```
-SLICE = T-E2E0A — lifecycle da fixture durável de Turnover
+SLICE = T-E2E0B — runner governado de bootstrap da fixture durável de Turnover
 PATH  = GOVERNED
-STATE = TOOLING READY FOR PUBLICATION
+STATE = LOCAL IMPLEMENTATION READY FOR PUBLICATION
 ```
 
 O contrato mínimo de Turnover está congelado em
@@ -24,7 +24,9 @@ Turnover. A decisão de produto/governança aprovou uma única fixture sintétic
 isolada e durável na Review canônica, com coverage amadurecida apenas por tempo e
 observações canônicas. Seu lifecycle está congelado em
 [`Execution/T-E2E0A-DURABLE-TURNOVER-FIXTURE-LIFECYCLE.md`](./Execution/T-E2E0A-DURABLE-TURNOVER-FIXTURE-LIFECYCLE.md).
-Esta slice publica somente contrato/tooling; a fixture ainda não existe.
+O lifecycle T-E2E0A está publicado. T-E2E0B adiciona somente o runner local
+purpose-bound com PRE, TOCTOU, mutation receipts, POST e evidência durável; a
+fixture ainda não existe e nenhum ambiente remoto foi acessado.
 
 ## KNOWN_STATE
 
@@ -82,7 +84,7 @@ Esta slice publica somente contrato/tooling; a fixture ainda não existe.
 
 ## EXPECTED_NEXT
 
-Publicar o contrato e tooling T-E2E0A. Depois, sob autorização humana separada,
+Publicar o runner T-E2E0B. Depois, sob autorização humana separada,
 executar uma única fase de bootstrap Review-only para criar exatamente uma
 fixture sintética Turnover-owned, iniciar coverage por observação canônica e
 registrar ownership durável. Bootstrap não autoriza prova hosted nem torna o
@@ -111,7 +113,7 @@ D-E2E2.
 
 ## STOP_CONDITIONS
 
-T-E2E0A não cria a fixture nem executa prova hosted. A publicação do tooling não
+T-E2E0B não cria a fixture nem executa prova hosted. A publicação do runner não
 autoriza credenciais ou mutação remota. Bootstrap, observações de rollover, fato
 positivo, a execução única de T-E2E0 e retirement são fases separadas. Não
 autoriza mudança de produto, DB, migration, RPC, backfill, alteração artificial

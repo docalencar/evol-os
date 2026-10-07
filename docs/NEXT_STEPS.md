@@ -5,9 +5,9 @@
 > Estado canônico em [`PROJECT_STATE.md`](./PROJECT_STATE.md).
 
 ```
-SLICE = T-E2E0C — transport operacional e comando de bootstrap de Turnover
+SLICE = T-E2E0D — reconciliação documental pós-bootstrap de Turnover
 PATH  = GOVERNED
-STATE = LOCAL IMPLEMENTATION READY FOR PUBLICATION
+STATE = AGUARDANDO PUBLICAÇÃO
 ```
 
 O contrato mínimo de Turnover está congelado em
@@ -24,10 +24,11 @@ Turnover. A decisão de produto/governança aprovou uma única fixture sintétic
 isolada e durável na Review canônica, com coverage amadurecida apenas por tempo e
 observações canônicas. Seu lifecycle está congelado em
 [`Execution/T-E2E0A-DURABLE-TURNOVER-FIXTURE-LIFECYCLE.md`](./Execution/T-E2E0A-DURABLE-TURNOVER-FIXTURE-LIFECYCLE.md).
-O lifecycle T-E2E0A e o runner T-E2E0B estão publicados. T-E2E0C adiciona o
-transport concreto Review-only e o comando operacional
-`npm --workspace apps/web run e2e:turnover:bootstrap-review`; a fixture ainda não
-existe, coverage não iniciou e nenhum ambiente remoto foi acessado nesta slice.
+O lifecycle T-E2E0A, o runner T-E2E0B e o transport/comando T-E2E0C estão
+publicados. O bootstrap Review-only foi executado **uma única vez** e terminou em
+`COVERAGE_STARTED`: existe exatamente uma fixture durável, coverage começou por
+observação canônica e nada mais foi autorizado. Evidência e findings em
+[`Execution/T-E2E0C-TURNOVER-BOOTSTRAP-COVERAGE-STARTED.md`](./Execution/T-E2E0C-TURNOVER-BOOTSTRAP-COVERAGE-STARTED.md).
 
 ## KNOWN_STATE
 
@@ -85,12 +86,12 @@ existe, coverage não iniciou e nenhum ambiente remoto foi acessado nesta slice.
 
 ## EXPECTED_NEXT
 
-Publicar o transport/comando T-E2E0C. Depois, sob autorização humana separada,
-executar uma única fase de bootstrap Review-only para criar exatamente uma
-fixture sintética Turnover-owned, iniciar coverage por observação canônica e
-registrar ownership durável. Bootstrap não autoriza prova hosted nem torna o
-período corrente elegível. As fases de rollover, fato positivo, prova única e
-retirement exigem seus gates temporais e autorizações próprias.
+Publicar esta reconciliação documental. Depois, **esperar a virada UTC real**: a
+fixture está em `COVERAGE_STARTED` e o próximo passo do lifecycle é a observação
+de rollover, que só é autorizada após 2026-11-01 UTC e exige observação canônica
+— esperar não é evidência de rollover. Fato positivo, a execução única de T-E2E0
+e retirement continuam depois disso, cada um com gate temporal e autorização
+própria.
 
 Não fazer backfill, escrever diretamente no accumulator, alterar coverage,
 produto, migration/RPC ou simular passagem do tempo.
@@ -111,11 +112,14 @@ D-E2E2.
 | O arquivo de run não persiste as contagens de retenção, apenas identidade, propriedade e estado terminal | D-E2E2B | Evidência: contagens não são re-verificáveis após o fato |
 | O guard de publicação do D-E2E1 não está versionado sob `scripts/local/publish/guards/` | D-E2E1 | Governança de ferramenta |
 | `PROMOTION_EVIDENCE_PERSISTENCE` — o tooling de promoção não persiste evidência PRE/POST durável no repositório | D-R2 | Governança de promoção |
+| `TURNOVER_BOOTSTRAP_STALE_MAIN` — o guard de main stale é tautológico: o transport monta o snapshot com `canonicalMain: EXPECTED_MAIN`, então a comparação é da constante contra si mesma e a evidência durável registra o pin, não a main real | T-E2E0C | Governança de tooling. Identidade da mutação foi conferida fora do runner nesta slice; o guard não é load-bearing |
+| `NEXT_STEPS_SYNC_LAG` — o slice ativo ficou desatualizado em quatro slices consecutivos, chegando a declarar como não publicado um tooling que o Git provava mergeado | T-E2E0C | Governança de contexto. Endereçado em OPERATING-METHOD §12 por esta slice |
 
 ## STOP_CONDITIONS
 
-T-E2E0C não cria a fixture nem executa prova hosted. A publicação do comando não
-autoriza credenciais ou mutação remota. Bootstrap, observações de rollover, fato
-positivo, a execução única de T-E2E0 e retirement são fases separadas. Não
+O bootstrap está consumido e não se repete. `COVERAGE_STARTED` não torna o
+período corrente elegível, não autoriza prova hosted e não permite retirement.
+Observação de rollover, fato positivo, a execução única de T-E2E0 e retirement
+são fases separadas, cada uma com gate temporal e autorização própria. Não
 autoriza mudança de produto, DB, migration, RPC, backfill, alteração artificial
 de coverage, Production ou Legacy.

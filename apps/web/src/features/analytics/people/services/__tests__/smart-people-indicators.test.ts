@@ -13,7 +13,6 @@ import {
   createMonthPeriods,
   isDateInPeriod,
 } from "../create-month-periods"
-import { calculateTurnover } from "../calculate-turnover"
 
 const julyPeriods = createMonthPeriods(
   new Date("2026-07-22T12:00:00.000Z")
@@ -67,52 +66,6 @@ test("inclui início e exclui o limite final do período", () => {
       julyPeriods.current
     ),
     false
-  )
-})
-
-test("calcula turnover válido, zero e decimal", () => {
-  assert.equal(
-    calculateTurnover({
-      terminations: 5,
-      headcountAtStart: 100,
-      headcountAtEnd: 100,
-    }).value,
-    5
-  )
-  assert.equal(
-    calculateTurnover({
-      terminations: 0,
-      headcountAtStart: 10,
-      headcountAtEnd: 10,
-    }).value,
-    0
-  )
-  assert.equal(
-    calculateTurnover({
-      terminations: 1,
-      headcountAtStart: 10,
-      headcountAtEnd: 12,
-    }).value,
-    100 / 11
-  )
-})
-
-test("torna turnover indisponível sem histórico ou headcount médio", () => {
-  assert.equal(
-    calculateTurnover({
-      terminations: 1,
-      headcountAtStart: null,
-      headcountAtEnd: 10,
-    }).value,
-    null
-  )
-  assert.equal(
-    calculateTurnover({
-      terminations: 0,
-      headcountAtStart: 0,
-      headcountAtEnd: 0,
-    }).value,
-    null
   )
 })
 
@@ -277,17 +230,6 @@ test("presenter formata percentual, dias, contagem e indisponibilidade", () => {
     periodLabel: "vs. mês anterior",
     indicators: [
       {
-        id: "turnover",
-        valueKind: "percentage",
-        value: 2.5,
-        previousValue: 2,
-        status: "warning",
-        trend: "up",
-        variation: 25,
-        unavailableReason: null,
-        availabilityReason: null,
-      },
-      {
         id: "average_approval_time",
         valueKind: "days",
         value: 1,
@@ -323,15 +265,13 @@ test("presenter formata percentual, dias, contagem e indisponibilidade", () => {
     ],
   })
 
-  assert.equal(viewModel.indicators[0].formattedValue, "2,5%")
-  assert.equal(viewModel.indicators[0].formattedVariation, "+25%")
-  assert.equal(viewModel.indicators[1].formattedValue, "1 dia")
-  assert.equal(viewModel.indicators[1].formattedVariation, "-50%")
-  assert.equal(viewModel.indicators[2].formattedValue, "3")
-  assert.equal(viewModel.indicators[2].formattedVariation, "+2")
+  assert.equal(viewModel.indicators[0].formattedValue, "1 dia")
+  assert.equal(viewModel.indicators[0].formattedVariation, "-50%")
+  assert.equal(viewModel.indicators[1].formattedValue, "3")
+  assert.equal(viewModel.indicators[1].formattedVariation, "+2")
   assert.equal(
-    viewModel.indicators[3].formattedValue,
+    viewModel.indicators[2].formattedValue,
     "Indisponível"
   )
-  assert.equal(viewModel.indicators[3].insight, "Dado ausente.")
+  assert.equal(viewModel.indicators[2].insight, "Dado ausente.")
 })

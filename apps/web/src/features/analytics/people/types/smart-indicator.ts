@@ -11,7 +11,6 @@ export type SmartIndicatorTrend =
   | "unavailable"
 
 export type SmartIndicatorId =
-  | "turnover"
   | "hires"
   | "average_time_to_hire"
   | "average_approval_time"

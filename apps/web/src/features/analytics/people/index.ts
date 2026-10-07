@@ -16,6 +16,15 @@ export {
 export {
   SmartPeopleIndicatorsWidget,
 } from "./widgets/smart-people-indicators"
+export {
+  getCompanyTurnoverForAnalytics,
+} from "./queries/get-company-turnover-for-analytics"
+export {
+  presentTurnoverAnalytics,
+} from "./presenters/present-turnover-analytics"
+export {
+  TurnoverAnalyticsWidget,
+} from "./widgets/turnover-analytics"
 
 export type {
   OrganizationOccupancy,
@@ -29,3 +38,9 @@ export type {
   SmartPeopleIndicators,
   SmartPeopleIndicatorsViewModel,
 } from "./types/smart-indicator"
+export type {
+  TurnoverAnalytics,
+  TurnoverAnalyticsViewModel,
+  TurnoverPeriod,
+  TurnoverPeriodViewModel,
+} from "./types/turnover-analytics"

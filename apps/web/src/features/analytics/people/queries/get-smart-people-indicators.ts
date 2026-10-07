@@ -92,10 +92,6 @@ export async function getSmartPeopleIndicators(
       approvalsPromise,
     ])
 
-  const turnover = unsupportedIndicator(
-    { id: "turnover", valueKind: "percentage" },
-    "Histórico de desligamentos e headcount do período ainda não disponível."
-  )
   const averageTimeToHire = unsupportedIndicator(
     { id: "average_time_to_hire", valueKind: "days" },
     "Data efetiva de preenchimento da vaga ainda não disponível."
@@ -124,7 +120,6 @@ export async function getSmartPeopleIndicators(
   return {
     periodLabel: COMPARISON_LABEL,
     indicators: [
-      turnover,
       hires,
       averageTimeToHire,
       averageApprovalTime,

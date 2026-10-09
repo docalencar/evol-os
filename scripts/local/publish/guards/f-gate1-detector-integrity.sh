@@ -103,9 +103,15 @@ printf '%s\n' "$ACL_CODE" | grep -qE "CLIENT_PRIVILEGE_FINGERPRINT" \
 printf '[guard f-gate1] the baseline is explicit and the fleet stays green\n'
 
 # 7. The baseline must be a named constant that moves only deliberately.
-grep -qE "^readonly BASELINE_OFFENDERS=37$" "$RUNNER" \
-  && pass "the runner pins BASELINE_OFFENDERS=37" \
-  || fail "the runner does not pin BASELINE_OFFENDERS=37"
+grep -qE "^readonly BASELINE_OFFENDERS=32$" "$RUNNER" \
+  && grep -qE "F-DB1b: 37 -> 32" "$RUNNER" \
+  && pass "the runner pins BASELINE_OFFENDERS=32 and cites F-DB1b" \
+  || fail "the runner does not pin the F-DB1b baseline at 32 with provenance"
+
+grep -qF '^[[:space:]]*not ok' "$RUNNER" \
+  && grep -qF '^[[:space:]]*ok 1' "$RUNNER" \
+  && pass "the TAP parser accepts psql indentation and still detects failures" \
+  || fail "the TAP parser can misclassify indented ok/not ok output"
 
 # 8. The red sweep must NOT be in the fleet path, or every other local gate's
 #    FULL_DB_SUITE=PASS becomes meaningless.
@@ -122,11 +128,24 @@ else
   pass "the sweeps stay out of supabase/tests"
 fi
 
-# 9. This slice corrects nothing: no migration may be added or changed by it.
-if [ -n "$(git diff --name-only "${PUBLISH_BASE:-HEAD}" -- supabase/migrations 2>/dev/null)" ]; then
-  fail "the candidate touches supabase/migrations; F-GATE1 corrects no offender"
+# 9. F-DB1b is the first governed correction measured by this baseline. Its
+#    publication may add exactly 0144, and the payload must remain the reviewed
+#    one. Earlier migrations and any additional migration remain forbidden.
+MIGRATION_0144="supabase/migrations/0144_harden_assessment_execution_tenant_fks.sql"
+EXPECTED_0144_SHA256="b9289408e100ead1b21e6cd4e063788ce4b9344dac310ae04c24d9a4553ab23f"
+if [ ! -f "$MIGRATION_0144" ]; then
+  fail "the reviewed F-DB1b migration is missing"
+elif [ "$(shasum -a 256 "$MIGRATION_0144" | cut -d' ' -f1)" != "$EXPECTED_0144_SHA256" ]; then
+  fail "migration 0144 does not match the reviewed SHA256"
+elif [ -n "${PUBLISH_BASE:-}" ]; then
+  CHANGED_MIGRATIONS=$(git diff --name-only "$PUBLISH_BASE..${PUBLISH_CANDIDATE:-HEAD}" -- supabase/migrations 2>/dev/null)
+  if [ "$CHANGED_MIGRATIONS" = "$MIGRATION_0144" ]; then
+    pass "the candidate adds only the reviewed migration 0144"
+  else
+    fail "candidate migration scope is not exactly 0144: ${CHANGED_MIGRATIONS:-<none>}"
+  fi
 else
-  pass "no migration added or changed"
+  pass "the local reviewed migration 0144 has the authorized SHA256"
 fi
 
 printf '\n'

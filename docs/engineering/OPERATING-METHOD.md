@@ -269,7 +269,52 @@ segurança, promoção remota, E2E canônico, ou pedido explícito.
 
 ---
 
+## 14. Custo de IA
+
+> **Menor custo total de IA por entrega correta e validada.**
+
+Esta é a função que otimizamos. A unidade é a **entrega correta e validada** —
+não o prompt, não a execução, não o token isolado.
+
+**A métrica é o total, não o tamanho de cada peça.** Um prompt curto que produz
+três rodadas de correção custa mais que um prompt preciso que acerta na primeira.
+Um prompt longo é legítimo quando a alternativa é retrabalho: contrato novo,
+autorização não óbvia, decisão de produto, arquitetura ainda não registrada. Fora
+desses casos, o default é curto, preciso e sequencial — uma pergunta por vez,
+cada uma usando o resultado da anterior. Como se escreve o prompt está em §12
+(*Prompt mínimo*); o que esta seção acrescenta é o critério de quando alongá-lo.
+
+**Uma tarefa delimitada por execução.** Cada execução tem um objetivo único e
+verificável, com fronteira explícita. Empilhar tarefas numa execução troca
+paralelismo aparente por diagnóstico ambíguo: quando algo falha, não se sabe qual
+parte falhou, e a correção reprocessa tudo. Tarefa que não couber na fronteira
+vira o próximo slice, não um apêndice do atual.
+
+**Esforço proporcional ao risco.** A profundidade de teste, investigação e
+revisão segue o risco da mudança — o mesmo critério que escolhe FAST ou GOVERNED
+PATH (§6). Dentro do caminho escolhido, nada é reduzido: os gates obrigatórios
+do GOVERNED PATH não são negociáveis por custo, e o rigor de um gate não diminui
+porque o slice é pequeno.
+
+**Trabalho redundante é desperdício, não segurança.** Não se reinvestiga o que o
+repositório já responde, não se reexecuta gate verde cuja premissa não mudou
+(§11), não se revisa de novo o que já passou por revisão independente sem fato
+novo. Repetir uma verificação não a torna mais verdadeira; apenas atrasa a
+descoberta do que ainda não foi verificado.
+
+**Piso inegociável.** Segurança, qualidade e rastreabilidade nunca são moeda de
+troca por custo. Economia que produz PASS sem evidência, gate enfraquecido,
+evidência não registrada ou contrato não verificado não é economia: é dívida com
+juros, e o custo real aparece no slice seguinte. Quando reduzir custo e preservar
+o piso entrarem em conflito, o piso vence e o conflito é reportado.
+
+---
+
 ## Em resumo
 
 Estamos otimizando **transferência de contexto, não rigor de engenharia**. O rigor
 permanece inteiro; o que sai do prompt é aquilo que o repositório já sabe provar.
+
+Em uma linha: **menor custo total de IA por entrega correta e validada** (§14) —
+onde *correta e validada* não é um adjetivo opcional, mas a condição que torna a
+entrega contável.

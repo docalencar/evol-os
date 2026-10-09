@@ -37,6 +37,12 @@ Princípios permanentes que regem como os agentes trabalham juntos:
   não grandes saltos.
 - **Responsabilidade clara.** Cada mudança tem um responsável identificável e uma
   fronteira de decisão explícita (§5).
+- **Menor custo total de IA por entrega correta e validada.** O que se otimiza é
+  o custo até a entrega validada, não o tamanho de uma interação: uma tarefa
+  delimitada por execução, sem reinvestigar o que o repositório já responde nem
+  revisar de novo o que já passou por revisão sem fato novo. Segurança,
+  qualidade e rastreabilidade não são moeda de troca — o detalhamento está em
+  `docs/engineering/OPERATING-METHOD.md` §14, que este documento não duplica.
 
 ---
 

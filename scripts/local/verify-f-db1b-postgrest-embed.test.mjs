@@ -20,10 +20,11 @@
 
 import assert from "node:assert/strict"
 import { createServer } from "node:http"
-import { chmodSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { execFile } from "node:child_process"
-import { resolve } from "node:path"
+import { join, resolve } from "node:path"
 import test from "node:test"
+import { tmpdir } from "node:os"
 
 const RUNNER = resolve(import.meta.dirname, "verify-f-db1b-assessment-composite-fks.sh")
 const PROBE = resolve(import.meta.dirname, "lib/postgrest-embed-probe.sh")
@@ -93,6 +94,26 @@ test("a valid 200 with a JSON array passes — limit=0 needs no rows", async () 
     assert.match(out, /POSTGREST_EMBED\[evaluator\]=PASS/)
     assert.match(out, /POSTGREST_REAL_TEST=PASS/)
     assert.equal(code, 0)
+  } finally { await s.close() }
+})
+
+test("the shared probe can select assessment_answers without changing its classifier", async () => {
+  const s = await stub((req, res) => {
+    assert.match(req.url, /^\/assessment_answers\?select=id,assessment_responses!assessment_answers_assessment_response_id_fkey\(id\)&limit=0$/)
+    json(res, 200, "[]")
+  })
+  try {
+    const work = mkdtempSync(join(tmpdir(), "fdb1c-resource-"))
+    try {
+      const script = `. ${JSON.stringify(PROBE)}; KEY=dummy; postgrest_embed_probe ${JSON.stringify(s.url)} KEY 'assessment_responses!assessment_answers_assessment_response_id_fkey' ${JSON.stringify(work)} direct assessment_answers`
+      const out = await new Promise((done) => execFile("bash", ["-c", script],
+        { encoding: "utf8", timeout: 60_000 },
+        (error, stdout, stderr) => done({ status: error?.code ?? 0, stdout, stderr })))
+      assert.equal(out.status, 0, out.stderr)
+      assert.equal(out.stdout, "PASS")
+    } finally {
+      rmSync(work, { recursive: true, force: true })
+    }
   } finally { await s.close() }
 })
 

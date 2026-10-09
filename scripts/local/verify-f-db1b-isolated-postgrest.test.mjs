@@ -29,7 +29,10 @@ test("the verifier role is NOLOGIN and has no administrative or RLS bypass capab
 test("grants only schema usage, required columns, policy helpers and membership", () => {
   assert.match(runner, /VERIFIER_PREGRANT_STATE_INVALID/)
   assert.match(runner, /grant usage on schema public/)
-  assert.match(runner, /grant select \(id,employee_id,evaluator_id,company_id\) on public\.assessment_responses/)
+    // The FK column of every probed embed must be readable, or PostgREST answers 403.
+  assert.match(runner, /grant select \(id,assessment_cycle_id,employee_id,evaluator_id,company_id\) on public\.assessment_responses/)
+  // Least privilege is still the contract: column-scoped, never table-wide.
+  assert.doesNotMatch(runner, /grant select on public\.(assessment_responses|assessment_answers|assessment_cycles|people)\b/)
   assert.match(runner, /grant select \(id,company_id\) on public\.people/)
   for (const fn of ["is_company_member", "current_person_id", "has_company_role"]) {
     assert.match(runner, new RegExp(`grant execute on function public\\.${fn}`))
@@ -53,17 +56,17 @@ test("credentials stay out of curl argv and temporary files are protected", () =
 
 test("readiness requires 200 and is separate from proof requests", () => {
   assert.match(runner, /\[ "\$code" = 200 \].*READY=YES/)
-  assert.ok(runner.indexOf("READINESS=PASS") < runner.indexOf("EMPLOYEE=$(postgrest_embed_probe"))
+  assert.ok(runner.indexOf("READINESS=PASS") < runner.indexOf("FIRST=$(postgrest_embed_probe"))
 })
 
-test("executes each positive embedding once and requires PASS", () => {
-  assert.equal((runner.match(/EMPLOYEE=\$\(postgrest_embed_probe/g) ?? []).length, 1)
-  assert.equal((runner.match(/EVALUATOR=\$\(postgrest_embed_probe/g) ?? []).length, 1)
-  assert.match(runner, /\[ "\$EMPLOYEE" = PASS \] && \[ "\$EVALUATOR" = PASS \]/)
+test("executes each positive embedding once per selected proof mode and requires PASS", () => {
+  assert.equal((runner.match(/FIRST=\$\(postgrest_embed_probe/g) ?? []).length, 2)
+  assert.equal((runner.match(/SECOND=\$\(postgrest_embed_probe/g) ?? []).length, 2)
+  assert.match(runner, /\[ "\$FIRST" = PASS \] && \[ "\$SECOND" = PASS \]/)
 })
 
 test("requires the nonexistent-FK control to produce PGRST200", () => {
-  assert.equal((runner.match(/NEGATIVE=\$\(postgrest_embed_probe/g) ?? []).length, 1)
+  assert.equal((runner.match(/NEGATIVE=\$\(postgrest_embed_probe/g) ?? []).length, 2)
   assert.match(runner, /POSTGREST_ERROR_PGRST200/)
 })
 
@@ -99,4 +102,12 @@ test("signals, fingerprints and resource absence are terminal gates", () => {
 test("failure evidence is preserved and success secrets are destroyed", () => {
   assert.match(runner, /say "EVIDENCE=\$WORK"/)
   assert.match(runner, /rm -f "\$PROOF_KEY_FILE" "\$CONFIG_FILE"/)
+})
+
+test("F-DB1c mode proves both lifecycle resources without changing F-DB1b defaults", () => {
+  assert.match(runner, /MODE=\$\{F_DB1C_MODE:-f_db1b\}/)
+  assert.match(runner, /assessment_cycles!assessment_responses_assessment_cycle_id_fkey/)
+  assert.match(runner, /assessment_responses!assessment_answers_assessment_response_id_fkey/)
+  assert.match(runner, /direct assessment_answers/)
+  assert.match(runner, /POSTGREST_ERROR_PGRST200/)
 })

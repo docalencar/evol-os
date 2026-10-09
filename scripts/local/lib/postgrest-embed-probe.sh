@@ -20,7 +20,7 @@
 #
 # CONTRACT (identical for both consumers)
 #
-#   postgrest_embed_probe <api_url> <key_var_name> <embed_spec> <work_dir> [direct]
+#   postgrest_embed_probe <api_url> <key_var_name> <embed_spec> <work_dir> [direct] [resource]
 #     echoes exactly one verdict token on stdout:
 #       PASS | CONNECTION_FAILED | PGRST201_AMBIGUOUS
 #       POSTGREST_ERROR_PGRST<n> | HTTP_<status> | INVALID_JSON
@@ -42,6 +42,7 @@
 
 postgrest_embed_probe() {
   local api_url="${1:-}" key_var="${2:-}" spec="${3:-}" work="${4:-}" route="${5:-gateway}"
+  local resource="${6:-assessment_responses}"
   local key url body code pgrst host base
 
   [ -n "$api_url" ] && [ -n "$key_var" ] && [ -n "$spec" ] && [ -n "$work" ] || {
@@ -57,6 +58,7 @@ postgrest_embed_probe() {
     *) printf 'NON_LOOPBACK_TARGET'; return 1 ;;
   esac
   case "$api_url" in *supabase.co*|*supabase.com*) printf 'NON_LOOPBACK_TARGET'; return 1 ;; esac
+  case "$resource" in *[!a-z0-9_]*|'') printf 'INVALID_RESOURCE'; return 1 ;; esac
 
   # limit=0 makes PostgREST RESOLVE the relationship and return an empty array,
   # so resolution is proven without depending on any row existing.
@@ -65,7 +67,7 @@ postgrest_embed_probe() {
     direct)  base="${api_url%/}" ;;
     *) printf 'INVALID_ROUTE'; return 1 ;;
   esac
-  url="$base/assessment_responses?select=id,${spec}(id)&limit=0"
+  url="$base/${resource}?select=id,${spec}(id)&limit=0"
   body="$work/embed-$(printf '%s' "$spec" | tr -c 'a-zA-Z0-9' '_').json"
 
   code=$(printf 'header = "apikey: %s"\nheader = "Authorization: Bearer %s"\nsilent\nshow-error\nmax-time = 20\noutput = "%s"\nwrite-out = "%%{http_code}"\nurl = "%s"\n' \

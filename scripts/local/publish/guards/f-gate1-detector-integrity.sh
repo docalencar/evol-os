@@ -103,10 +103,10 @@ printf '%s\n' "$ACL_CODE" | grep -qE "CLIENT_PRIVILEGE_FINGERPRINT" \
 printf '[guard f-gate1] the baseline is explicit and the fleet stays green\n'
 
 # 7. The baseline must be a named constant that moves only deliberately.
-grep -qE "^readonly BASELINE_OFFENDERS=32$" "$RUNNER" \
-  && grep -qE "F-DB1b: 37 -> 32" "$RUNNER" \
-  && pass "the runner pins BASELINE_OFFENDERS=32 and cites F-DB1b" \
-  || fail "the runner does not pin the F-DB1b baseline at 32 with provenance"
+grep -qE "^readonly BASELINE_OFFENDERS=[0-9]+$" "$RUNNER" \
+  && grep -qE "F-DB1[bc]: [0-9]+ -> [0-9]+" "$RUNNER" \
+  && pass "the runner pins a named baseline and cites the slice that moved it" \
+  || fail "the runner does not pin a baseline with slice provenance"
 
 grep -qF '^[[:space:]]*not ok' "$RUNNER" \
   && grep -qF '^[[:space:]]*ok 1' "$RUNNER" \
@@ -128,24 +128,74 @@ else
   pass "the sweeps stay out of supabase/tests"
 fi
 
-# 9. F-DB1b is the first governed correction measured by this baseline. Its
-#    publication may add exactly 0144, and the payload must remain the reviewed
-#    one. Earlier migrations and any additional migration remain forbidden.
-MIGRATION_0144="supabase/migrations/0144_harden_assessment_execution_tenant_fks.sql"
-EXPECTED_0144_SHA256="b9289408e100ead1b21e6cd4e063788ce4b9344dac310ae04c24d9a4553ab23f"
-if [ ! -f "$MIGRATION_0144" ]; then
-  fail "the reviewed F-DB1b migration is missing"
-elif [ "$(shasum -a 256 "$MIGRATION_0144" | cut -d' ' -f1)" != "$EXPECTED_0144_SHA256" ]; then
-  fail "migration 0144 does not match the reviewed SHA256"
-elif [ -n "${PUBLISH_BASE:-}" ]; then
-  CHANGED_MIGRATIONS=$(git diff --name-only "$PUBLISH_BASE..${PUBLISH_CANDIDATE:-HEAD}" -- supabase/migrations 2>/dev/null)
-  if [ "$CHANGED_MIGRATIONS" = "$MIGRATION_0144" ]; then
-    pass "the candidate adds only the reviewed migration 0144"
+# 9. Authorized migration allow-list, with the payload of each entry pinned.
+#
+#    This used to demand equality with 0144 alone, which was right for F-DB1b and
+#    wrong for the next slice: F-DB1c legitimately adds 0145 and the guard refused
+#    it. Generalising to a list is NOT a relaxation, because the list is closed and
+#    every entry carries its reviewed SHA256:
+#
+#      * a migration outside the list fails, including any earlier one;
+#      * a listed migration whose payload changed fails;
+#      * an empty migration scope fails when the candidate claims one, so the
+#        allow-list cannot degenerate into "anything goes".
+AUTHORIZED_MIGRATIONS="\
+supabase/migrations/0144_harden_assessment_execution_tenant_fks.sql:b9289408e100ead1b21e6cd4e063788ce4b9344dac310ae04c24d9a4553ab23f
+supabase/migrations/0145_harden_assessment_lifecycle_tenant_fks.sql:a267ec22eadc795c1c2112039d57c99f2799b1746158f9d549d49fa4624d7b5f"
+
+AUTHORIZED_PATHS=""
+while IFS=: read -r path want; do
+  [ -n "$path" ] || continue
+  AUTHORIZED_PATHS="$AUTHORIZED_PATHS$path\n"
+  if [ ! -f "$path" ]; then
+    fail "an authorized migration is missing: $path"
+  elif [ "$(shasum -a 256 "$path" | cut -d' ' -f1)" != "$want" ]; then
+    fail "$path does not match its reviewed SHA256"
   else
-    fail "candidate migration scope is not exactly 0144: ${CHANGED_MIGRATIONS:-<none>}"
+    pass "$(basename "$path") matches its reviewed SHA256"
+  fi
+done <<EOF
+$AUTHORIZED_MIGRATIONS
+EOF
+
+if [ -n "${PUBLISH_BASE:-}" ]; then
+  CHANGED_MIGRATIONS=$(git diff --name-only "$PUBLISH_BASE..${PUBLISH_CANDIDATE:-HEAD}" -- supabase/migrations 2>/dev/null)
+  UNAUTHORIZED=""
+  for m in $CHANGED_MIGRATIONS; do
+    printf '%b' "$AUTHORIZED_PATHS" | grep -qxF "$m" || UNAUTHORIZED="$UNAUTHORIZED $m"
+  done
+  if [ -n "$UNAUTHORIZED" ]; then
+    fail "candidate touches unauthorized migration(s):$UNAUTHORIZED"
+  elif [ -z "$CHANGED_MIGRATIONS" ]; then
+    fail "candidate declares a migration slice but changes no migration"
+  else
+    pass "candidate migrations are all authorized: $(printf '%s' "$CHANGED_MIGRATIONS" | tr '\n' ' ')"
   fi
 else
-  pass "the local reviewed migration 0144 has the authorized SHA256"
+  pass "authorized migration payloads verified locally"
+fi
+
+# 10. Baseline and migration must move TOGETHER.
+#
+#     The baseline is only factually true once the migration that reduces it is in
+#     the same candidate. Asserting the pair makes the inconsistency window
+#     impossible rather than merely short: a candidate carrying 0145 must declare
+#     30, and a candidate without it must not.
+CANDIDATE_HAS_0145=no
+if [ -n "${PUBLISH_BASE:-}" ]; then
+  printf '%s' "$CHANGED_MIGRATIONS" \
+    | grep -qxF "supabase/migrations/0145_harden_assessment_lifecycle_tenant_fks.sql" \
+    && CANDIDATE_HAS_0145=yes
+fi
+if [ "$CANDIDATE_HAS_0145" = yes ]; then
+  grep -qE "^readonly BASELINE_OFFENDERS=30$" "$RUNNER" \
+    && grep -qE "F-DB1c: 32 -> 30" "$RUNNER" \
+    && pass "a candidate carrying 0145 pins BASELINE_OFFENDERS=30 and cites F-DB1c" \
+    || fail "the candidate carries 0145 but the runner does not pin 30 with F-DB1c provenance"
+else
+  grep -qE "^readonly BASELINE_OFFENDERS=30$" "$RUNNER" \
+    && fail "the runner pins 30 without a candidate that carries 0145 — baseline would precede its migration" \
+    || pass "baseline is not advanced ahead of its migration"
 fi
 
 printf '\n'

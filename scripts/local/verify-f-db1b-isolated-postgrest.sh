@@ -7,9 +7,17 @@ stop(){ say "STOP: $*"; RESULT=FAIL; exit 1; }
 ROOT=$(cd "$(dirname "$0")/../.." && pwd) || exit 1
 cd "$ROOT" || exit 1
 
-MIGRATION=supabase/migrations/0144_harden_assessment_execution_tenant_fks.sql
+MODE=${F_DB1C_MODE:-f_db1b}
+case "$MODE" in
+  f_db1b)
+    MIGRATION=supabase/migrations/0144_harden_assessment_execution_tenant_fks.sql
+    EXPECTED_MIGRATION_SHA=b9289408e100ead1b21e6cd4e063788ce4b9344dac310ae04c24d9a4553ab23f ;;
+  f_db1c)
+    MIGRATION=supabase/migrations/0145_harden_assessment_lifecycle_tenant_fks.sql
+    EXPECTED_MIGRATION_SHA=a267ec22eadc795c1c2112039d57c99f2799b1746158f9d549d49fa4624d7b5f ;;
+  *) stop "invalid verifier mode" ;;
+esac
 PROBE_LIB=scripts/local/lib/postgrest-embed-probe.sh
-EXPECTED_MIGRATION_SHA=b9289408e100ead1b21e6cd4e063788ce4b9344dac310ae04c24d9a4553ab23f
 POSTGRES_IMAGE=public.ecr.aws/supabase/postgres:17.6.1.167
 POSTGRES_DIGEST=sha256:6942962433a569e87f228b4d4ab7e11db5deca64e43babb3a038443ad6c4f1bb
 POSTGREST_IMAGE=public.ecr.aws/supabase/postgrest:v14.15
@@ -20,10 +28,10 @@ RESULT=UNKNOWN
 for tool in docker supabase psql git tar shasum curl node openssl; do
   command -v "$tool" >/dev/null 2>&1 || stop "$tool unavailable"
 done
-[ -f "$MIGRATION" ] || stop "migration 0144 missing"
+[ -f "$MIGRATION" ] || stop "selected migration missing"
 [ -f "$PROBE_LIB" ] || stop "shared PostgREST probe missing"
 [ "$(shasum -a 256 "$MIGRATION" | cut -d' ' -f1)" = "$EXPECTED_MIGRATION_SHA" ] \
-  || stop "migration 0144 hash mismatch"
+  || stop "selected migration hash mismatch"
 
 RUN_ID=${F_DB1B_RUN_ID:-$(date -u +%Y%m%d%H%M%S)-$(openssl rand -hex 4)}
 case "$RUN_ID" in *[!a-zA-Z0-9_.-]*|'') stop "invalid RUN_ID" ;; esac
@@ -87,6 +95,8 @@ cleanup(){
     docker exec -i "$DB_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 >>"$TEARDOWN_LOG" 2>&1 <<'SQL'
 revoke f_db1b_postgrest_verifier from authenticator;
 revoke all privileges on public.assessment_responses from f_db1b_postgrest_verifier;
+revoke all privileges on public.assessment_answers from f_db1b_postgrest_verifier;
+revoke all privileges on public.assessment_cycles from f_db1b_postgrest_verifier;
 revoke all privileges on public.people from f_db1b_postgrest_verifier;
 revoke all privileges on schema public from f_db1b_postgrest_verifier;
 revoke execute on function public.is_company_member(uuid) from f_db1b_postgrest_verifier;
@@ -144,7 +154,7 @@ DISPOSABLE_PSQL=(env PGHOST=127.0.0.1 PGPORT="$DB_PORT" PGUSER=postgres PGPASSWO
 [ "$DB_PORT" != "$CANON_PORT" ] || stop "disposable database aliases canonical database"
 supabase db reset --workdir "$SNAPSHOT" --no-seed >"$WORK/db-reset.log" 2>&1 || stop "isolated schema reproduction failed"
 DISPOSABLE_PRE=$("${DISPOSABLE_PSQL[@]}" -At --no-psqlrc -v ON_ERROR_STOP=1 -c \
-  "select md5(string_agg(x,E'\\n' order by x)) from (select 'schema_public_effective|usage='||has_schema_privilege('public','public','usage')::text||'|create='||has_schema_privilege('public','public','create')::text x union all select 'rls|'||c.relname::text||'|'||c.relrowsecurity::text||'|'||c.relforcerowsecurity::text from pg_class c where c.oid in ('public.assessment_responses'::regclass,'public.people'::regclass) union all select 'acl|'||c.relname::text||'|'||coalesce(c.relacl::text,'') from pg_class c where c.oid in ('public.assessment_responses'::regclass,'public.people'::regclass) union all select 'function_acl|'||p.oid::regprocedure::text||'|'||coalesce(p.proacl::text,'') from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('is_company_member','current_person_id','has_company_role')) q;") || stop "disposable PRE fingerprint failed"
+  "select md5(string_agg(x,E'\\n' order by x)) from (select 'schema_public_effective|usage='||has_schema_privilege('public','public','usage')::text||'|create='||has_schema_privilege('public','public','create')::text x union all select 'rls|'||c.relname::text||'|'||c.relrowsecurity::text||'|'||c.relforcerowsecurity::text from pg_class c where c.oid in ('public.assessment_responses'::regclass,'public.assessment_answers'::regclass,'public.assessment_cycles'::regclass,'public.people'::regclass) union all select 'acl|'||c.relname::text||'|'||coalesce(c.relacl::text,'') from pg_class c where c.oid in ('public.assessment_responses'::regclass,'public.assessment_answers'::regclass,'public.assessment_cycles'::regclass,'public.people'::regclass) union all select 'function_acl|'||p.oid::regprocedure::text||'|'||coalesce(p.proacl::text,'') from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('is_company_member','current_person_id','has_company_role')) q;") || stop "disposable PRE fingerprint failed"
 "${DISPOSABLE_PSQL[@]}" -At --no-psqlrc -v ON_ERROR_STOP=1 >"$WORK/schema-check.log" <<'SQL' || stop "0144 catalog verification failed"
 select case when count(*)=5 then 'FIVE_FKS_VALID' else 'FAIL' end
 from pg_constraint
@@ -157,6 +167,11 @@ where conname in (
 and contype='f' and convalidated and array_length(conkey,1)=2;
 SQL
 grep -qx FIVE_FKS_VALID "$WORK/schema-check.log" || stop "five validated composite FKs not observed"
+if [ "$MODE" = f_db1c ]; then
+  LIFECYCLE_FKS=$("${DISPOSABLE_PSQL[@]}" -At --no-psqlrc -v ON_ERROR_STOP=1 -c \
+    "select count(*) from pg_constraint where conname in ('assessment_responses_assessment_cycle_id_fkey','assessment_answers_assessment_response_id_fkey') and contype='f' and convalidated and array_length(conkey,1)=2 and array_length(confkey,1)=2;")
+  [ "$LIFECYCLE_FKS" = 2 ] || stop "two lifecycle composite FKs not observed"
+fi
 
 "${DISPOSABLE_PSQL[@]}" --no-psqlrc -v ON_ERROR_STOP=1 >"$WORK/verifier-role.log" <<'SQL' || stop "minimal verifier role setup failed"
 create role f_db1b_postgrest_verifier nologin nosuperuser nocreatedb nocreaterole noinherit nobypassrls;
@@ -175,7 +190,15 @@ do $$ begin
   end if;
 end $$;
 grant usage on schema public to f_db1b_postgrest_verifier;
-grant select (id,employee_id,evaluator_id,company_id) on public.assessment_responses to f_db1b_postgrest_verifier;
+-- assessment_cycle_id is required by the F-DB1c embed: PostgREST must READ the
+-- FK column to resolve assessment_responses -> assessment_cycles, and a missing
+-- column privilege surfaces as 42501 -> HTTP 403, not as an empty result. It was
+-- absent while the F-DB1b embeds (employee_id, evaluator_id) were granted, which
+-- is exactly why answer_response passed and response_cycle returned 403.
+-- Still column-scoped: no table-wide SELECT, and teardown revokes ALL privileges.
+grant select (id,assessment_cycle_id,employee_id,evaluator_id,company_id) on public.assessment_responses to f_db1b_postgrest_verifier;
+grant select (id,assessment_response_id,company_id) on public.assessment_answers to f_db1b_postgrest_verifier;
+grant select (id,company_id) on public.assessment_cycles to f_db1b_postgrest_verifier;
 grant select (id,company_id) on public.people to f_db1b_postgrest_verifier;
 grant execute on function public.is_company_member(uuid) to f_db1b_postgrest_verifier;
 grant execute on function public.current_person_id(uuid) to f_db1b_postgrest_verifier;
@@ -262,19 +285,29 @@ say "JWT_NEGATIVE_TESTS=PASS"
 
 # One implementation classifies all three proof requests. There is no retry.
 . "$ROOT/$PROBE_LIB" || stop "cannot load shared probe"
-EMPLOYEE=$(postgrest_embed_probe "$REST_URL" VERIFIER_KEY 'people!assessment_responses_employee_id_fkey' "$WORK" direct)
-EVALUATOR=$(postgrest_embed_probe "$REST_URL" VERIFIER_KEY 'people!assessment_responses_evaluator_id_fkey' "$WORK" direct)
-NEGATIVE=$(postgrest_embed_probe "$REST_URL" VERIFIER_KEY 'people!f_db1b_nonexistent_fkey' "$WORK" direct)
-say "POSTGREST_EMBED[employee]=$EMPLOYEE"
-say "POSTGREST_EMBED[evaluator]=$EVALUATOR"
+if [ "$MODE" = f_db1b ]; then
+  FIRST=$(postgrest_embed_probe "$REST_URL" VERIFIER_KEY 'people!assessment_responses_employee_id_fkey' "$WORK" direct assessment_responses)
+  SECOND=$(postgrest_embed_probe "$REST_URL" VERIFIER_KEY 'people!assessment_responses_evaluator_id_fkey' "$WORK" direct assessment_responses)
+  NEGATIVE=$(postgrest_embed_probe "$REST_URL" VERIFIER_KEY 'people!f_db1b_nonexistent_fkey' "$WORK" direct assessment_responses)
+  say "POSTGREST_EMBED[employee]=$FIRST"
+  say "POSTGREST_EMBED[evaluator]=$SECOND"
+else
+  FIRST=$(postgrest_embed_probe "$REST_URL" VERIFIER_KEY 'assessment_cycles!assessment_responses_assessment_cycle_id_fkey' "$WORK" direct assessment_responses)
+  SECOND=$(postgrest_embed_probe "$REST_URL" VERIFIER_KEY 'assessment_responses!assessment_answers_assessment_response_id_fkey' "$WORK" direct assessment_answers)
+  NEGATIVE=$(postgrest_embed_probe "$REST_URL" VERIFIER_KEY 'assessment_responses!f_db1c_nonexistent_fkey' "$WORK" direct assessment_answers)
+  say "POSTGREST_EMBED[response_cycle]=$FIRST"
+  say "POSTGREST_EMBED[answer_response]=$SECOND"
+fi
 say "POSTGREST_NEGATIVE=$NEGATIVE"
-[ "$EMPLOYEE" = PASS ] && [ "$EVALUATOR" = PASS ] || stop "positive embedding proof failed"
+[ "$FIRST" = PASS ] && [ "$SECOND" = PASS ] || stop "positive embedding proof failed"
 [ "$NEGATIVE" = POSTGREST_ERROR_PGRST200 ] || stop "negative control did not produce PGRST200"
 
 docker rm -f "$REST_CONTAINER" >/dev/null || stop "cannot stop PostgREST before privilege teardown"
 "${DISPOSABLE_PSQL[@]}" --no-psqlrc -v ON_ERROR_STOP=1 >"$WORK/explicit-teardown.log" <<'SQL' || stop "explicit verifier teardown failed"
 revoke f_db1b_postgrest_verifier from authenticator;
 revoke all privileges on public.assessment_responses from f_db1b_postgrest_verifier;
+revoke all privileges on public.assessment_answers from f_db1b_postgrest_verifier;
+revoke all privileges on public.assessment_cycles from f_db1b_postgrest_verifier;
 revoke all privileges on public.people from f_db1b_postgrest_verifier;
 revoke all privileges on schema public from f_db1b_postgrest_verifier;
 revoke execute on function public.is_company_member(uuid) from f_db1b_postgrest_verifier;
@@ -284,7 +317,7 @@ drop role f_db1b_postgrest_verifier;
 grant usage on schema public to public;
 SQL
 DISPOSABLE_POST=$("${DISPOSABLE_PSQL[@]}" -At --no-psqlrc -v ON_ERROR_STOP=1 -c \
-  "select md5(string_agg(x,E'\\n' order by x)) from (select 'schema_public_effective|usage='||has_schema_privilege('public','public','usage')::text||'|create='||has_schema_privilege('public','public','create')::text x union all select 'rls|'||c.relname::text||'|'||c.relrowsecurity::text||'|'||c.relforcerowsecurity::text from pg_class c where c.oid in ('public.assessment_responses'::regclass,'public.people'::regclass) union all select 'acl|'||c.relname::text||'|'||coalesce(c.relacl::text,'') from pg_class c where c.oid in ('public.assessment_responses'::regclass,'public.people'::regclass) union all select 'function_acl|'||p.oid::regprocedure::text||'|'||coalesce(p.proacl::text,'') from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('is_company_member','current_person_id','has_company_role')) q;") || stop "disposable POST fingerprint failed"
+  "select md5(string_agg(x,E'\\n' order by x)) from (select 'schema_public_effective|usage='||has_schema_privilege('public','public','usage')::text||'|create='||has_schema_privilege('public','public','create')::text x union all select 'rls|'||c.relname::text||'|'||c.relrowsecurity::text||'|'||c.relforcerowsecurity::text from pg_class c where c.oid in ('public.assessment_responses'::regclass,'public.assessment_answers'::regclass,'public.assessment_cycles'::regclass,'public.people'::regclass) union all select 'acl|'||c.relname::text||'|'||coalesce(c.relacl::text,'') from pg_class c where c.oid in ('public.assessment_responses'::regclass,'public.assessment_answers'::regclass,'public.assessment_cycles'::regclass,'public.people'::regclass) union all select 'function_acl|'||p.oid::regprocedure::text||'|'||coalesce(p.proacl::text,'') from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('is_company_member','current_person_id','has_company_role')) q;") || stop "disposable POST fingerprint failed"
 [ "$DISPOSABLE_PRE" = "$DISPOSABLE_POST" ] || stop "disposable security fingerprint diverged after teardown"
 ROLE_RESIDUE=$("${DISPOSABLE_PSQL[@]}" -At --no-psqlrc -v ON_ERROR_STOP=1 -c "select count(*) from pg_roles where rolname='f_db1b_postgrest_verifier';")
 [ "$ROLE_RESIDUE" = 0 ] || stop "verifier role survived teardown"

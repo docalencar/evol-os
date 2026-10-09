@@ -18,7 +18,10 @@
 # WHY THE SWEEPS LIVE IN supabase/gates AND NOT supabase/tests
 #
 # The ADR-0012 sweep remains RED by design: F-DB1b reduced the governed baseline
-# from 37 to 32 by replacing exactly five Assessment execution FKs. Placing a
+# from 37 to 32 by replacing five Assessment execution FKs, and F-DB1c from 32 to
+# 30 by replacing the two Assessment lifecycle FKs. Thirty offenders remain in
+# Assessments' authoring surface, Feedback's children and the legacy tables, so
+# the sweep is still honestly red. Placing a
 # permanently red file under `supabase/tests` would make `supabase test db` red
 # forever, and every other gate in scripts/local asserts FULL_DB_SUITE=PASS — so
 # one honest baseline would turn the whole harness fleet red and destroy the
@@ -42,7 +45,11 @@ set -uo pipefail
 
 # The baseline this gate was validated against. Changing it is a governance
 # decision and must cite the slice that moved the number. F-DB1b: 37 -> 32.
-readonly BASELINE_OFFENDERS=32
+# F-DB1c: 32 -> 30, by replacing the two Assessment lifecycle FKs
+# (assessment_responses.assessment_cycle_id, assessment_answers.assessment_response_id).
+# The baseline and the migration that justifies it travel in one candidate, so the
+# number is never true ahead of the schema that makes it true.
+readonly BASELINE_OFFENDERS=30
 readonly EXPECTED_SLICE_CONSTRAINTS=30
 
 say() { printf '%s\n' "$*"; }

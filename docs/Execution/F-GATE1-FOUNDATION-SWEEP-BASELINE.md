@@ -6,10 +6,13 @@
 
 | | |
 | --- | --- |
-| Canonical main | `c90581b9785be050ab41d51e9e10c9fe6a3dcac2` |
+| Canonical main do fechamento original | `c90581b9785be050ab41d51e9e10c9fe6a3dcac2` |
+| Canonical main desta reconciliação | `3bce00a88dff89ee0be23059f46e0fb889dd5907` |
 | Runner | `scripts/local/verify-f-gate1-foundation-sweeps.sh` |
 | Veredicto do slice | **`F_GATE1_DETECTOR=PASS`** |
-| Baseline ADR-0012 | **37 offenders** — `ADR_0012_FK_SWEEP=FAIL`, RED por desenho |
+| Baseline ADR-0012 original | **37 offenders** — `ADR_0012_FK_SWEEP=FAIL`, RED por desenho |
+| Baseline executável atual | **32 offenders** — redução de 5 por F-DB1b, mantendo o sweep RED por desenho |
+| Baseline efetivo em Review | **NÃO VERIFICADO COMO 32** — migrations `0143`/`0144` não foram promovidas |
 | Production / Legacy / Review | `NOT_ACCESSED` |
 | Turnover | `NOT_TOUCHED` |
 
@@ -135,8 +138,10 @@ concedeu. Essa comparação é slice própria.
 
 ## 7. O gate também é detector prospectivo
 
-O runner fixa `BASELINE_OFFENDERS=37` e falha se a contagem se mover em
-**qualquer** direção:
+No fechamento original, o runner fixava `BASELINE_OFFENDERS=37`. Esse valor é a
+evidência histórica inicial e não deve ser reescrito. Após F-DB1b, o runner fixa
+`BASELINE_OFFENDERS=32`, com a proveniência `F-DB1b: 37 -> 32`, e continua
+falhando se a contagem se mover em **qualquer** direção:
 
 - **para cima** — nova dívida ADR-0012 entrou; classificar antes de qualquer coisa;
 - **para baixo** — dívida foi corrigida; atualizar a baseline **citando a slice**
@@ -150,9 +155,10 @@ primeiro; `company_id` nullable em algum lado → listado, mas **não é desculp
 porque `0067:207,223` já constrói FK composta para `development_templates`, cujo
 `company_id` é nullable pelo check híbrido de `0009:40`.
 
-## 8. Limites deste fechamento
+## 8. Limites do fechamento original
 
-Este documento fecha **o detector**. Ele **não**:
+O fechamento original registrou o detector sobre 37 offenders. Naquele estado,
+ele **não**:
 
 - corrige nenhum dos 37 offenders — isso é F-DB1, slice própria, deliberadamente
   não misturada aqui;
@@ -162,3 +168,109 @@ Este documento fecha **o detector**. Ele **não**:
   `OPEN / SEPARATE SECURITY DEBT` e exige leitura remota autorizada;
 - toca a fixture durável de Turnover, que segue em `COVERAGE_STARTED` aguardando
   a virada UTC real.
+
+## 9. Reconciliação pós-F-DB1b
+
+F-DB1b substituiu cinco FKs simples da execução de Assessment por FKs compostas
+tenant-aware, preservando nomes canônicos, `MATCH SIMPLE`, `ON UPDATE NO ACTION`
+e `ON DELETE CASCADE`. A mudança foi publicada pelo PR
+[#207](https://github.com/docalencar/evol-os/pull/207), candidate
+`a9ca2e68c268eba76f54d5aaf7916b8030b08df4`, merge
+`3bce00a88dff89ee0be23059f46e0fb889dd5907`.
+
+Evidência local e de publicação:
+
+- CI do candidate: run `37979789567`, `SUCCESS`;
+- CI pós-main: run `37980078515`, `SUCCESS`;
+- workspace DB suite: `4835/4835 PASS`;
+- verifier/shared probe: `28/28 PASS`;
+- embeddings PostgREST employee/evaluator: HTTP 200, com controle negativo
+  `PGRST200`;
+- Foundation: 37 PRE, 32 POST, sem offender novo;
+- fingerprint RLS/ACL/RPC PRE/POST:
+  `62a89ab96bfc36037ed442e5ab664a38`;
+- fingerprint das FKs fora do escopo PRE/POST:
+  `085bd0f33b035a4a2fb0ac0a403ab53e`;
+- drift rejection, rollback integral, teardown e ausência de resíduos: `PASS`.
+
+Esse é o **baseline executável do Git/local**. Não é prova do estado efetivo da
+Review: `0143` e `0144` estão publicadas no Git, mas não foram promovidas ao
+ambiente. A promoção continua separada e bloqueada pelo contrato operacional de
+Turnover; este registro não autoriza acesso remoto nem promoção de banco.
+
+## 10. Próxima correção proposta: F-DB1c
+
+A próxima slice mínima proposta cobre somente:
+
+- `assessment_responses.assessment_cycle_id` →
+  `assessment_cycles(id, company_id)`;
+- `assessment_answers.assessment_response_id` →
+  `assessment_responses(id, company_id)`.
+
+Ambos os destinos já possuem candidate key `(id, company_id)`. A implementação
+deve depender da sequência `0143` → `0144`, preservar os nomes públicos das FKs,
+provar a semântica nullable de `assessment_answers.assessment_response_id` e
+reutilizar o verifier PostgREST isolado de F-DB1b. Se aprovada e comprovada, a
+redução esperada do detector é 32 → 30. Esta seção registra desenho para revisão;
+não autoriza migration ou implementação.
+
+O catálogo já contém índices cujo primeiro campo é `assessment_cycle_id` em
+`assessment_responses` e `assessment_response_id` em `assessment_answers`. Planos
+locais usam esses índices e filtram `company_id`; como os ids dos pais são UUIDs
+globalmente únicos, não há evidência atual para acrescentar índices compostos.
+Qualquer índice novo exige prova separada por catálogo/planner.
+
+O verifier isolado é reutilizável, mas sua função compartilhada hoje fixa o
+recurso HTTP em `assessment_responses`. F-DB1c precisa de uma extensão genérica e
+retrocompatível que permita selecionar `assessment_answers`, mantendo a mesma
+classificação HTTP e os consumidores F-DB1b intactos. Isso é evolução de harness,
+não mudança de produto. O caso answers → responses já possui duas relações no
+schema; a prova deve usar explicitamente
+`assessment_responses!assessment_answers_assessment_response_id_fkey`, exigir
+HTTP 200/array e manter `PGRST201` como falha e `PGRST200` apenas como controle
+negativo deliberado.
+
+## 9. Movimentos governados da baseline
+
+| Slice | Movimento | O que mudou |
+| --- | --- | --- |
+| F-GATE1 | — | baseline original **37**, detector validado sobre RED |
+| F-DB1b | 37 → **32** | cinco FKs da execução de Assessment viraram compostas |
+| F-DB1c | 32 → **30** | as duas FKs do lifecycle: `assessment_responses.assessment_cycle_id` e `assessment_answers.assessment_response_id` |
+
+Restam **30** offenders — superfície de autoria de Assessment, filhos de Feedback
+e as tabelas legadas. O sweep segue RED por desenho, e isso continua correto.
+
+### Baseline e migration viajam juntas
+
+A baseline só é factualmente verdadeira depois que a migration que a reduz está
+na main. Publicar `30` antes de `0145` abriria uma janela em que o runner espera
+um número que o schema ainda não entrega.
+
+O guard passou a asseverar o par, não cada metade: um candidate que carrega
+`0145` **tem** de pinar `30` citando F-DB1c, e um candidate que **não** o carrega
+não pode pinar `30`. A janela deixa de ser curta e passa a ser impossível — e
+`F_GATE1_PUBLICATION_SEQUENCE_PROOF` demonstrou que o `publish-gate.sh` suporta
+isso com dois commits numa só branch (`commits` é sequência ordenada, `candidate`
+é o tip, `ancestors` pina o commit anterior), dispensando a reconciliação por
+merge que uma ordem invertida exigiria.
+
+### Allow-list em lugar de igualdade
+
+O bloco 9 do guard exigia que o escopo de migration do candidate fosse
+**exatamente** `0144`. Correto para F-DB1b, errado para a slice seguinte: recusou
+`0145` legitimamente autorizada. Virou allow-list fechada com SHA pinado por
+entrada. Não é relaxamento — migration fora da lista reprova, payload alterado de
+entrada listada reprova, e escopo vazio reprova, de modo que a lista não degenera
+em "qualquer coisa".
+
+### O guard passou a ter teste
+
+Ele não tinha nenhum: foi mutation-auditado à mão uma vez e, meses depois,
+recusou um candidate correto. `guards/f-gate1-detector-integrity.test.mjs` traz
+13 casos — 2 positivos e 11 negativos — rodando o guard real contra cópias
+temporárias dos arquivos reais. Um deles merece registro: a primeira versão do
+negativo "migration não autorizada" escrevia `0146` em disco e asseverava uma
+falha **impossível**, porque arquivo untracked nunca aparece num diff de commit.
+Testava nada. Agora usa um par real do histórico (`c90581b9..c625f24e`, que
+carrega `0143`).

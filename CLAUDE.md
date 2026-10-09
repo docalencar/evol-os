@@ -11,8 +11,8 @@
 > - `docs/engineering/ENGINEERING_GUIDE.md` — guia oficial de engenharia.
 > - `docs/engineering/OPERATING-METHOD.md` — método permanente de execução
 >   governada: classificação de falhas, FAST/GOVERNED PATH, disciplina de Git e
->   estado protegido, PRE/POST/TOCTOU, ambientes, segredos, publicação e
->   relatórios em delta.
+>   estado protegido, PRE/POST/TOCTOU, ambientes, segredos, publicação,
+>   relatórios em delta e custo de IA.
 > - `docs/engineering/backend-standards.md` · `frontend-standards.md` ·
 >   `development-workflow.md` — padrões por área.
 > - `docs/adr/` — decisões de arquitetura (em especial `0001-feature-architecture`,
@@ -60,7 +60,13 @@ Regras de governança:
 - divergência entre documentação e código interrompe a implementação e exige
   reconciliação documental;
 - prioridade ausente nunca é presumida nem inventada;
-- uma PR por vez, com um único objetivo verificável.
+- uma PR por vez, com um único objetivo verificável;
+- **uma tarefa delimitada por execução** — o objetivo e a fronteira são
+  explícitos antes de começar; tarefa que não couber na fronteira vira a próxima
+  entrega, não um apêndice da atual;
+- trabalho assistido por IA otimiza o **menor custo total de IA por entrega
+  correta e validada**, nunca o tamanho de um prompt isolado, e nunca à custa de segurança,
+  qualidade ou rastreabilidade (`OPERATING-METHOD.md` §14).
 
 A referência a espelhar é a feature `organization-planning`: é a mais completa e
 demonstra todas as camadas na prática.
@@ -229,6 +235,11 @@ Testes acompanham **domínio e lógica determinística**, que têm prioridade so
 interface. Deve existir teste correspondente sempre que houver **engine, regra de
 negócio, cálculo, inteligência ou projeção**. Padrões de teste e organização em
 `docs/engineering/development-workflow.md`.
+
+A **profundidade** do teste é proporcional ao risco da mudança; o que é
+obrigatório não é. Gates de segurança, migrations, ACL/RLS e promoção remota
+mantêm o rigor integral do GOVERNED PATH independentemente do tamanho do diff
+(`OPERATING-METHOD.md` §6 e §14).
 
 ---
 

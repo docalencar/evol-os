@@ -17,7 +17,8 @@
 #
 # WHY THE SWEEPS LIVE IN supabase/gates AND NOT supabase/tests
 #
-# The ADR-0012 sweep is RED today by design: 37 pre-existing offenders. Placing a
+# The ADR-0012 sweep remains RED by design: F-DB1b reduced the governed baseline
+# from 37 to 32 by replacing exactly five Assessment execution FKs. Placing a
 # permanently red file under `supabase/tests` would make `supabase test db` red
 # forever, and every other gate in scripts/local asserts FULL_DB_SUITE=PASS — so
 # one honest baseline would turn the whole harness fleet red and destroy the
@@ -40,8 +41,8 @@
 set -uo pipefail
 
 # The baseline this gate was validated against. Changing it is a governance
-# decision and must cite the slice that moved the number.
-readonly BASELINE_OFFENDERS=37
+# decision and must cite the slice that moved the number. F-DB1b: 37 -> 32.
+readonly BASELINE_OFFENDERS=32
 readonly EXPECTED_SLICE_CONSTRAINTS=30
 
 say() { printf '%s\n' "$*"; }
@@ -137,8 +138,8 @@ esac
 say "[f-gate1] 3/4 sweeps (target proven local: $DB_HOST) ..."
 run_sweep() {  # $1 = file, $2 = log; echoes PASS or FAIL
   psql "$DB_URL" -v ON_ERROR_STOP=0 --no-psqlrc -f "$1" >"$2" 2>&1
-  if grep -qE "^not ok|Bail out!|^psql:.*ERROR" "$2"; then printf 'FAIL'
-  elif grep -qE "^ok 1" "$2"; then printf 'PASS'
+  if grep -qE "^[[:space:]]*not ok|Bail out!|^[[:space:]]*psql:.*ERROR" "$2"; then printf 'FAIL'
+  elif grep -qE "^[[:space:]]*ok 1" "$2"; then printf 'PASS'
   else printf 'FAIL'; fi   # no assertions ran at all is not a pass
 }
 ADR_0012_SWEEP=$(run_sweep "$FK_SWEEP" "$WORK/fk.log")
@@ -146,11 +147,11 @@ ACL_POSTURE=$(run_sweep "$ACL_SWEEP" "$WORK/acl.log")
 
 # Detector health: the parts that must be green even while the contract is red.
 SLICE_REGRESSION=PASS
-grep -qE "^not ok.*every constraint created by the" "$WORK/fk.log" && SLICE_REGRESSION=FAIL
-grep -qE "^not ok.*no constraint created by a hardening slice has regressed" "$WORK/fk.log" && SLICE_REGRESSION=FAIL
-grep -qE "^not ok.*the expected set is the 30 surviving" "$WORK/fk.log" && SLICE_REGRESSION=FAIL
+grep -qE "^[[:space:]]*not ok.*every constraint created by the" "$WORK/fk.log" && SLICE_REGRESSION=FAIL
+grep -qE "^[[:space:]]*not ok.*no constraint created by a hardening slice has regressed" "$WORK/fk.log" && SLICE_REGRESSION=FAIL
+grep -qE "^[[:space:]]*not ok.*the expected set is the 30 surviving" "$WORK/fk.log" && SLICE_REGRESSION=FAIL
 SWEEP_OBSERVES=PASS
-grep -qE "^not ok.*the sweep observes tenant-owned" "$WORK/fk.log" && SWEEP_OBSERVES=FAIL
+grep -qE "^[[:space:]]*not ok.*the sweep observes tenant-owned" "$WORK/fk.log" && SWEEP_OBSERVES=FAIL
 
 OFFENDERS=$(grep -oE "offenders: [^']*" "$WORK/fk.log" | head -1 | sed 's/^offenders: //')
 OFFENDER_COUNT=$(printf '%s' "$OFFENDERS" | awk -F', ' '{print NF}')

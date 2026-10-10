@@ -161,11 +161,47 @@ function grantedColumns(table) {
   return cols
 }
 
-test("the probed tables' own policies consult feedback_threads — so its policy columns matter", () => {
-  for (const child of ["feedback_attachments", "feedback_mentions"]) {
-    assert.match(selectPolicyBody(child), /feedback_threads/,
-      `${child}'s policy no longer consults feedback_threads; revisit the grant derivation`)
+// Resolving an embed selects FROM the target table, so the TARGETS' policies run
+// too. Measuring only the queried children is what made the first fix
+// incomplete: feedback_messages' policy inlines the management branch that the
+// children's policies stop short of.
+const PROBED = ["feedback_attachments", "feedback_mentions"]
+const TARGETS = ["feedback_threads", "feedback_messages", "people"]
+
+test("the probed tables AND the embed targets consult feedback_threads — so its policy columns matter", () => {
+  for (const t of [...PROBED, "feedback_messages"]) {
+    assert.match(selectPolicyBody(t), /feedback_threads/,
+      `${t}'s policy no longer consults feedback_threads; revisit the grant derivation`)
   }
+})
+
+test("every feedback_threads column read by ANY probed table or embed target is granted", () => {
+  // Derived, not enumerated: the union over the policies that actually run.
+  const columns = ["sender_employee_id", "receiver_employee_id", "visibility", "company_id", "id"]
+  const granted = grantedColumns("feedback_threads")
+  const required = new Set()
+  for (const t of [...PROBED, "feedback_messages", "feedback_threads"]) {
+    const body = selectPolicyBody(t)
+    for (const c of columns) if (new RegExp(`\\b${c}\\b`).test(body)) required.add(c)
+  }
+  assert.ok(required.has("visibility"),
+    "expected some policy in the probe path to read feedback_threads.visibility")
+  for (const c of required) {
+    assert.ok(granted.has(c),
+      `feedback_threads.${c} is read by a policy in the probe path but not granted — this is the 403`)
+  }
+})
+
+test("each embed target is itself readable: a target's own policy must not deny it", () => {
+  // The target tables are selected when the relationship is resolved, so each one
+  // needs the columns its own policy reads, not just its FK columns.
+  for (const t of TARGETS) {
+    const granted = grantedColumns(t)
+    assert.ok(granted.has("id") && granted.has("company_id"),
+      `${t} must expose id and company_id to resolve an embedding`)
+  }
+  assert.ok(grantedColumns("people").has("manager_id"))
+  assert.ok(grantedColumns("feedback_threads").has("visibility"))
 })
 
 test("every column feedback_threads' policy reads from itself is granted", () => {

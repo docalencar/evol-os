@@ -236,8 +236,14 @@ grant select (id,thread_id,message_id,mentioned_employee_id,company_id) on publi
 --
 -- This is the F-DB1c lesson one level too shallow: granting the FK columns is
 -- necessary and not sufficient. Each column below was falsified individually —
--- removing any one of the three brings the 403 back.
-grant select (id,company_id,sender_employee_id,receiver_employee_id) on public.feedback_threads to f_db1b_postgrest_verifier;
+-- removing any one of the four brings the 403 back.
+--
+-- `visibility` is required by the EMBED TARGETS, not by the probed children:
+-- feedback_messages' policy inlines the whole `visibility = 'management'` branch,
+-- while the attachments and mentions policies stop short of it. Resolving an
+-- embed selects FROM the target table, so the target's own policy runs too — and
+-- measuring only the queried tables is what made the first fix incomplete.
+grant select (id,company_id,sender_employee_id,receiver_employee_id,visibility) on public.feedback_threads to f_db1b_postgrest_verifier;
 grant select (id,company_id) on public.feedback_messages to f_db1b_postgrest_verifier;
 grant select (id,company_id,manager_id) on public.people to f_db1b_postgrest_verifier;
 SQL

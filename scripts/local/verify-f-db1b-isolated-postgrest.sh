@@ -270,32 +270,6 @@ chmod 600 "$CONFIG_FILE"
 # Replace the independently generated config secret with the signer secret
 # without ever logging either value.
 CONFIG_SECRET=$(sed -nE 's/^jwt-secret = "([^"]+)"/\1/p' "$CONFIG_FILE")
-export F_DB1B_JWT_SECRET="$CONFIG_SECRET"
-VERIFIER_KEY=$(node <<'NODE'
-const c=require('crypto'), e=x=>Buffer.from(JSON.stringify(x)).toString('base64url');
-const now=Math.floor(Date.now()/1000), h=e({alg:'HS256',typ:'JWT'});
-const p=e({role:'f_db1b_postgrest_verifier',iat:now-5,exp:now+300});
-process.stdout.write(`${h}.${p}.${c.createHmac('sha256',process.env.F_DB1B_JWT_SECRET).update(`${h}.${p}`).digest('base64url')}`);
-NODE
-)
-EXPIRED_KEY=$(node <<'NODE'
-const c=require('crypto'), e=x=>Buffer.from(JSON.stringify(x)).toString('base64url');
-const now=Math.floor(Date.now()/1000), h=e({alg:'HS256',typ:'JWT'});
-const p=e({role:'f_db1b_postgrest_verifier',iat:now-600,exp:now-300});
-process.stdout.write(`${h}.${p}.${c.createHmac('sha256',process.env.F_DB1B_JWT_SECRET).update(`${h}.${p}`).digest('base64url')}`);
-NODE
-)
-export F_DB1B_JWT_SECRET=$(openssl rand -hex 32)
-INVALID_KEY=$(node <<'NODE'
-const c=require('crypto'), e=x=>Buffer.from(JSON.stringify(x)).toString('base64url');
-const now=Math.floor(Date.now()/1000), h=e({alg:'HS256',typ:'JWT'});
-const p=e({role:'f_db1b_postgrest_verifier',iat:now-5,exp:now+300});
-process.stdout.write(`${h}.${p}.${c.createHmac('sha256',process.env.F_DB1B_JWT_SECRET).update(`${h}.${p}`).digest('base64url')}`);
-NODE
-)
-unset F_DB1B_JWT_SECRET CONFIG_SECRET
-printf '%s' "$VERIFIER_KEY" >"$PROOF_KEY_FILE"
-chmod 600 "$PROOF_KEY_FILE"
 
 docker run -d --pull=never --name "$REST_CONTAINER" --network "$NETWORK" \
   --label "$LABEL_KEY=$RUN_ID" -p 127.0.0.1::3000 \
@@ -315,18 +289,56 @@ done
 [ "$READY" = YES ] || stop "PostgREST readiness failed"
 say "READINESS=PASS"
 
+# JWT time is owned by the disposable environment, not by the host. A large
+# difference is environmental evidence; shifting claims to hide it would make
+# an expired/future test meaningless.
+HOST_NOW=$(date -u +%s) || stop "host clock unavailable"
+CONTAINER_NOW=$(docker exec "$DB_CONTAINER" date -u +%s) || stop "container clock unavailable"
+case "$HOST_NOW:$CONTAINER_NOW" in *[!0-9:]*|:*|*:) stop "clock sample invalid" ;; esac
+CLOCK_SKEW=$((HOST_NOW-CONTAINER_NOW)); [ "$CLOCK_SKEW" -lt 0 ] && CLOCK_SKEW=$((-CLOCK_SKEW))
+say "CLOCK_SKEW_SECONDS=$CLOCK_SKEW"
+if [ "$CLOCK_SKEW" -gt 60 ]; then
+  say "FAILURE_CLASS=ENVIRONMENTAL"
+  stop "CLOCK_SKEW"
+fi
+
+export F_DB1B_JWT_SECRET="$CONFIG_SECRET" F_DB1B_JWT_NOW="$CONTAINER_NOW"
+make_jwt(){
+  F_DB1B_JWT_KIND="$1" node <<'NODE'
+const c=require('crypto'), e=x=>Buffer.from(JSON.stringify(x)).toString('base64url');
+const now=Number(process.env.F_DB1B_JWT_NOW), kind=process.env.F_DB1B_JWT_KIND;
+const claims=kind==='valid' ? {iat:now-5,exp:now+900}
+  : kind==='expired' ? {iat:now-900,exp:now-300}
+  : {iat:now+300,exp:now+900};
+const h=e({alg:'HS256',typ:'JWT'}), p=e({role:'f_db1b_postgrest_verifier',...claims});
+process.stdout.write(`${h}.${p}.${c.createHmac('sha256',process.env.F_DB1B_JWT_SECRET).update(`${h}.${p}`).digest('base64url')}`);
+NODE
+}
+VERIFIER_KEY=$(make_jwt valid) || stop "valid JWT generation failed"
+EXPIRED_KEY=$(make_jwt expired) || stop "expired JWT generation failed"
+FUTURE_KEY=$(make_jwt future) || stop "future JWT generation failed"
+unset F_DB1B_JWT_SECRET F_DB1B_JWT_NOW F_DB1B_JWT_KIND CONFIG_SECRET
+printf '%s' "$VERIFIER_KEY" >"$PROOF_KEY_FILE"
+chmod 600 "$PROOF_KEY_FILE"
+
 auth_status(){
   key="${!1-}"; body="$WORK/auth-$2.json"
   printf 'header = "Authorization: Bearer %s"\nsilent\nshow-error\nmax-time = 10\noutput = "%s"\nwrite-out = "%%{http_code}"\nurl = "%s"\n' \
     "$key" "$body" "$REST_URL/assessment_responses?select=id&limit=0" | curl -K - 2>"$WORK/auth-curl.err"
 }
-INVALID_HTTP=$(auth_status INVALID_KEY invalid)
+VALID_HTTP=$(auth_status VERIFIER_KEY valid)
 EXPIRED_HTTP=$(auth_status EXPIRED_KEY expired)
-[ "$INVALID_HTTP" = 401 ] && grep -q '"code":"PGRST301"' "$WORK/auth-invalid.json" \
-  || stop "invalid JWT was not rejected"
+FUTURE_HTTP=$(auth_status FUTURE_KEY future)
+[ "$VALID_HTTP" = 200 ] && node -e 'const j=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));if(!Array.isArray(j))process.exit(1)' "$WORK/auth-valid.json" \
+  || stop "valid JWT authentication failed"
+say "JWT_POSITIVE_TEST=PASS"
 [ "$EXPIRED_HTTP" = 401 ] && grep -q '"code":"PGRST303"' "$WORK/auth-expired.json" \
+  && grep -q '"message":"JWT expired' "$WORK/auth-expired.json" \
   || stop "expired JWT was not rejected"
-unset INVALID_KEY EXPIRED_KEY
+[ "$FUTURE_HTTP" = 401 ] && grep -q '"code":"PGRST303"' "$WORK/auth-future.json" \
+  && grep -q '"message":"JWT issued at future' "$WORK/auth-future.json" \
+  || stop "future JWT was not rejected"
+unset EXPIRED_KEY FUTURE_KEY
 say "JWT_NEGATIVE_TESTS=PASS"
 
 # One implementation classifies all three proof requests. There is no retry.

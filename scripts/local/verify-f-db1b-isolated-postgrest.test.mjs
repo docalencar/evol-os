@@ -43,10 +43,42 @@ test("grants only schema usage, required columns, policy helpers and membership"
   assert.doesNotMatch(runner, /disable row level security/i)
 })
 
-test("invalid and expired JWTs must be rejected by real PostgREST", () => {
-  assert.match(runner, /INVALID_HTTP.*PGRST301/s)
-  assert.match(runner, /EXPIRED_HTTP.*PGRST303/s)
+test("expired and future JWTs have distinct factual assertions", () => {
+  assert.match(runner, /EXPIRED_HTTP.*PGRST303.*JWT expired/s)
+  assert.match(runner, /FUTURE_HTTP.*PGRST303.*JWT issued at future/s)
   assert.match(runner, /JWT_NEGATIVE_TESTS=PASS/)
+})
+
+test("valid authentication is mandatory before the first embedding", () => {
+  assert.match(runner, /VALID_HTTP.*= 200/s)
+  assert.match(runner, /JWT_POSITIVE_TEST=PASS/)
+  assert.ok(runner.indexOf("READINESS=PASS") < runner.indexOf("VERIFIER_KEY=$(make_jwt valid)"))
+  assert.ok(runner.indexOf("JWT_POSITIVE_TEST=PASS") < runner.indexOf("FIRST=$(postgrest_embed_probe"))
+})
+
+test("JWT time comes from the container and clock skew fails closed as environmental", () => {
+  assert.match(runner, /CONTAINER_NOW=\$\(docker exec "\$DB_CONTAINER" date -u \+%s\)/)
+  assert.match(runner, /CLOCK_SKEW.*-gt 60/)
+  assert.match(runner, /FAILURE_CLASS=ENVIRONMENTAL/)
+  assert.match(runner, /stop "CLOCK_SKEW"/)
+  assert.match(runner, /exp:now\+900/)
+})
+
+function jwtContract(source) {
+  return /VALID_HTTP.*= 200/s.test(source)
+    && /EXPIRED_HTTP.*PGRST303.*JWT expired/s.test(source)
+    && /FUTURE_HTTP.*PGRST303.*JWT issued at future/s.test(source)
+    && source.indexOf("JWT_POSITIVE_TEST=PASS") < source.indexOf("FIRST=$(postgrest_embed_probe")
+}
+
+test("sabotage proves positive auth, factual messages and execution order are required", () => {
+  assert.equal(jwtContract(runner), true)
+  for (const sabotaged of [
+    runner.replace('[ "$VALID_HTTP" = 200 ]', '[ "$VALID_HTTP" = 401 ]'),
+    runner.replace('"message":"JWT expired', '"message":"anything'),
+    runner.replace('"message":"JWT issued at future', '"message":"anything'),
+    runner.replace('say "JWT_POSITIVE_TEST=PASS"', 'FIRST=$(postgrest_embed_probe); say "JWT_POSITIVE_TEST=PASS"'),
+  ]) assert.equal(jwtContract(sabotaged), false)
 })
 
 test("credentials stay out of curl argv and temporary files are protected", () => {

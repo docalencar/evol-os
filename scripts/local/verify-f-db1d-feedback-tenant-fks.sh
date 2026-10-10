@@ -23,6 +23,12 @@ classify_reset_failure(){
   say "RESET_LOG=$reset_log"
   stop "$reset_label reset failed"
 }
+run_reset(){
+  local reset_workdir=$1 reset_log=$2 reset_label=$3 reset_rc
+  supabase db reset --workdir "$reset_workdir">"$reset_log" 2>&1
+  reset_rc=$?
+  [ "$reset_rc" -eq 0 ] || classify_reset_failure "$reset_log" "$reset_rc" "$reset_label"
+}
 
 # Regression tests exercise the production classifier with synthetic logs. This
 # mode performs no tool discovery, Supabase command, Docker call or DB access.
@@ -68,7 +74,7 @@ security_fp(){ fp "select md5(string_agg(x,E'\\n' order by x)) from (select 'rls
 other_fk_fp(){ fp "select md5(string_agg(conname||'|'||pg_get_constraintdef(oid,true),E'\\n' order by conrelid::regclass::text,conname)) from pg_constraint where contype='f' and connamespace='public'::regnamespace and conname not in ('feedback_attachments_thread_id_fkey','feedback_attachments_message_id_fkey','feedback_attachments_uploaded_by_employee_id_fkey','feedback_mentions_thread_id_fkey','feedback_mentions_message_id_fkey','feedback_mentions_mentioned_employee_id_fkey');"; }
 
 say '[f-db1d] 1/6 PRE through 0145'
-supabase db reset --workdir "$PRE">"$WORK/pre-reset.log" 2>&1 || stop "PRE reset failed"
+run_reset "$PRE" "$WORK/pre-reset.log" PRE
 PRE_SECURITY=$(security_fp) || stop "PRE security fingerprint failed"
 PRE_OTHER=$(other_fk_fp) || stop "PRE other-FK fingerprint failed"
 PRE_OFFENDERS=$(offenders) || stop "PRE offender census failed"
@@ -97,7 +103,7 @@ say '[f-db1d] 3/6 the SET NULL clause nulls only the uploader'
 say SET_NULL_COLUMN_LIST=PASS
 
 say '[f-db1d] 4/6 drift rejection'
-supabase db reset --workdir "$PRE">"$WORK/drift-reset.log" 2>&1 || stop "drift reset failed"
+run_reset "$PRE" "$WORK/drift-reset.log" drift
 psql_local -c 'alter table public.feedback_mentions rename constraint feedback_mentions_thread_id_fkey to feedback_mentions_thread_id_fkey_drift;' >/dev/null
 psql_local -f "$MIGRATION">"$WORK/drift.log" 2>&1; RC=$?
 [ "$RC" -ne 0 ] && grep -q FEEDBACK_CHILD_TENANT_FK_PREFLIGHT_FAILED "$WORK/drift.log" || stop "DRIFT_REJECTION=FAIL"
@@ -105,9 +111,7 @@ psql_local -f "$MIGRATION">"$WORK/drift.log" 2>&1; RC=$?
 say DRIFT_REJECTION=PASS
 
 say '[f-db1d] 5/6 rollback after intermediate failure'
-supabase db reset --workdir "$PRE">"$WORK/rollback-reset.log" 2>&1
-RESET_RC=$?
-[ "$RESET_RC" -eq 0 ] || classify_reset_failure "$WORK/rollback-reset.log" "$RESET_RC" rollback
+run_reset "$PRE" "$WORK/rollback-reset.log" rollback
 psql_local -c 'alter table public.feedback_mentions add constraint feedback_mentions_mentioned_employee_company_fkey_new check (true);' >/dev/null
 psql_local -f "$MIGRATION">"$WORK/rollback.log" 2>&1; RC=$?
 [ "$RC" -ne 0 ] || stop "INTERMEDIATE_FAILURE=FAIL"
@@ -117,7 +121,7 @@ psql_local -f "$MIGRATION">"$WORK/rollback.log" 2>&1; RC=$?
 say ROLLBACK_INTEGRAL=PASS
 
 say '[f-db1d] 6/6 pgTAP, full suite and isolated PostgREST'
-supabase db reset --workdir "$POST">"$WORK/post-reset.log" 2>&1 || { tail -40 "$WORK/post-reset.log"; stop "POST reset failed"; }
+run_reset "$POST" "$WORK/post-reset.log" POST
 supabase test db --workdir "$POST" "$TEST">"$WORK/focused.log" 2>&1 || { tail -80 "$WORK/focused.log"; stop "focused pgTAP failed"; }
 supabase test db --workdir "$POST">"$WORK/full.log" 2>&1 || { tail -80 "$WORK/full.log"; stop "full DB suite failed"; }
 say FOCUSED_PGTAP=PASS; say FULL_DB_SUITE=PASS

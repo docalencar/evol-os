@@ -227,8 +227,19 @@ if [ "$MODE" = f_db1d ]; then
   "${DISPOSABLE_PSQL[@]}" --no-psqlrc -v ON_ERROR_STOP=1 >"$WORK/verifier-role-f-db1d.log" <<'SQL' || stop "f_db1d verifier grants failed"
 grant select (id,thread_id,message_id,uploaded_by_employee_id,company_id) on public.feedback_attachments to f_db1b_postgrest_verifier;
 grant select (id,thread_id,message_id,mentioned_employee_id,company_id) on public.feedback_mentions to f_db1b_postgrest_verifier;
-grant select (id,company_id) on public.feedback_threads to f_db1b_postgrest_verifier;
+-- sender_employee_id and receiver_employee_id are not FK columns of the probed
+-- relationships: they are read by feedback_threads' OWN policy, which runs when
+-- the child policy consults that table. Column privileges apply inside policy
+-- expressions, and a missing one raises 42501 -> HTTP 403 before the embedding
+-- is ever resolved. manager_id is reached one level deeper still, through the
+-- `visibility = 'management'` branch of that same policy.
+--
+-- This is the F-DB1c lesson one level too shallow: granting the FK columns is
+-- necessary and not sufficient. Each column below was falsified individually —
+-- removing any one of the three brings the 403 back.
+grant select (id,company_id,sender_employee_id,receiver_employee_id) on public.feedback_threads to f_db1b_postgrest_verifier;
 grant select (id,company_id) on public.feedback_messages to f_db1b_postgrest_verifier;
+grant select (id,company_id,manager_id) on public.people to f_db1b_postgrest_verifier;
 SQL
   WIDE=$("${DISPOSABLE_PSQL[@]}" -At --no-psqlrc -v ON_ERROR_STOP=1 -c \
     "select count(*) from pg_class c where c.relname in ('feedback_attachments','feedback_mentions','feedback_threads','feedback_messages') and has_table_privilege('f_db1b_postgrest_verifier', c.oid, 'select');")

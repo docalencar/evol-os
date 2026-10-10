@@ -5,6 +5,8 @@ import test from "node:test"
 
 const runner = readFileSync(resolve(import.meta.dirname, "verify-f-db1b-isolated-postgrest.sh"), "utf8")
 const probe = readFileSync(resolve(import.meta.dirname, "lib/postgrest-embed-probe.sh"), "utf8")
+const feedbackSchema = readFileSync(
+  resolve(import.meta.dirname, "../../supabase/migrations/0043_create_feedback_conversation_foundation.sql"), "utf8")
 
 test("pins locally present PostgreSQL and PostgREST image digests and forbids pulls", () => {
   assert.match(runner, /POSTGRES_DIGEST=sha256:[a-f0-9]{64}/)
@@ -125,4 +127,86 @@ test("F-DB1c mode proves both lifecycle resources without changing F-DB1b defaul
   assert.match(runner, /assessment_responses!assessment_answers_assessment_response_id_fkey/)
   assert.match(runner, /direct assessment_answers/)
   assert.match(runner, /POSTGREST_ERROR_PGRST200/)
+})
+
+
+// ---------------------------------------------------------------------------
+// Transitive policy columns — the defect that produced six HTTP 403s.
+//
+// The f_db1d grants first covered only the FK columns of the probed
+// relationships. But a SELECT on feedback_attachments runs that table's policy,
+// which consults feedback_threads, which runs ITS policy, which reads
+// feedback_threads.sender_employee_id / .receiver_employee_id and
+// people.manager_id. Column privileges apply inside policy expressions, so a
+// missing one raises 42501 -> HTTP 403 before the embedding is resolved.
+//
+// The required set is DERIVED from the migration that creates the policies, not
+// hard-coded here: a policy that grows a new column reference must fail this
+// test instead of failing as a 403 on the next Mac run.
+// ---------------------------------------------------------------------------
+
+/** The SELECT policy body for a table, read from the Feedback foundation migration. */
+function selectPolicyBody(table) {
+  const re = new RegExp(`create policy[^;]*?on public\\.${table}\\s+for select[^;]*;`, "is")
+  const m = feedbackSchema.match(re)
+  assert.ok(m, `no SELECT policy found for ${table}`)
+  return m[0]
+}
+
+/** Columns the runner grants on a table, from the f_db1d grant block. */
+function grantedColumns(table) {
+  const m = runner.match(new RegExp(`grant select \\(([^)]*)\\) on public\\.${table} to`, "g")) ?? []
+  const cols = new Set()
+  for (const g of m) for (const c of g.match(/\(([^)]*)\)/)[1].split(",")) cols.add(c.trim())
+  return cols
+}
+
+test("the probed tables' own policies consult feedback_threads — so its policy columns matter", () => {
+  for (const child of ["feedback_attachments", "feedback_mentions"]) {
+    assert.match(selectPolicyBody(child), /feedback_threads/,
+      `${child}'s policy no longer consults feedback_threads; revisit the grant derivation`)
+  }
+})
+
+test("every column feedback_threads' policy reads from itself is granted", () => {
+  const body = selectPolicyBody("feedback_threads")
+  const granted = grantedColumns("feedback_threads")
+  // Columns of feedback_threads that the policy compares or filters on.
+  for (const col of ["sender_employee_id", "receiver_employee_id"]) {
+    assert.match(body, new RegExp(col), `expected feedback_threads' policy to read ${col}`)
+    assert.ok(granted.has(col),
+      `feedback_threads.${col} is read by its own policy but not granted — this is the 403`)
+  }
+  assert.ok(granted.has("id") && granted.has("company_id"), "the FK columns must stay granted")
+})
+
+test("people.manager_id, reached one level deeper, is granted", () => {
+  const body = selectPolicyBody("feedback_threads")
+  assert.match(body, /manager_id/, "expected the management branch to read people.manager_id")
+  assert.ok(grantedColumns("people").has("manager_id"),
+    "people.manager_id is read through feedback_threads' policy but not granted")
+})
+
+test("the fix stays column-scoped: no table-wide grant appears anywhere", () => {
+  // `grant select on <table>` without a column list is the regression to forbid.
+  assert.equal((runner.match(/grant select on public\./g) ?? []).length, 0)
+  assert.match(runner, /a table-wide SELECT was granted on a Feedback table/)
+  assert.match(runner, /nobypassrls/)
+})
+
+test("every table the f_db1d block grants is revoked in both teardown paths", () => {
+  const tables = ["feedback_attachments", "feedback_mentions", "feedback_threads", "feedback_messages"]
+  for (const t of tables) {
+    assert.equal((runner.match(new RegExp(`revoke all privileges on public\\.${t} from`, "g")) ?? []).length, 2,
+      `${t} must be revoked in the trap path and the explicit path`)
+  }
+})
+
+test("the earlier modes keep their own grant surface", () => {
+  // f_db1b and f_db1c must not inherit the Feedback grants: those live in a
+  // block gated on MODE, after the shared heredoc.
+  assert.match(runner, /if \[ "\$MODE" = f_db1d \]; then/)
+  assert.ok(runner.indexOf("grant f_db1b_postgrest_verifier to authenticator;")
+    < runner.indexOf("on public.feedback_attachments to f_db1b_postgrest_verifier"))
+  for (const m of ["f_db1b", "f_db1c"]) assert.match(runner, new RegExp(`^  ${m}\\)$`, "m"))
 })

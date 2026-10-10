@@ -26,7 +26,8 @@ const GUARD = "scripts/local/publish/guards/f-gate1-detector-integrity.sh"
 const RUNNER = resolve(REPO, "scripts/local/verify-f-gate1-foundation-sweeps.sh")
 const M0144 = resolve(REPO, "supabase/migrations/0144_harden_assessment_execution_tenant_fks.sql")
 const M0145 = resolve(REPO, "supabase/migrations/0145_harden_assessment_lifecycle_tenant_fks.sql")
-const BASE = "3bce00a88dff89ee0be23059f46e0fb889dd5907"
+const M0146 = resolve(REPO, "supabase/migrations/0146_harden_feedback_attachment_mention_tenant_fks.sql")
+const BASE = "84af9a40f528d978c51db565d06e2c2f8331e8a5"
 
 /** Run the real guard with the publication environment the gate supplies. */
 function runGuard({ base = BASE, candidate = "HEAD" } = {}) {
@@ -54,20 +55,23 @@ async function withMutation(path, mutate, fn) {
 // POSITIVE
 // ---------------------------------------------------------------------------
 
-test("the real workspace passes: 0145 authorized, baseline 30, F-DB1c cited", async () => {
+test("the real workspace passes: 0146 authorized, baseline 24, F-DB1d cited", async () => {
   const { code, out } = await runGuard()
   assert.match(out, /0144_harden_assessment_execution_tenant_fks\.sql matches its reviewed SHA256/)
   assert.match(out, /0145_harden_assessment_lifecycle_tenant_fks\.sql matches its reviewed SHA256/)
+  assert.match(out, /0146_harden_feedback_attachment_mention_tenant_fks\.sql matches its reviewed SHA256/)
   assert.match(out, /candidate migrations are all authorized/)
-  assert.match(out, /pins BASELINE_OFFENDERS=30 and cites F-DB1c/)
+  assert.match(out, /pins BASELINE_OFFENDERS=24 and cites F-DB1d/)
+  assert.match(out, /nulls only the uploader column/)
   assert.match(out, /F_GATE1_DETECTOR_INTEGRITY=PASS/)
   assert.equal(code, 0)
 })
 
-test("0144 stays verified — generalising did not drop the F-DB1b control", async () => {
+test("earlier migrations stay pinned — each new slice ADDS to the allow-list", async () => {
   const guard = readFileSync(resolve(REPO, GUARD), "utf8")
   assert.match(guard, /0144_harden_assessment_execution_tenant_fks\.sql:b9289408e100/)
   assert.match(guard, /0145_harden_assessment_lifecycle_tenant_fks\.sql:a267ec22eadc795c/)
+  assert.match(guard, /0146_harden_feedback_attachment_mention_tenant_fks\.sql:684501087acd/)
 })
 
 // ---------------------------------------------------------------------------
@@ -90,6 +94,19 @@ test("1. a migration outside the allow-list fails — real history, 0143", async
 test("2. a changed 0144 payload fails", async () => {
   const { code, out } = await withMutation(M0144, (s) => `${s}\n-- tamper\n`, runGuard)
   assert.match(out, /0144_harden_assessment_execution_tenant_fks\.sql does not match its reviewed SHA256/)
+  assert.equal(code, 1)
+})
+
+test("3a. a changed 0146 payload fails", async () => {
+  const { code, out } = await withMutation(M0146, (s) => `${s}\n-- tamper\n`, runGuard)
+  assert.match(out, /0146_harden_feedback_attachment_mention_tenant_fks\.sql does not match its reviewed SHA256/)
+  assert.equal(code, 1)
+})
+
+test("3b. losing the SET NULL column list fails — it is valid SQL that breaks only at DELETE time", async () => {
+  const { code, out } = await withMutation(
+    M0146, (s) => s.replace(/on delete set null \(uploaded_by_employee_id\)/, "on delete set null"), runGuard)
+  assert.match(out, /lost its SET NULL column list|bare SET NULL/)
   assert.equal(code, 1)
 })
 
@@ -117,23 +134,23 @@ test("5. an empty migration scope fails — the allow-list is not 'anything goes
   assert.equal(code, 1)
 })
 
-test("6. baseline 30 without provenance fails", async () => {
-  const { code, out } = await withMutation(RUNNER, (s) => s.replace(/F-DB1c: 32 -> 30/, "moved"), runGuard)
-  assert.match(out, /does not pin 30 with F-DB1c provenance/)
+test("6. baseline 24 without provenance fails", async () => {
+  const { code, out } = await withMutation(RUNNER, (s) => s.replace(/F-DB1d: 30 -> 24/, "moved"), runGuard)
+  assert.match(out, /does not pin 24 with F-DB1d provenance/)
   assert.equal(code, 1)
 })
 
-test("7. a candidate carrying 0145 but still pinning 32 fails", async () => {
+test("7. a candidate carrying 0146 but still pinning 30 fails", async () => {
   const { code, out } = await withMutation(
-    RUNNER, (s) => s.replace(/^readonly BASELINE_OFFENDERS=30$/m, "readonly BASELINE_OFFENDERS=32"), runGuard)
-  assert.match(out, /carries 0145 but the runner does not pin 30/)
+    RUNNER, (s) => s.replace(/^readonly BASELINE_OFFENDERS=24$/m, "readonly BASELINE_OFFENDERS=30"), runGuard)
+  assert.match(out, /carries 0146 but the runner does not pin 24/)
   assert.equal(code, 1)
 })
 
-test("8. baseline 30 WITHOUT a candidate carrying 0145 fails — the window is impossible", async () => {
-  // base == candidate: no 0145 in scope, yet the runner pins 30.
+test("8. baseline 24 WITHOUT a candidate carrying 0146 fails — the window is impossible", async () => {
+  // base == candidate: no 0146 in scope, yet the runner pins 24.
   const { code, out } = await runGuard({ base: "HEAD", candidate: "HEAD" })
-  assert.match(out, /pins 30 without a candidate that carries 0145|declares a migration slice but changes no migration/)
+  assert.match(out, /pins 24 without a candidate that carries 0146|declares a migration slice but changes no migration/)
   assert.equal(code, 1)
 })
 

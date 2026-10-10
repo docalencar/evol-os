@@ -15,6 +15,9 @@ case "$MODE" in
   f_db1c)
     MIGRATION=supabase/migrations/0145_harden_assessment_lifecycle_tenant_fks.sql
     EXPECTED_MIGRATION_SHA=a267ec22eadc795c1c2112039d57c99f2799b1746158f9d549d49fa4624d7b5f ;;
+  f_db1d)
+    MIGRATION=supabase/migrations/0146_harden_feedback_attachment_mention_tenant_fks.sql
+    EXPECTED_MIGRATION_SHA=684501087acd717f55eed8b83911457f899ce7802217ed37dfe54d6a33ab0d65 ;;
   *) stop "invalid verifier mode" ;;
 esac
 PROBE_LIB=scripts/local/lib/postgrest-embed-probe.sh
@@ -98,6 +101,10 @@ revoke all privileges on public.assessment_responses from f_db1b_postgrest_verif
 revoke all privileges on public.assessment_answers from f_db1b_postgrest_verifier;
 revoke all privileges on public.assessment_cycles from f_db1b_postgrest_verifier;
 revoke all privileges on public.people from f_db1b_postgrest_verifier;
+revoke all privileges on public.feedback_attachments from f_db1b_postgrest_verifier;
+revoke all privileges on public.feedback_mentions from f_db1b_postgrest_verifier;
+revoke all privileges on public.feedback_threads from f_db1b_postgrest_verifier;
+revoke all privileges on public.feedback_messages from f_db1b_postgrest_verifier;
 revoke all privileges on schema public from f_db1b_postgrest_verifier;
 revoke execute on function public.is_company_member(uuid) from f_db1b_postgrest_verifier;
 revoke execute on function public.current_person_id(uuid) from f_db1b_postgrest_verifier;
@@ -154,7 +161,7 @@ DISPOSABLE_PSQL=(env PGHOST=127.0.0.1 PGPORT="$DB_PORT" PGUSER=postgres PGPASSWO
 [ "$DB_PORT" != "$CANON_PORT" ] || stop "disposable database aliases canonical database"
 supabase db reset --workdir "$SNAPSHOT" --no-seed >"$WORK/db-reset.log" 2>&1 || stop "isolated schema reproduction failed"
 DISPOSABLE_PRE=$("${DISPOSABLE_PSQL[@]}" -At --no-psqlrc -v ON_ERROR_STOP=1 -c \
-  "select md5(string_agg(x,E'\\n' order by x)) from (select 'schema_public_effective|usage='||has_schema_privilege('public','public','usage')::text||'|create='||has_schema_privilege('public','public','create')::text x union all select 'rls|'||c.relname::text||'|'||c.relrowsecurity::text||'|'||c.relforcerowsecurity::text from pg_class c where c.oid in ('public.assessment_responses'::regclass,'public.assessment_answers'::regclass,'public.assessment_cycles'::regclass,'public.people'::regclass) union all select 'acl|'||c.relname::text||'|'||coalesce(c.relacl::text,'') from pg_class c where c.oid in ('public.assessment_responses'::regclass,'public.assessment_answers'::regclass,'public.assessment_cycles'::regclass,'public.people'::regclass) union all select 'function_acl|'||p.oid::regprocedure::text||'|'||coalesce(p.proacl::text,'') from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('is_company_member','current_person_id','has_company_role')) q;") || stop "disposable PRE fingerprint failed"
+  "select md5(string_agg(x,E'\\n' order by x)) from (select 'schema_public_effective|usage='||has_schema_privilege('public','public','usage')::text||'|create='||has_schema_privilege('public','public','create')::text x union all select 'rls|'||c.relname::text||'|'||c.relrowsecurity::text||'|'||c.relforcerowsecurity::text from pg_class c where c.oid in ('public.assessment_responses'::regclass,'public.assessment_answers'::regclass,'public.assessment_cycles'::regclass,'public.people'::regclass,'public.feedback_attachments'::regclass,'public.feedback_mentions'::regclass,'public.feedback_threads'::regclass,'public.feedback_messages'::regclass) union all select 'acl|'||c.relname::text||'|'||coalesce(c.relacl::text,'') from pg_class c where c.oid in ('public.assessment_responses'::regclass,'public.assessment_answers'::regclass,'public.assessment_cycles'::regclass,'public.people'::regclass,'public.feedback_attachments'::regclass,'public.feedback_mentions'::regclass,'public.feedback_threads'::regclass,'public.feedback_messages'::regclass) union all select 'function_acl|'||p.oid::regprocedure::text||'|'||coalesce(p.proacl::text,'') from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('is_company_member','current_person_id','has_company_role')) q;") || stop "disposable PRE fingerprint failed"
 "${DISPOSABLE_PSQL[@]}" -At --no-psqlrc -v ON_ERROR_STOP=1 >"$WORK/schema-check.log" <<'SQL' || stop "0144 catalog verification failed"
 select case when count(*)=5 then 'FIVE_FKS_VALID' else 'FAIL' end
 from pg_constraint
@@ -167,10 +174,17 @@ where conname in (
 and contype='f' and convalidated and array_length(conkey,1)=2;
 SQL
 grep -qx FIVE_FKS_VALID "$WORK/schema-check.log" || stop "five validated composite FKs not observed"
-if [ "$MODE" = f_db1c ]; then
+if [ "$MODE" = f_db1c ] || [ "$MODE" = f_db1d ]; then
   LIFECYCLE_FKS=$("${DISPOSABLE_PSQL[@]}" -At --no-psqlrc -v ON_ERROR_STOP=1 -c \
     "select count(*) from pg_constraint where conname in ('assessment_responses_assessment_cycle_id_fkey','assessment_answers_assessment_response_id_fkey') and contype='f' and convalidated and array_length(conkey,1)=2 and array_length(confkey,1)=2;")
   [ "$LIFECYCLE_FKS" = 2 ] || stop "two lifecycle composite FKs not observed"
+fi
+if [ "$MODE" = f_db1d ]; then
+  # The delete action is checked per constraint: a SET NULL that became CASCADE
+  # would otherwise satisfy a composite-shape-only count.
+  FEEDBACK_FKS=$("${DISPOSABLE_PSQL[@]}" -At --no-psqlrc -v ON_ERROR_STOP=1 -c \
+    "select count(*) from (values ('feedback_attachments_thread_id_fkey','c'),('feedback_attachments_message_id_fkey','c'),('feedback_attachments_uploaded_by_employee_id_fkey','n'),('feedback_mentions_thread_id_fkey','c'),('feedback_mentions_message_id_fkey','c'),('feedback_mentions_mentioned_employee_id_fkey','c')) as e(name,da) join pg_constraint con on con.conname=e.name where con.contype='f' and con.convalidated and con.confdeltype=e.da and array_length(con.conkey,1)=2 and array_length(con.confkey,1)=2;")
+  [ "$FEEDBACK_FKS" = 6 ] || stop "six Feedback composite FKs not observed"
 fi
 
 "${DISPOSABLE_PSQL[@]}" --no-psqlrc -v ON_ERROR_STOP=1 >"$WORK/verifier-role.log" <<'SQL' || stop "minimal verifier role setup failed"
@@ -206,6 +220,38 @@ grant execute on function public.has_company_role(uuid,text[]) to f_db1b_postgre
 grant f_db1b_postgrest_verifier to authenticator;
 SQL
 
+if [ "$MODE" = f_db1d ]; then
+  # Same rule as the F-DB1c fix: PostgREST must READ the FK column to resolve an
+  # embedding, so every column named in a probed relationship is granted — and
+  # nothing else. Column-scoped, never table-wide; teardown revokes all of it.
+  "${DISPOSABLE_PSQL[@]}" --no-psqlrc -v ON_ERROR_STOP=1 >"$WORK/verifier-role-f-db1d.log" <<'SQL' || stop "f_db1d verifier grants failed"
+grant select (id,thread_id,message_id,uploaded_by_employee_id,company_id) on public.feedback_attachments to f_db1b_postgrest_verifier;
+grant select (id,thread_id,message_id,mentioned_employee_id,company_id) on public.feedback_mentions to f_db1b_postgrest_verifier;
+-- sender_employee_id and receiver_employee_id are not FK columns of the probed
+-- relationships: they are read by feedback_threads' OWN policy, which runs when
+-- the child policy consults that table. Column privileges apply inside policy
+-- expressions, and a missing one raises 42501 -> HTTP 403 before the embedding
+-- is ever resolved. manager_id is reached one level deeper still, through the
+-- `visibility = 'management'` branch of that same policy.
+--
+-- This is the F-DB1c lesson one level too shallow: granting the FK columns is
+-- necessary and not sufficient. Each column below was falsified individually —
+-- removing any one of the four brings the 403 back.
+--
+-- `visibility` is required by the EMBED TARGETS, not by the probed children:
+-- feedback_messages' policy inlines the whole `visibility = 'management'` branch,
+-- while the attachments and mentions policies stop short of it. Resolving an
+-- embed selects FROM the target table, so the target's own policy runs too — and
+-- measuring only the queried tables is what made the first fix incomplete.
+grant select (id,company_id,sender_employee_id,receiver_employee_id,visibility) on public.feedback_threads to f_db1b_postgrest_verifier;
+grant select (id,company_id) on public.feedback_messages to f_db1b_postgrest_verifier;
+grant select (id,company_id,manager_id) on public.people to f_db1b_postgrest_verifier;
+SQL
+  WIDE=$("${DISPOSABLE_PSQL[@]}" -At --no-psqlrc -v ON_ERROR_STOP=1 -c \
+    "select count(*) from pg_class c where c.relname in ('feedback_attachments','feedback_mentions','feedback_threads','feedback_messages') and has_table_privilege('f_db1b_postgrest_verifier', c.oid, 'select');")
+  [ "$WIDE" = 0 ] || stop "a table-wide SELECT was granted on a Feedback table"
+fi
+
 ROLE_CHECK=$("${DISPOSABLE_PSQL[@]}" -At --no-psqlrc -v ON_ERROR_STOP=1 -c \
   "select count(*) from pg_roles where rolname='f_db1b_postgrest_verifier' and not rolcanlogin and not rolsuper and not rolcreatedb and not rolcreaterole and not rolinherit and not rolbypassrls;")
 [ "$ROLE_CHECK" = 1 ] || stop "verifier role attributes invalid"
@@ -224,32 +270,6 @@ chmod 600 "$CONFIG_FILE"
 # Replace the independently generated config secret with the signer secret
 # without ever logging either value.
 CONFIG_SECRET=$(sed -nE 's/^jwt-secret = "([^"]+)"/\1/p' "$CONFIG_FILE")
-export F_DB1B_JWT_SECRET="$CONFIG_SECRET"
-VERIFIER_KEY=$(node <<'NODE'
-const c=require('crypto'), e=x=>Buffer.from(JSON.stringify(x)).toString('base64url');
-const now=Math.floor(Date.now()/1000), h=e({alg:'HS256',typ:'JWT'});
-const p=e({role:'f_db1b_postgrest_verifier',iat:now-5,exp:now+300});
-process.stdout.write(`${h}.${p}.${c.createHmac('sha256',process.env.F_DB1B_JWT_SECRET).update(`${h}.${p}`).digest('base64url')}`);
-NODE
-)
-EXPIRED_KEY=$(node <<'NODE'
-const c=require('crypto'), e=x=>Buffer.from(JSON.stringify(x)).toString('base64url');
-const now=Math.floor(Date.now()/1000), h=e({alg:'HS256',typ:'JWT'});
-const p=e({role:'f_db1b_postgrest_verifier',iat:now-600,exp:now-300});
-process.stdout.write(`${h}.${p}.${c.createHmac('sha256',process.env.F_DB1B_JWT_SECRET).update(`${h}.${p}`).digest('base64url')}`);
-NODE
-)
-export F_DB1B_JWT_SECRET=$(openssl rand -hex 32)
-INVALID_KEY=$(node <<'NODE'
-const c=require('crypto'), e=x=>Buffer.from(JSON.stringify(x)).toString('base64url');
-const now=Math.floor(Date.now()/1000), h=e({alg:'HS256',typ:'JWT'});
-const p=e({role:'f_db1b_postgrest_verifier',iat:now-5,exp:now+300});
-process.stdout.write(`${h}.${p}.${c.createHmac('sha256',process.env.F_DB1B_JWT_SECRET).update(`${h}.${p}`).digest('base64url')}`);
-NODE
-)
-unset F_DB1B_JWT_SECRET CONFIG_SECRET
-printf '%s' "$VERIFIER_KEY" >"$PROOF_KEY_FILE"
-chmod 600 "$PROOF_KEY_FILE"
 
 docker run -d --pull=never --name "$REST_CONTAINER" --network "$NETWORK" \
   --label "$LABEL_KEY=$RUN_ID" -p 127.0.0.1::3000 \
@@ -269,18 +289,56 @@ done
 [ "$READY" = YES ] || stop "PostgREST readiness failed"
 say "READINESS=PASS"
 
+# JWT time is owned by the disposable environment, not by the host. A large
+# difference is environmental evidence; shifting claims to hide it would make
+# an expired/future test meaningless.
+HOST_NOW=$(date -u +%s) || stop "host clock unavailable"
+CONTAINER_NOW=$(docker exec "$DB_CONTAINER" date -u +%s) || stop "container clock unavailable"
+case "$HOST_NOW:$CONTAINER_NOW" in *[!0-9:]*|:*|*:) stop "clock sample invalid" ;; esac
+CLOCK_SKEW=$((HOST_NOW-CONTAINER_NOW)); [ "$CLOCK_SKEW" -lt 0 ] && CLOCK_SKEW=$((-CLOCK_SKEW))
+say "CLOCK_SKEW_SECONDS=$CLOCK_SKEW"
+if [ "$CLOCK_SKEW" -gt 60 ]; then
+  say "FAILURE_CLASS=ENVIRONMENTAL"
+  stop "CLOCK_SKEW"
+fi
+
+export F_DB1B_JWT_SECRET="$CONFIG_SECRET" F_DB1B_JWT_NOW="$CONTAINER_NOW"
+make_jwt(){
+  F_DB1B_JWT_KIND="$1" node <<'NODE'
+const c=require('crypto'), e=x=>Buffer.from(JSON.stringify(x)).toString('base64url');
+const now=Number(process.env.F_DB1B_JWT_NOW), kind=process.env.F_DB1B_JWT_KIND;
+const claims=kind==='valid' ? {iat:now-5,exp:now+900}
+  : kind==='expired' ? {iat:now-900,exp:now-300}
+  : {iat:now+300,exp:now+900};
+const h=e({alg:'HS256',typ:'JWT'}), p=e({role:'f_db1b_postgrest_verifier',...claims});
+process.stdout.write(`${h}.${p}.${c.createHmac('sha256',process.env.F_DB1B_JWT_SECRET).update(`${h}.${p}`).digest('base64url')}`);
+NODE
+}
+VERIFIER_KEY=$(make_jwt valid) || stop "valid JWT generation failed"
+EXPIRED_KEY=$(make_jwt expired) || stop "expired JWT generation failed"
+FUTURE_KEY=$(make_jwt future) || stop "future JWT generation failed"
+unset F_DB1B_JWT_SECRET F_DB1B_JWT_NOW F_DB1B_JWT_KIND CONFIG_SECRET
+printf '%s' "$VERIFIER_KEY" >"$PROOF_KEY_FILE"
+chmod 600 "$PROOF_KEY_FILE"
+
 auth_status(){
   key="${!1-}"; body="$WORK/auth-$2.json"
   printf 'header = "Authorization: Bearer %s"\nsilent\nshow-error\nmax-time = 10\noutput = "%s"\nwrite-out = "%%{http_code}"\nurl = "%s"\n' \
     "$key" "$body" "$REST_URL/assessment_responses?select=id&limit=0" | curl -K - 2>"$WORK/auth-curl.err"
 }
-INVALID_HTTP=$(auth_status INVALID_KEY invalid)
+VALID_HTTP=$(auth_status VERIFIER_KEY valid)
 EXPIRED_HTTP=$(auth_status EXPIRED_KEY expired)
-[ "$INVALID_HTTP" = 401 ] && grep -q '"code":"PGRST301"' "$WORK/auth-invalid.json" \
-  || stop "invalid JWT was not rejected"
+FUTURE_HTTP=$(auth_status FUTURE_KEY future)
+[ "$VALID_HTTP" = 200 ] && node -e 'const j=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));if(!Array.isArray(j))process.exit(1)' "$WORK/auth-valid.json" \
+  || stop "valid JWT authentication failed"
+say "JWT_POSITIVE_TEST=PASS"
 [ "$EXPIRED_HTTP" = 401 ] && grep -q '"code":"PGRST303"' "$WORK/auth-expired.json" \
+  && grep -q '"message":"JWT expired' "$WORK/auth-expired.json" \
   || stop "expired JWT was not rejected"
-unset INVALID_KEY EXPIRED_KEY
+[ "$FUTURE_HTTP" = 401 ] && grep -q '"code":"PGRST303"' "$WORK/auth-future.json" \
+  && grep -q '"message":"JWT issued at future' "$WORK/auth-future.json" \
+  || stop "future JWT was not rejected"
+unset EXPIRED_KEY FUTURE_KEY
 say "JWT_NEGATIVE_TESTS=PASS"
 
 # One implementation classifies all three proof requests. There is no retry.
@@ -291,6 +349,25 @@ if [ "$MODE" = f_db1b ]; then
   NEGATIVE=$(postgrest_embed_probe "$REST_URL" VERIFIER_KEY 'people!f_db1b_nonexistent_fkey' "$WORK" direct assessment_responses)
   say "POSTGREST_EMBED[employee]=$FIRST"
   say "POSTGREST_EMBED[evaluator]=$SECOND"
+elif [ "$MODE" = f_db1d ]; then
+  FIRST=$(postgrest_embed_probe "$REST_URL" VERIFIER_KEY 'feedback_threads!feedback_attachments_thread_id_fkey' "$WORK" direct feedback_attachments)
+  SECOND=$(postgrest_embed_probe "$REST_URL" VERIFIER_KEY 'feedback_messages!feedback_attachments_message_id_fkey' "$WORK" direct feedback_attachments)
+  THIRD=$(postgrest_embed_probe "$REST_URL" VERIFIER_KEY 'people!feedback_attachments_uploaded_by_employee_id_fkey' "$WORK" direct feedback_attachments)
+  FOURTH=$(postgrest_embed_probe "$REST_URL" VERIFIER_KEY 'feedback_threads!feedback_mentions_thread_id_fkey' "$WORK" direct feedback_mentions)
+  FIFTH=$(postgrest_embed_probe "$REST_URL" VERIFIER_KEY 'feedback_messages!feedback_mentions_message_id_fkey' "$WORK" direct feedback_mentions)
+  SIXTH=$(postgrest_embed_probe "$REST_URL" VERIFIER_KEY 'people!feedback_mentions_mentioned_employee_id_fkey' "$WORK" direct feedback_mentions)
+  NEGATIVE=$(postgrest_embed_probe "$REST_URL" VERIFIER_KEY 'feedback_threads!f_db1d_nonexistent_fkey' "$WORK" direct feedback_attachments)
+  say "POSTGREST_EMBED[attachment_thread]=$FIRST"
+  say "POSTGREST_EMBED[attachment_message]=$SECOND"
+  say "POSTGREST_EMBED[attachment_uploader]=$THIRD"
+  say "POSTGREST_EMBED[mention_thread]=$FOURTH"
+  say "POSTGREST_EMBED[mention_message]=$FIFTH"
+  say "POSTGREST_EMBED[mention_employee]=$SIXTH"
+  # All six relationships are proven, not a sample: an embedding that resolves
+  # today can stop resolving precisely because a constraint was renamed.
+  for V in "$THIRD" "$FOURTH" "$FIFTH" "$SIXTH"; do
+    [ "$V" = PASS ] || stop "positive embedding proof failed"
+  done
 else
   FIRST=$(postgrest_embed_probe "$REST_URL" VERIFIER_KEY 'assessment_cycles!assessment_responses_assessment_cycle_id_fkey' "$WORK" direct assessment_responses)
   SECOND=$(postgrest_embed_probe "$REST_URL" VERIFIER_KEY 'assessment_responses!assessment_answers_assessment_response_id_fkey' "$WORK" direct assessment_answers)
@@ -309,6 +386,10 @@ revoke all privileges on public.assessment_responses from f_db1b_postgrest_verif
 revoke all privileges on public.assessment_answers from f_db1b_postgrest_verifier;
 revoke all privileges on public.assessment_cycles from f_db1b_postgrest_verifier;
 revoke all privileges on public.people from f_db1b_postgrest_verifier;
+revoke all privileges on public.feedback_attachments from f_db1b_postgrest_verifier;
+revoke all privileges on public.feedback_mentions from f_db1b_postgrest_verifier;
+revoke all privileges on public.feedback_threads from f_db1b_postgrest_verifier;
+revoke all privileges on public.feedback_messages from f_db1b_postgrest_verifier;
 revoke all privileges on schema public from f_db1b_postgrest_verifier;
 revoke execute on function public.is_company_member(uuid) from f_db1b_postgrest_verifier;
 revoke execute on function public.current_person_id(uuid) from f_db1b_postgrest_verifier;
@@ -317,7 +398,7 @@ drop role f_db1b_postgrest_verifier;
 grant usage on schema public to public;
 SQL
 DISPOSABLE_POST=$("${DISPOSABLE_PSQL[@]}" -At --no-psqlrc -v ON_ERROR_STOP=1 -c \
-  "select md5(string_agg(x,E'\\n' order by x)) from (select 'schema_public_effective|usage='||has_schema_privilege('public','public','usage')::text||'|create='||has_schema_privilege('public','public','create')::text x union all select 'rls|'||c.relname::text||'|'||c.relrowsecurity::text||'|'||c.relforcerowsecurity::text from pg_class c where c.oid in ('public.assessment_responses'::regclass,'public.assessment_answers'::regclass,'public.assessment_cycles'::regclass,'public.people'::regclass) union all select 'acl|'||c.relname::text||'|'||coalesce(c.relacl::text,'') from pg_class c where c.oid in ('public.assessment_responses'::regclass,'public.assessment_answers'::regclass,'public.assessment_cycles'::regclass,'public.people'::regclass) union all select 'function_acl|'||p.oid::regprocedure::text||'|'||coalesce(p.proacl::text,'') from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('is_company_member','current_person_id','has_company_role')) q;") || stop "disposable POST fingerprint failed"
+  "select md5(string_agg(x,E'\\n' order by x)) from (select 'schema_public_effective|usage='||has_schema_privilege('public','public','usage')::text||'|create='||has_schema_privilege('public','public','create')::text x union all select 'rls|'||c.relname::text||'|'||c.relrowsecurity::text||'|'||c.relforcerowsecurity::text from pg_class c where c.oid in ('public.assessment_responses'::regclass,'public.assessment_answers'::regclass,'public.assessment_cycles'::regclass,'public.people'::regclass,'public.feedback_attachments'::regclass,'public.feedback_mentions'::regclass,'public.feedback_threads'::regclass,'public.feedback_messages'::regclass) union all select 'acl|'||c.relname::text||'|'||coalesce(c.relacl::text,'') from pg_class c where c.oid in ('public.assessment_responses'::regclass,'public.assessment_answers'::regclass,'public.assessment_cycles'::regclass,'public.people'::regclass,'public.feedback_attachments'::regclass,'public.feedback_mentions'::regclass,'public.feedback_threads'::regclass,'public.feedback_messages'::regclass) union all select 'function_acl|'||p.oid::regprocedure::text||'|'||coalesce(p.proacl::text,'') from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('is_company_member','current_person_id','has_company_role')) q;") || stop "disposable POST fingerprint failed"
 [ "$DISPOSABLE_PRE" = "$DISPOSABLE_POST" ] || stop "disposable security fingerprint diverged after teardown"
 ROLE_RESIDUE=$("${DISPOSABLE_PSQL[@]}" -At --no-psqlrc -v ON_ERROR_STOP=1 -c "select count(*) from pg_roles where rolname='f_db1b_postgrest_verifier';")
 [ "$ROLE_RESIDUE" = 0 ] || stop "verifier role survived teardown"

@@ -141,7 +141,8 @@ fi
 #        allow-list cannot degenerate into "anything goes".
 AUTHORIZED_MIGRATIONS="\
 supabase/migrations/0144_harden_assessment_execution_tenant_fks.sql:b9289408e100ead1b21e6cd4e063788ce4b9344dac310ae04c24d9a4553ab23f
-supabase/migrations/0145_harden_assessment_lifecycle_tenant_fks.sql:a267ec22eadc795c1c2112039d57c99f2799b1746158f9d549d49fa4624d7b5f"
+supabase/migrations/0145_harden_assessment_lifecycle_tenant_fks.sql:a267ec22eadc795c1c2112039d57c99f2799b1746158f9d549d49fa4624d7b5f
+supabase/migrations/0146_harden_feedback_attachment_mention_tenant_fks.sql:684501087acd717f55eed8b83911457f899ce7802217ed37dfe54d6a33ab0d65"
 
 AUTHORIZED_PATHS=""
 while IFS=: read -r path want; do
@@ -179,23 +180,42 @@ fi
 #
 #     The baseline is only factually true once the migration that reduces it is in
 #     the same candidate. Asserting the pair makes the inconsistency window
-#     impossible rather than merely short: a candidate carrying 0145 must declare
-#     30, and a candidate without it must not.
-CANDIDATE_HAS_0145=no
+#     impossible rather than merely short: a candidate carrying 0146 must declare
+#     24, and a candidate without it must not.
+#
+#     The pairing is stated for the CURRENT head of the baseline sequence. When a
+#     later slice moves the number again, this block moves with it — the previous
+#     pairing is then history, already proven by the merge that carried it.
+CANDIDATE_HAS_0146=no
 if [ -n "${PUBLISH_BASE:-}" ]; then
   printf '%s' "$CHANGED_MIGRATIONS" \
-    | grep -qxF "supabase/migrations/0145_harden_assessment_lifecycle_tenant_fks.sql" \
-    && CANDIDATE_HAS_0145=yes
+    | grep -qxF "supabase/migrations/0146_harden_feedback_attachment_mention_tenant_fks.sql" \
+    && CANDIDATE_HAS_0146=yes
 fi
-if [ "$CANDIDATE_HAS_0145" = yes ]; then
-  grep -qE "^readonly BASELINE_OFFENDERS=30$" "$RUNNER" \
-    && grep -qE "F-DB1c: 32 -> 30" "$RUNNER" \
-    && pass "a candidate carrying 0145 pins BASELINE_OFFENDERS=30 and cites F-DB1c" \
-    || fail "the candidate carries 0145 but the runner does not pin 30 with F-DB1c provenance"
+if [ "$CANDIDATE_HAS_0146" = yes ]; then
+  grep -qE "^readonly BASELINE_OFFENDERS=24$" "$RUNNER" \
+    && grep -qE "F-DB1d: 30 -> 24" "$RUNNER" \
+    && pass "a candidate carrying 0146 pins BASELINE_OFFENDERS=24 and cites F-DB1d" \
+    || fail "the candidate carries 0146 but the runner does not pin 24 with F-DB1d provenance"
 else
-  grep -qE "^readonly BASELINE_OFFENDERS=30$" "$RUNNER" \
-    && fail "the runner pins 30 without a candidate that carries 0145 — baseline would precede its migration" \
+  grep -qE "^readonly BASELINE_OFFENDERS=24$" "$RUNNER" \
+    && fail "the runner pins 24 without a candidate that carries 0146 — baseline would precede its migration" \
     || pass "baseline is not advanced ahead of its migration"
+fi
+
+# 11. The SET NULL column list on the uploader FK is the one thing in 0146 whose
+#     loss would be silent: a plain `on delete set null` is valid SQL, passes a
+#     composite-shape check, and fails only at DELETE time, by trying to null a
+#     NOT NULL company_id. The SHA256 above already pins the payload; this names
+#     the property so a future edit cannot drop it quietly.
+M0146=supabase/migrations/0146_harden_feedback_attachment_mention_tenant_fks.sql
+if [ -f "$M0146" ]; then
+  grep -qE "on delete set null \(uploaded_by_employee_id\)" "$M0146" \
+    && pass "0146 nulls only the uploader column, never company_id" \
+    || fail "0146 lost its SET NULL column list"
+  code "$M0146" | grep -qE "on delete set null;" \
+    && fail "0146 contains a bare SET NULL, which would try to null company_id" \
+    || pass "0146 has no bare SET NULL"
 fi
 
 printf '\n'

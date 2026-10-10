@@ -9,6 +9,33 @@
 set -uo pipefail
 say(){ printf '%s\n' "$*"; }
 stop(){ say "STOP: $*"; exit 1; }
+classify_reset_failure(){
+  local reset_log=$1 reset_rc=$2 reset_label=$3 unhealthy_line service
+  unhealthy_line=$(grep -E '^[^[:space:]]+ container is not ready: unhealthy$' "$reset_log" | tail -1 || true)
+  if [ -n "$unhealthy_line" ]; then
+    service=$(printf '%s\n' "$unhealthy_line" | sed -E 's/^([^[:space:]]+) container is not ready: unhealthy$/\1/')
+    say FAILURE_CLASS=ENVIRONMENTAL
+    say "RESET_SERVICE=$service"
+  else
+    say FAILURE_CLASS=FAIL
+  fi
+  say "RESET_EXIT_CODE=$reset_rc"
+  say "RESET_LOG=$reset_log"
+  stop "$reset_label reset failed"
+}
+
+# Regression tests exercise the production classifier with synthetic logs. This
+# mode performs no tool discovery, Supabase command, Docker call or DB access.
+if [ -n "${F_DB1D_RESET_CLASSIFY_SELFTEST_LOG:-}" ]; then
+  case "${F_DB1D_RESET_CLASSIFY_SELFTEST_RC:-}" in
+    ''|*[!0-9]*|0) stop "invalid reset classifier self-test exit code" ;;
+  esac
+  [ -f "$F_DB1D_RESET_CLASSIFY_SELFTEST_LOG" ] || stop "reset classifier self-test log missing"
+  classify_reset_failure \
+    "$F_DB1D_RESET_CLASSIFY_SELFTEST_LOG" \
+    "$F_DB1D_RESET_CLASSIFY_SELFTEST_RC" \
+    "${F_DB1D_RESET_CLASSIFY_SELFTEST_LABEL:-rollback}"
+fi
 ROOT=$(cd "$(dirname "$0")/../.." && pwd) || exit 1
 cd "$ROOT" || exit 1
 
@@ -78,7 +105,9 @@ psql_local -f "$MIGRATION">"$WORK/drift.log" 2>&1; RC=$?
 say DRIFT_REJECTION=PASS
 
 say '[f-db1d] 5/6 rollback after intermediate failure'
-supabase db reset --workdir "$PRE">"$WORK/rollback-reset.log" 2>&1 || stop "rollback reset failed"
+supabase db reset --workdir "$PRE">"$WORK/rollback-reset.log" 2>&1
+RESET_RC=$?
+[ "$RESET_RC" -eq 0 ] || classify_reset_failure "$WORK/rollback-reset.log" "$RESET_RC" rollback
 psql_local -c 'alter table public.feedback_mentions add constraint feedback_mentions_mentioned_employee_company_fkey_new check (true);' >/dev/null
 psql_local -f "$MIGRATION">"$WORK/rollback.log" 2>&1; RC=$?
 [ "$RC" -ne 0 ] || stop "INTERMEDIATE_FAILURE=FAIL"

@@ -59,14 +59,29 @@ test("readiness requires 200 and is separate from proof requests", () => {
   assert.ok(runner.indexOf("READINESS=PASS") < runner.indexOf("FIRST=$(postgrest_embed_probe"))
 })
 
-test("executes each positive embedding once per selected proof mode and requires PASS", () => {
-  assert.equal((runner.match(/FIRST=\$\(postgrest_embed_probe/g) ?? []).length, 2)
-  assert.equal((runner.match(/SECOND=\$\(postgrest_embed_probe/g) ?? []).length, 2)
+// The expected count is DERIVED from the declared modes, not hard-coded. The
+// first version asserted `2` and went red when a third mode was added — it was
+// measuring the number of modes while claiming to measure "once per mode", so a
+// new mode that forgot its probe would have looked identical to this failure.
+const MODE_COUNT = (runner.match(/^\s{2}f_db1[a-z]\)$/gm) ?? []).length
+
+test("every declared proof mode has its own probe invocations", () => {
+  assert.ok(MODE_COUNT >= 2, `expected at least two modes, found ${MODE_COUNT}`)
+  assert.equal((runner.match(/FIRST=\$\(postgrest_embed_probe/g) ?? []).length, MODE_COUNT)
+  assert.equal((runner.match(/SECOND=\$\(postgrest_embed_probe/g) ?? []).length, MODE_COUNT)
   assert.match(runner, /\[ "\$FIRST" = PASS \] && \[ "\$SECOND" = PASS \]/)
 })
 
+test("a mode with more than two relationships requires every one of them to PASS", () => {
+  // f_db1d probes six relationships. Proving two of six would leave four
+  // embeddings unmeasured while reporting PASS.
+  assert.match(runner, /THIRD=\$\(postgrest_embed_probe/)
+  assert.match(runner, /for V in "\$THIRD" "\$FOURTH" "\$FIFTH" "\$SIXTH"/)
+  assert.match(runner, /\[ "\$V" = PASS \] \|\| stop/)
+})
+
 test("requires the nonexistent-FK control to produce PGRST200", () => {
-  assert.equal((runner.match(/NEGATIVE=\$\(postgrest_embed_probe/g) ?? []).length, 2)
+  assert.equal((runner.match(/NEGATIVE=\$\(postgrest_embed_probe/g) ?? []).length, MODE_COUNT)
   assert.match(runner, /POSTGREST_ERROR_PGRST200/)
 })
 

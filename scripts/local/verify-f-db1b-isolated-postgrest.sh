@@ -15,6 +15,9 @@ case "$MODE" in
   f_db1c)
     MIGRATION=supabase/migrations/0145_harden_assessment_lifecycle_tenant_fks.sql
     EXPECTED_MIGRATION_SHA=a267ec22eadc795c1c2112039d57c99f2799b1746158f9d549d49fa4624d7b5f ;;
+  f_db1d)
+    MIGRATION=supabase/migrations/0146_harden_feedback_attachment_mention_tenant_fks.sql
+    EXPECTED_MIGRATION_SHA=684501087acd717f55eed8b83911457f899ce7802217ed37dfe54d6a33ab0d65 ;;
   *) stop "invalid verifier mode" ;;
 esac
 PROBE_LIB=scripts/local/lib/postgrest-embed-probe.sh
@@ -98,6 +101,10 @@ revoke all privileges on public.assessment_responses from f_db1b_postgrest_verif
 revoke all privileges on public.assessment_answers from f_db1b_postgrest_verifier;
 revoke all privileges on public.assessment_cycles from f_db1b_postgrest_verifier;
 revoke all privileges on public.people from f_db1b_postgrest_verifier;
+revoke all privileges on public.feedback_attachments from f_db1b_postgrest_verifier;
+revoke all privileges on public.feedback_mentions from f_db1b_postgrest_verifier;
+revoke all privileges on public.feedback_threads from f_db1b_postgrest_verifier;
+revoke all privileges on public.feedback_messages from f_db1b_postgrest_verifier;
 revoke all privileges on schema public from f_db1b_postgrest_verifier;
 revoke execute on function public.is_company_member(uuid) from f_db1b_postgrest_verifier;
 revoke execute on function public.current_person_id(uuid) from f_db1b_postgrest_verifier;
@@ -154,7 +161,7 @@ DISPOSABLE_PSQL=(env PGHOST=127.0.0.1 PGPORT="$DB_PORT" PGUSER=postgres PGPASSWO
 [ "$DB_PORT" != "$CANON_PORT" ] || stop "disposable database aliases canonical database"
 supabase db reset --workdir "$SNAPSHOT" --no-seed >"$WORK/db-reset.log" 2>&1 || stop "isolated schema reproduction failed"
 DISPOSABLE_PRE=$("${DISPOSABLE_PSQL[@]}" -At --no-psqlrc -v ON_ERROR_STOP=1 -c \
-  "select md5(string_agg(x,E'\\n' order by x)) from (select 'schema_public_effective|usage='||has_schema_privilege('public','public','usage')::text||'|create='||has_schema_privilege('public','public','create')::text x union all select 'rls|'||c.relname::text||'|'||c.relrowsecurity::text||'|'||c.relforcerowsecurity::text from pg_class c where c.oid in ('public.assessment_responses'::regclass,'public.assessment_answers'::regclass,'public.assessment_cycles'::regclass,'public.people'::regclass) union all select 'acl|'||c.relname::text||'|'||coalesce(c.relacl::text,'') from pg_class c where c.oid in ('public.assessment_responses'::regclass,'public.assessment_answers'::regclass,'public.assessment_cycles'::regclass,'public.people'::regclass) union all select 'function_acl|'||p.oid::regprocedure::text||'|'||coalesce(p.proacl::text,'') from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('is_company_member','current_person_id','has_company_role')) q;") || stop "disposable PRE fingerprint failed"
+  "select md5(string_agg(x,E'\\n' order by x)) from (select 'schema_public_effective|usage='||has_schema_privilege('public','public','usage')::text||'|create='||has_schema_privilege('public','public','create')::text x union all select 'rls|'||c.relname::text||'|'||c.relrowsecurity::text||'|'||c.relforcerowsecurity::text from pg_class c where c.oid in ('public.assessment_responses'::regclass,'public.assessment_answers'::regclass,'public.assessment_cycles'::regclass,'public.people'::regclass,'public.feedback_attachments'::regclass,'public.feedback_mentions'::regclass,'public.feedback_threads'::regclass,'public.feedback_messages'::regclass) union all select 'acl|'||c.relname::text||'|'||coalesce(c.relacl::text,'') from pg_class c where c.oid in ('public.assessment_responses'::regclass,'public.assessment_answers'::regclass,'public.assessment_cycles'::regclass,'public.people'::regclass,'public.feedback_attachments'::regclass,'public.feedback_mentions'::regclass,'public.feedback_threads'::regclass,'public.feedback_messages'::regclass) union all select 'function_acl|'||p.oid::regprocedure::text||'|'||coalesce(p.proacl::text,'') from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('is_company_member','current_person_id','has_company_role')) q;") || stop "disposable PRE fingerprint failed"
 "${DISPOSABLE_PSQL[@]}" -At --no-psqlrc -v ON_ERROR_STOP=1 >"$WORK/schema-check.log" <<'SQL' || stop "0144 catalog verification failed"
 select case when count(*)=5 then 'FIVE_FKS_VALID' else 'FAIL' end
 from pg_constraint
@@ -167,10 +174,17 @@ where conname in (
 and contype='f' and convalidated and array_length(conkey,1)=2;
 SQL
 grep -qx FIVE_FKS_VALID "$WORK/schema-check.log" || stop "five validated composite FKs not observed"
-if [ "$MODE" = f_db1c ]; then
+if [ "$MODE" = f_db1c ] || [ "$MODE" = f_db1d ]; then
   LIFECYCLE_FKS=$("${DISPOSABLE_PSQL[@]}" -At --no-psqlrc -v ON_ERROR_STOP=1 -c \
     "select count(*) from pg_constraint where conname in ('assessment_responses_assessment_cycle_id_fkey','assessment_answers_assessment_response_id_fkey') and contype='f' and convalidated and array_length(conkey,1)=2 and array_length(confkey,1)=2;")
   [ "$LIFECYCLE_FKS" = 2 ] || stop "two lifecycle composite FKs not observed"
+fi
+if [ "$MODE" = f_db1d ]; then
+  # The delete action is checked per constraint: a SET NULL that became CASCADE
+  # would otherwise satisfy a composite-shape-only count.
+  FEEDBACK_FKS=$("${DISPOSABLE_PSQL[@]}" -At --no-psqlrc -v ON_ERROR_STOP=1 -c \
+    "select count(*) from (values ('feedback_attachments_thread_id_fkey','c'),('feedback_attachments_message_id_fkey','c'),('feedback_attachments_uploaded_by_employee_id_fkey','n'),('feedback_mentions_thread_id_fkey','c'),('feedback_mentions_message_id_fkey','c'),('feedback_mentions_mentioned_employee_id_fkey','c')) as e(name,da) join pg_constraint con on con.conname=e.name where con.contype='f' and con.convalidated and con.confdeltype=e.da and array_length(con.conkey,1)=2 and array_length(con.confkey,1)=2;")
+  [ "$FEEDBACK_FKS" = 6 ] || stop "six Feedback composite FKs not observed"
 fi
 
 "${DISPOSABLE_PSQL[@]}" --no-psqlrc -v ON_ERROR_STOP=1 >"$WORK/verifier-role.log" <<'SQL' || stop "minimal verifier role setup failed"
@@ -205,6 +219,21 @@ grant execute on function public.current_person_id(uuid) to f_db1b_postgrest_ver
 grant execute on function public.has_company_role(uuid,text[]) to f_db1b_postgrest_verifier;
 grant f_db1b_postgrest_verifier to authenticator;
 SQL
+
+if [ "$MODE" = f_db1d ]; then
+  # Same rule as the F-DB1c fix: PostgREST must READ the FK column to resolve an
+  # embedding, so every column named in a probed relationship is granted — and
+  # nothing else. Column-scoped, never table-wide; teardown revokes all of it.
+  "${DISPOSABLE_PSQL[@]}" --no-psqlrc -v ON_ERROR_STOP=1 >"$WORK/verifier-role-f-db1d.log" <<'SQL' || stop "f_db1d verifier grants failed"
+grant select (id,thread_id,message_id,uploaded_by_employee_id,company_id) on public.feedback_attachments to f_db1b_postgrest_verifier;
+grant select (id,thread_id,message_id,mentioned_employee_id,company_id) on public.feedback_mentions to f_db1b_postgrest_verifier;
+grant select (id,company_id) on public.feedback_threads to f_db1b_postgrest_verifier;
+grant select (id,company_id) on public.feedback_messages to f_db1b_postgrest_verifier;
+SQL
+  WIDE=$("${DISPOSABLE_PSQL[@]}" -At --no-psqlrc -v ON_ERROR_STOP=1 -c \
+    "select count(*) from pg_class c where c.relname in ('feedback_attachments','feedback_mentions','feedback_threads','feedback_messages') and has_table_privilege('f_db1b_postgrest_verifier', c.oid, 'select');")
+  [ "$WIDE" = 0 ] || stop "a table-wide SELECT was granted on a Feedback table"
+fi
 
 ROLE_CHECK=$("${DISPOSABLE_PSQL[@]}" -At --no-psqlrc -v ON_ERROR_STOP=1 -c \
   "select count(*) from pg_roles where rolname='f_db1b_postgrest_verifier' and not rolcanlogin and not rolsuper and not rolcreatedb and not rolcreaterole and not rolinherit and not rolbypassrls;")
@@ -291,6 +320,25 @@ if [ "$MODE" = f_db1b ]; then
   NEGATIVE=$(postgrest_embed_probe "$REST_URL" VERIFIER_KEY 'people!f_db1b_nonexistent_fkey' "$WORK" direct assessment_responses)
   say "POSTGREST_EMBED[employee]=$FIRST"
   say "POSTGREST_EMBED[evaluator]=$SECOND"
+elif [ "$MODE" = f_db1d ]; then
+  FIRST=$(postgrest_embed_probe "$REST_URL" VERIFIER_KEY 'feedback_threads!feedback_attachments_thread_id_fkey' "$WORK" direct feedback_attachments)
+  SECOND=$(postgrest_embed_probe "$REST_URL" VERIFIER_KEY 'feedback_messages!feedback_attachments_message_id_fkey' "$WORK" direct feedback_attachments)
+  THIRD=$(postgrest_embed_probe "$REST_URL" VERIFIER_KEY 'people!feedback_attachments_uploaded_by_employee_id_fkey' "$WORK" direct feedback_attachments)
+  FOURTH=$(postgrest_embed_probe "$REST_URL" VERIFIER_KEY 'feedback_threads!feedback_mentions_thread_id_fkey' "$WORK" direct feedback_mentions)
+  FIFTH=$(postgrest_embed_probe "$REST_URL" VERIFIER_KEY 'feedback_messages!feedback_mentions_message_id_fkey' "$WORK" direct feedback_mentions)
+  SIXTH=$(postgrest_embed_probe "$REST_URL" VERIFIER_KEY 'people!feedback_mentions_mentioned_employee_id_fkey' "$WORK" direct feedback_mentions)
+  NEGATIVE=$(postgrest_embed_probe "$REST_URL" VERIFIER_KEY 'feedback_threads!f_db1d_nonexistent_fkey' "$WORK" direct feedback_attachments)
+  say "POSTGREST_EMBED[attachment_thread]=$FIRST"
+  say "POSTGREST_EMBED[attachment_message]=$SECOND"
+  say "POSTGREST_EMBED[attachment_uploader]=$THIRD"
+  say "POSTGREST_EMBED[mention_thread]=$FOURTH"
+  say "POSTGREST_EMBED[mention_message]=$FIFTH"
+  say "POSTGREST_EMBED[mention_employee]=$SIXTH"
+  # All six relationships are proven, not a sample: an embedding that resolves
+  # today can stop resolving precisely because a constraint was renamed.
+  for V in "$THIRD" "$FOURTH" "$FIFTH" "$SIXTH"; do
+    [ "$V" = PASS ] || stop "positive embedding proof failed"
+  done
 else
   FIRST=$(postgrest_embed_probe "$REST_URL" VERIFIER_KEY 'assessment_cycles!assessment_responses_assessment_cycle_id_fkey' "$WORK" direct assessment_responses)
   SECOND=$(postgrest_embed_probe "$REST_URL" VERIFIER_KEY 'assessment_responses!assessment_answers_assessment_response_id_fkey' "$WORK" direct assessment_answers)
@@ -309,6 +357,10 @@ revoke all privileges on public.assessment_responses from f_db1b_postgrest_verif
 revoke all privileges on public.assessment_answers from f_db1b_postgrest_verifier;
 revoke all privileges on public.assessment_cycles from f_db1b_postgrest_verifier;
 revoke all privileges on public.people from f_db1b_postgrest_verifier;
+revoke all privileges on public.feedback_attachments from f_db1b_postgrest_verifier;
+revoke all privileges on public.feedback_mentions from f_db1b_postgrest_verifier;
+revoke all privileges on public.feedback_threads from f_db1b_postgrest_verifier;
+revoke all privileges on public.feedback_messages from f_db1b_postgrest_verifier;
 revoke all privileges on schema public from f_db1b_postgrest_verifier;
 revoke execute on function public.is_company_member(uuid) from f_db1b_postgrest_verifier;
 revoke execute on function public.current_person_id(uuid) from f_db1b_postgrest_verifier;
@@ -317,7 +369,7 @@ drop role f_db1b_postgrest_verifier;
 grant usage on schema public to public;
 SQL
 DISPOSABLE_POST=$("${DISPOSABLE_PSQL[@]}" -At --no-psqlrc -v ON_ERROR_STOP=1 -c \
-  "select md5(string_agg(x,E'\\n' order by x)) from (select 'schema_public_effective|usage='||has_schema_privilege('public','public','usage')::text||'|create='||has_schema_privilege('public','public','create')::text x union all select 'rls|'||c.relname::text||'|'||c.relrowsecurity::text||'|'||c.relforcerowsecurity::text from pg_class c where c.oid in ('public.assessment_responses'::regclass,'public.assessment_answers'::regclass,'public.assessment_cycles'::regclass,'public.people'::regclass) union all select 'acl|'||c.relname::text||'|'||coalesce(c.relacl::text,'') from pg_class c where c.oid in ('public.assessment_responses'::regclass,'public.assessment_answers'::regclass,'public.assessment_cycles'::regclass,'public.people'::regclass) union all select 'function_acl|'||p.oid::regprocedure::text||'|'||coalesce(p.proacl::text,'') from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('is_company_member','current_person_id','has_company_role')) q;") || stop "disposable POST fingerprint failed"
+  "select md5(string_agg(x,E'\\n' order by x)) from (select 'schema_public_effective|usage='||has_schema_privilege('public','public','usage')::text||'|create='||has_schema_privilege('public','public','create')::text x union all select 'rls|'||c.relname::text||'|'||c.relrowsecurity::text||'|'||c.relforcerowsecurity::text from pg_class c where c.oid in ('public.assessment_responses'::regclass,'public.assessment_answers'::regclass,'public.assessment_cycles'::regclass,'public.people'::regclass,'public.feedback_attachments'::regclass,'public.feedback_mentions'::regclass,'public.feedback_threads'::regclass,'public.feedback_messages'::regclass) union all select 'acl|'||c.relname::text||'|'||coalesce(c.relacl::text,'') from pg_class c where c.oid in ('public.assessment_responses'::regclass,'public.assessment_answers'::regclass,'public.assessment_cycles'::regclass,'public.people'::regclass,'public.feedback_attachments'::regclass,'public.feedback_mentions'::regclass,'public.feedback_threads'::regclass,'public.feedback_messages'::regclass) union all select 'function_acl|'||p.oid::regprocedure::text||'|'||coalesce(p.proacl::text,'') from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('is_company_member','current_person_id','has_company_role')) q;") || stop "disposable POST fingerprint failed"
 [ "$DISPOSABLE_PRE" = "$DISPOSABLE_POST" ] || stop "disposable security fingerprint diverged after teardown"
 ROLE_RESIDUE=$("${DISPOSABLE_PSQL[@]}" -At --no-psqlrc -v ON_ERROR_STOP=1 -c "select count(*) from pg_roles where rolname='f_db1b_postgrest_verifier';")
 [ "$ROLE_RESIDUE" = 0 ] || stop "verifier role survived teardown"

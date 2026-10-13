@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Consumption claim v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "authority_dev",
+    "authority_ino",
+    "claimed_at",
+    "contract_version",
+    "evidence_id",
+    "manifest_sha256",
+    "migration_sha256",
+    "operation_id",
+    "project_ref",
+    "runner_sha256",
+    "source_commit",
+    "state"
+  ],
+  "properties": {
+    "authority_dev": {
+      "type": "string",
+      "minLength": 1
+    },
+    "authority_ino": {
+      "type": "string",
+      "minLength": 1
+    },
+    "claimed_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$"
+    },
+    "contract_version": {
+      "const": 1
+    },
+    "evidence_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "manifest_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "migration_sha256": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[0-9]{4}$": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "operation_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "project_ref": {
+      "const": "rwfvxvbzaosgcyfxdjpt"
+    },
+    "runner_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "source_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "state": {
+      "const": "CLAIMED_BEFORE_MUTATION"
+    }
+  }
+}

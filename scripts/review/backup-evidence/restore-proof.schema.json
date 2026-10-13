@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Restore proof v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "proof_id",
+    "key_id",
+    "evidence_id",
+    "artifact_sha256",
+    "postgres_major",
+    "restored_at",
+    "restore_duration_seconds",
+    "ledger_max",
+    "schema_pass",
+    "data_pass",
+    "rls_pass",
+    "acl_pass",
+    "fingerprint",
+    "teardown_pass"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": 1
+    },
+    "proof_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "key_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "artifact_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "postgres_major": {
+      "const": 17
+    },
+    "restored_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$"
+    },
+    "restore_duration_seconds": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 28800
+    },
+    "ledger_max": {
+      "type": "string",
+      "minLength": 1
+    },
+    "schema_pass": {
+      "const": true
+    },
+    "data_pass": {
+      "const": true
+    },
+    "rls_pass": {
+      "const": true
+    },
+    "acl_pass": {
+      "const": true
+    },
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "teardown_pass": {
+      "const": true
+    }
+  }
+}

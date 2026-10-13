@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Review backup manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "evidence_id",
+    "project_ref",
+    "environment",
+    "backup_type",
+    "key_id",
+    "captured_at",
+    "issued_at",
+    "expires_at",
+    "approved_rpo_seconds",
+    "approved_rto_seconds",
+    "postgres_major",
+    "source_commit",
+    "operation_id",
+    "ledger_from",
+    "ledger_to",
+    "migration_sha256",
+    "artifacts",
+    "restore_proof_sha256",
+    "external_exclusions"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": 1
+    },
+    "evidence_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "project_ref": {
+      "const": "rwfvxvbzaosgcyfxdjpt"
+    },
+    "environment": {
+      "const": "review"
+    },
+    "backup_type": {
+      "const": "postgres_logical_bundle"
+    },
+    "key_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "captured_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$"
+    },
+    "issued_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$"
+    },
+    "approved_rpo_seconds": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 14400
+    },
+    "approved_rto_seconds": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 28800
+    },
+    "postgres_major": {
+      "const": 17
+    },
+    "source_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "operation_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._-]+$"
+    },
+    "ledger_from": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ledger_to": {
+      "type": "string",
+      "minLength": 1
+    },
+    "migration_sha256": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[0-9]{4}$": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "sha256",
+          "size_bytes"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(?!/)(?!.*\\\\)(?!.*//)(?!.*(?:^|/)\\.\\.?(?:/|$)).+$"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "size_bytes": {
+            "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+          }
+        }
+      }
+    },
+    "restore_proof_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "external_exclusions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

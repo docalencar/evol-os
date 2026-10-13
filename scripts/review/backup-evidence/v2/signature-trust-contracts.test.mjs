@@ -38,9 +38,13 @@ const key = (overrides = {}) => ({
 })
 
 function validateRegistryContract(registry) {
-  const structuralSchema = structuredClone(registrySchema)
-  structuralSchema.properties.keys.uniqueItems = false
-  validateSchema(registry, structuralSchema, "registry")
+  // The REAL published schema, with nothing relaxed. The first version of this
+  // helper cloned it and set `uniqueItems = false`, because the validator's
+  // uniqueItems threw a TypeError on any non-empty array of objects. That made
+  // the suite green while the keyword it disabled was the one under test, and it
+  // hid the defect until a key was about to be added. Never relax the schema to
+  // reach green: fix the validator, or change the schema by governed decision.
+  validateSchema(registry, registrySchema, "registry")
   const canonicalEntries = registry.keys.map(entry => canonicalBytes(entry).toString("utf8"))
   assert.equal(new Set(canonicalEntries).size, canonicalEntries.length, "duplicate item")
   const ids = new Set()
@@ -130,8 +134,8 @@ test("registry rejects duplicate records and duplicate key identifiers", () => {
 })
 
 test("registry rejects inconsistent revocation and timestamps", () => {
-  assert.throws(() => validateRegistryContract({ keys: [key({ status: "REVOKED" })], registry_version: 1 }), /revoked_at required/)
-  assert.throws(() => validateRegistryContract({ keys: [key({ revoked_at: "2026-10-13T13:00:00.000Z" })], registry_version: 1 }), /revoked_at forbidden/)
+  assert.throws(() => validateRegistryContract({ keys: [key({ status: "REVOKED" })], registry_version: 1 }), /missing revoked_at|revoked_at required/)
+  assert.throws(() => validateRegistryContract({ keys: [key({ revoked_at: "2026-10-13T13:00:00.000Z" })], registry_version: 1 }), /must not match|revoked_at forbidden/)
   assert.throws(() => validateRegistryContract({ keys: [key({ not_before: "not-a-time" })], registry_version: 1 }), /pattern mismatch|invalid not_before/)
   assert.throws(() => validateRegistryContract({ keys: [key({ not_after: "2026-10-13T11:00:00.000Z" })], registry_version: 1 }), /invalid key validity/)
 })

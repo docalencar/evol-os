@@ -1,0 +1,1 @@
+{"digest":["sha256"],"encryption":["age-x25519-v1"],"minimum_post_retention_seconds":259200,"promotion_max_duration_seconds":1800,"provider_observation_ttl_seconds":300,"retention":["s3-object-lock-compliance-v1"],"signature":["ed25519"]}

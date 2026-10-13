@@ -76,3 +76,46 @@ retention proofs use the same normalized `object_identity` field constraints.
 B1a supplies declarative contracts and a pure graph validator only. Operational
 signature verification belongs to B1b; age/S3 adapters belong to B1c. No private
 or operational public key is included here.
+
+## Detached signatures and trust registry
+
+A signed v2 document is accompanied by one canonical detached-signature envelope.
+The envelope identifies its `key_id`, exact `key_purpose`, lowercase SHA-256 of
+the payload, and the frozen `ed25519` profile. `signature_base64` is the strict
+Base64 representation of the 64-byte Ed25519 signature. The signature covers the
+payload's exact canonical UTF-8 bytes, including the final LF. The envelope is a
+binding contract; it neither substitutes for cryptographic verification nor
+authorizes the key for the declared purpose.
+
+Operation intent, both historical retention proofs, restore proof, human approval
+and final manifest require signatures. Ciphertext descriptors remain authenticated
+transitively by their hashes in the signed evidence graph; they do not acquire a
+new signature surface in B1b-1.
+
+The sole operational v2 trust registry is the versioned
+`scripts/review/backup-evidence/v2/trust-registry.json`. It starts with no keys, so
+all operational evidence fails closed until a separately governed public key is
+approved. No CLI option, environment variable, manifest field or alternate path
+may replace it. Public keys are separate PEM files; private keys and operational
+test keys never belong in the repository.
+
+Each future registry entry authorizes one `key_id` and public-key fingerprint for
+exactly one purpose. Key identifiers are unique across the registry. The runtime
+must calculate SHA-256 of the loaded SPKI DER and compare it with
+`public_key_spki_sha256`; a distinct identifier is not proof of a distinct key.
+The fingerprint authorized for `HUMAN_RISK_APPROVAL` must differ from every
+technical-key fingerprint. Reuse across those boundaries fails closed.
+
+`ACTIVE` entries have no `revoked_at`; `REVOKED` entries require it. Revocation is
+absolute and retroactive for operational verification: a revoked key is refused
+even when a document predates `revoked_at`. `test_only` keys are always refused by
+the operational entrypoint. Verification also requires canonical timestamps,
+`not_before <= issued_at < expires_at <= not_after`, and current validity of the
+document and key. No arbitrary maximum validity duration is introduced here.
+Operational clock authority, acceptable clock skew and any future maximum validity
+limits remain pending explicit approval.
+
+JSON Schema cannot express uniqueness by one property across array entries. The
+registry schema rejects byte-equivalent duplicate entries with `uniqueItems`; the
+B1b-2 runtime must additionally reject every repeated `key_id` and enforce the
+cross-entry fingerprint separation above before accepting a registry.

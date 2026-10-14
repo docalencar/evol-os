@@ -117,5 +117,56 @@ limits remain pending explicit approval.
 
 JSON Schema cannot express uniqueness by one property across array entries. The
 registry schema rejects byte-equivalent duplicate entries with `uniqueItems`; the
-B1b-2 runtime must additionally reject every repeated `key_id` and enforce the
+B1b-3 runtime additionally rejects every repeated `key_id` and enforces the
 cross-entry fingerprint separation above before accepting a registry.
+
+## B1b-3 offline trust-registry runtime
+
+B1b-3 implements an offline cryptographic core. It is not an operational
+entrypoint and does not authorize promotion, backup creation, provider access or
+database mutation. Its public interfaces are:
+
+- `loadOfflineTrustRegistry(registryPath)`: test/offline loader for a canonical
+  registry and its public-key files. It validates the complete registry before
+  returning an opaque state; it is not an operational trust-path override.
+- `loadCanonicalTrustRegistry()`: zero-argument loader for the sole repository
+  registry, `trust-registry.json`. The published registry remains empty.
+- `verifySignedDocumentOffline(options)`: verifies canonical payload and envelope
+  bytes using an already validated opaque registry state and a mandatory explicit
+  verification instant.
+- `verifyWithCanonicalTrustRegistry(options)`: binds verification to the
+  zero-argument canonical loader and accepts no registry path or trust-store
+  override. With the published empty registry, every signed document fails
+  closed as an unknown `key_id`.
+
+The verifier maps each signed document type to its published schema and purpose;
+the caller cannot choose either. It reconciles payload, detached envelope and
+registry identity, verifies lowercase SHA-256 over the exact canonical payload
+bytes (including the final LF), requires a strict 64-byte Base64 Ed25519
+signature, and calls `crypto.verify(null, ...)` over those original bytes.
+
+Every registry entry is schema-validated and semantically validated before any
+key is resolved. Public keys are read by descriptor with no-follow where the
+platform supports it, must be regular non-symlink files contained by the trust
+directory, must parse as Ed25519 SPKI, and must match the declared SHA-256 of the
+SPKI DER. Duplicate `key_id`, invalid key windows and human/technical fingerprint
+reuse invalidate the whole registry. Technical purposes may share a fingerprint,
+as already allowed by the contract. `REVOKED` and `test_only` keys are always
+refused for verification.
+
+The offline temporal contract is exact and has no skew:
+
+```text
+not_before <= issued_at < expires_at <= not_after
+issued_at <= verificationInstant < expires_at
+```
+
+`verificationInstant` is mandatory. The core never calls `Date.now()` and does
+not select an operational clock. Clock authority, permitted operational skew and
+key custody remain separate governance decisions. Schema reference cycles remain
+deterministic rejections; B1b-3 does not add recursive-schema evaluation.
+
+Tests generate synthetic Ed25519 keys only inside disposable external temporary
+directories. Those keys and the offline registry loader are test evidence, not
+operational trust. No PEM, private key or non-empty operational registry is
+committed, and no runtime is activated by this slice.

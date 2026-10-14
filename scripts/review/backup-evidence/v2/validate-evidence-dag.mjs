@@ -47,10 +47,13 @@ const timePattern = /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 function resolveRef(root, ref) {
+  if (typeof ref !== "string") throw new Error(`invalid schema reference: ${String(ref)}`)
   if (!ref.startsWith("#/$defs/")) throw new Error(`unsupported schema reference: ${ref}`)
-  const value = root.$defs?.[ref.slice(8)]
-  if (!value) throw new Error(`missing schema reference: ${ref}`)
-  return value
+  const key = ref.slice(8)
+  if (!key || !root || typeof root !== "object" || Array.isArray(root) || !root.$defs || !Object.hasOwn(root.$defs, key)) {
+    throw new Error(`missing schema reference: ${ref}`)
+  }
+  return root.$defs[key]
 }
 
 /**
@@ -67,9 +70,9 @@ export class SchemaRejection extends Error {}
 const reject = message => { throw new SchemaRejection(message) }
 
 /** Did `value` match `schema`? Validation rejections answer no; faults propagate. */
-function matches(value, schema, label, root) {
+function matches(value, schema, label, root, activeRefs) {
   try {
-    validateSchema(value, schema, label, root)
+    validateSchema(value, schema, label, root, activeRefs)
     return true
   } catch (error) {
     if (error instanceof SchemaRejection) return false
@@ -80,39 +83,51 @@ function matches(value, schema, label, root) {
 const isPlainObject = value => Boolean(value) && typeof value === "object" && !Array.isArray(value)
 
 /** `required`, `additionalProperties` and `properties`, for an object instance. */
-function applyObjectKeywords(value, schema, label, root) {
+function applyObjectKeywords(value, schema, label, root, activeRefs) {
   for (const key of schema.required ?? []) if (!Object.hasOwn(value, key)) reject(`${label}: missing ${key}`)
   if (schema.additionalProperties === false) for (const key of Object.keys(value)) if (!Object.hasOwn(schema.properties ?? {}, key)) reject(`${label}: unknown ${key}`)
-  for (const [key, child] of Object.entries(schema.properties ?? {})) if (Object.hasOwn(value, key)) validateSchema(value[key], child, `${label}.${key}`, root)
+  for (const [key, child] of Object.entries(schema.properties ?? {})) if (Object.hasOwn(value, key)) validateSchema(value[key], child, `${label}.${key}`, root, activeRefs)
 }
 
-export function validateSchema(value, schema, label = "document", root = schema) {
-  if (schema.$ref) return validateSchema(value, resolveRef(root, schema.$ref), label, root)
+export function validateSchema(value, schema, label = "document", root = schema, activeRefs = new Set()) {
+  if (schema === true) return value
+  if (schema === false) reject(`${label}: false schema`)
+  if (!schema || typeof schema !== "object" || Array.isArray(schema)) throw new Error(`${label}: invalid schema`)
+  if (Object.hasOwn(schema, "$ref")) {
+    const ref = schema.$ref
+    if (activeRefs.has(ref)) throw new Error(`circular schema reference: ${String(ref)}`)
+    activeRefs.add(ref)
+    try {
+      validateSchema(value, resolveRef(root, ref), label, root, activeRefs)
+    } finally {
+      activeRefs.delete(ref)
+    }
+  }
   if (Object.hasOwn(schema, "const") && value !== schema.const) reject(`${label}: const mismatch`)
   if (schema.enum && !schema.enum.includes(value)) reject(`${label}: unknown enum value`)
-  for (const subschema of schema.allOf ?? []) validateSchema(value, subschema, label, root)
-  if (schema.not && matches(value, schema.not, label, root)) reject(`${label}: must not match the forbidden subschema`)
-  if (schema.if) {
-    const branch = matches(value, schema.if, label, root) ? schema.then : schema.else
-    if (branch) validateSchema(value, branch, label, root)
+  for (const subschema of schema.allOf ?? []) validateSchema(value, subschema, label, root, activeRefs)
+  if (Object.hasOwn(schema, "not") && matches(value, schema.not, label, root, activeRefs)) reject(`${label}: must not match the forbidden subschema`)
+  if (Object.hasOwn(schema, "if")) {
+    const branch = matches(value, schema.if, label, root, activeRefs) ? "then" : "else"
+    if (Object.hasOwn(schema, branch)) validateSchema(value, schema[branch], label, root, activeRefs)
   }
   // Object applicators are independent of `type`, which is what the published
   // registry schema relies on: its `if`, `then` and `else` subschemas are
   // `{ required: [...] }` and `{ not: { required: [...] } }` with no `type`, so
   // gating them behind `type === "object"` left every conditional clause inert.
-  if (schema.type === undefined && isPlainObject(value)) applyObjectKeywords(value, schema, label, root)
+  if (schema.type === undefined && isPlainObject(value)) applyObjectKeywords(value, schema, label, root, activeRefs)
 
   if (schema.type === "boolean") {
     if (typeof value !== "boolean") reject(`${label}: boolean required`)
   } else if (schema.type === "object") {
     if (!isPlainObject(value)) reject(`${label}: object required`)
-    applyObjectKeywords(value, schema, label, root)
+    applyObjectKeywords(value, schema, label, root, activeRefs)
   } else if (schema.type === "array") {
     if (!Array.isArray(value)) reject(`${label}: array required`)
     if (schema.minItems !== undefined && value.length < schema.minItems) reject(`${label}: too few items`)
     if (schema.maxItems !== undefined && value.length > schema.maxItems) reject(`${label}: too many items`)
     if (schema.uniqueItems && new Set(value.map(item => canonical(item))).size !== value.length) reject(`${label}: duplicate item`)
-    value.forEach((item, index) => validateSchema(item, schema.items, `${label}[${index}]`, root))
+    value.forEach((item, index) => validateSchema(item, schema.items, `${label}[${index}]`, root, activeRefs))
   } else if (schema.type === "string") {
     if (typeof value !== "string") reject(`${label}: string required`)
     if (schema.minLength !== undefined && value.length < schema.minLength) reject(`${label}: empty string`)

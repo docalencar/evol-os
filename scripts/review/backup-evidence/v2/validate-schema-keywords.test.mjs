@@ -27,7 +27,7 @@ import { dirname, join } from "node:path"
 import test from "node:test"
 import { fileURLToPath } from "node:url"
 
-import { canonical, validateSchema } from "./validate-evidence-dag.mjs"
+import { canonical, SchemaRejection, validateSchema } from "./validate-evidence-dag.mjs"
 
 const root = dirname(fileURLToPath(import.meta.url))
 const registrySchema = JSON.parse(readFileSync(join(root, "trust-registry.schema.json"), "utf8"))
@@ -175,4 +175,93 @@ test("no test may relax a published schema to reach green", () => {
     assert.doesNotMatch(source, /\.properties\.[A-Za-z_]+\.(uniqueItems|required|additionalProperties)\s*=/, `${name} mutates a published schema`)
     assert.doesNotMatch(source, /structuredClone\((registry|signature)Schema\)/, `${name} clones a published schema to alter it`)
   }
+})
+
+// ---------------------------------------------------------------------------
+// $ref siblings and boolean schemas (B1b-2)
+// ---------------------------------------------------------------------------
+
+const refRoot = {
+  $defs: {
+    integer: { type: "integer" },
+    nested: { $ref: "#/$defs/integer" },
+    allow: true,
+    deny: false,
+  },
+}
+
+test("11. $ref validates its target and every sibling keyword", () => {
+  assert.doesNotThrow(() => validateSchema(7, { $ref: "#/$defs/integer" }, "ref", refRoot))
+  assert.doesNotThrow(() => validateSchema(7, { $ref: "#/$defs/integer", minimum: 5 }, "ref", refRoot))
+  expectRejection(() => validateSchema(7, { $ref: "#/$defs/integer", const: 8 }, "ref", refRoot), /const mismatch/, "$ref const sibling")
+  expectRejection(() => validateSchema(7, { $ref: "#/$defs/integer", type: "string" }, "ref", refRoot), /string required/, "$ref type sibling")
+  expectRejection(() => validateSchema(7, { $ref: "#/$defs/integer", type: "integer", maximum: 6 }, "ref", refRoot), /above maximum/, "$ref maximum sibling")
+  expectRejection(() => validateSchema(7, { $ref: "#/$defs/integer", type: "integer", minimum: 8 }, "ref", refRoot), /below minimum/, "$ref minimum sibling")
+})
+
+test("12. nested and boolean $ref targets preserve their semantics", () => {
+  assert.doesNotThrow(() => validateSchema(7, { $ref: "#/$defs/nested" }, "ref", refRoot))
+  assert.doesNotThrow(() => validateSchema("anything", { $ref: "#/$defs/allow" }, "ref", refRoot))
+  expectRejection(() => validateSchema("anything", { $ref: "#/$defs/deny" }, "ref", refRoot), /false schema/, "$ref false target")
+})
+
+test("13. invalid and unsupported references fail closed as internal errors", () => {
+  for (const ref of ["#/$defs/missing", "#/properties/x", 42]) {
+    assert.throws(() => validateSchema(1, { $ref: ref }, "ref", refRoot), error => error instanceof Error && !(error instanceof SchemaRejection))
+  }
+})
+
+test("14. root, property and item boolean schemas are enforced", () => {
+  assert.doesNotThrow(() => validateSchema({ any: "value" }, true, "root"))
+  expectRejection(() => validateSchema({ any: "value" }, false, "root"), /false schema/, "root false")
+  assert.doesNotThrow(() => validateSchema({ x: 1 }, { type: "object", properties: { x: true } }, "doc"))
+  expectRejection(() => validateSchema({ x: 1 }, { type: "object", properties: { x: false } }, "doc"), /false schema/, "property false")
+  assert.doesNotThrow(() => validateSchema([1], { type: "array", items: true }, "arr"))
+  expectRejection(() => validateSchema([1], { type: "array", items: false }, "arr"), /false schema/, "item false")
+})
+
+test("15. boolean if branches are selected by presence rather than truthiness", () => {
+  assert.doesNotThrow(() => validateSchema(1, { if: true, then: true }, "doc"))
+  expectRejection(() => validateSchema(1, { if: true, then: false }, "doc"), /false schema/, "true then false")
+  assert.doesNotThrow(() => validateSchema(1, { if: false, else: true }, "doc"))
+  expectRejection(() => validateSchema(1, { if: false, else: false }, "doc"), /false schema/, "false else false")
+  assert.doesNotThrow(() => validateSchema(1, { if: true }, "doc"))
+  assert.doesNotThrow(() => validateSchema(1, { if: false }, "doc"))
+})
+
+test("16. not and allOf compose with boolean schemas", () => {
+  expectRejection(() => validateSchema(1, { not: true }, "doc"), /must not match/, "not true")
+  assert.doesNotThrow(() => validateSchema(1, { not: false }, "doc"))
+  assert.doesNotThrow(() => validateSchema(1, { allOf: [true, true] }, "doc"))
+  expectRejection(() => validateSchema(1, { allOf: [true, false] }, "doc"), /false schema/, "allOf true false")
+  expectRejection(() => validateSchema(1, { allOf: [false, true] }, "doc"), /false schema/, "allOf false true")
+  expectRejection(() => validateSchema({ x: [1] }, { type: "object", properties: { x: { type: "array", items: { allOf: [true, false] } } } }, "doc"), /false schema/, "nested boolean")
+})
+
+test("17. invalid references inside composition remain internal faults", () => {
+  const bad = { $ref: "#/$defs/missing" }
+  for (const schema of [{ if: bad, then: true }, { not: bad }, { allOf: [true, bad] }]) {
+    assert.throws(() => validateSchema(1, schema, "doc", refRoot), error => error instanceof Error && !(error instanceof SchemaRejection))
+  }
+})
+
+test("18. TypeError and RangeError from validator internals are never instance rejections", () => {
+  for (const Fault of [TypeError, RangeError]) {
+    const schema = {}
+    Object.defineProperty(schema, "allOf", { get: () => { throw new Fault("synthetic internal fault") } })
+    assert.throws(() => validateSchema(1, { if: schema, then: true }, "doc"), error => error instanceof Fault && !(error instanceof SchemaRejection))
+  }
+})
+
+test("19. invalid schema values fail as internal errors", () => {
+  for (const schema of [null, 0, "schema", [], undefined]) {
+    assert.throws(() => validateSchema(1, schema, "doc"), error => error instanceof Error && !(error instanceof SchemaRejection))
+  }
+})
+
+test("20. direct and indirect reference cycles are rejected deterministically", () => {
+  const direct = { $defs: { loop: { $ref: "#/$defs/loop" } } }
+  assert.throws(() => validateSchema(1, { $ref: "#/$defs/loop" }, "doc", direct), /circular schema reference/)
+  const indirect = { $defs: { left: { $ref: "#/$defs/right" }, right: { $ref: "#/$defs/left" } } }
+  assert.throws(() => validateSchema(1, { $ref: "#/$defs/left" }, "doc", indirect), /circular schema reference/)
 })

@@ -53,31 +53,76 @@ function resolveRef(root, ref) {
   return value
 }
 
+/**
+ * A rejection of the document, as opposed to a fault in the validator itself.
+ *
+ * `if` needs to know whether a subschema matched, which means catching. A bare
+ * `catch` would also swallow a programming fault — a TypeError, a bad $ref —
+ * and silently read it as "if = false", turning a broken validator into a
+ * permissive one. Only this class is treated as "did not match"; anything else
+ * propagates.
+ */
+export class SchemaRejection extends Error {}
+
+const reject = message => { throw new SchemaRejection(message) }
+
+/** Did `value` match `schema`? Validation rejections answer no; faults propagate. */
+function matches(value, schema, label, root) {
+  try {
+    validateSchema(value, schema, label, root)
+    return true
+  } catch (error) {
+    if (error instanceof SchemaRejection) return false
+    throw error
+  }
+}
+
+const isPlainObject = value => Boolean(value) && typeof value === "object" && !Array.isArray(value)
+
+/** `required`, `additionalProperties` and `properties`, for an object instance. */
+function applyObjectKeywords(value, schema, label, root) {
+  for (const key of schema.required ?? []) if (!Object.hasOwn(value, key)) reject(`${label}: missing ${key}`)
+  if (schema.additionalProperties === false) for (const key of Object.keys(value)) if (!Object.hasOwn(schema.properties ?? {}, key)) reject(`${label}: unknown ${key}`)
+  for (const [key, child] of Object.entries(schema.properties ?? {})) if (Object.hasOwn(value, key)) validateSchema(value[key], child, `${label}.${key}`, root)
+}
+
 export function validateSchema(value, schema, label = "document", root = schema) {
   if (schema.$ref) return validateSchema(value, resolveRef(root, schema.$ref), label, root)
-  if (Object.hasOwn(schema, "const") && value !== schema.const) throw new Error(`${label}: const mismatch`)
-  if (schema.enum && !schema.enum.includes(value)) throw new Error(`${label}: unknown enum value`)
-  if (schema.type === "object") {
-    if (!value || Array.isArray(value) || typeof value !== "object") throw new Error(`${label}: object required`)
-    for (const key of schema.required ?? []) if (!Object.hasOwn(value, key)) throw new Error(`${label}: missing ${key}`)
-    if (schema.additionalProperties === false) for (const key of Object.keys(value)) if (!Object.hasOwn(schema.properties ?? {}, key)) throw new Error(`${label}: unknown ${key}`)
-    for (const [key, child] of Object.entries(schema.properties ?? {})) if (Object.hasOwn(value, key)) validateSchema(value[key], child, `${label}.${key}`, root)
+  if (Object.hasOwn(schema, "const") && value !== schema.const) reject(`${label}: const mismatch`)
+  if (schema.enum && !schema.enum.includes(value)) reject(`${label}: unknown enum value`)
+  for (const subschema of schema.allOf ?? []) validateSchema(value, subschema, label, root)
+  if (schema.not && matches(value, schema.not, label, root)) reject(`${label}: must not match the forbidden subschema`)
+  if (schema.if) {
+    const branch = matches(value, schema.if, label, root) ? schema.then : schema.else
+    if (branch) validateSchema(value, branch, label, root)
+  }
+  // Object applicators are independent of `type`, which is what the published
+  // registry schema relies on: its `if`, `then` and `else` subschemas are
+  // `{ required: [...] }` and `{ not: { required: [...] } }` with no `type`, so
+  // gating them behind `type === "object"` left every conditional clause inert.
+  if (schema.type === undefined && isPlainObject(value)) applyObjectKeywords(value, schema, label, root)
+
+  if (schema.type === "boolean") {
+    if (typeof value !== "boolean") reject(`${label}: boolean required`)
+  } else if (schema.type === "object") {
+    if (!isPlainObject(value)) reject(`${label}: object required`)
+    applyObjectKeywords(value, schema, label, root)
   } else if (schema.type === "array") {
-    if (!Array.isArray(value)) throw new Error(`${label}: array required`)
-    if (schema.minItems !== undefined && value.length < schema.minItems) throw new Error(`${label}: too few items`)
-    if (schema.maxItems !== undefined && value.length > schema.maxItems) throw new Error(`${label}: too many items`)
-    if (schema.uniqueItems && new Set(value.map(canonical)).size !== value.length) throw new Error(`${label}: duplicate item`)
+    if (!Array.isArray(value)) reject(`${label}: array required`)
+    if (schema.minItems !== undefined && value.length < schema.minItems) reject(`${label}: too few items`)
+    if (schema.maxItems !== undefined && value.length > schema.maxItems) reject(`${label}: too many items`)
+    if (schema.uniqueItems && new Set(value.map(item => canonical(item))).size !== value.length) reject(`${label}: duplicate item`)
     value.forEach((item, index) => validateSchema(item, schema.items, `${label}[${index}]`, root))
   } else if (schema.type === "string") {
-    if (typeof value !== "string") throw new Error(`${label}: string required`)
-    if (schema.minLength !== undefined && value.length < schema.minLength) throw new Error(`${label}: empty string`)
-    if (schema.pattern && !new RegExp(schema.pattern).test(value)) throw new Error(`${label}: pattern mismatch`)
-    if (schema.format === "uuid" && !uuidPattern.test(value)) throw new Error(`${label}: invalid UUID`)
-    if (schema.format === "date-time" && (!timePattern.test(value) || new Date(Date.parse(value)).toISOString() !== value)) throw new Error(`${label}: invalid timestamp`)
+    if (typeof value !== "string") reject(`${label}: string required`)
+    if (schema.minLength !== undefined && value.length < schema.minLength) reject(`${label}: empty string`)
+    if (schema.pattern && !new RegExp(schema.pattern).test(value)) reject(`${label}: pattern mismatch`)
+    if (schema.format === "uuid" && !uuidPattern.test(value)) reject(`${label}: invalid UUID`)
+    if (schema.format === "date-time" && (!timePattern.test(value) || new Date(Date.parse(value)).toISOString() !== value)) reject(`${label}: invalid timestamp`)
   } else if (schema.type === "integer") {
-    if (!Number.isInteger(value)) throw new Error(`${label}: integer required`)
-    if (schema.minimum !== undefined && value < schema.minimum) throw new Error(`${label}: below minimum`)
-    if (schema.maximum !== undefined && value > schema.maximum) throw new Error(`${label}: above maximum`)
+    if (!Number.isInteger(value)) reject(`${label}: integer required`)
+    if (schema.minimum !== undefined && value < schema.minimum) reject(`${label}: below minimum`)
+    if (schema.maximum !== undefined && value > schema.maximum) reject(`${label}: above maximum`)
   }
   return value
 }

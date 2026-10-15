@@ -1,8 +1,8 @@
 # Publication manifests
 
-`scripts/local/publish-gate.sh <manifest> [--dry-run]` performs the repeated part
-of publishing a candidate branch. What varies per slice lives in a manifest; what
-is identical lives in the runner.
+`scripts/local/publish-gate.sh <manifest> [--dry-run | --stop-after-pr]` performs
+the repeated part of publishing a candidate branch. What varies per slice lives
+in a manifest; what is identical lives in the runner.
 
 ## Manifest format
 
@@ -65,6 +65,41 @@ It never contacts Review, Production or Legacy.
 ## Dry run
 
 `--dry-run` performs every verification and stops before the first mutating
-command. That is what makes the refusals testable —
+publication command. It still executes `git fetch origin`, which can update local
+remote-tracking references, but it never pushes, opens a PR or merges. That is
+what makes the refusals testable —
 `scripts/local/publish-gate.test.mjs` builds throwaway repositories and asserts
 each invariant fails closed, without any remote.
+
+## Publish branch and PR without merge
+
+`--stop-after-pr` is an explicit, opt-in publication boundary. It runs the same
+preflight and guards as the default mode, pushes without force, creates or reuses
+the declared PR, validates its identity and scope, and reconciles the live remote
+branch and `main`. It accepts only a PR whose `isCrossRepository` metadata is the
+boolean value `false`; missing, null or differently typed provenance fails closed.
+It then exits before CI evaluation and before every merge, checkout or local-main
+synchronization path.
+
+`--stop-after-pr` and `--dry-run` are mutually exclusive. Exit code zero in this
+mode means only that the branch and PR were published and reconciled. Its output
+is deliberately distinct:
+
+```
+PUBLICATION=PR_OPEN
+MERGE=NOT_EXECUTED
+CI_STATUS=NOT_EVALUATED
+```
+
+It does not mean CI passed, merge was authorized, or publication was closed. A
+later, separately authorized default invocation reuses the remote branch and PR,
+then evaluates CI and follows the existing merge flow.
+
+Remote reconciliation is a point-in-time state verification, without a guarantee
+of an atomic snapshot across the separate Git and GitHub queries.
+
+A remote failure can leave a correctly pushed branch without a PR, or an open PR
+whose final reconciliation failed. The gate reports that state and fails closed;
+it never deletes remote state as an automatic rollback. Re-running the same mode
+is safe when identities still match because the push is non-forced and an
+existing PR is reused rather than duplicated.

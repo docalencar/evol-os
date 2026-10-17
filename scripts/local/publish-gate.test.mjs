@@ -15,7 +15,7 @@
 
 import assert from "node:assert/strict"
 import { execFileSync } from "node:child_process"
-import { mkdtempSync, rmSync, writeFileSync, readFileSync, readdirSync, mkdirSync, appendFileSync } from "node:fs"
+import { chmodSync, mkdtempSync, rmSync, writeFileSync, readFileSync, readdirSync, mkdirSync, appendFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import test from "node:test"
@@ -668,4 +668,302 @@ test("the push step decides by ancestry and still never forces", () => {
   assert.match(block, /is NOT an ancestor of .* do NOT force push/)
   // The old rule must not survive anywhere in the step.
   assert.doesNotMatch(block, /\[ "\$REMOTE_BEFORE" != "\$m_candidate" \];\s*then\s*\n\s*stop/)
+})
+
+/* ---------------------------------------------------------------------------
+ * Safe publish without merge — real push to an isolated bare repository and a
+ * synthetic gh executable. No network is available to these scenarios. The gh
+ * double records every invocation and makes any attempted merge fail loudly.
+ * ------------------------------------------------------------------------- */
+
+function makeFakeGh(root) {
+  const bin = join(root, "fake-bin")
+  const log = join(root, "gh.log")
+  const state = join(root, "pr.exists")
+  mkdirSync(bin)
+  const path = join(bin, "gh")
+  writeFileSync(path, `#!/usr/bin/env bash
+set -u
+printf '%s\\n' "$*" >> "$GH_LOG"
+case "$1 $2" in
+  "auth status") exit 0 ;;
+  "pr create")
+    [ "\${GH_FAIL_CREATE:-0}" = 0 ] || exit 41
+    : > "$GH_PR_STATE"
+    [ "\${GH_ADVANCE_MAIN:-0}" = 0 ] || git --git-dir="$GH_ORIGIN" update-ref refs/heads/main "$GH_FUTURE_MAIN"
+    [ "\${GH_DIVERGE_BRANCH:-0}" = 0 ] || git --git-dir="$GH_ORIGIN" update-ref "refs/heads/$GH_BRANCH" "$GH_BASE"
+    printf '%s\\n' 'https://example.invalid/pull/321'
+    exit 0 ;;
+  "pr view")
+    [ -f "$GH_PR_STATE" ] || exit 1
+    case "$*" in
+      *"--json number,url,state,isDraft,baseRefName,headRefOid"*)
+        printf '321\\thttps://example.invalid/pull/321\\tOPEN\\tfalse\\tmain\\t%s\\n' "$GH_CANDIDATE" ;;
+      *".files[].path"*) printf 'docs/Execution/CONTRACT.md\\n' ;;
+      *"--json files"*) printf '1\\n' ;;
+      *"--json commits"*) printf '1\\n' ;;
+      *"--json headRefName"*) printf '%s\\n' "$GH_BRANCH" ;;
+      *"--json isCrossRepository"*)
+        [ "\${GH_FAIL_PROVENANCE:-0}" = 0 ] || exit 42
+        printf '%b\\n' "$GH_PR_PROVENANCE" ;;
+      *"--json headRefOid"*) printf '%s\\n' "$GH_CANDIDATE" ;;
+      *) printf '{"number":321}\\n' ;;
+    esac
+    exit 0 ;;
+  "pr checks")
+    case "$*" in *"--json"*) printf 'SUCCESS\\tweb\\n' ;; esac
+    exit 0 ;;
+  "pr merge") exit 97 ;;
+  "run list") printf '9001\\t%s\\tsuccess\\n' "$GH_CANDIDATE"; exit 0 ;;
+esac
+exit 98
+`)
+  chmodSync(path, 0o700)
+  writeFileSync(log, "")
+  return { bin, log, state }
+}
+
+function publicationScenario(options = {}) {
+  const { root, work, base, stashSha } = makeRepo()
+  const origin = git(work, "remote", "get-url", "origin")
+  const candidate = makeCandidate(work)
+  const fields = {
+    branch: "docs/slice", base, candidate, commits: candidate,
+    files: "docs/Execution/CONTRACT.md", pr_title: "docs: contract", pr_body: "body.md",
+  }
+  if (options.fields) Object.assign(fields, options.fields({ base, candidate }))
+  const manifest = writeManifest(work, fields)
+  mkdirSync(join(work, "scripts/local"), { recursive: true })
+  writeFileSync(join(work, "scripts/local/publish-push-precondition.sh"), readFileSync(PUSH_PRE))
+  const gate = join(work, "gate.sh")
+  writeFileSync(gate, readFileSync(GATE, "utf8").replace(
+    /^PROTECTED_STASH=.*$/m, `PROTECTED_STASH="${base}"`))
+  const fake = makeFakeGh(root)
+  if (options.existingPr) writeFileSync(fake.state, "existing\n")
+
+  let futureMain = ""
+  if (options.advanceMainAfterPr) {
+    git(work, "checkout", "-b", "future-main", base)
+    writeFileSync(join(work, "docs/PROJECT_STATE.md"), "# future\n")
+    git(work, "add", "docs/PROJECT_STATE.md")
+    git(work, "commit", "-m", "future main")
+    futureMain = git(work, "rev-parse", "HEAD")
+    git(work, "push", "origin", `HEAD:refs/heads/future-holding`)
+    git(work, "checkout", "docs/slice")
+  }
+  if (options.advanceMainBeforeRun) {
+    git(work, "checkout", "-b", "advanced-main", base)
+    writeFileSync(join(work, "docs/PROJECT_STATE.md"), "# advanced\n")
+    git(work, "add", "docs/PROJECT_STATE.md")
+    git(work, "commit", "-m", "advanced main")
+    git(work, "push", "origin", "HEAD:main")
+    git(work, "checkout", "docs/slice")
+  }
+  if (options.failPush) {
+    const hooks = join(origin, "hooks")
+    const hook = join(hooks, "pre-receive")
+    writeFileSync(hook, "#!/usr/bin/env bash\nexit 1\n")
+    chmodSync(hook, 0o700)
+  }
+
+  const env = {
+    ...process.env,
+    PATH: `${fake.bin}:${process.env.PATH}`,
+    GH_LOG: fake.log,
+    GH_PR_STATE: fake.state,
+    GH_ORIGIN: origin,
+    GH_BRANCH: "docs/slice",
+    GH_BASE: base,
+    GH_CANDIDATE: candidate,
+    GH_FAIL_CREATE: options.failCreate ? "1" : "0",
+    GH_ADVANCE_MAIN: options.advanceMainAfterPr ? "1" : "0",
+    GH_FUTURE_MAIN: futureMain,
+    GH_DIVERGE_BRANCH: options.divergeBranchAfterPr ? "1" : "0",
+    GH_PR_PROVENANCE: options.prProvenance ?? "boolean\\tfalse",
+    GH_FAIL_PROVENANCE: options.failProvenance ? "1" : "0",
+  }
+  const args = options.args ?? ["--stop-after-pr"]
+  const protectedBefore = {
+    stashTarget: git(work, "rev-parse", `refs/protected/${stashSha}`),
+    trackedStatus: git(work, "status", "--porcelain", "--untracked-files=no"),
+    untracked: git(work, "ls-files", "--others", "--exclude-standard").split("\n").filter(Boolean).sort(),
+  }
+  protectedBefore.contents = protectedBefore.untracked.map((path) => [path, readFileSync(join(work, path), "utf8")])
+  let code = 0, out = ""
+  try {
+    out = execFileSync("bash", [gate, manifest, ...args], {
+      cwd: work, env, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"],
+    })
+  } catch (error) {
+    code = error.status ?? 1
+    out = `${error.stdout ?? ""}${error.stderr ?? ""}`
+  }
+  return {
+    root, work, base, candidate, origin, manifest, fake, stashSha, protectedBefore, code, out,
+    ghLog: () => readFileSync(fake.log, "utf8"),
+    cleanup: () => rmSync(root, { recursive: true, force: true }),
+  }
+}
+
+test("stop-after-pr 01: explicit mode publishes and exits with the distinct PR_OPEN contract", () => {
+  const s = publicationScenario()
+  try {
+    assert.equal(s.code, 0, s.out)
+    assert.match(s.out, /PUBLICATION=PR_OPEN/)
+    assert.match(s.out, /MERGE=NOT_EXECUTED/)
+    assert.match(s.out, /CI_STATUS=NOT_EVALUATED/)
+  } finally { s.cleanup() }
+})
+
+test("stop-after-pr 02: default mode still reaches CI and the merge command", () => {
+  const s = publicationScenario({ args: [] })
+  try {
+    assert.notEqual(s.code, 0)
+    assert.match(s.ghLog(), /pr checks/)
+    assert.match(s.ghLog(), /pr merge/)
+  } finally { s.cleanup() }
+})
+
+test("stop-after-pr 03-05: dry-run remains non-mutating and incompatible or unknown flags fail", () => {
+  for (const [args, expected] of [
+    [["--dry-run"], /PUBLICATION=DRY_RUN_OK/],
+    [["--dry-run", "--stop-after-pr"], /mutually exclusive/],
+    [["--unknown"], /unknown option/],
+  ]) {
+    const s = publicationScenario({ args })
+    try {
+      if (args.length === 1 && args[0] === "--dry-run") assert.equal(s.code, 0, s.out)
+      else assert.notEqual(s.code, 0)
+      assert.match(s.out, expected)
+      assert.doesNotMatch(s.ghLog(), /pr create|pr merge/)
+    } finally { s.cleanup() }
+  }
+})
+
+test("stop-after-pr 06-08: push is scoped, PR identity is exact, and an existing PR is reused", () => {
+  for (const existingPr of [false, true]) {
+    const s = publicationScenario({ existingPr })
+    try {
+      assert.equal(s.code, 0, s.out)
+      assert.equal(git(s.work, "ls-remote", "--heads", "origin", "docs/slice").split("\t")[0], s.candidate)
+      assert.match(s.out, /PR=#321/)
+      assert.match(s.out, new RegExp(`REMOTE_BRANCH_SHA=${s.candidate}`))
+      assert.match(s.ghLog(), /pr (create .*--base main --head docs\/slice|view docs\/slice)/)
+      assert.equal((s.ghLog().match(/pr create/g) ?? []).length, existingPr ? 0 : 1)
+    } finally { s.cleanup() }
+  }
+})
+
+test("stop-after-pr rejects an existing cross-repository PR despite matching branch and candidate", () => {
+  const s = publicationScenario({ existingPr: true, prProvenance: "boolean\\ttrue" })
+  try {
+    assert.notEqual(s.code, 0, "a fork PR must fail closed")
+    assert.match(s.out, /PR head repository provenance/)
+    assert.doesNotMatch(s.ghLog(), /pr checks|pr merge|run list/)
+  } finally { s.cleanup() }
+})
+
+test("stop-after-pr accepts only explicit boolean false repository provenance", () => {
+  for (const [label, options] of [
+    ["cross-repository", { prProvenance: "boolean\\ttrue" }],
+    ["missing", { prProvenance: "" }],
+    ["null", { prProvenance: "null\\tnull" }],
+    ["unexpected type", { prProvenance: "string\\tfalse" }],
+    ["query failure", { failProvenance: true }],
+  ]) {
+    const s = publicationScenario(options)
+    try {
+      assert.notEqual(s.code, 0, `${label} provenance must fail closed`)
+      assert.match(s.out, /PR head repository provenance/)
+      assert.doesNotMatch(s.ghLog(), /pr checks|pr merge|run list/)
+    } finally { s.cleanup() }
+  }
+
+  const sameRepository = publicationScenario({ prProvenance: "boolean\\tfalse" })
+  try {
+    assert.equal(sameRepository.code, 0, sameRepository.out)
+    assert.match(sameRepository.out, /PUBLICATION=PR_OPEN/)
+  } finally { sameRepository.cleanup() }
+})
+
+test("stop-after-pr 09-10: remote main movement before push or after PR blocks", () => {
+  for (const options of [{ advanceMainBeforeRun: true }, { advanceMainAfterPr: true }]) {
+    const s = publicationScenario(options)
+    try {
+      assert.notEqual(s.code, 0)
+      assert.match(s.out, /origin\/main is|remote main moved/)
+      assert.doesNotMatch(s.ghLog(), /pr merge/)
+    } finally { s.cleanup() }
+  }
+})
+
+test("stop-after-pr 11: a remote branch changed after PR creation blocks", () => {
+  const s = publicationScenario({ divergeBranchAfterPr: true })
+  try {
+    assert.notEqual(s.code, 0)
+    assert.match(s.out, /remote head changed after PR/)
+    assert.doesNotMatch(s.ghLog(), /pr merge/)
+  } finally { s.cleanup() }
+})
+
+test("stop-after-pr 12 and 17: candidate and manifest invariants still fail before mutation", () => {
+  for (const fields of [
+    ({ base }) => ({ candidate: base, commits: base }),
+    () => ({ branch: "docs/wrong-branch" }),
+    () => ({ files: "docs/Execution/OTHER.md" }),
+  ]) {
+    const s = publicationScenario({ fields })
+    try {
+      assert.notEqual(s.code, 0)
+      assert.match(s.out, /HEAD is not the declared candidate|not on docs\/wrong-branch|scope mismatch/)
+      assert.doesNotMatch(s.ghLog(), /pr create|pr merge/)
+    } finally { s.cleanup() }
+  }
+})
+
+test("stop-after-pr 13: push failure blocks before PR creation", () => {
+  const s = publicationScenario({ failPush: true })
+  try {
+    assert.notEqual(s.code, 0)
+    assert.match(s.out, /push failed/)
+    assert.doesNotMatch(s.ghLog(), /pr create|pr merge/)
+  } finally { s.cleanup() }
+})
+
+test("stop-after-pr 14-16: PR failure or later reconciliation never calls merge", () => {
+  for (const options of [{ failCreate: true }, { advanceMainAfterPr: true }, { divergeBranchAfterPr: true }]) {
+    const s = publicationScenario(options)
+    try {
+      assert.notEqual(s.code, 0)
+      assert.doesNotMatch(s.ghLog(), /pr merge/)
+    } finally { s.cleanup() }
+  }
+})
+
+test("stop-after-pr 18-20: protected state survives and CI/merge remain untouched", () => {
+  const s = publicationScenario()
+  try {
+    assert.equal(s.code, 0, s.out)
+    const protectedPaths = [
+      ".e5r1e-evidence/evidence",
+      "apps/web/.env.local.smoke-backup",
+      "docs/execution/MVP-CLOSURE-PR-I-MUTATION-BOUNDARY-AUDIT.md",
+      "docs/execution/MVP-PR1-PHASE6-INVITATION-ACCEPTANCE-IMPLEMENTATION-PLAN.md",
+      "scripts/review/promote-0126-retention-pressure.sh",
+      "scripts/review/verify-0126-retention-pressure-post.sh",
+    ]
+    for (const path of protectedPaths) assert.equal(readFileSync(join(s.work, path), "utf8"), "x")
+    assert.equal(git(s.work, "rev-parse", `refs/protected/${s.stashSha}`), s.protectedBefore.stashTarget)
+    assert.equal(git(s.work, "status", "--porcelain", "--untracked-files=no"), s.protectedBefore.trackedStatus)
+    assert.deepEqual(
+      git(s.work, "ls-files", "--others", "--exclude-standard").split("\n").filter(Boolean).sort(),
+      s.protectedBefore.untracked,
+    )
+    for (const [path, contents] of s.protectedBefore.contents) {
+      assert.equal(readFileSync(join(s.work, path), "utf8"), contents)
+    }
+    assert.doesNotMatch(s.ghLog(), /pr checks|pr merge|run list/)
+    assert.match(s.out, /CI_STATUS=NOT_EVALUATED/)
+    assert.doesNotMatch(s.out, /PUBLICATION=CLOSED \/ PASS/)
+  } finally { s.cleanup() }
 })

@@ -2,7 +2,7 @@
 #
 # Publication gate — the repeated part of publishing a candidate branch.
 #
-#   bash scripts/local/publish-gate.sh <manifest> [--dry-run]
+#   bash scripts/local/publish-gate.sh <manifest> [--dry-run | --stop-after-pr]
 #
 # Run it as its own process. Never source it, never eval it: a nonzero exit is a
 # normal result and must not be able to close an interactive shell.
@@ -49,15 +49,17 @@ PROTECTED_FILES=(
 PROTECTED_EVIDENCE_DIR=".e5r1e-evidence"
 PROTECTED_STASH="52d5693ef1f6a156913d3cafa952894ad38485ea"
 
-MANIFEST=""; DRY_RUN=0
+MANIFEST=""; DRY_RUN=0; STOP_AFTER_PR=0
 for arg in "$@"; do
   case "$arg" in
-    --dry-run) DRY_RUN=1 ;;
-    -*)        stop "unknown option: $arg" ;;
-    *)         [ -z "$MANIFEST" ] && MANIFEST="$arg" || stop "unexpected argument: $arg" ;;
+    --dry-run)      DRY_RUN=1 ;;
+    --stop-after-pr) STOP_AFTER_PR=1 ;;
+    -*)             stop "unknown option: $arg" ;;
+    *)              [ -z "$MANIFEST" ] && MANIFEST="$arg" || stop "unexpected argument: $arg" ;;
   esac
 done
-[ -n "$MANIFEST" ] || stop "usage: publish-gate.sh <manifest> [--dry-run]"
+[ "$DRY_RUN" = 0 ] || [ "$STOP_AFTER_PR" = 0 ] || stop "--dry-run and --stop-after-pr are mutually exclusive"
+[ -n "$MANIFEST" ] || stop "usage: publish-gate.sh <manifest> [--dry-run | --stop-after-pr]"
 [ -f "$MANIFEST" ] || stop "manifest not found: $MANIFEST"
 
 # ---------------------------------------------------------------------------
@@ -111,6 +113,7 @@ cd "$REPO_ROOT" || stop "cannot enter repository root"
 say "[publish] repo: $REPO_ROOT"
 say "[publish] manifest: $MANIFEST"
 [ "$DRY_RUN" = 1 ] && say "[publish] DRY RUN — verification only, nothing will be pushed, opened or merged"
+[ "$STOP_AFTER_PR" = 1 ] && say "[publish] STOP AFTER PR — publish and reconcile branch/PR; do not evaluate CI or merge"
 
 command -v git >/dev/null 2>&1 || stop "'git' not found"
 if [ "$DRY_RUN" = 0 ]; then
@@ -249,6 +252,48 @@ say "[publish]     PR #$PR_NUM  $PR_URL"
 [ "$(gh pr view "$PR_NUM" --json commits --jq '.commits|length')" = "$(printf '%s\n' $m_commits | wc -w | tr -d ' ')" ] \
   || stop "PR commit count does not match the declared sequence"
 [ "$(git rev-parse origin/main)" = "$m_base" ] || stop "origin/main moved after PR creation"
+
+# An explicitly selected publication boundary: the branch and PR exist and are
+# reconciled, but CI is not evaluated and merge is not authorized. Re-query the
+# live remote rather than trusting the fetch performed before the push. Partial
+# remote state is reported and left intact on failure; destructive rollback is
+# never automatic.
+if [ "$STOP_AFTER_PR" = 1 ]; then
+  REMOTE_BRANCH_AFTER="$(git ls-remote --heads origin "$m_branch" | cut -f1)" \
+    || stop "cannot reconcile remote branch after PR creation"
+  [ "$REMOTE_BRANCH_AFTER" = "$m_candidate" ] \
+    || stop "remote head changed after PR — expected $m_candidate, got ${REMOTE_BRANCH_AFTER:-<absent>}"
+
+  REMOTE_MAIN_AFTER="$(git ls-remote --heads origin main | cut -f1)" \
+    || stop "cannot reconcile remote main after PR creation"
+  [ "$REMOTE_MAIN_AFTER" = "$m_base" ] \
+    || stop "remote main moved after PR — expected $m_base, got ${REMOTE_MAIN_AFTER:-<absent>}"
+
+  PR_FILES="$(gh pr view "$PR_NUM" --json files --jq '.files[].path' | sort | tr '\n' ' ')" \
+    || stop "cannot reconcile PR file paths"
+  [ "$PR_FILES" = "$EXPECT_FILES" ] || stop "PR file paths do not match the declared scope"
+
+  PR_HEAD_BRANCH="$(gh pr view "$PR_NUM" --json headRefName --jq .headRefName)" \
+    || stop "cannot reconcile PR head branch"
+  [ "$PR_HEAD_BRANCH" = "$m_branch" ] || stop "PR head branch does not match the declared branch"
+
+  PR_REPOSITORY_PROVENANCE="$(gh pr view "$PR_NUM" --json isCrossRepository \
+    --jq '[ (.isCrossRepository | type), .isCrossRepository ] | @tsv')" \
+    || stop "cannot reconcile PR head repository provenance"
+  [ "$PR_REPOSITORY_PROVENANCE" = "$(printf 'boolean\tfalse')" ] \
+    || stop "PR head repository provenance is not same-repository"
+
+  say ""
+  say "PUBLICATION=PR_OPEN"
+  say "MERGE=NOT_EXECUTED"
+  say "CI_STATUS=NOT_EVALUATED"
+  say "PR=#$PR_NUM"
+  say "PR_URL=$PR_URL"
+  say "CANDIDATE_SHA=$m_candidate"
+  say "REMOTE_BRANCH_SHA=$REMOTE_BRANCH_AFTER"
+  say "REMOTE_MAIN_SHA=$REMOTE_MAIN_AFTER"
+  exit 0
+fi
 
 # ---------------------------------------------------------------------------
 # 4. CI on the exact candidate. QUEUED/IN_PROGRESS is pending, NOT failure.
